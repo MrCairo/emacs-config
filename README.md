@@ -1,7 +1,7 @@
 # emacs-configuration
 
 To use:
-* Clone this repo into your `.emacs.d` directory.
+* Clone this repo into your `.emacs.d` directory (or wherever Emacs looks for it's `init.el` file.)
 * Edit the `Configuration.org` file.
 * Save the file.
   * The `init.el` file is created!
