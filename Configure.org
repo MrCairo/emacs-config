@@ -1,15 +1,19 @@
 #+title: Mitch's Emacs Configuration File
+#+author: Mitch Fisher
+#+date: 2023-07-30
 #+PROPERTY: header-args:emacs-lisp :tangle ./init.el :mkdirp yes
+
 
 * Welcome!
 
-This ORG file will configure the *init.el* file based upon all of the *emacs-lisp* source blocks. The emacs-lisp source blocks are defined in an organized order. While these blocks cn generally be moved around, there are some order dependencies. So it's generally best that this order be preserved to prevent any runtime issues.
+This ORG file will configure the *init.el* file based upon all of the *emacs-lisp* source blocks. The emacs-lisp source blocks are defined in an organized order. While these blocks cn generally be moved around, there are some order dependencies. So it's generally best that this order be preserved to prevent any runtime issues. This =org= file is largely taken from the System Crafter's sessions on configuring Emacs.
 
 
 * Emacs Version Check
 While most systems use a more modern version of Emacs, a check is made here so that only viable versions will continue.
 
 #+begin_src emacs-lisp
+  ;;; -*- lexical-binding: t -*-
   ;;; ---------------------------------------------------------------------------
   ;;;
   ;;; NOTE: init.el is now generated from Configure.org.  Please edit that file
@@ -51,6 +55,7 @@ In the early phase of the startup, we include the =lisp= and =site-packages= dir
      (add-to-list 'load-path (expand-file-name "lisp" user-emacs-directory))
      (mrf/integrate-local-site-lisp)
      (require 'use-package)
+     (require 'general)
      (setq use-package-always-ensure t))
 
 #+end_src
@@ -86,8 +91,9 @@ It's nice to know that Emacs is somewhat working. To help this along, we set the
 
   ;;; ---------------------------------------------------------------------------
   ;; You will most likely need to adjust this font size for your system!
-  (defvar mrf/default-font-size 170)
-  (defvar mrf/default-variable-font-size 170)
+  (defvar mrf/default-font-size 175)
+  (defvar mrf/default-variable-font-size 175)
+  (defvar mrf/set-frame-maximized t)  ;; or f
 
   ;; Make frame transparency overridable
   (defvar mrf/frame-transparency '(90 . 90))
@@ -104,33 +110,32 @@ It's nice to know that Emacs is somewhat working. To help this along, we set the
      (add-to-list 'default-frame-alist '(height . 60))
      (add-to-list 'default-frame-alist '(width . 140)))
 
-  ;;; (mrf/set-frame-alpha-maximized)
-  (mrf/custom-set-frame-size)
-
-
+  (mrf/set-frame-alpha-maximized)
   ;; (mrf/custom-set-frame-size)
-  ;; (add-hook 'before-make-frame-hook 'mrf/custom-set-frame-size)
-  ;; (add-to-list 'default-frame-alist '(fullscreen . maximized))
 
   ;; ====================================
   ;; Set the font faces
-  ;; ====================================
+  ;; ====================================  
   (set-face-attribute 'default nil
-                      :font "Menlo"
-                      :height mrf/default-font-size)
+     :font "Menlo"
+     :height mrf/default-font-size)
+     ;; :weight 'regular)
 
   ;; Set the fixed pitch face
   (set-face-attribute 'fixed-pitch nil
-                      :font "Menlo"
-                      :height mrf/default-font-size)
+     :font "Menlo"
+     :height mrf/default-font-size)
+     ;; :weight 'book)
 
   ;; Set the variable pitch face
   (set-face-attribute 'variable-pitch nil
-                      :font "SF Pro"
-                      :height mrf/default-variable-font-size
-                      :weight 'regular)
+     :font "SF Pro"
+     :height mrf/default-variable-font-size
+     :weight 'regular)
 
 #+end_src
+
+#+RESULTS:
 
 
 * Common Settings
@@ -173,7 +178,7 @@ The following values are things that are just general quality-of-life settings.
   (use-package evil-nerd-commenter
      :bind ("M-/" . evilnc-comment-or-uncomment-lines))
 
-  (use-package treemacs-all-the-icons)
+  ;;; (use-package treemacs-all-the-icons)
 
   (use-package rainbow-delimiters
     :config
@@ -217,7 +222,6 @@ Emacs has a built in package manager but it doesn't make it easy to automaticall
   ;;; ---------------------------------------------------------------------------
 
   (require 'package)  
-  (require 'package)  
   (setq package-archives '(("melpa" . "https://melpa.org/packages/")
 			   ("org" . "https://orgmode.org/elpa/")
 			   ("elpa" . "https://elpa.gnu.org/packages/")))
@@ -226,6 +230,12 @@ Emacs has a built in package manager but it doesn't make it easy to automaticall
   (unless package-archive-contents
     (package-refresh-contents))
 
+#+end_src
+
+*** Must Install Packages
+#+begin_src emacs-lisp
+
+  ;;; ---------------------------------------------------------------------------
   ;;;
   ;;; The following packages aren't properly loaded with the 'require' or
   ;;; 'use-package' functions (for some reason) so we resort to 'package-install'
@@ -233,18 +243,17 @@ Emacs has a built in package manager but it doesn't make it easy to automaticall
   ;;
   (defvar mrf/must-install-packages
      '(
-	 general
-	 cl-lib
-	 auto-complete
-	 better-defaults
-	 bind-key
+         general
+         cl-lib
+         auto-complete
+         better-defaults
+         bind-key
       ))
 
   (mapc #'(lambda (item)
-	    (unless (package-installed-p item)
-	      (package-install item)))
-	mrf/must-install-packages)
-
+            (unless (package-installed-p item)
+              (package-install item)))
+        mrf/must-install-packages)
 
 #+end_src
 
@@ -319,9 +328,9 @@ These are useful snippets of code that are commonly used in various languages. Y
 #+end_src
 
 
-* Language Server Protocol (lsp)
+* Language Server Protocol
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp 
 
   ;;; ------------------------------------------------------------------------
   (defun mrf/lsp-mode-setup ()
@@ -356,7 +365,7 @@ These are useful snippets of code that are commonly used in various languages. Y
     :after lsp)
 
   (use-package lsp-ivy
-    :after lsp)
+    :after lsp ivy)
 
   ;; Make sure that we set the read buffer above the default 4k
   (setq read-process-output-max (* 1024 1024))
@@ -376,37 +385,50 @@ These are useful snippets of code that are commonly used in various languages. Y
 #+end_src
 
 
-* Debug Adapter Protocol (DAP)
+* Debug Adapter Protocol
 
 Provides a common protocol for debugging different systems. This is configured for Python
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp 
 
-  ;;; ------------------------------------------------------------------------
-  (use-package dap-mode
-    ;; Uncomment the config below if you want all UI panes to be hidden by default!
-    ;; :custom
-    ;; (lsp-enable-dap-auto-configure nil)
-    :config
-     (dap-ui-mode 1)
-     (require 'dap-python)
-    :commands dap-debug
-    :custom (dap-auto-configure-features '(sessions locals controls tooltip))
-    )
+    ;;; ------------------------------------------------------------------------
+    (use-package dap-mode
+      ;; Uncomment the config below if you want all UI panes to be hidden by default!
+      ;; :custom
+      ;; (lsp-enable-dap-auto-configure nil)
+      :config
+       (dap-ui-mode 1)
+       (require 'dap-python)
+  ;;     (require 'dap-node)
+      :commands dap-debug
+      :custom (dap-auto-configure-features '(sessions locals controls tooltip))
+      )
 
-  (setq dap-python-debugger 'debugpy)
+    (setq dap-python-debugger 'debugpy)
 
+    (use-package dap-hydra
+       :hook (dap-stopped . (lambda (arg) (call-interactively #'dap-hydra))))
+  
 #+end_src
 
 
 ** DAP for Python
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp 
 
   ;;; ------------------------------------------------------------------------
   (use-package dap-python
+    :after (dap)
     :ensure nil
     :config
+    (dap-register-debug-template "Python :: Run file from project directory"
+                                 (list :type "python"
+                                       :args ""
+                                       :cwd nil
+                                       :module nil
+                                       :program nil
+                                       :request "launch"))
+
     (dap-register-debug-template "Python :: Run file (buffer)"
                                  (list :type "python"
                                        :args ""
@@ -415,14 +437,6 @@ Provides a common protocol for debugging different systems. This is configured f
                                        :program nil
                                        :request "launch"
                                        :name "Python :: Run file (buffer)"))
-
-    (dap-register-debug-template "Python :: Run file from project directory"
-                                 (list :type "python"
-                                       :args ""
-                                       :cwd nil
-                                       :module nil
-                                       :program nil
-                                       :request "launch"))
 
     (dap-register-debug-template "Python :: Run pytest (buffer)"
                                  (list :type "python"
@@ -439,7 +453,8 @@ Provides a common protocol for debugging different systems. This is configured f
 * IVY Mode
 Ivy is an excellent completion framework for Emacs.  It provides a minimal yet powerful selection menu that appears when you open files, switch buffers, and for many other tasks in Emacs.  Counsel is a customized set of commands to replace `find-file` with `counsel-find-file`, etc which provide useful commands for each of the default completion commands.
 
-[[https://github.com/Yevgnen/ivy-rich][ivy-rich]] adds extra columns to a few of the Counsel commands to provide more information about each item.
+[[https://github.com/Yevgnen/ivy-rich][ivy-rich
+]] adds extra columns to a few of the Counsel commands to provide more information about each item.
 
 #+begin_src emacs-lisp
 
@@ -503,18 +518,20 @@ This is a basic configuration for the TypeScript language so that =.ts= files ac
   ;;; ---------------------------------------------------------------------------
 
   (use-package typescript-mode
+     :disabled  ;; Don't use this package .... yet
+     :after (dap-mode)
      :mode "\\.ts\\'"
      :hook (typescript-mode . lsp-deferred)
      :config
      (setq typescript-indent-level 2)
-     (require 'dap-node)
      (dap-node-setup))
+
 
 #+end_src
 
 
 ** C/C++
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp 
 
   ;;; ---------------------------------------------------------------------------
 
@@ -574,19 +591,29 @@ This is more support for a language rather than a langage itself
   (message "    debnugpy")
   (message "    singleton-decorator") ;; Needed for several projects
 
+  (defun mrf/load-python-file-hook ()
+     (message "Running python Hook")
+     (python-mode)
+     (dap-mode)
+     (display-fill-column-indicator-mode 1))
+
   (use-package python-mode
      :ensure nil
+     :after (lsp-mode dap-mode)
      :hook (python-mode . lsp-mode)
      :config
      (eglot-ensure)
      (dap-tooltip 1)
      (toolit-mode 1)
-     (dap-ui-controls-mode 1)
-     (highlight-indentation-current-column-mode))
+     (dap-ui-controls-mode 1))
 
+  (add-to-list 'auto-mode-alist '("\\.py\\'" . mrf/load-python-file-hook))
   (use-package blacken) ;Format Python file upon save.
 
+
 #+end_src
+
+#+RESULTS:
 
 *** ELPY and RealGUD
 Elpy is an Emacs package to bring powerful Python editing to Emacs.  It combines and configures a number of other packages, both written in Emacs Lisp as well as Python.  Elpy is fully documented at [[https://elpy.readthedocs.io/en/latest/index.html][read the docs]].
@@ -610,7 +637,8 @@ Elpy is an Emacs package to bring powerful Python editing to Emacs.  It combines
 *** RealGUD
 An extensible, modular GNU Emacs front-end for interacting with external debuggers, brought to you by Rocky Bernstein (@rocky) and Clément Pit-Claudel (@cpitclaudel).
 For now, we disable it since this script is using =Elpy= and =DAP=. We include this here as another option that can be used.
-#+begin_src emacs-lisp
+
+#+begin_src emacs-lisp 
 
   (use-package realgud
    :ensure t) ;; Keep this around but right now we use DAP
@@ -633,28 +661,33 @@ autopep8 automatically formats Python code to conform to the `PEP 8` style guide
 #+begin_src emacs-lisp
 
   ;;; ---------------------------------------------------------------------------
-
-  (general-def python-mode-map
-     "C-c a /" 'dap-step-in
-     "C-c . ." 'dap-next
-     "C-c . ," 'dap-step-out
-     "C-c . ?" 'dap-breakpoint-condition
-     "C-c . C-b" 'dap-ui-breakpoints
-     "C-c . C-b" 'dap-ui-breakpoints
-     "C-c . C-c" 'dap-ui-controls-mode
-     "C-c . C-e" 'dap-ui-expressions
-     "C-c . C-l" 'dap-ui-locals
-     "C-c . C-r" 'dap-ui-repl-mode
-     "C-c . b" 'dap-breakpoint-toggle
-     "C-c . c" 'dap-continue
-     "C-c . d"  'dap-debug
-     "C-c . i" 'dap-step-in
-     "C-c . n" 'dap-next
-     "C-c . o" 'dap-step-out
-     "C-c . r" 'dap-debug-restart
-     "C-c . t" 'dap-breakpoint-toggle
-     "C-c . x" 'dap-disconnect
-     "C-c }" 'indent-region)
+  (if (package-installed-p 'dap-mode)
+    (general-def python-mode-map
+       "C-c . /"       'dap-step-in
+       "C-c . <right>" 'dap-step-in
+       "C-c . ,"       'dap-step-out
+       "C-c . <left>"    'dap-step-out
+       "C-c . ."       'dap-next
+       "C-c . <down>"  'dap-next
+       "C-c . ?" 'dap-breakpoint-condition
+       "C-c . C-b" 'dap-ui-breakpoints
+       "C-c . C-b" 'dap-ui-breakpoints
+       "C-c . C-c" 'dap-ui-controls-mode
+       "C-c . C-e" 'dap-ui-expressions
+       "C-c . C-l" 'dap-ui-locals
+       "C-c . C-r" 'dap-ui-repl-mode
+       "C-c . b" 'dap-breakpoint-toggle
+       "C-c . c" 'dap-continue
+       "C-c . d" 'dap-debug
+       "C-c . C-d" 'dap-debug-last
+       "C-c . i" 'dap-step-in
+       "C-c . n" 'dap-next
+       "C-c . o" 'dap-step-out
+       "C-c . r" 'dap-debug-restart
+       "C-c . t" 'dap-breakpoint-toggle
+       "C-c . x" 'dap-disconnect
+       "C-c . C-x" 'dap-delete-session
+       "C-c }" 'indent-region))
 
 #+end_src
 
@@ -708,14 +741,13 @@ Since Realgud is options (in our configuratrion), we add it's keybindings condit
 #+end_src
 
 *** Python Virtual Environment Support
-We use Pytvenv-auto is a package that automatically changes to the Python virtual environment based upon the project's directory.  pyvenv-auto looks at the root director of the project for a =.venv= or =venv= (and a few others)
+We use Pyvenv-auto is a package that automatically changes to the Python virtual environment based upon the project's directory.  pyvenv-auto looks at the root director of the project for a =.venv= or =venv= (and a few others)
 
 #+begin_src emacs-lisp
 
   ;;; ------------------------------------------------------------------------
   (use-package pyvenv-auto
-     :ensure t
-     :init (message "Starting pyvenv-auto")
+     :config (message "Starting pyvenv-auto")
      :hook ((python-mode . pyvenv-auto-run)))
 
 #+end_src
@@ -745,9 +777,9 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
 
   (use-package company-jedi
      :config
-     (defun my/python-mode-hook ()
+     (defun my/company-jedi-python-mode-hook ()
         (add-to-list 'company-backends 'company-jedi))
-     (add-hook 'python-mode-hook 'my/python-mode-hook))
+     (add-hook 'python-mode-hook 'my/company-jedi-python-mode-hook))
 
   (add-hook 'prog-mode-hook 'company-mode)
   
@@ -758,7 +790,7 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
 
 [[https://projectile.mx/][Projectile]] is a project management library for Emacs which makes it a lot easier to navigate around code projects for various languages.  Many packages integrate with Projectile so it's a good idea to have it installed even if you don't use its commands directly.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp 
 
   ;;; ------------------------------------------------------------------------
 
@@ -785,7 +817,7 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
 
 [[https://magit.vc/][Magit]] is the best Git interface I've ever used.  Common Git operations are easy to execute quickly using Magit's command panel system.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp 
 
   ;;; ------------------------------------------------------------------------
 
@@ -828,8 +860,8 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
 
   ;;; ------------------------------------------------------------------------
   ;;; List of favorite themes. Uncomment the one that feels good for the day.
-  (load-theme 'material t)
-  ;; (load-theme 'doom-palenight t)
+  ;; (load-theme 'material t)
+  (load-theme 'doom-palenight t)
   ;; (load-theme 'doom-monokai-pro t)
   ;; (load-theme 'afternoon t)
   ;; (load-theme 'tomorrow-night-blue t)
@@ -1129,36 +1161,38 @@ The following packages are some additional quality of life features.
 #+end_src
 
 ** Dashboard
+
 Dashboard is an extensible Emacs startup screen showing you what’s most important.
 
 #+begin_src emacs-lisp
 
   ;;; ------------------------------------------------------------------------
-
   (use-package all-the-icons
      :if (display-graphic-p))
 
   (use-package dashboard
+     :after (dired)
      :ensure t
      :preface
      (defun mrf/dashboard-banner ()
         (setq dashboard-footer-messages '("Greetings Program!"))
         (setq dashboard-banner-logo-title "Welcome to Emacs!")
         (setq dashboard-startup-banner "~/Pictures/Book-icon.png"))
+     :hook ((after-init     . dashboard-refresh-buffer)
+            (dashboard-mode . mrf/dashboard-banner))
      :custom
      (dashboard-items '((recents . 9)
-                          (bookmarks . 5)))
+                       (bookmarks . 5)))
      :config
      (dashboard-setup-startup-hook)
      (dashboard-open)
-     (setq dashboard-center-content t)
-     :hook ((after-init     . dashboard-refresh-buffer)
-              (dashboard-mode . mrf/dashboard-banner)))
+     (setq dashboard-center-content t))
 
 #+end_src
 
 
 ** Autocomplete
+
 Auto-Complete is an intelligent auto-completion extension for Emacs. It extends the standard Emacs completion interface and provides an environment that allows users to concentrate more on their own work.
 
 #+begin_src emacs-lisp
@@ -1223,25 +1257,6 @@ Auto-Complete is an intelligent auto-completion extension for Emacs. It extends 
     ([remap describe-command] . helpful-command)
     ([remap describe-variable] . counsel-describe-variable)
     ([remap describe-key] . helpful-key))
-
-#+end_src
-
-
-** Impatient Mode
-
-Impatient mode is a mode that shows the effects of your HTML as you type.
-
-#+begin_src emacs-lisp
-
-  ;;; ------------------------------------------------------------------------
-
-  (use-package which-key
-    :defer 0
-    :diminish which-key-mode
-    :config
-    (which-key-mode)
-    (which-key-setup-side-window-right)
-    (setq which-key-idle-delay 0.2))
 
 #+end_src
 
@@ -1558,47 +1573,45 @@ Some final configuratiion to be done at the end of this configuration.
   ;; Line #'s appear everywhere
   ;; ... except for when in these modes
   (dolist (mode '(dashboard-mode-hook
-                  eshell-mode-hook
-                  org-mode-hook
-                  shell-mode-hook
-                  term-mode-hook
-                  term-mode-hook
-                  treemacs-mode-hook
-                  vterm-mode-hook))
-    (add-hook mode (lambda () (display-line-numbers-mode 0))))
+                    eshell-mode-hook
+                    eww-mode-hook
+                    org-mode-hook
+                    shell-mode-hook
+                    term-mode-hook
+                    term-mode-hook
+                    treemacs-mode-hook
+                    vterm-mode-hook))
+     (add-hook mode (lambda () (display-line-numbers-mode 0))))
 
 
-  ;;; ===========================================================================
+    ;;; ===========================================================================
   (setq warning-suppress-types '((package reinitialization)
-                                 (package-initialize)
-                                 (package)
-                                 (use-package)
-                                 (python-mode)))
+                                   (package-initialize)
+                                   (package)
+                                   (use-package)
+                                   (python-mode)))
 
-  ;;; ===========================================================================
+    ;;; ===========================================================================
   (custom-set-variables
-   ;; custom-set-variables was added by Custom.
-   ;; If you edit it by hand, you could mess it up, so be careful.
-   ;; Your init file should contain only one such instance.
-   ;; If there is more than one, they won't work right.
-   '(warning-suppress-log-types
-       '(((package reinitialization))
-           (use-package)
-           (python-mode)
-           (package-initialize))))
+     ;; custom-set-variables was added by Custom.
+     ;; If you edit it by hand, you could mess it up, so be careful.
+     ;; Your init file should contain only one such instance.
+     ;; If there is more than one, they won't work right.
+     '(warning-suppress-log-types
+         '(((package reinitialization))
+             (use-package)
+             (python-mode)
+             (package-initialize))))
 
-  ;;; init.el ends here.
+    ;;; init.el ends here.
   (custom-set-faces
-   ;; custom-set-faces was added by Custom.
-   ;; If you edit it by hand, you could mess it up, so be careful.
-   ;; Your init file should contain only one such instance.
-   ;; If there is more than one, they won't work right.
-   )
+     ;; custom-set-faces was added by Custom.
+     ;; If you edit it by hand, you could mess it up, so be careful.
+     ;; Your init file should contain only one such instance.
+     ;; If there is more than one, they won't work right.
+     )
+
+  ;;  (dashboard-open)
 
 #+end_src
-
-
-
-
-
 

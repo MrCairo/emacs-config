@@ -1,3 +1,4 @@
+;;; -*- lexical-binding: t -*-
 ;;; ---------------------------------------------------------------------------
 ;;;
 ;;; NOTE: init.el is now generated from Configure.org.  Please edit that file
@@ -28,6 +29,7 @@
    (add-to-list 'load-path (expand-file-name "lisp" user-emacs-directory))
    (mrf/integrate-local-site-lisp)
    (require 'use-package)
+   (require 'general)
    (setq use-package-always-ensure t))
 
 ;;; ---------------------------------------------------------------------------
@@ -46,8 +48,9 @@
 
 ;;; ---------------------------------------------------------------------------
 ;; You will most likely need to adjust this font size for your system!
-(defvar mrf/default-font-size 170)
-(defvar mrf/default-variable-font-size 170)
+(defvar mrf/default-font-size 175)
+(defvar mrf/default-variable-font-size 175)
+(defvar mrf/set-frame-maximized t)  ;; or f
 
 ;; Make frame transparency overridable
 (defvar mrf/frame-transparency '(90 . 90))
@@ -64,31 +67,28 @@
    (add-to-list 'default-frame-alist '(height . 60))
    (add-to-list 'default-frame-alist '(width . 140)))
 
-;;; (mrf/set-frame-alpha-maximized)
-(mrf/custom-set-frame-size)
-
-
+(mrf/set-frame-alpha-maximized)
 ;; (mrf/custom-set-frame-size)
-;; (add-hook 'before-make-frame-hook 'mrf/custom-set-frame-size)
-;; (add-to-list 'default-frame-alist '(fullscreen . maximized))
 
 ;; ====================================
 ;; Set the font faces
-;; ====================================
+;; ====================================  
 (set-face-attribute 'default nil
-                    :font "Menlo"
-                    :height mrf/default-font-size)
+   :font "Menlo"
+   :height mrf/default-font-size)
+   ;; :weight 'regular)
 
 ;; Set the fixed pitch face
 (set-face-attribute 'fixed-pitch nil
-                    :font "Menlo"
-                    :height mrf/default-font-size)
+   :font "Menlo"
+   :height mrf/default-font-size)
+   ;; :weight 'book)
 
 ;; Set the variable pitch face
 (set-face-attribute 'variable-pitch nil
-                    :font "SF Pro"
-                    :height mrf/default-variable-font-size
-                    :weight 'regular)
+   :font "SF Pro"
+   :height mrf/default-variable-font-size
+   :weight 'regular)
 
 ;;; ---------------------------------------------------------------------------
 
@@ -126,7 +126,7 @@
 (use-package evil-nerd-commenter
    :bind ("M-/" . evilnc-comment-or-uncomment-lines))
 
-(use-package treemacs-all-the-icons)
+;;; (use-package treemacs-all-the-icons)
 
 (use-package rainbow-delimiters
   :config
@@ -152,7 +152,6 @@
 ;;; ---------------------------------------------------------------------------
 
 (require 'package)  
-(require 'package)  
 (setq package-archives '(("melpa" . "https://melpa.org/packages/")
 			 ("org" . "https://orgmode.org/elpa/")
 			 ("elpa" . "https://elpa.gnu.org/packages/")))
@@ -161,6 +160,7 @@
 (unless package-archive-contents
   (package-refresh-contents))
 
+;;; ---------------------------------------------------------------------------
 ;;;
 ;;; The following packages aren't properly loaded with the 'require' or
 ;;; 'use-package' functions (for some reason) so we resort to 'package-install'
@@ -176,8 +176,8 @@
     ))
 
 (mapc #'(lambda (item)
-	  (unless (package-installed-p item)
-	    (package-install item)))
+          (unless (package-installed-p item)
+            (package-install item)))
       mrf/must-install-packages)
 
 ;;; ---------------------------------------------------------------------------
@@ -253,7 +253,7 @@
   :after lsp)
 
 (use-package lsp-ivy
-  :after lsp)
+  :after lsp ivy)
 
 ;; Make sure that we set the read buffer above the default 4k
 (setq read-process-output-max (* 1024 1024))
@@ -264,23 +264,36 @@
 (use-package eglot)
 
 ;;; ------------------------------------------------------------------------
-(use-package dap-mode
-  ;; Uncomment the config below if you want all UI panes to be hidden by default!
-  ;; :custom
-  ;; (lsp-enable-dap-auto-configure nil)
-  :config
-   (dap-ui-mode 1)
-   (require 'dap-python)
-  :commands dap-debug
-  :custom (dap-auto-configure-features '(sessions locals controls tooltip))
-  )
+  (use-package dap-mode
+    ;; Uncomment the config below if you want all UI panes to be hidden by default!
+    ;; :custom
+    ;; (lsp-enable-dap-auto-configure nil)
+    :config
+     (dap-ui-mode 1)
+     (require 'dap-python)
+;;     (require 'dap-node)
+    :commands dap-debug
+    :custom (dap-auto-configure-features '(sessions locals controls tooltip))
+    )
 
-(setq dap-python-debugger 'debugpy)
+  (setq dap-python-debugger 'debugpy)
+
+  (use-package dap-hydra
+     :hook (dap-stopped . (lambda (arg) (call-interactively #'dap-hydra))))
 
 ;;; ------------------------------------------------------------------------
 (use-package dap-python
+  :after (dap)
   :ensure nil
   :config
+  (dap-register-debug-template "Python :: Run file from project directory"
+                               (list :type "python"
+                                     :args ""
+                                     :cwd nil
+                                     :module nil
+                                     :program nil
+                                     :request "launch"))
+
   (dap-register-debug-template "Python :: Run file (buffer)"
                                (list :type "python"
                                      :args ""
@@ -289,14 +302,6 @@
                                      :program nil
                                      :request "launch"
                                      :name "Python :: Run file (buffer)"))
-
-  (dap-register-debug-template "Python :: Run file from project directory"
-                               (list :type "python"
-                                     :args ""
-                                     :cwd nil
-                                     :module nil
-                                     :program nil
-                                     :request "launch"))
 
   (dap-register-debug-template "Python :: Run pytest (buffer)"
                                (list :type "python"
@@ -357,11 +362,12 @@
 ;;; ---------------------------------------------------------------------------
 
 (use-package typescript-mode
+   :disabled  ;; Don't use this package .... yet
+   :after (dap-mode)
    :mode "\\.ts\\'"
    :hook (typescript-mode . lsp-deferred)
    :config
    (setq typescript-indent-level 2)
-   (require 'dap-node)
    (dap-node-setup))
 
 ;;; ---------------------------------------------------------------------------
@@ -407,16 +413,23 @@
 (message "    debnugpy")
 (message "    singleton-decorator") ;; Needed for several projects
 
+(defun mrf/load-python-file-hook ()
+   (message "Running python Hook")
+   (python-mode)
+   (dap-mode)
+   (display-fill-column-indicator-mode 1))
+
 (use-package python-mode
    :ensure nil
+   :after (lsp-mode dap-mode)
    :hook (python-mode . lsp-mode)
    :config
    (eglot-ensure)
    (dap-tooltip 1)
    (toolit-mode 1)
-   (dap-ui-controls-mode 1)
-   (highlight-indentation-current-column-mode))
+   (dap-ui-controls-mode 1))
 
+(add-to-list 'auto-mode-alist '("\\.py\\'" . mrf/load-python-file-hook))
 (use-package blacken) ;Format Python file upon save.
 
 ;;; ------------------------------------------------------------------------
@@ -440,28 +453,33 @@
  (add-hook 'python-mode-hook 'py-autopep8-mode))
 
 ;;; ---------------------------------------------------------------------------
-
-(general-def python-mode-map
-   "C-c a /" 'dap-step-in
-   "C-c . ." 'dap-next
-   "C-c . ," 'dap-step-out
-   "C-c . ?" 'dap-breakpoint-condition
-   "C-c . C-b" 'dap-ui-breakpoints
-   "C-c . C-b" 'dap-ui-breakpoints
-   "C-c . C-c" 'dap-ui-controls-mode
-   "C-c . C-e" 'dap-ui-expressions
-   "C-c . C-l" 'dap-ui-locals
-   "C-c . C-r" 'dap-ui-repl-mode
-   "C-c . b" 'dap-breakpoint-toggle
-   "C-c . c" 'dap-continue
-   "C-c . d"  'dap-debug
-   "C-c . i" 'dap-step-in
-   "C-c . n" 'dap-next
-   "C-c . o" 'dap-step-out
-   "C-c . r" 'dap-debug-restart
-   "C-c . t" 'dap-breakpoint-toggle
-   "C-c . x" 'dap-disconnect
-   "C-c }" 'indent-region)
+(if (package-installed-p 'dap-mode)
+  (general-def python-mode-map
+     "C-c . /"       'dap-step-in
+     "C-c . <right>" 'dap-step-in
+     "C-c . ,"       'dap-step-out
+     "C-c . <left>"    'dap-step-out
+     "C-c . ."       'dap-next
+     "C-c . <down>"  'dap-next
+     "C-c . ?" 'dap-breakpoint-condition
+     "C-c . C-b" 'dap-ui-breakpoints
+     "C-c . C-b" 'dap-ui-breakpoints
+     "C-c . C-c" 'dap-ui-controls-mode
+     "C-c . C-e" 'dap-ui-expressions
+     "C-c . C-l" 'dap-ui-locals
+     "C-c . C-r" 'dap-ui-repl-mode
+     "C-c . b" 'dap-breakpoint-toggle
+     "C-c . c" 'dap-continue
+     "C-c . d" 'dap-debug
+     "C-c . C-d" 'dap-debug-last
+     "C-c . i" 'dap-step-in
+     "C-c . n" 'dap-next
+     "C-c . o" 'dap-step-out
+     "C-c . r" 'dap-debug-restart
+     "C-c . t" 'dap-breakpoint-toggle
+     "C-c . x" 'dap-disconnect
+     "C-c . C-x" 'dap-delete-session
+     "C-c }" 'indent-region))
 
 ;;; =========================================================================
 (if (package-installed-p 'realgud)
@@ -508,8 +526,7 @@
 
 ;;; ------------------------------------------------------------------------
 (use-package pyvenv-auto
-   :ensure t
-   :init (message "Starting pyvenv-auto")
+   :config (message "Starting pyvenv-auto")
    :hook ((python-mode . pyvenv-auto-run)))
 
 ;;; ------------------------------------------------------------------------
@@ -529,9 +546,9 @@
 
 (use-package company-jedi
    :config
-   (defun my/python-mode-hook ()
+   (defun my/company-jedi-python-mode-hook ()
       (add-to-list 'company-backends 'company-jedi))
-   (add-hook 'python-mode-hook 'my/python-mode-hook))
+   (add-hook 'python-mode-hook 'my/company-jedi-python-mode-hook))
 
 (add-hook 'prog-mode-hook 'company-mode)
 
@@ -588,8 +605,8 @@
 
 ;;; ------------------------------------------------------------------------
 ;;; List of favorite themes. Uncomment the one that feels good for the day.
-(load-theme 'material t)
-;; (load-theme 'doom-palenight t)
+;; (load-theme 'material t)
+(load-theme 'doom-palenight t)
 ;; (load-theme 'doom-monokai-pro t)
 ;; (load-theme 'afternoon t)
 ;; (load-theme 'tomorrow-night-blue t)
@@ -812,26 +829,26 @@
       "M-o" 'ace-window))
 
 ;;; ------------------------------------------------------------------------
-
 (use-package all-the-icons
    :if (display-graphic-p))
 
 (use-package dashboard
+   :after (dired)
    :ensure t
    :preface
    (defun mrf/dashboard-banner ()
       (setq dashboard-footer-messages '("Greetings Program!"))
       (setq dashboard-banner-logo-title "Welcome to Emacs!")
       (setq dashboard-startup-banner "~/Pictures/Book-icon.png"))
+   :hook ((after-init     . dashboard-refresh-buffer)
+          (dashboard-mode . mrf/dashboard-banner))
    :custom
    (dashboard-items '((recents . 9)
-                        (bookmarks . 5)))
+                     (bookmarks . 5)))
    :config
    (dashboard-setup-startup-hook)
    (dashboard-open)
-   (setq dashboard-center-content t)
-   :hook ((after-init     . dashboard-refresh-buffer)
-            (dashboard-mode . mrf/dashboard-banner)))
+   (setq dashboard-center-content t))
 
 ;;; ------------------------------------------------------------------------
 
@@ -884,16 +901,6 @@
   ([remap describe-command] . helpful-command)
   ([remap describe-variable] . counsel-describe-variable)
   ([remap describe-key] . helpful-key))
-
-;;; ------------------------------------------------------------------------
-
-(use-package which-key
-  :defer 0
-  :diminish which-key-mode
-  :config
-  (which-key-mode)
-  (which-key-setup-side-window-right)
-  (setq which-key-idle-delay 0.2))
 
 ;;; ------------------------------------------------------------------------
 (use-package term
@@ -1022,39 +1029,44 @@
 ;; Line #'s appear everywhere
 ;; ... except for when in these modes
 (dolist (mode '(dashboard-mode-hook
-                eshell-mode-hook
-                org-mode-hook
-                shell-mode-hook
-                term-mode-hook
-                term-mode-hook
-                treemacs-mode-hook
-                vterm-mode-hook))
-  (add-hook mode (lambda () (display-line-numbers-mode 0))))
+                  eshell-mode-hook
+                  eww-mode-hook
+                  org-mode-hook
+                  shell-mode-hook
+                  term-mode-hook
+                  term-mode-hook
+                  treemacs-mode-hook
+                  vterm-mode-hook))
+   (add-hook mode (lambda () (display-line-numbers-mode 0))))
 
 
-;;; ===========================================================================
+  ;;; ===========================================================================
 (setq warning-suppress-types '((package reinitialization)
-                               (package-initialize)
-                               (package)
-                               (use-package)
-                               (python-mode)))
+                                 (package-initialize)
+                                 (package)
+                                 (use-package)
+                                 (python-mode)))
 
-;;; ===========================================================================
+  ;;; ===========================================================================
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
+ '(package-selected-packages
+     '(dap-hydra yasnippet-snippets which-key vterm visual-fill-column typescript-mode timu-macos-theme timu-caribbean-theme realgud rainbow-delimiters pyvenv-auto python-mode py-autopep8 org-bullets neotree material-theme lsp-ui lsp-ivy ivy-yasnippet ivy-rich ivy-prescient immaterial-theme helpful general forge flycheck exotica-theme evil-nerd-commenter eterm-256color eshell-git-prompt elpy eglot doom-themes doom-modeline dired-single dired-open dired-hide-dotfiles dashboard dap-mode counsel-projectile company-jedi company-box color-theme-sanityinc-tomorrow blacken bind-key better-defaults auto-package-update auto-complete all-the-icons-dired))
  '(warning-suppress-log-types
      '(((package reinitialization))
-         (use-package)
-         (python-mode)
-         (package-initialize))))
+	 (use-package)
+	 (python-mode)
+	 (package-initialize))))
 
-;;; init.el ends here.
+  ;;; init.el ends here.
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  )
+
+;;  (dashboard-open)
