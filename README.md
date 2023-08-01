@@ -12,6 +12,8 @@ Note: I've had cases where saving the Org file doesn't re-generate the `init.el`
 
 My latest Emacs Configuration based upon an ORG mode file. I give credit to [System Crafters](https://systemcrafters.net) for showing me the way of using Org mode to manage the Emacs configuration.
 
+There are some specific packages in the `site-lisp` that are either not in MELPA or couldn't be found with the correct verion needed. Also, the `use-package` package is there because it's needed on early startup. With the advent of Emacs 29, `use-package` is now part of Emacs so will eventually be removed from here.
+
 This emacs configuration consists of a standard .org file that, when saved, will automatically create the init.el script.
 I hope that at least one person finds this helpful!
 
