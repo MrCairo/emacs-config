@@ -1119,6 +1119,33 @@ This snippet adds a hook to =org-mode= buffers so that =mrf/org-babel-tangle-con
 
 #+end_src
 
+** Org-mode Roam
+#+begin_src emacs-lisp
+
+  ;;; ---------------------------------------------------------------------------
+  
+  (use-package org-roam
+    :ensure t
+    :init
+    (setq org-roam-v2-ack t)
+    :custom
+    (org-roam-directory (concat mrf/docs-dir "/RoamNotes"))
+    (org-roam-completion-everywhere t)
+    (org-roam-capture-templates
+     '(("d" "default" plain
+        "%?"
+        :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n")
+        :unnarrowed t)))
+    :bind (("C-c n l" . org-roam-buffer-toggle)
+           ("C-c n f" . org-roam-node-find)
+           ("C-c n i" . org-roam-node-insert)
+           :map org-mode-map
+           ("C-M-i" . completion-at-point))
+    :config
+    (org-roam-setup))
+
+#+end_src
+
 ** Auto-tangle Configuration Files
 
 This snippet adds a hook to =org-mode= buffers so that =efs/org-babel-tangle-config= gets executed each time such a buffer gets saved.  This function checks to see if the file being saved is the Emacs.org file you're looking at right now, and if so, automatically exports the configuration here to the associated output files.
