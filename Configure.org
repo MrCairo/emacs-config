@@ -3,44 +3,43 @@
 #+date: 2023-07-30
 #+PROPERTY: header-args:emacs-lisp :tangle ./init.el :mkdirp yes
 
-
 * Welcome!
 
 This ORG file will configure the *init.el* file based upon all of the *emacs-lisp* source blocks. The emacs-lisp source blocks are defined in an organized order. While these blocks cn generally be moved around, there are some order dependencies. So it's generally best that this order be preserved to prevent any runtime issues. This =org= file is largely taken from the System Crafter's sessions on configuring Emacs.
 
+*NOTE:* Most of the code below has been taken from the [[https://systemcrafters.net][System Crafters]] site run by David Wilson. Please visit that site for lots of great stuff!
 
-* Emacs Version Check
-While most systems use a more modern version of Emacs, a check is made here so that only viable versions will continue.
+
+* Early Setup
+
+** Startup Performance
 
 #+begin_src emacs-lisp
-  ;;; -*- lexical-binding: t -*-
-  ;;; ---------------------------------------------------------------------------
-  ;;;
-  ;;; NOTE: init.el is now generated from Configure.org.  Please edit that file
-  ;;;       in Emacs and init.el will be generated automatically!
-  ;;;
-  (message "Checking for supported Emacs version(s)...")
 
-  (let ((minver "26.1"))
-     (when (version< emacs-version minver)
-        (error "Your Emacs is too old -- this config requires v%s or higher" minver)))
-  (when (version< emacs-version "27.1")
-     (message "Your Emacs is old, and some functionality in this config will be disabled. Please upgrade if possible."))
+  ;;; =================================================================
+  ;;; The default is 800 kilobytes.  Measured in bytes.
+  (setq gc-cons-threshold (* 128 1024 1024))
 
-  (message "Version check complete.")
+  (defun mrf/display-startup-time ()
+     "Calculate and display startup time."
+    (message "Emacs loaded in %s with %d garbage collections."
+             (format "%.2f seconds"
+                     (float-time
+                      (time-subtract after-init-time before-init-time)))
+             gcs-done))
+  (add-hook 'emacs-startup-hook #'mrf/display-startup-time)
 
 
 #+end_src
 
 
-* Early Setup
 ** Setup =load-path=
 
 In the early phase of the startup, we include the =lisp= and =site-packages= directories. *Note* that the =use-package= package must be  included in the =site-packages= directory since we need it upon startup.
 
 #+begin_src emacs-lisp
 
-  ;;; ---------------------------------------------------------------------------
+  ;;; -----------------------------------------------------------------
   ;;; Add site-lisp as well as all package directories in site-lisp to the
   ;;; load-path variable.
   (defun mrf/integrate-local-site-lisp ()
@@ -66,7 +65,7 @@ By default, the =user-emacs-directory= points to the .emacs.d* directory from wh
 
 #+begin_src emacs-lisp
 
-  ;;; ---------------------------------------------------------------------------
+  ;;; -----------------------------------------------------------------
   (defvar emacs-config-directory user-emacs-directory)
 
   ;;; You'll need to override these from my values. Note that these directories
@@ -89,7 +88,7 @@ It's nice to know that Emacs is somewhat working. To help this along, we set the
 
 #+begin_src emacs-lisp
 
-  ;;; ---------------------------------------------------------------------------
+  ;;; -----------------------------------------------------------------
   ;; You will most likely need to adjust this font size for your system!
   (defvar mrf/default-font-size 175)
   (defvar mrf/default-variable-font-size 175)
@@ -110,39 +109,78 @@ It's nice to know that Emacs is somewhat working. To help this along, we set the
      (add-to-list 'default-frame-alist '(height . 60))
      (add-to-list 'default-frame-alist '(width . 140)))
 
+
+  (defun mrf/update-face-attribute ()
+       ;; ====================================
+     ;; Set the font faces
+     ;; ====================================  
+     (set-face-attribute 'default nil
+        :font "Menlo"
+        :height mrf/default-font-size)
+
+     ;; Set the fixed pitch face
+     (set-face-attribute 'fixed-pitch nil
+        :font "Menlo"
+        :height mrf/default-font-size)
+
+     ;; Set the variable pitch face
+     (set-face-attribute 'variable-pitch nil
+        :font "SF Pro"
+        :height mrf/default-variable-font-size
+        :weight 'regular))
+
   (mrf/set-frame-alpha-maximized)
+  (mrf/update-face-attribute)
   ;; (mrf/custom-set-frame-size)
-
-  ;; ====================================
-  ;; Set the font faces
-  ;; ====================================  
-  (set-face-attribute 'default nil
-     :font "Menlo"
-     :height mrf/default-font-size)
-     ;; :weight 'regular)
-
-  ;; Set the fixed pitch face
-  (set-face-attribute 'fixed-pitch nil
-     :font "Menlo"
-     :height mrf/default-font-size)
-     ;; :weight 'book)
-
-  ;; Set the variable pitch face
-  (set-face-attribute 'variable-pitch nil
-     :font "SF Pro"
-     :height mrf/default-variable-font-size
-     :weight 'regular)
 
 #+end_src
 
-#+RESULTS:
+** Color Theming
+
+#+begin_src emacs-lisp
+
+     ;;; ------------------------------------------------------------------------
+
+   (add-to-list 'custom-theme-load-path (concat mrf/docs-dir "/Additional-Themes"))
+
+   (defvar mrf/list-theme-packages
+        '(
+            color-theme-sanityinc-tomorrow
+            doom-themes
+            exotica-theme
+            immaterial-theme
+            material-theme
+            timu-caribbean-theme
+            timu-macos-theme
+         ))
+
+   (mapc #'(lambda (theme)
+             (unless (package-installed-p theme)
+               (package-install theme)))
+         mrf/list-theme-packages)
+
+  ;;
+  ;;; --- ---------------------------------------------------------------------
+     ;;; List of favorite themes. Uncomment the one that feels good for the day.
+     ;; (load-theme 'material t)
+     ;; (load-theme 'doom-palenight t)
+     ;; (load-theme 'doom-monokai-pro t)
+     ;; (load-theme 'afternoon t)
+     ;; (load-theme 'tomorrow-night-blue t)
+     ;; (load-theme 'tomorrow-night-bright t)
+     ;; (load-theme 'borland-blue t)
+     ;; (load-theme 'deeper-blue t)
+     (load-theme 'modus-vivendi-deuteranopia t)
+
+#+end_src
+
 
 
 * Common Settings
 The following values are things that are just general quality-of-life settings.
 
 #+begin_src emacs-lisp
-  ;;; ---------------------------------------------------------------------------
+  ;;; -----------------------------------------------------------------
 
   (require 'paren)
   (show-paren-mode 1)
@@ -191,51 +229,29 @@ The following values are things that are just general quality-of-life settings.
 #+end_src
 
 
-
-* Startup Performance
-
-#+begin_src emacs-lisp
-
-  ;;; ===========================================================================
-  ;; The default is 800 kilobytes.  Measured in bytes.
-  (setq gc-cons-threshold (* 128 1024 1024))
-
-  (defun mrf/display-startup-time ()
-     "Calculate and display startup time."
-    (message "Emacs loaded in %s with %d garbage collections."
-             (format "%.2f seconds"
-                     (float-time
-                      (time-subtract after-init-time before-init-time)))
-             gcs-done))
-  (add-hook 'emacs-startup-hook #'mrf/display-startup-time)
-
-
-#+end_src
-
-
 * Package System Setup
 
 Emacs has a built in package manager but it doesn't make it easy to automatically install packages on a new system the first time you pull down your configuration.  [[https://github.com/jwiegley/use-package][use-package]] is a really helpful package used in this configuration to make it a lot easier to automate the installation and configuration of everything else we use.
 
 #+begin_src emacs-lisp
 
-  ;;; ---------------------------------------------------------------------------
+  ;;; -----------------------------------------------------------------
 
   (require 'package)  
   (setq package-archives '(("melpa" . "https://melpa.org/packages/")
-			   ("org" . "https://orgmode.org/elpa/")
-			   ("elpa" . "https://elpa.gnu.org/packages/")))
+                             ("org" . "https://orgmode.org/elpa/")
+                             ("elpa" . "https://elpa.gnu.org/packages/")))
 
   (package-initialize)
   (unless package-archive-contents
-    (package-refresh-contents))
+     (package-refresh-contents))
 
 #+end_src
 
-*** Must Install Packages
+** Must Install Packages
 #+begin_src emacs-lisp
 
-  ;;; ---------------------------------------------------------------------------
+  ;;; -----------------------------------------------------------------
   ;;;
   ;;; The following packages aren't properly loaded with the 'require' or
   ;;; 'use-package' functions (for some reason) so we resort to 'package-install'
@@ -243,10 +259,8 @@ Emacs has a built in package manager but it doesn't make it easy to automaticall
   ;;
   (defvar mrf/must-install-packages
      '(
-         general
          cl-lib
          auto-complete
-         better-defaults
          bind-key
       ))
 
@@ -266,7 +280,7 @@ You can also use =M-x auto-package-update-now= to update right now!
 
 #+begin_src emacs-lisp
 
-  ;;; ---------------------------------------------------------------------------
+  ;;; -----------------------------------------------------------------
 
   (use-package auto-package-update
     :custom
@@ -310,7 +324,6 @@ These are useful snippets of code that are commonly used in various languages. Y
 
 
 * Which Key
-
 [[https://github.com/justbur/emacs-which-key][which-key]] is a useful UI panel that appears when you start pressing any key binding in Emacs to offer you all possible completions for the prefix.  For example, if you press =C-c= (hold control and press the letter =c=), a panel will appear at the bottom of the frame displaying all of the bindings under that prefix and which command they run.  This is very useful for learning the possible key bindings in the mode of your current buffer.
 
 #+begin_src emacs-lisp
@@ -347,19 +360,24 @@ These are useful snippets of code that are commonly used in various languages. Y
     (lsp-enable-which-key-integration t))
 
   (use-package lsp-ui
-    :config (setq lsp-ui-sideline-show-hover t
+    :config (setq lsp-ui-sideline-enable t
+                  lsp-ui-sideline-show-hover t
                   lsp-ui-sideline-delay 0.5
-                  lsp-ui-doc-delay 5
                   lsp-ui-sideline-ignore-duplicates t
-                  lsp-ui-doc-position 'bottom
+                  lsp-ui-doc-delay 3
+                  lsp-ui-doc-position 'top
                   lsp-ui-doc-alignment 'frame
                   lsp-ui-doc-header nil
+                  lsp-ui-doc-show-with-cursor t
                   lsp-ui-doc-include-signature t
                   lsp-ui-doc-use-childframe t)
     :commands lsp-ui-mode
     :custom
     (lsp-ui-doc-position 'bottom)
     :hook (lsp-mode . lsp-ui-mode))
+
+  (general-def lsp-ui-mode-map
+     "C-c l d" 'lsp-ui-doc-focus-frame)
 
   (use-package lsp-treemacs
     :after lsp)
@@ -391,24 +409,24 @@ Provides a common protocol for debugging different systems. This is configured f
 
 #+begin_src emacs-lisp 
 
-    ;;; ------------------------------------------------------------------------
-    (use-package dap-mode
-      ;; Uncomment the config below if you want all UI panes to be hidden by default!
-      ;; :custom
-      ;; (lsp-enable-dap-auto-configure nil)
-      :config
-       (dap-ui-mode 1)
-       (require 'dap-python)
-  ;;     (require 'dap-node)
-      :commands dap-debug
-      :custom (dap-auto-configure-features '(sessions locals controls tooltip))
-      )
+      ;;; ------------------------------------------------------------------------
+      (use-package dap-mode
+        ;; Uncomment the config below if you want all UI panes to be hidden by default!
+        ;; :custom
+        ;; (lsp-enable-dap-auto-configure nil)
+        :config
+         (dap-ui-mode 1)
+         (setq lsp-enable-dap-auto-configure nil)
+        :commands
+         dap-debug
+        :custom
+         (dap-auto-configure-features '(sessions locals controls tooltip)))
 
-    (setq dap-python-debugger 'debugpy)
+      (setq dap-python-debugger 'debugpy)
 
-    (use-package dap-hydra
-       :hook (dap-stopped . (lambda (arg) (call-interactively #'dap-hydra))))
-  
+      ;; (use-package dap-hydra
+      ;;    :hook (dap-stopped . (lambda (arg) (call-interactively #'dap-hydra))))
+
 #+end_src
 
 
@@ -418,8 +436,8 @@ Provides a common protocol for debugging different systems. This is configured f
 
   ;;; ------------------------------------------------------------------------
   (use-package dap-python
-    :after (dap)
-    :ensure nil
+    :after (dap-mode)
+    :ensure t
     :config
     (dap-register-debug-template "Python :: Run file from project directory"
                                  (list :type "python"
@@ -446,6 +464,24 @@ Provides a common protocol for debugging different systems. This is configured f
                                        :module "pytest"
                                        :request "launch"
                                        :name "Python :: Run pytest (buffer)")))
+
+#+end_src
+
+
+** DAP Template for NodeJS
+#+begin_src emacs-lisp :tangle no
+
+  (use-package dap-node
+     :after (dap-mode)
+     :config
+     (dap-register-debug-template
+        "Launch index.ts"
+        (list :type "node"
+           :request "launch"
+           :program "${workspaceFolder}/index.ts"
+           :dap-compilation "npx tsc index.ts --outdir dist --sourceMap true"
+           :outFiles (list "${workspaceFolder}/dist/**/*.js")
+           :name "Launch index.ts")))
 
 #+end_src
 
@@ -513,9 +549,9 @@ Ivy is an excellent completion framework for Emacs.  It provides a minimal yet p
 ** Typescript
 This is a basic configuration for the TypeScript language so that =.ts= files activate =typescript-mode= when opened.  We're also adding a hook to =typescript-mode-hook= to call =lsp-deferred= so that we activate =lsp-mode= to get LSP features every time we edit TypeScript code.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 
-  ;;; ---------------------------------------------------------------------------
+  ;;; -----------------------------------------------------------------
 
   (use-package typescript-mode
      :disabled  ;; Don't use this package .... yet
@@ -526,6 +562,22 @@ This is a basic configuration for the TypeScript language so that =.ts= files ac
      (setq typescript-indent-level 2)
      (dap-node-setup))
 
+#+end_src
+
+
+** NodeJS
+#+begin_src emacs-lisp
+
+  (use-package tree-sitter-langs)
+  (use-package tree-sitter
+     :after (lsp-mode)
+     :config
+     ;; Activate tree-sitter globally (minor mode registered on every buffer)
+     (global-tree-sitter-mode)
+     :hook
+     (tree-sitter-after-on . tree-sitter-hl-mode)
+     (typescript-mode . lsp-deferred)
+     (javascript-mode . lsp-deferred))
 
 #+end_src
 
@@ -533,7 +585,7 @@ This is a basic configuration for the TypeScript language so that =.ts= files ac
 ** C/C++
 #+begin_src emacs-lisp 
 
-  ;;; ---------------------------------------------------------------------------
+  ;;; -----------------------------------------------------------------
 
   (defun code-compile ()
   "Look for a Makefile and compiles the code with gcc/cpp."
@@ -558,7 +610,7 @@ This is more support for a language rather than a langage itself
 
 #+begin_src emacs-lisp
 
-  ;;; ---------------------------------------------------------------------------
+  ;;; -----------------------------------------------------------------
 
   (use-package flycheck
     :ensure t
@@ -595,14 +647,15 @@ This is more support for a language rather than a langage itself
      (message "Running python Hook")
      (python-mode)
      (dap-mode)
-     (display-fill-column-indicator-mode 1))
+     (display-fill-column-indicator-mode -1)
+     (highlight-indentation-mode -1))
 
   (use-package python-mode
      :ensure nil
      :after (lsp-mode dap-mode)
      :hook (python-mode . lsp-mode)
      :config
-     (eglot-ensure)
+     ;; (eglot-ensure)
      (dap-tooltip 1)
      (toolit-mode 1)
      (dap-ui-controls-mode 1))
@@ -628,9 +681,9 @@ Elpy is an Emacs package to bring powerful Python editing to Emacs.  It combines
    (highlight-indentation-mode 0))
 
   ;; Enable Flycheck
-  (when (require 'flycheck nil t)
-     (setq elpy-modules (delq 'elpy-module-flymake elpy-modules))
-     (add-hook 'elpy-mode-hook 'flycheck-mode))
+ (when (require 'flycheck nil t)
+    (setq elpy-modules (delq 'elpy-module-flymake elpy-modules))
+    (add-hook 'elpy-mode-hook 'flycheck-mode))
 
 #+end_src
 
@@ -641,7 +694,8 @@ For now, we disable it since this script is using =Elpy= and =DAP=. We include t
 #+begin_src emacs-lisp 
 
   (use-package realgud
-   :ensure t) ;; Keep this around but right now we use DAP
+     :disabled
+     :ensure t) ;; Keep this around but right now we use DAP
 
 #+end_src
 
@@ -660,7 +714,7 @@ autopep8 automatically formats Python code to conform to the `PEP 8` style guide
 *** Python Keybinding
 #+begin_src emacs-lisp
 
-  ;;; ---------------------------------------------------------------------------
+  ;;; -----------------------------------------------------------------
   (if (package-installed-p 'dap-mode)
     (general-def python-mode-map
        "C-c . /"       'dap-step-in
@@ -835,48 +889,13 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
 #+end_src
 
 
-* Color Theming
-#+begin_src emacs-lisp
-
-  ;;; ------------------------------------------------------------------------
-
-  (add-to-list 'custom-theme-load-path (concat mrf/docs-dir "/Additional-Themes"))
-
-  (defvar mrf/list-theme-packages
-     '(
-         color-theme-sanityinc-tomorrow
-         doom-themes
-         exotica-theme
-         immaterial-theme
-         material-theme
-         timu-caribbean-theme
-         timu-macos-theme
-      ))
-
-  (mapc #'(lambda (theme)
-            (unless (package-installed-p theme)
-              (package-install theme)))
-        mrf/list-theme-packages)
-
-  ;;; ------------------------------------------------------------------------
-  ;;; List of favorite themes. Uncomment the one that feels good for the day.
-  ;; (load-theme 'material t)
-  (load-theme 'doom-palenight t)
-  ;; (load-theme 'doom-monokai-pro t)
-  ;; (load-theme 'afternoon t)
-  ;; (load-theme 'tomorrow-night-blue t)
-  ;; (load-theme 'tomorrow-night-bright t)
-  ;; (load-theme 'borland-blue t)
-  ;; (load-theme 'deeper-blue t)
-
-#+end_src
-
-
 * Org Mode
 
 Org Mode is one of the hallmark features of Emacs.  It is a rich document editor, project planner, task and time tracker, blogging engine, and literate coding utility all wrapped up in one package [[https://orgmode.org/][Orgmode]].
 
 The =mrf/org-font-setup= function configures various text faces to tweak the sizes of headings and use variable width fonts in most cases so that it looks more like we're editing a document in =org-mode=.  We switch back to fixed width (monospace) fonts for code blocks and tables so that they display correctly.
+
+*NOTE:* Most of the code below has been taken from the [[https://systemcrafters.net][System Crafters]] site run by David Wilson. Please visit that site for lots of great stuff!
 
 ** Font setup
 #+begin_src emacs-lisp
@@ -922,7 +941,7 @@ This section contains the basic configuration for =org-mode= plus the configurat
 
 #+begin_src emacs-lisp
 
-  ;;; ---------------------------------------------------------------------------
+  ;;; -----------------------------------------------------------------
 
   (defun mrf/org-mode-setup ()
     (org-indent-mode)
@@ -1055,7 +1074,7 @@ This section contains the basic configuration for =org-mode= plus the configurat
 
 #+begin_src emacs-lisp
 
-  ;;; ---------------------------------------------------------------------------
+  ;;; -----------------------------------------------------------------
 
   (use-package org-bullets
     :hook (org-mode . org-bullets-mode)
@@ -1070,7 +1089,7 @@ We use [[https://github.com/joostkremers/visual-fill-column][visual-fill-column]
 
 #+begin_src emacs-lisp
 
-  ;;; ---------------------------------------------------------------------------
+  ;;; -----------------------------------------------------------------
 
   (defun mrf/org-mode-visual-fill ()
     (setq visual-fill-column-width 100
@@ -1088,7 +1107,7 @@ To execute or export code in =org-mode= code blocks, you'll need to set up =org-
 
 #+begin_src emacs-lisp
 
-  ;;; ---------------------------------------------------------------------------
+  ;;; -----------------------------------------------------------------
 
   (with-eval-after-load 'org
     (org-babel-do-load-languages
@@ -1107,7 +1126,7 @@ This snippet adds a hook to =org-mode= buffers so that =mrf/org-babel-tangle-con
 
 #+begin_src emacs-lisp
 
-  ;;; ---------------------------------------------------------------------------
+  ;;; -----------------------------------------------------------------
 
   (with-eval-after-load 'org
     ;; This is needed as of Org 9.2
@@ -1120,30 +1139,187 @@ This snippet adds a hook to =org-mode= buffers so that =mrf/org-babel-tangle-con
 #+end_src
 
 ** Org-mode Roam
+Org Mode is known to be a great tool not just for writing and personal notes but also TODO lists, project planning, time tracking, and more. Once you start to become really invested in Org Mode you’ll eventually have to come up with a system for managing your Org files so that it’s easy to store and find the information you need.
+
+Org Roam is an extension to Org Mode which solves a couple of the biggest problems that I’ve personally had when using Org for personal notes:
+
+- How many Org files do I need?
+- How do I decide where to put things in my Org files?
+  
+Org Roam solves these problems by making it easy to create topic-focused Org Files and link them together so that you can treat the information as nodes in a network rather than as hierarchical documents. You can think of it like a personal wiki!
+
 #+begin_src emacs-lisp
 
-  ;;; ---------------------------------------------------------------------------
-  
+  ;;; ----------------------------------------------------------------
   (use-package org-roam
     :ensure t
+    :demand t  ;; Ensure org-roam is loaded by default
     :init
     (setq org-roam-v2-ack t)
     :custom
     (org-roam-directory (concat mrf/docs-dir "/RoamNotes"))
     (org-roam-completion-everywhere t)
-    (org-roam-capture-templates
-     '(("d" "default" plain
-        "%?"
-        :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n")
-        :unnarrowed t)))
     :bind (("C-c n l" . org-roam-buffer-toggle)
            ("C-c n f" . org-roam-node-find)
            ("C-c n i" . org-roam-node-insert)
+           ("C-c n I" . org-roam-node-insert-immediate)
+           ("C-c n p" . my/org-roam-find-project)
+           ("C-c n t" . my/org-roam-capture-task)
+           ("C-c n b" . my/org-roam-capture-inbox)
            :map org-mode-map
-           ("C-M-i" . completion-at-point))
+           ("C-M-i" . completion-at-point)
+           :map org-roam-dailies-map
+           ("Y" . org-roam-dailies-capture-yesterday)
+           ("T" . org-roam-dailies-capture-tomorrow))
+    :bind-keymap
+    ("C-c n d" . org-roam-dailies-map)
     :config
-    (org-roam-setup))
+    (require 'org-roam-dailies) ;; Ensure the keymap is available
+    (org-roam-db-autosync-mode))
 
+  (defun org-roam-node-insert-immediate (arg &rest args)
+     (interactive "P")
+     (let ((args (push arg args))
+             (org-roam-capture-templates
+                (list (append (car org-roam-capture-templates)
+                         '(:immediate-finish t)))))
+      (apply #'org-roam-node-insert args)))
+
+  #+end_src
+
+*** Org Agenda from Roam Notes
+One of the most useful features of Org Mode is the agenda view. You can actually use your Org Roam notes as the source for this view!
+
+Typically you won’t want to pull in all of your Org Roam notes, so we’ll only use the notes with a specific tag like Project.
+
+Here is a snippet that will find all the notes with a specific tag and then set your org-agenda-list with the corresponding note files.
+
+#+begin_src emacs-lisp :tangle yes
+
+  ;; The buffer you put this code in must have lexical-binding set to t!
+  ;; See the final configuration at the end for more details.
+
+  (defun my/org-roam-filter-by-tag (tag-name)
+    (lambda (node)
+      (member tag-name (org-roam-node-tags node))))
+
+  (defun my/org-roam-list-notes-by-tag (tag-name)
+    (mapcar #'org-roam-node-file
+            (seq-filter
+             (my/org-roam-filter-by-tag tag-name)
+             (org-roam-node-list))))
+
+  (defun my/org-roam-refresh-agenda-list ()
+    (interactive)
+    (setq org-agenda-files (my/org-roam-list-notes-by-tag "Project")))
+
+  ;; Build the agenda list the first time for the session
+  (my/org-roam-refresh-agenda-list)
+  
+#+end_src
+  
+*** Selecting from a list of notes
+The org-roam-node-find function gives us the ability to filter the list of notes that get displayed for selection.
+
+We can define our own function that shows a selection list for notes that have a specific tag like Project which we talked about before. This can be useful to set up a keybinding to quickly select from a specific set of notes!
+
+One added benefit is that we can override the set of capture templates that get used when a new note gets created.
+
+This means that we can automatically create a new note with our project capture template if the note doesn’t already exist!
+
+#+begin_src emacs-lisp
+  
+  (defun my/org-roam-project-finalize-hook ()
+     "Adds the captured project file to `org-agenda-files' if the
+  capture was not aborted."
+     ;; Remove the hook since it was added temporarily
+     (remove-hook 'org-capture-after-finalize-hook #'my/org-roam-project-finalize-hook)
+
+     ;; Add project file to the agenda list if the capture was confirmed
+     (unless org-note-abort
+      (with-current-buffer (org-capture-get :buffer)
+        (add-to-list 'org-agenda-files (buffer-file-name)))))
+
+  (defun my/org-roam-find-project ()
+     (interactive)
+    ;; Add the project file to the agenda after capture is finished
+     (add-hook 'org-capture-after-finalize-hook #'my/org-roam-project-finalize-hook)
+
+    ;; Select a project file to open, creating it if necessary
+     (org-roam-node-find
+        nil
+        nil
+        (my/org-roam-filter-by-tag "Project")
+        :templates
+        '(("p" "project" plain "* Goals\n\n%?\n\n* Tasks\n\n** TODO Add initial tasks\n\n* Dates\n\n"
+             :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n#+category: ${title}\n#+filetags: Project")
+             :unnarrowed t))))
+
+  (global-set-key (kbd "C-c n p") #'my/org-roam-find-project)
+
+#+end_src
+
+*** Keep and inbox of notes and tasks
+If you want to quickly capture new notes and tasks with a single keybinding into a place that you can review later, we can use org-roam-capture- to capture to a single-specific file like Inbox.org!
+
+Even though this file won’t have the timestamped filename, it will still be treated as a node in your Org Roam notes.
+#+begin_src emacs-lisp
+  
+  (defun my/org-roam-capture-inbox ()
+     (interactive)
+     (org-roam-capture- :node (org-roam-node-create)
+        :templates '(("i" "inbox" plain "* %?"
+                        :if-new (file+head "Inbox.org" "#+title: Inbox\n")))))
+
+#+end_src
+
+*** Capture a task
+If you’ve set up project note files like we mentioned earlier, you can set up a capture template that allows you to quickly capture tasks for any project.
+
+Much like the example before, we can either select a project that exists or automatically create a project note when it doesn’t exist yet.
+
+#+begin_src emacs-lisp
+  (defun my/org-roam-capture-task ()
+    (interactive)
+    ;; Add the project file to the agenda after capture is finished
+    (add-hook 'org-capture-after-finalize-hook #'my/org-roam-project-finalize-hook)
+
+    ;; Capture the new task, creating the project file if necessary
+     (org-roam-capture- :node (org-roam-node-read nil
+                              (my/org-roam-filter-by-tag "Project"))
+        :templates '(("p" "project" plain "** TODO %?"
+                        :if-new
+                        (file+head+olp "%<%Y%m%d%H%M%S>-${slug}.org"
+                           "#+title: ${title}\n#+category: ${title}\n#+filetags: Project"
+                           ("Tasks"))))))
+#+end_src
+
+*** Todo
+The following snippet sets up a hook for all Org task state changes and then copies the completed (DONE) entry to today’s note file
+
+#+begin_src emacs-lisp
+  (defun my/org-roam-copy-todo-to-today ()
+     (interactive)
+     (let ((org-refile-keep t) ;; Set this to nil to delete the original!
+             (org-roam-dailies-capture-templates
+                '(("t" "tasks" entry "%?"
+                     :if-new (file+head+olp "%<%Y-%m-%d>.org" "#+title: %<%Y-%m-%d>\n" ("Tasks")))))
+             (org-after-refile-insert-hook #'save-buffer)
+             today-file pos)
+        (save-window-excursion
+           (org-roam-dailies--capture (current-time) t)
+           (setq today-file (buffer-file-name))
+           (setq pos (point)))
+
+        ;; Only refile if the target file is different than the current file
+        (unless (equal (file-truename today-file)
+                   (file-truename (buffer-file-name)))
+           (org-refile nil nil (list "Tasks" today-file nil pos)))))
+
+  (add-to-list 'org-after-todo-state-change-hook
+     (lambda ()
+        (when (equal org-state "DONE")
+           (my/org-roam-copy-todo-to-today))))
 #+end_src
 
 ** Auto-tangle Configuration Files
@@ -1187,6 +1363,7 @@ The following packages are some additional quality of life features.
   
 #+end_src
 
+
 ** Dashboard
 
 Dashboard is an extensible Emacs startup screen showing you what’s most important.
@@ -1197,6 +1374,14 @@ Dashboard is an extensible Emacs startup screen showing you what’s most import
   (use-package all-the-icons
      :if (display-graphic-p))
 
+  ;; Value of dashb oard-startup-banner can be
+  ;; - nil to display no banner
+  ;; - 'official which displays the official emacs logo
+  ;; - 'logo which displays an alternative emacs logo
+  ;; - 1, 2 or 3 which displays one of the text banners
+  ;; - "path/to/your/image.gif", "path/to/your/image.png" or "path/to/your/text.txt"
+  ;;   which displays whatever gif/image/text you would prefer
+  ;; - a cons of '("path/to/your/image.png" . "path/to/your/text.txt")
   (use-package dashboard
      :after (dired)
      :ensure t
@@ -1204,16 +1389,18 @@ Dashboard is an extensible Emacs startup screen showing you what’s most import
      (defun mrf/dashboard-banner ()
         (setq dashboard-footer-messages '("Greetings Program!"))
         (setq dashboard-banner-logo-title "Welcome to Emacs!")
-        (setq dashboard-startup-banner "~/Pictures/Book-icon.png"))
+        (setq dashboard-startup-banner 'logo))
      :hook ((after-init     . dashboard-refresh-buffer)
             (dashboard-mode . mrf/dashboard-banner))
      :custom
-     (dashboard-items '((recents . 9)
-                       (bookmarks . 5)))
+     (dashboard-items '((recents . 8)
+                          (bookmarks . 5)
+                          (projects . 5)))
      :config
      (dashboard-setup-startup-hook)
      (dashboard-open)
-     (setq dashboard-center-content t))
+     (setq dashboard-center-content t)
+     (global-set-key (kbd "C-c d") 'dashboard-open))
 
 #+end_src
 
@@ -1361,6 +1548,7 @@ Make sure that you have the [[https://github.com/akermu/emacs-libvterm/#requirem
 - =M-p= / =M-n= - go back and forward in the input history
 - =C-c C-u= - delete the current input string backwards up to the cursor
 - =counsel-shell-history= - A searchable history of commands typed into the shell
+
 
 ** Eshell
 
@@ -1593,6 +1781,9 @@ Dired, by default, opens up multiple windows - one for each directory. It would 
 
 Some final configuratiion to be done at the end of this configuration.
 
+** Ignore Line Number Mode
+The following is a list of major mode-hooks variables that are set so that they don't follow the normal global line number mode. If there is any mode that doesn't appear here, more than likely it will have line numbers added. Just add the hook name here to make it so that major mode not have line numbers. This doesn't effect minor modes.
+
 #+begin_src emacs-lisp
 
   ;;; ------------------------------------------------------------------------
@@ -1618,27 +1809,61 @@ Some final configuratiion to be done at the end of this configuration.
                                    (use-package)
                                    (python-mode)))
 
-    ;;; ===========================================================================
-  (custom-set-variables
-     ;; custom-set-variables was added by Custom.
-     ;; If you edit it by hand, you could mess it up, so be careful.
-     ;; Your init file should contain only one such instance.
-     ;; If there is more than one, they won't work right.
-     '(warning-suppress-log-types
-         '(((package reinitialization))
-             (use-package)
-             (python-mode)
-             (package-initialize))))
 
-    ;;; init.el ends here.
-  (custom-set-faces
-     ;; custom-set-faces was added by Custom.
-     ;; If you edit it by hand, you could mess it up, so be careful.
-     ;; Your init file should contain only one such instance.
-     ;; If there is more than one, they won't work right.
+  #+end_src
+
+** Helper to up the font size for a higher-res monitor.
+This little function toggles between a larger font size and the default font size.
+
+#+begin_src emacs-lisp
+
+  (defvar mrf/use-large-font-size t)
+
+  (defun mrf/toggle-font-size ()
+     (if (equal mrf/use-large-font-size t)
+        (progn
+           (setq mrf/use-large-font-size nil)
+           (setq mrf/default-font-size 200)
+           (setq mrf/default-variable-font-size 200)
+           (mrf/update-face-attribute))
+        (progn
+           (setq mrf/use-large-font-size t)
+           (setq mrf/default-font-size 175)
+           (setq mrf/default-variable-font-size 175)
+           (mrf/update-face-attribute))
+        )
      )
 
-  ;;  (dashboard-open)
+  (general-define-key
+     "C-c x" '(lambda () (interactive) (mrf/toggle-font-size)))
+
+#+end_src
+
+** Supress some startup warnings
+
+  #+begin_src emacs-lisp
+
+      ;;; ===========================================================================
+    (custom-set-variables
+       ;; custom-set-variables was added by Custom.
+       ;; If you edit it by hand, you could mess it up, so be careful.
+       ;; Your init file should contain only one such instance.
+       ;; If there is more than one, they won't work right.
+       '(warning-suppress-log-types
+           '(((package reinitialization))
+               (use-package)
+               (python-mode)
+               (package-initialize))))
+
+      ;;; init.el ends here.
+    (custom-set-faces
+       ;; custom-set-faces was added by Custom.
+       ;; If you edit it by hand, you could mess it up, so be careful.
+       ;; Your init file should contain only one such instance.
+       ;; If there is more than one, they won't work right.
+       )
+
+    ;;  (dashboard-open)
 
 #+end_src
 
