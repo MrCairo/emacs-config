@@ -1,20 +1,17 @@
-;;; -*- lexical-binding: t -*-
-;;; ---------------------------------------------------------------------------
-;;;
-;;; NOTE: init.el is now generated from Configure.org.  Please edit that file
-;;;       in Emacs and init.el will be generated automatically!
-;;;
-(message "Checking for supported Emacs version(s)...")
+;;; =================================================================
+;;; The default is 800 kilobytes.  Measured in bytes.
+(setq gc-cons-threshold (* 128 1024 1024))
 
-(let ((minver "26.1"))
-   (when (version< emacs-version minver)
-      (error "Your Emacs is too old -- this config requires v%s or higher" minver)))
-(when (version< emacs-version "27.1")
-   (message "Your Emacs is old, and some functionality in this config will be disabled. Please upgrade if possible."))
+(defun mrf/display-startup-time ()
+   "Calculate and display startup time."
+  (message "Emacs loaded in %s with %d garbage collections."
+           (format "%.2f seconds"
+                   (float-time
+                    (time-subtract after-init-time before-init-time)))
+           gcs-done))
+(add-hook 'emacs-startup-hook #'mrf/display-startup-time)
 
-(message "Version check complete.")
-
-;;; ---------------------------------------------------------------------------
+;;; -----------------------------------------------------------------
 ;;; Add site-lisp as well as all package directories in site-lisp to the
 ;;; load-path variable.
 (defun mrf/integrate-local-site-lisp ()
@@ -32,7 +29,7 @@
    (require 'general)
    (setq use-package-always-ensure t))
 
-;;; ---------------------------------------------------------------------------
+;;; -----------------------------------------------------------------
 (defvar emacs-config-directory user-emacs-directory)
 
 ;;; You'll need to override these from my values. Note that these directories
@@ -46,7 +43,7 @@
 ;;; snippets are saved and also additional color themese are stored.
 (defvar mrf/docs-dir "~/Documents/Emacs-Related")
 
-;;; ---------------------------------------------------------------------------
+;;; -----------------------------------------------------------------
 ;; You will most likely need to adjust this font size for your system!
 (defvar mrf/default-font-size 175)
 (defvar mrf/default-variable-font-size 175)
@@ -67,30 +64,64 @@
    (add-to-list 'default-frame-alist '(height . 60))
    (add-to-list 'default-frame-alist '(width . 140)))
 
+
+(defun mrf/update-face-attribute ()
+     ;; ====================================
+   ;; Set the font faces
+   ;; ====================================  
+   (set-face-attribute 'default nil
+      :font "Menlo"
+      :height mrf/default-font-size)
+
+   ;; Set the fixed pitch face
+   (set-face-attribute 'fixed-pitch nil
+      :font "Menlo"
+      :height mrf/default-font-size)
+
+   ;; Set the variable pitch face
+   (set-face-attribute 'variable-pitch nil
+      :font "SF Pro"
+      :height mrf/default-variable-font-size
+      :weight 'regular))
+
 (mrf/set-frame-alpha-maximized)
+(mrf/update-face-attribute)
 ;; (mrf/custom-set-frame-size)
 
-;; ====================================
-;; Set the font faces
-;; ====================================  
-(set-face-attribute 'default nil
-   :font "Menlo"
-   :height mrf/default-font-size)
-   ;; :weight 'regular)
+;;; ------------------------------------------------------------------------
 
-;; Set the fixed pitch face
-(set-face-attribute 'fixed-pitch nil
-   :font "Menlo"
-   :height mrf/default-font-size)
-   ;; :weight 'book)
+ (add-to-list 'custom-theme-load-path (concat mrf/docs-dir "/Additional-Themes"))
 
-;; Set the variable pitch face
-(set-face-attribute 'variable-pitch nil
-   :font "SF Pro"
-   :height mrf/default-variable-font-size
-   :weight 'regular)
+ (defvar mrf/list-theme-packages
+      '(
+          color-theme-sanityinc-tomorrow
+          doom-themes
+          exotica-theme
+          immaterial-theme
+          material-theme
+          timu-caribbean-theme
+          timu-macos-theme
+       ))
 
-;;; ---------------------------------------------------------------------------
+ (mapc #'(lambda (theme)
+           (unless (package-installed-p theme)
+             (package-install theme)))
+       mrf/list-theme-packages)
+
+;;
+;;; --- ---------------------------------------------------------------------
+   ;;; List of favorite themes. Uncomment the one that feels good for the day.
+   ;; (load-theme 'material t)
+   ;; (load-theme 'doom-palenight t)
+   ;; (load-theme 'doom-monokai-pro t)
+   ;; (load-theme 'afternoon t)
+   ;; (load-theme 'tomorrow-night-blue t)
+   ;; (load-theme 'tomorrow-night-bright t)
+   ;; (load-theme 'borland-blue t)
+   ;; (load-theme 'deeper-blue t)
+   (load-theme 'modus-vivendi-deuteranopia t)
+
+;;; -----------------------------------------------------------------
 
 (require 'paren)
 (show-paren-mode 1)
@@ -136,31 +167,18 @@
    "C-c ]"  'indent-region
    "C-c }"  'indent-region)
 
-;;; ===========================================================================
-;; The default is 800 kilobytes.  Measured in bytes.
-(setq gc-cons-threshold (* 128 1024 1024))
-
-(defun mrf/display-startup-time ()
-   "Calculate and display startup time."
-  (message "Emacs loaded in %s with %d garbage collections."
-           (format "%.2f seconds"
-                   (float-time
-                    (time-subtract after-init-time before-init-time)))
-           gcs-done))
-(add-hook 'emacs-startup-hook #'mrf/display-startup-time)
-
-;;; ---------------------------------------------------------------------------
+;;; -----------------------------------------------------------------
 
 (require 'package)  
 (setq package-archives '(("melpa" . "https://melpa.org/packages/")
-			 ("org" . "https://orgmode.org/elpa/")
-			 ("elpa" . "https://elpa.gnu.org/packages/")))
+                           ("org" . "https://orgmode.org/elpa/")
+                           ("elpa" . "https://elpa.gnu.org/packages/")))
 
 (package-initialize)
 (unless package-archive-contents
-  (package-refresh-contents))
+   (package-refresh-contents))
 
-;;; ---------------------------------------------------------------------------
+;;; -----------------------------------------------------------------
 ;;;
 ;;; The following packages aren't properly loaded with the 'require' or
 ;;; 'use-package' functions (for some reason) so we resort to 'package-install'
@@ -168,10 +186,8 @@
 ;;
 (defvar mrf/must-install-packages
    '(
-       general
        cl-lib
        auto-complete
-       better-defaults
        bind-key
     ))
 
@@ -180,7 +196,7 @@
             (package-install item)))
       mrf/must-install-packages)
 
-;;; ---------------------------------------------------------------------------
+;;; -----------------------------------------------------------------
 
 (use-package auto-package-update
   :custom
@@ -235,19 +251,24 @@
   (lsp-enable-which-key-integration t))
 
 (use-package lsp-ui
-  :config (setq lsp-ui-sideline-show-hover t
+  :config (setq lsp-ui-sideline-enable t
+                lsp-ui-sideline-show-hover t
                 lsp-ui-sideline-delay 0.5
-                lsp-ui-doc-delay 5
                 lsp-ui-sideline-ignore-duplicates t
-                lsp-ui-doc-position 'bottom
+                lsp-ui-doc-delay 3
+                lsp-ui-doc-position 'top
                 lsp-ui-doc-alignment 'frame
                 lsp-ui-doc-header nil
+                lsp-ui-doc-show-with-cursor t
                 lsp-ui-doc-include-signature t
                 lsp-ui-doc-use-childframe t)
   :commands lsp-ui-mode
   :custom
   (lsp-ui-doc-position 'bottom)
   :hook (lsp-mode . lsp-ui-mode))
+
+(general-def lsp-ui-mode-map
+   "C-c l d" 'lsp-ui-doc-focus-frame)
 
 (use-package lsp-treemacs
   :after lsp)
@@ -264,27 +285,27 @@
 (use-package eglot)
 
 ;;; ------------------------------------------------------------------------
-  (use-package dap-mode
-    ;; Uncomment the config below if you want all UI panes to be hidden by default!
-    ;; :custom
-    ;; (lsp-enable-dap-auto-configure nil)
-    :config
-     (dap-ui-mode 1)
-     (require 'dap-python)
-;;     (require 'dap-node)
-    :commands dap-debug
-    :custom (dap-auto-configure-features '(sessions locals controls tooltip))
-    )
+(use-package dap-mode
+  ;; Uncomment the config below if you want all UI panes to be hidden by default!
+  ;; :custom
+  ;; (lsp-enable-dap-auto-configure nil)
+  :config
+   (dap-ui-mode 1)
+   (setq lsp-enable-dap-auto-configure nil)
+  :commands
+   dap-debug
+  :custom
+   (dap-auto-configure-features '(sessions locals controls tooltip)))
 
-  (setq dap-python-debugger 'debugpy)
+(setq dap-python-debugger 'debugpy)
 
-  (use-package dap-hydra
-     :hook (dap-stopped . (lambda (arg) (call-interactively #'dap-hydra))))
+;; (use-package dap-hydra
+;;    :hook (dap-stopped . (lambda (arg) (call-interactively #'dap-hydra))))
 
 ;;; ------------------------------------------------------------------------
 (use-package dap-python
-  :after (dap)
-  :ensure nil
+  :after (dap-mode)
+  :ensure t
   :config
   (dap-register-debug-template "Python :: Run file from project directory"
                                (list :type "python"
@@ -359,18 +380,18 @@
 
 (use-package ivy-yasnippet)
 
-;;; ---------------------------------------------------------------------------
-
-(use-package typescript-mode
-   :disabled  ;; Don't use this package .... yet
-   :after (dap-mode)
-   :mode "\\.ts\\'"
-   :hook (typescript-mode . lsp-deferred)
+(use-package tree-sitter-langs)
+(use-package tree-sitter
+   :after (lsp-mode)
    :config
-   (setq typescript-indent-level 2)
-   (dap-node-setup))
+   ;; Activate tree-sitter globally (minor mode registered on every buffer)
+   (global-tree-sitter-mode)
+   :hook
+   (tree-sitter-after-on . tree-sitter-hl-mode)
+   (typescript-mode . lsp-deferred)
+   (javascript-mode . lsp-deferred))
 
-;;; ---------------------------------------------------------------------------
+;;; -----------------------------------------------------------------
 
 (defun code-compile ()
 "Look for a Makefile and compiles the code with gcc/cpp."
@@ -386,7 +407,7 @@
 
 (global-set-key [f9] 'code-compile)
 
-;;; ---------------------------------------------------------------------------
+;;; -----------------------------------------------------------------
 
 (use-package flycheck
   :ensure t
@@ -417,14 +438,15 @@
    (message "Running python Hook")
    (python-mode)
    (dap-mode)
-   (display-fill-column-indicator-mode 1))
+   (display-fill-column-indicator-mode -1)
+   (highlight-indentation-mode -1))
 
 (use-package python-mode
    :ensure nil
    :after (lsp-mode dap-mode)
    :hook (python-mode . lsp-mode)
    :config
-   (eglot-ensure)
+   ;; (eglot-ensure)
    (dap-tooltip 1)
    (toolit-mode 1)
    (dap-ui-controls-mode 1))
@@ -433,26 +455,27 @@
 (use-package blacken) ;Format Python file upon save.
 
 ;;; ------------------------------------------------------------------------
-(use-package elpy
- :ensure t
- :config
- (elpy-enable)
- (highlight-indentation-mode 0))
+ (use-package elpy
+  :ensure t
+  :config
+  (elpy-enable)
+  (highlight-indentation-mode 0))
 
-;; Enable Flycheck
+ ;; Enable Flycheck
 (when (require 'flycheck nil t)
    (setq elpy-modules (delq 'elpy-module-flymake elpy-modules))
    (add-hook 'elpy-mode-hook 'flycheck-mode))
 
 (use-package realgud
- :ensure t) ;; Keep this around but right now we use DAP
+   :disabled
+   :ensure t) ;; Keep this around but right now we use DAP
 
 (use-package py-autopep8
  :ensure t
  :config
  (add-hook 'python-mode-hook 'py-autopep8-mode))
 
-;;; ---------------------------------------------------------------------------
+;;; -----------------------------------------------------------------
 (if (package-installed-p 'dap-mode)
   (general-def python-mode-map
      "C-c . /"       'dap-step-in
@@ -585,37 +608,6 @@
 
 ;;; ------------------------------------------------------------------------
 
-(add-to-list 'custom-theme-load-path (concat mrf/docs-dir "/Additional-Themes"))
-
-(defvar mrf/list-theme-packages
-   '(
-       color-theme-sanityinc-tomorrow
-       doom-themes
-       exotica-theme
-       immaterial-theme
-       material-theme
-       timu-caribbean-theme
-       timu-macos-theme
-    ))
-
-(mapc #'(lambda (theme)
-          (unless (package-installed-p theme)
-            (package-install theme)))
-      mrf/list-theme-packages)
-
-;;; ------------------------------------------------------------------------
-;;; List of favorite themes. Uncomment the one that feels good for the day.
-;; (load-theme 'material t)
-(load-theme 'doom-palenight t)
-;; (load-theme 'doom-monokai-pro t)
-;; (load-theme 'afternoon t)
-;; (load-theme 'tomorrow-night-blue t)
-;; (load-theme 'tomorrow-night-bright t)
-;; (load-theme 'borland-blue t)
-;; (load-theme 'deeper-blue t)
-
-;;; ------------------------------------------------------------------------
-
 (defun mrf/org-font-setup ()
   "Setup org mode fonts."
   (font-lock-add-keywords
@@ -647,7 +639,7 @@
   (set-face-attribute 'line-number nil :inherit 'fixed-pitch)
   (set-face-attribute 'line-number-current-line nil :inherit 'fixed-pitch))
 
-;;; ---------------------------------------------------------------------------
+;;; -----------------------------------------------------------------
 
 (defun mrf/org-mode-setup ()
   (org-indent-mode)
@@ -773,14 +765,14 @@
 
    (mrf/org-font-setup))
 
-;;; ---------------------------------------------------------------------------
+;;; -----------------------------------------------------------------
 
 (use-package org-bullets
   :hook (org-mode . org-bullets-mode)
   :custom
   (org-bullets-bullet-list '("◉" "○" "●" "○" "●" "○" "●")))
 
-;;; ---------------------------------------------------------------------------
+;;; -----------------------------------------------------------------
 
 (defun mrf/org-mode-visual-fill ()
   (setq visual-fill-column-width 100
@@ -790,7 +782,7 @@
 (use-package visual-fill-column
   :hook (org-mode . mrf/org-mode-visual-fill))
 
-;;; ---------------------------------------------------------------------------
+;;; -----------------------------------------------------------------
 
 (with-eval-after-load 'org
   (org-babel-do-load-languages
@@ -800,7 +792,7 @@
 
   (push '("conf-unix" . conf-unix) org-src-lang-modes))
 
-;;; ---------------------------------------------------------------------------
+;;; -----------------------------------------------------------------
 
 (with-eval-after-load 'org
   ;; This is needed as of Org 9.2
@@ -809,6 +801,112 @@
   (add-to-list 'org-structure-template-alist '("sh" . "src shell"))
   (add-to-list 'org-structure-template-alist '("el" . "src emacs-lisp"))
   (add-to-list 'org-structure-template-alist '("py" . "src python")))
+
+;;; ----------------------------------------------------------------
+(use-package org-roam
+  :ensure t
+  :demand t  ;; Ensure org-roam is loaded by default
+  :init
+  (setq org-roam-v2-ack t)
+  :custom
+  (org-roam-directory (concat mrf/docs-dir "/RoamNotes"))
+  (org-roam-completion-everywhere t)
+  :bind (("C-c n l" . org-roam-buffer-toggle)
+         ("C-c n f" . org-roam-node-find)
+         ("C-c n i" . org-roam-node-insert)
+         ("C-c n I" . org-roam-node-insert-immediate)
+         ("C-c n p" . my/org-roam-find-project)
+         ("C-c n t" . my/org-roam-capture-task)
+         ("C-c n b" . my/org-roam-capture-inbox)
+         :map org-mode-map
+         ("C-M-i" . completion-at-point)
+         :map org-roam-dailies-map
+         ("Y" . org-roam-dailies-capture-yesterday)
+         ("T" . org-roam-dailies-capture-tomorrow))
+  :bind-keymap
+  ("C-c n d" . org-roam-dailies-map)
+  :config
+  (require 'org-roam-dailies) ;; Ensure the keymap is available
+  (org-roam-db-autosync-mode))
+
+(defun org-roam-node-insert-immediate (arg &rest args)
+   (interactive "P")
+   (let ((args (push arg args))
+           (org-roam-capture-templates
+              (list (append (car org-roam-capture-templates)
+                       '(:immediate-finish t)))))
+    (apply #'org-roam-node-insert args)))
+
+(defun my/org-roam-project-finalize-hook ()
+   "Adds the captured project file to `org-agenda-files' if the
+capture was not aborted."
+   ;; Remove the hook since it was added temporarily
+   (remove-hook 'org-capture-after-finalize-hook #'my/org-roam-project-finalize-hook)
+
+   ;; Add project file to the agenda list if the capture was confirmed
+   (unless org-note-abort
+    (with-current-buffer (org-capture-get :buffer)
+      (add-to-list 'org-agenda-files (buffer-file-name)))))
+
+(defun my/org-roam-find-project ()
+   (interactive)
+  ;; Add the project file to the agenda after capture is finished
+   (add-hook 'org-capture-after-finalize-hook #'my/org-roam-project-finalize-hook)
+
+  ;; Select a project file to open, creating it if necessary
+   (org-roam-node-find
+      nil
+      nil
+      (my/org-roam-filter-by-tag "Project")
+      :templates
+      '(("p" "project" plain "* Goals\n\n%?\n\n* Tasks\n\n** TODO Add initial tasks\n\n* Dates\n\n"
+           :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n#+category: ${title}\n#+filetags: Project")
+           :unnarrowed t))))
+
+(global-set-key (kbd "C-c n p") #'my/org-roam-find-project)
+
+(defun my/org-roam-capture-inbox ()
+   (interactive)
+   (org-roam-capture- :node (org-roam-node-create)
+      :templates '(("i" "inbox" plain "* %?"
+                      :if-new (file+head "Inbox.org" "#+title: Inbox\n")))))
+
+(defun my/org-roam-capture-task ()
+  (interactive)
+  ;; Add the project file to the agenda after capture is finished
+  (add-hook 'org-capture-after-finalize-hook #'my/org-roam-project-finalize-hook)
+
+  ;; Capture the new task, creating the project file if necessary
+   (org-roam-capture- :node (org-roam-node-read nil
+                            (my/org-roam-filter-by-tag "Project"))
+      :templates '(("p" "project" plain "** TODO %?"
+                      :if-new
+                      (file+head+olp "%<%Y%m%d%H%M%S>-${slug}.org"
+                         "#+title: ${title}\n#+category: ${title}\n#+filetags: Project"
+                         ("Tasks"))))))
+
+(defun my/org-roam-copy-todo-to-today ()
+   (interactive)
+   (let ((org-refile-keep t) ;; Set this to nil to delete the original!
+           (org-roam-dailies-capture-templates
+              '(("t" "tasks" entry "%?"
+                   :if-new (file+head+olp "%<%Y-%m-%d>.org" "#+title: %<%Y-%m-%d>\n" ("Tasks")))))
+           (org-after-refile-insert-hook #'save-buffer)
+           today-file pos)
+      (save-window-excursion
+         (org-roam-dailies--capture (current-time) t)
+         (setq today-file (buffer-file-name))
+         (setq pos (point)))
+
+      ;; Only refile if the target file is different than the current file
+      (unless (equal (file-truename today-file)
+                 (file-truename (buffer-file-name)))
+         (org-refile nil nil (list "Tasks" today-file nil pos)))))
+
+(add-to-list 'org-after-todo-state-change-hook
+   (lambda ()
+      (when (equal org-state "DONE")
+         (my/org-roam-copy-todo-to-today))))
 
 ;; Automatically tangle our Emacs.org config file when we save it
 (defun mrf/org-babel-tangle-config ()
@@ -832,6 +930,14 @@
 (use-package all-the-icons
    :if (display-graphic-p))
 
+;; Value of dashb oard-startup-banner can be
+;; - nil to display no banner
+;; - 'official which displays the official emacs logo
+;; - 'logo which displays an alternative emacs logo
+;; - 1, 2 or 3 which displays one of the text banners
+;; - "path/to/your/image.gif", "path/to/your/image.png" or "path/to/your/text.txt"
+;;   which displays whatever gif/image/text you would prefer
+;; - a cons of '("path/to/your/image.png" . "path/to/your/text.txt")
 (use-package dashboard
    :after (dired)
    :ensure t
@@ -839,16 +945,18 @@
    (defun mrf/dashboard-banner ()
       (setq dashboard-footer-messages '("Greetings Program!"))
       (setq dashboard-banner-logo-title "Welcome to Emacs!")
-      (setq dashboard-startup-banner "~/Pictures/Book-icon.png"))
+      (setq dashboard-startup-banner 'logo))
    :hook ((after-init     . dashboard-refresh-buffer)
           (dashboard-mode . mrf/dashboard-banner))
    :custom
-   (dashboard-items '((recents . 9)
-                     (bookmarks . 5)))
+   (dashboard-items '((recents . 8)
+                        (bookmarks . 5)
+                        (projects . 5)))
    :config
    (dashboard-setup-startup-hook)
    (dashboard-open)
-   (setq dashboard-center-content t))
+   (setq dashboard-center-content t)
+   (global-set-key (kbd "C-c d") 'dashboard-open))
 
 ;;; ------------------------------------------------------------------------
 
@@ -1047,14 +1155,34 @@
                                  (use-package)
                                  (python-mode)))
 
-  ;;; ===========================================================================
+(defvar mrf/use-large-font-size t)
+
+(defun mrf/toggle-font-size ()
+   (if (equal mrf/use-large-font-size t)
+      (progn
+         (setq mrf/use-large-font-size nil)
+         (setq mrf/default-font-size 200)
+         (setq mrf/default-variable-font-size 200)
+         (mrf/update-face-attribute))
+      (progn
+         (setq mrf/use-large-font-size t)
+         (setq mrf/default-font-size 175)
+         (setq mrf/default-variable-font-size 175)
+         (mrf/update-face-attribute))
+      )
+   )
+
+(general-define-key
+   "C-c x" '(lambda () (interactive) (mrf/toggle-font-size)))
+
+;;; ===========================================================================
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(package-selected-packages
-     '(dap-hydra yasnippet-snippets which-key vterm visual-fill-column typescript-mode timu-macos-theme timu-caribbean-theme realgud rainbow-delimiters pyvenv-auto python-mode py-autopep8 org-bullets neotree material-theme lsp-ui lsp-ivy ivy-yasnippet ivy-rich ivy-prescient immaterial-theme helpful general forge flycheck exotica-theme evil-nerd-commenter eterm-256color eshell-git-prompt elpy eglot doom-themes doom-modeline dired-single dired-open dired-hide-dotfiles dashboard dap-mode counsel-projectile company-jedi company-box color-theme-sanityinc-tomorrow blacken bind-key better-defaults auto-package-update auto-complete all-the-icons-dired))
+     '(dap-python yasnippet-snippets which-key vterm visual-fill-column typescript-mode tree-sitter-langs timu-macos-theme timu-caribbean-theme realgud rainbow-delimiters pyvenv-auto python-mode py-autopep8 org-roam org-bullets neotree modus-themes material-theme lsp-ui lsp-ivy ivy-yasnippet ivy-rich ivy-prescient immaterial-theme helpful general forge flycheck exotica-theme evil-nerd-commenter eterm-256color eshell-git-prompt elpy eglot doom-themes doom-modeline dired-single dired-open dired-hide-dotfiles dashboard dap-mode counsel-projectile company-jedi company-box color-theme-sanityinc-tomorrow blacken bind-key better-defaults auto-package-update auto-complete all-the-icons-dired))
  '(warning-suppress-log-types
      '(((package reinitialization))
 	 (use-package)
