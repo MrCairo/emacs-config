@@ -1,0 +1,16 @@
+*.elc
+elpa/**
+site-lisp/**/*
+Configure.el
+ac-comphist.dat
+auto-save-list/
+backups/
+history
+org-persist/
+places
+projectile-bookmarks.eld
+recentf
+skeleton/
+transient/
+url/
+

@@ -490,7 +490,7 @@
      "C-c . C-c" 'dap-ui-controls-mode
      "C-c . C-e" 'dap-ui-expressions
      "C-c . C-l" 'dap-ui-locals
-     "C-c . C-r" 'dap-ui-repl-mode
+     "C-c . C-r" 'dap-ui-repl
      "C-c . b" 'dap-breakpoint-toggle
      "C-c . c" 'dap-continue
      "C-c . d" 'dap-debug
@@ -909,15 +909,18 @@ capture was not aborted."
          (my/org-roam-copy-todo-to-today))))
 
 ;; Automatically tangle our Emacs.org config file when we save it
-(defun mrf/org-babel-tangle-config ()
+(defun mrf/org-babel-tangle-save-hook ()
    "Save emacs-lisp blocks."
-   (when (string-equal (file-name-directory (buffer-file-name))
-            (expand-file-name emacs-config-directory))
-      ;; Dynamic scoping to the rescue
-      (let ((org-confirm-babel-evaluate nil))
-         (org-babel-tangle))))
+  (when (eq major-mode 'org-mode) ;; Org-mode Only
+     (message "org-mode-hook: Executing mrf/org-babel-tangle-config")
+     (when (string-equal (file-name-directory (buffer-file-name))
+              (expand-file-name emacs-config-directory))
+        ;; Dynamic scoping to the rescue
+        (let ((org-confirm-babel-evaluate nil))
+           (message "... tangle emacs-lisp")
+           (org-babel-tangle)))))
 
-(add-hook 'org-mode-hook (lambda () (add-hook 'after-save-hook #'mrf/org-babel-tangle-config)))
+(add-hook 'after-save-hook #'mrf/org-babel-tangle-save-hook)
 
 ;;; ------------------------------------------------------------------------
 

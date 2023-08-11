@@ -1,6 +1,6 @@
 #+title: Mitch's Emacs Configuration File
 #+author: Mitch Fisher
-#+date: 2023-07-30
+#+date: 2023-08-10
 #+PROPERTY: header-args:emacs-lisp :tangle ./init.el :mkdirp yes
 
 * Welcome!
@@ -180,6 +180,7 @@ It's nice to know that Emacs is somewhat working. To help this along, we set the
 The following values are things that are just general quality-of-life settings.
 
 #+begin_src emacs-lisp
+
   ;;; -----------------------------------------------------------------
 
   (require 'paren)
@@ -209,7 +210,7 @@ The following values are things that are just general quality-of-life settings.
   (setq-default truncate-lines 1)
 
   (global-prettify-symbols-mode 1) ;; Display pretty symbols (i.e. λ = lambda)
-  
+
   ;; truncate lines even in partial-width windows
   (setq truncate-partial-width-windows 1)
 
@@ -729,7 +730,7 @@ autopep8 automatically formats Python code to conform to the `PEP 8` style guide
        "C-c . C-c" 'dap-ui-controls-mode
        "C-c . C-e" 'dap-ui-expressions
        "C-c . C-l" 'dap-ui-locals
-       "C-c . C-r" 'dap-ui-repl-mode
+       "C-c . C-r" 'dap-ui-repl
        "C-c . b" 'dap-breakpoint-toggle
        "C-c . c" 'dap-continue
        "C-c . d" 'dap-debug
@@ -1329,16 +1330,18 @@ This snippet adds a hook to =org-mode= buffers so that =efs/org-babel-tangle-con
 #+begin_src emacs-lisp
 
   ;; Automatically tangle our Emacs.org config file when we save it
-  (defun mrf/org-babel-tangle-config ()
+  (defun mrf/org-babel-tangle-save-hook ()
      "Save emacs-lisp blocks."
-     (when (string-equal (file-name-directory (buffer-file-name))
-              (expand-file-name emacs-config-directory))
-        ;; Dynamic scoping to the rescue
-        (let ((org-confirm-babel-evaluate nil))
-           (org-babel-tangle))))
+    (when (eq major-mode 'org-mode) ;; Org-mode Only
+       (message "org-mode-hook: Executing mrf/org-babel-tangle-config")
+       (when (string-equal (file-name-directory (buffer-file-name))
+                (expand-file-name emacs-config-directory))
+          ;; Dynamic scoping to the rescue
+          (let ((org-confirm-babel-evaluate nil))
+             (message "... tangle emacs-lisp")
+             (org-babel-tangle)))))
 
-  (add-hook 'org-mode-hook (lambda () (add-hook 'after-save-hook #'mrf/org-babel-tangle-config)))
-
+  (add-hook 'after-save-hook #'mrf/org-babel-tangle-save-hook)
 
 #+end_src
 
