@@ -38,7 +38,7 @@ This ORG file will configure the *init.el* file based upon all of the *emacs-lis
 
 ** Startup Performance
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 
   ;;; =========================================================================
   ;;; startup
@@ -46,13 +46,27 @@ This ORG file will configure the *init.el* file based upon all of the *emacs-lis
 
   (add-hook 'emacs-startup-hook
      (lambda ()
-	;; warn when opening files bigger than 100MB
-	(setq large-file-warning-threshold 100000000)
-	;; reduce the frequency of garbage collection by making it happen on
-	;; each 50MB of allocated data (the default is on every 0.76MB)
-	(setq gc-cons-threshold 50000000)))
+  	;; warn when opening files bigger than 100MB
+  	(setq large-file-warning-threshold 100000000)
+  	;; reduce the frequency of garbage collection by making it happen on
+  	;; each 50MB of allocated data (the default is on every 0.76MB)
+  	(setq gc-cons-threshold 50000000)))
+#+end_src
 
-  ;; Process performance tuning
+
+#+begin_src emacs-lisp
+  
+  ;;; =========================================================================
+  ;;; startup
+  ;;; The default is 800 kilobytes.  Measured in bytes.
+  ;;; Process performance tuning
+
+  (let ((normal-gc-cons-threshold (* 20 1024 1024))
+  	(init-gc-cons-threshold (* 128 1024 1024)))
+     (setq gc-cons-threshold init-gc-cons-threshold)
+     (setq gc-cons-threshold 50000000)
+     (add-hook 'emacs-startup-hook
+        (lambda () (setq gc-cons-threshold normal-gc-cons-threshold))))
 
   (setq read-process-output-max (* 4 1024 1024))
   (setq process-adaptive-read-buffering nil)
@@ -60,10 +74,10 @@ This ORG file will configure the *init.el* file based upon all of the *emacs-lis
   (defun mrf/display-startup-time ()
      "Calculate and display startup time."
      (message "Emacs loaded in %s with %d garbage collections."
-	(format "%.2f seconds"
-	   (float-time
-	      (time-subtract after-init-time before-init-time)))
-	gcs-done))
+  	(format "%.2f seconds"
+  	   (float-time
+  	      (time-subtract after-init-time before-init-time)))
+  	gcs-done))
   (add-hook 'emacs-startup-hook #'mrf/display-startup-time)
 
 
@@ -111,10 +125,13 @@ In the early phase of the startup, we include the =lisp= and =site-packages= dir
   (defun mrf/use-pyenv-version-for-startup ()
      (set-exec-path-from-shell-PATH))
 
-  (eval-when-compile
-     (add-to-list 'load-path (expand-file-name "lisp" user-emacs-directory))
-     (mrf/integrate-local-site-lisp))
-     ;; (mrf/use-pyenv-version-for-startup)
+  (add-to-list 'load-path (expand-file-name "lisp" user-emacs-directory))
+  (mrf/integrate-local-site-lisp)
+  
+  ;; (eval-when-compile
+  ;;    (add-to-list 'load-path (expand-file-name "lisp" user-emacs-directory))
+  ;;    (mrf/integrate-local-site-lisp))
+  ;;    ;; (mrf/use-pyenv-version-for-startup)
      
 
 #+end_src
@@ -147,81 +164,83 @@ It's nice to know that Emacs is somewhat working. To help this along, we set the
 
 #+begin_src emacs-lisp
 
-    ;;; -------------------------------------------------------------------------
-    ;;; Frame (view) setup including fonts.
-    ;;; You will most likely need to adjust this font size for your system!
+  ;;; -------------------------------------------------------------------------
+  ;;; Frame (view) setup including fonts.
+  ;;; You will most likely need to adjust this font size for your system!
 
-    (defvar mrf/small-font-size 150)
-    (defvar mrf/small-variable-font-size 170)
+  (defvar mrf/small-font-size 150)
+  (defvar mrf/small-variable-font-size 170)
 
-    (defvar mrf/medium-font-size 170)
-    (defvar mrf/medium-variable-font-size 190)
+  (defvar mrf/medium-font-size 170)
+  (defvar mrf/medium-variable-font-size 190)
 
-    (defvar mrf/large-font-size 190)
-    (defvar mrf/large-variable-font-size 210)
+  (defvar mrf/large-font-size 190)
+  (defvar mrf/large-variable-font-size 210)
 
-    (defvar mrf/x-large-font-size 220)
-    (defvar mrf/x-large-variable-font-size 240)
+  (defvar mrf/x-large-font-size 220)
+  (defvar mrf/x-large-variable-font-size 240)
 
-    (defvar mrf/default-font-size mrf/large-font-size)
-    (defvar mrf/default-variable-font-size mrf/large-variable-font-size)
-    ;; (defvar mrf/set-frame-maximized t)  ;; or f
+  (defvar mrf/default-font-size mrf/large-font-size)
+  (defvar mrf/default-variable-font-size mrf/large-variable-font-size)
+  ;; (defvar mrf/set-frame-maximized t)  ;; or f
 
-    ;; Make frame transparency overridable
-    (defvar mrf/frame-transparency '(90 . 90))
+  ;; Make frame transparency overridable
+  (defvar mrf/frame-transparency '(90 . 90))
 
-    ;; Set frame transparency
-    (defun mrf/set-frame-alpha-maximized ()
-       "Function to set the alpha and also maximize the frame."
-       (set-frame-parameter (selected-frame) 'alpha mrf/frame-transparency)
-       (set-frame-parameter (selected-frame) 'fullscreen 'maximized)
-       (add-to-list 'default-frame-alist '(fullscreen . maximized)))
+  ;; Set frame transparency
+  (defun mrf/set-frame-alpha-maximized ()
+     "Function to set the alpha and also maximize the frame."
+     (set-frame-parameter (selected-frame) 'alpha mrf/frame-transparency)
+     (set-frame-parameter (selected-frame) 'fullscreen 'maximized)
+     (add-to-list 'default-frame-alist '(fullscreen . maximized)))
 
-    ;; default window width and height
-    (defun mrf/custom-set-frame-size ()
-       "Simple function to set the default frame width/height."
-       (set-frame-parameter (selected-frame) 'alpha mrf/frame-transparency)
-       (add-to-list 'default-frame-alist '(fullscreen . maximized))
-       ;; (add-to-list 'default-frame-alist '(height . 60))
-       ;; (add-to-list 'default-frame-alist '(width . 200))
-       )
-       (set-frame-parameter (selected-frame) 'fullscreen 'maximized)
+  ;; default window width and height
+  (defun mrf/custom-set-frame-size ()
+     "Simple function to set the default frame width/height."
+     (set-frame-parameter (selected-frame) 'alpha mrf/frame-transparency)
+     (add-to-list 'default-frame-alist '(fullscreen . maximized))
+     ;; (add-to-list 'default-frame-alist '(height . 60))
+     ;; (add-to-list 'default-frame-alist '(width . 200))
+     )
+     (set-frame-parameter (selected-frame) 'fullscreen 'maximized)
 
+  (defun mrf/update-face-attribute ()
+     ;; ====================================
+     ;; Set the font faces
+     ;; ====================================
+     (set-face-attribute 'default nil
+        :font "Menlo"
+        :height mrf/default-font-size
+        :weight 'medium)
 
-    (defun mrf/update-face-attribute ()
-       ;; ====================================
-       ;; Set the font faces
-       ;; ====================================
-       (set-face-attribute 'default nil
-          :font "Source Code Pro"
-          :height mrf/default-font-size
-          :weight 'medium)
+     ;; Set the fixed pitch face
+     (set-face-attribute 'fixed-pitch nil
+        ;; :font "Lantinghei TC Demibold"
+        :font "Andale Mono"
+        :height mrf/default-font-size)
 
-       ;; Set the fixed pitch face
-       (set-face-attribute 'fixed-pitch nil
-          :font "Fira Code Retina"
-          :height mrf/default-font-size)
+     ;; Set the variable pitch face
+     (set-face-attribute 'variable-pitch nil
+        :font "SF Pro"
+        :height mrf/default-variable-font-size
+        :weight 'regular))
 
-       ;; Set the variable pitch face
-       (set-face-attribute 'variable-pitch nil
-          :font "SF Pro"
-          :height mrf/default-variable-font-size
-          :weight 'regular))
+  ;; (mrf/set-frame-alpha-maximized)
+  (mrf/update-face-attribute)
+  (mrf/custom-set-frame-size)
 
-    ;; (mrf/set-frame-alpha-maximized)
-    (mrf/update-face-attribute)
-    (mrf/custom-set-frame-size)
-
-    ;;
-    ;; Enable smooth scrolling
-    ;;
-    (setq pixel-scroll-mode t)
+  ;;
+  ;; Enable smooth scrolling
+  ;;
+  (setq pixel-scroll-mode t)
 
 #+end_src
 
 ** Package System Setup
 
 Emacs has a built in package manager but it doesn't make it easy to automatically install packages on a new system the first time you pull down your configuration.  [[https://github.com/jwiegley/use-package][use-package]] is a really helpful package used in this configuration to make it a lot easier to automate the installation and configuration of everything else we use.
+
+*DISABLED DUE TO USE OF THE _STRAIGHT_ PACKAGE*
 
 #+begin_src emacs-lisp :tangle no
 
@@ -313,44 +332,67 @@ Benchmark Emacs Startup time without ever leaving your Emacs.
 
 #+begin_src emacs-lisp
 
-   ;;; -------------------------------------------------------------------------
+  ;;; -------------------------------------------------------------------------
 
-   (add-to-list 'custom-theme-load-path (concat mrf/docs-dir "/Additional-Themes/"))
+  (add-to-list 'custom-theme-load-path (concat mrf/docs-dir "/Themes/"))
 
   (use-package ef-themes)
   (use-package doom-themes)
   (use-package material-theme
      :straight (material-theme
-  		:type git :flavor melpa :host github
-  		  :repo "cpaulik/emacs-material-theme"))
+    		:type git :flavor melpa :host github
+    		:repo "cpaulik/emacs-material-theme"))
+
+  (use-package kaolin-themes
+     :straight (kaolin-themes
+  		:type git
+  		:flavor melpa
+  		:files (:defaults "themes/*.el" "kaolin-themes-pkg.el")
+  		:host github
+  		:repo "ogdenwebb/emacs-kaolin-themes"))
+     ;; :config
+     ;; (load-theme 'kaolin-dark t)
+     ;; (kaolin-treemacs-theme))
+  		
+
+  (use-package color-theme-sanityinc-tomorrow
+     :straight (color-theme-sanityinc-tomorrow
+  		:type git
+  		:flavor melpa
+  		:host github
+  		:repo "purcell/color-theme-sanityinc-tomorrow"))
   ;;
-  ;;; --- ---------------------------------------------------------------------
-  ;;; List of favorite themes. Uncomment the one that feels good for the day.
+    ;;; --- ---------------------------------------------------------------------
+    ;;; List of favorite themes. Uncomment the one that feels good for the day.
   ;; (load-theme 'afternoon t)
   ;; (load-theme 'borland-blue t)
   ;; (load-theme 'deeper-blue t)
   ;; (load-theme 'doom-badger t)
   ;; (load-theme 'doom-challenger-deep t)
   ;; (load-theme 'doom-dark+ t)
-  ; (load-theme 'doom-feather-dark t)
-  ; (load-theme 'doom-gruvbox t)
+  ;; (load-theme 'doom-feather-dark t)
+  ;; (load-theme 'doom-gruvbox t)
   ;; (load-theme 'doom-material-dark t)
+  ;; (load-theme 'spacemacs-dark-theme t)
   ;; (load-theme 'doom-monokai-classic t)
-  ; (load-theme 'doom-monokai-machine t)
-  ; (load-theme 'doom-monokai-octagon t)
+  ;; (load-theme 'doom-monokai-machine t)
+  ;; (load-theme 'doom-monokai-octagon t)
   ;; (load-theme 'doom-monokai-pro t)
   ;; (load-theme 'doom-monokai-spectrum t)
-  ; (load-theme 'doom-opera t)
+  ;; (load-theme 'doom-opera t)
   ;; (load-theme 'doom-oksolar-dark t)
   ;; (load-theme 'doom-palenight t)
-  ; (load-theme 'doom-rouge t)
-  ; (load-theme 'doom-tokyo-night t)
+  ;; (load-theme 'doom-rouge t)
+  ;; (load-theme 'doom-tokyo-night t)
   ;; (load-theme 'doom-sourcerer t)
-  ; (load-theme 'material t)
+  ;; (load-theme 'material t)
   ;; (load-theme 'modus-vivendi-deuteranopia t)
-  ; (load-theme 'ef-duo-dark :no-confirm)
-  ; (load-theme 'ef-elea-dark :no-confirm)
-  (load-theme 'ef-maris-dark :no-confirm)
+  ;; (load-theme 'ef-duo-dark :no-confirm)
+  ;; (load-theme 'ef-elea-dark :no-confirm)
+  ;; (load-theme 'ef-maris-dark :no-confirm)
+  (load-theme 'kaolin-dark t)
+  ;; (load-theme 'sanityinc-tomorrow-eighties t)
+
 
 #+end_src
 
@@ -379,7 +421,7 @@ The following values are things that are just general quality-of-life settings.
   (global-display-line-numbers-mode t) ;; Line numbers appear everywhere
 
   ;; number of characters until the fill column
-  (setq-default fill-column 79)
+  (setq-default fill-column 80)
 
   ;; emacs lisp tab size
   (setq lisp-indent-offset '3)
@@ -405,7 +447,7 @@ The following values are things that are just general quality-of-life settings.
   (use-package general
      :straight t)
 
-  (general-def  prog-mode-map
+  (general-def prog-mode-map
      "C-c ]"  'indent-region
      "C-c }"  'indent-region)
 
@@ -414,6 +456,10 @@ The following values are things that are just general quality-of-life settings.
 
   (setq dired-listing-switches "-agho --group-directories-first")
   (setq dired-dwim-target t)
+
+  (if (boundp 'python-shell-completion-native-disabled-interpreters)
+     (add-to-list 'python-shell-completion-native-disabled-interpreters "python3")
+   (setq python-shell-completion-native-disabled-interpreters '("python3")))
 
 #+end_src
 
@@ -571,7 +617,7 @@ Window numbers for Emacs: Navigate your windows and frames using numbers. This i
             treemacs-user-mode-line-format           nil
             treemacs-user-header-line-format         nil
             treemacs-wide-toggle-width               70
-            treemacs-width                           35
+            treemacs-width                           38
             treemacs-width-increment                 1
             treemacs-width-is-initially-locked       t
             treemacs-workspace-switch-cleanup        nil)
@@ -651,7 +697,7 @@ Window numbers for Emacs: Navigate your windows and frames using numbers. This i
 #+end_src
 
 *** Treemacs all-the-icons
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
 
   (use-package treemacs-all-the-icons
    :if (display-graphic-p))
@@ -817,6 +863,21 @@ Provides a common protocol for debugging different systems. This is configured f
            :outFiles (list "${workspaceFolder}/dist/**/*.js")
            :name "Launch index.ts")))
 
+#+end_src
+
+
+* Hydra
+This is a package for GNU Emacs that can be used to tie related commands into a family of short bindings with a common prefix - a Hydra. Once you summon the Hydra through the prefixed binding (the body + any one head), all heads can be called in succession with only a short extension.
+
+The Hydra is vanquished once Hercules, any binding that isn't the Hydra's head, arrives. Note that Hercules, besides vanquishing the Hydra, will still serve his original purpose, calling his proper command. This makes the Hydra very seamless, it's like a minor mode that disables itself auto-magically.
+
+#+begin_src emacs-lisp
+  (use-package hydra
+     :straight (hydra :type git
+  		  :flavor melpa
+  	    :files (:defaults (:exclude "lv.el") "hydra-pkg.el")
+  	      :host github
+  		:repo "abo-abo/hydra"))
 #+end_src
 
 
@@ -1124,61 +1185,135 @@ autopep8 automatically formats Python code to conform to the `PEP 8` style guide
 *** Python Keybinding
 #+begin_src emacs-lisp
 
-    (defun mrf/end-debug-session ()
-       "End the debug session and delete project Python buffers."
-       (interactive)
-       (kill-matching-buffers "\*Python :: Run file [from|\(buffer]*" nil :NO-ASK)
-       (kill-matching-buffers "\*Python: Current File*" nil :NO-ASK)
-       (kill-matching-buffers "\*dap-ui-*" nil :NO-ASK)
-       (dap-disconnect (dap--cur-session)))
+  (defun mrf/end-debug-session ()
+     "End the debug session and delete project Python buffers."
+     (interactive)
+     (kill-matching-buffers "\*Python :: Run file [from|\(buffer]*" nil :NO-ASK)
+     (kill-matching-buffers "\*Python: Current File*" nil :NO-ASK)
+     (kill-matching-buffers "\*dap-ui-*" nil :NO-ASK)
+     (dap-disconnect (dap--cur-session)))
 
-    (defun mrf/delete-all-debug-session ()
-       "End the debug session and delete project Python buffers and all breakpoints."
-       (interactive)
-       (dap-breakpoint-delete-all)
-       (mrf/end-debug-session))
+  (defun mrf/delete-all-debug-sessions ()
+     "End the debug session and delete project Python buffers and all breakpoints."
+     (interactive)
+     (dap-breakpoint-delete-all)
+     (mrf/end-debug-session))
 
-    (defun mrf/begin-debug-session ()
-       "Begin a debug session with several dap windows enabled."
-       (interactive)
-       (dap-ui-show-many-windows)
-       (dap-debug))
+  (defun mrf/begin-debug-session ()
+     "Begin a debug session with several dap windows enabled."
+     (interactive)
+     (dap-ui-show-many-windows)
+     (dap-debug))
 
-    ;;; -----------------------------------------------------------------
-    ;;(if (package-installed-p 'dap-mode)
-      (general-define-key
-         :keymaps '(python-mode-map dap-ui-mode-map)
-         ;; Debug python keys
-         "C-c . /"       'dap-step-in
-         "C-c . <right>" 'dap-step-in
-         "C-c . ,"       'dap-step-out
-         "C-c . <left>"  'dap-step-out
-         "C-c . ."       'dap-next
-         "C-c . <down>"  'dap-next
-         "C-c . ?"       'dap-breakpoint-condition
-         "C-c . C-b"     'dap-ui-breakpoints
-         "C-c . C-c"     'dap-ui-controls-mode
-         "C-c . C-d"     'mrf/begin-debug-session
-         "C-c . C-e"     'dap-ui-expressions
-         "C-c . C-r"     'dap-ui-repl
-         "C-c . a"       'dap-ui-show-many-windows
-         "C-c . b"       'dap-breakpoint-toggle
-         "C-c . c"       'dap-continue
-         "C-c . d"       'dap-debug
-         "C-c . C-D"     'dap-debug-last
-         "C-c . g"       'elpy-goto-definition-other-window
-         "C-c . i"       'dap-step-in
-         "C-c . l"       'dap-ui-locals
-         "C-c . n"       'dap-next
-         "C-c . o"       'dap-step-out
-         "C-c . r"       'dap-debug-restart
-         "C-c . t"       'dap-breakpoint-toggle
-         "C-c . x"       'mrf/end-debug-session
-         "C-c . C-d"     'mrf/end-debug-session
-         "C-c . X"       'mrf/delete-all-debug-session
-         "C-c . C-x"     'dap-delete-session
-         "C-c g"         'elpy-goto-definition
-         ) ;; )
+  ;; This is a helpful macro that is used to put double quotes around a word.
+  (defalias 'quote-word
+     (kmacro "\" M-d \" <left> C-y"))
+
+  ;; (define-key python-mode-map (kbd "C-c ,") 'dap-hydra/body)
+  (general-define-key
+     :keymaps '(python-mode-map dap-ui-mode-map)
+     "C-c ." 'dap-hydra/body)
+
+
+#+end_src
+
+*** DAP-Hydra
+
+#+begin_src emacs-lisp
+  (defhydra dap-hydra (:color pink :hint nil :foreign-keys run)
+    "
+  ^Stepping^          ^Switch^                 ^Breakpoints^          ^Debug^                     ^Eval
+  ^^^^^^^^----------------------------------------------------------------------------------------------------------------
+  _._: Next           _ss_: Session            _bb_: Toggle           _dd_: Debug                 _ee_: Eval
+  _/_: Step in        _st_: Thread             _bd_: Delete           _dr_: Debug recent          _er_: Eval region
+  _,_: Step out       _sf_: Stack frame        _ba_: Add              _dl_: Debug last            _es_: Eval thing at point
+  _c_: Continue       _su_: Up stack frame     _bc_: Set condition    _de_: Edit debug template   _ea_: Add expression.
+  _r_: Restart frame  _sd_: Down stack frame   _bh_: Set hit count    _ds_: Debug restart
+  _Q_: Disconnect     _sl_: List locals        _bl_: Set log message  _dx_: end session
+                    _sb_: List breakpoints                          _dX_: end all sessions
+                    _sS_: List sessions
+                    _sR_: Session Repl
+"
+     ("n" dap-next)
+     ("i" dap-step-in)
+     ("o" dap-step-out)
+     ("." dap-next)
+     ("/" dap-step-in)
+     ("," dap-step-out)
+     ("c" dap-continue)
+     ("r" dap-restart-frame)
+     ("ss" dap-switch-session)
+     ("st" dap-switch-thread)
+     ("sf" dap-switch-stack-frame)
+     ("su" dap-up-stack-frame)
+     ("sd" dap-down-stack-frame)
+     ("sl" dap-ui-locals)
+     ("sb" dap-ui-breakpoints)
+     ("sR" dap-ui-repl)
+     ("sS" dap-ui-sessions)
+     ("bb" dap-breakpoint-toggle)
+     ("ba" dap-breakpoint-add)
+     ("bd" dap-breakpoint-delete)
+     ("bc" dap-breakpoint-condition)
+     ("bh" dap-breakpoint-hit-condition)
+     ("bl" dap-breakpoint-log-message)
+     ("dd" dap-debug)
+     ("dr" dap-debug-recent)
+     ("ds" dap-debug-restart)
+     ("dl" dap-debug-last)
+     ("de" dap-debug-edit-template)
+     ("ee" dap-eval)
+     ("ea" dap-ui-expressions-add)
+     ("er" dap-eval-region)
+     ("es" dap-eval-thing-at-point)
+     ("dx" mrf/end-debug-session)
+     ("dX" mrf/delete-all-debug-sessions)
+     ("q" mrf/end-debug-session "quit" :color blue)
+     ("Q" mrf/delete-all-debug-sessions :color red))  
+
+ #+end_src
+
+
+
+#+begin_src emacs-lisp :tangle no
+
+  ;; Disabled for now in lieu of Hydra
+  ;;; -----------------------------------------------------------------
+  ;;(if (package-installed-p 'dap-mode)
+    (general-define-key
+       :keymaps '(python-mode-map dap-ui-mode-map)
+       ;; Debug python keys
+       "C-c . /"       'dap-step-in
+       "C-c . <right>" 'dap-step-in
+       "C-c . ,"       'dap-step-out
+       "C-c . <left>"  'dap-step-out
+       "C-c . ."       'dap-next
+       "C-c . <down>"  'dap-next
+       "C-c . ?"       'dap-breakpoint-condition
+       "C-c . C-b"     'dap-ui-breakpoints
+       "C-c . C-c"     'dap-ui-controls-mode
+       "C-c . C-d"     'mrf/begin-debug-session
+       "C-c . C-e"     'dap-ui-expressions
+       "C-c . C-r"     'dap-ui-repl
+       "C-c . a"       'dap-ui-show-many-windows
+       "C-c . b"       'dap-breakpoint-toggle
+       "C-c . c"       'dap-continue
+       "C-c . d"       'dap-debug
+       "C-c . C-D"     'dap-debug-last
+       "C-c . g"       'elpy-goto-definition-other-window
+       "C-c . i"       'dap-step-in
+       "C-c . l"       'dap-ui-locals
+       "C-c . n"       'dap-next
+       "C-c . o"       'dap-step-out
+       "C-c . r"       'dap-debug-restart
+       "C-c . t"       'dap-breakpoint-toggle
+       "C-c . x"       'mrf/end-debug-session
+       "C-c . C-d"     'mrf/end-debug-session
+       "C-c . X"       'mrf/delete-all-debug-sessions
+       "C-c . C-x"     'dap-delete-session
+       "C-c g"         'elpy-goto-definition
+       "C-c C-q"       'quote-word
+       ) ;; )
 
 #+end_src
 
@@ -1241,6 +1376,33 @@ We use Pyvenv-auto is a package that automatically changes to the Python virtual
   (use-package pyvenv-auto
      :config (message "Starting pyvenv-auto")
      :hook ((python-mode . pyvenv-auto-run)))
+
+#+end_src
+
+
+* GameBoy Development
+RGBDS is a compiler that has been around quite a long time (since 1997). It supports Z80 and the LR35902 assembler syntaxes that are used in the development of Game Boy and Game Boy color games.
+
+#+begin_src emacs-lisp
+
+  (use-package z80-mode
+     :straight (z80-mode
+  		:type git
+  		:host github
+  		:repo "SuperDisk/z80-mode"))
+
+  (use-package mwim
+     :straight (mwim
+  		:type git
+  		:flavor melpa
+  		:host github
+  		:repo "alezost/mwim.el"))
+
+  (use-package rgbds-mode
+     :after mwim
+     :straight (rgbds-mode
+  		:type git :host github
+  		:repo "japanoise/rgbds-mode"))
 
 #+end_src
 
@@ -1314,13 +1476,15 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
   ;;; ------------------------------------------------------------------------
 
   (use-package magit
-    :commands magit-status
-    :custom
-    (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
+  ;;  :commands (magit-status magit-get-current-branch)
+  ;; :custom
+  ;;  (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1)
+     )
 
   ;; NOTE: Make sure to configure a GitHub token before using this package!
   ;; - https://magit.vc/manual/forge/Token-Creation.html#Token-Creation
   ;; - https://magit.vc/manual/ghub/Getting-Started.html#Getting-Started
+
   (use-package forge
     :after magit)
 
@@ -1867,6 +2031,7 @@ The following packages are some additional quality of life features.
 #+begin_src emacs-lisp
 
   (use-package golden-ratio
+     :disabled
      :hook (after-init . golden-ratio-mode)
      :custom
      (golden-ratio-exclude-modes '(occur-mode
@@ -1922,7 +2087,7 @@ Dashboard is an extensible Emacs startup screen showing you what’s most import
      :hook ((after-init     . dashboard-refresh-buffer)
             (dashboard-mode . mrf/dashboard-banner))
      :custom
-     (dashboard-items '((recents . 8)
+     (dashboard-items '((recents . 9)
                           (bookmarks . 5)
                           (projects . 5)))
      :config
@@ -2522,6 +2687,7 @@ These functions are used to configure the main frame font size. Based upon a mon
      (mrf/set-frame-font 3))
 
 #+end_src
+
 
 ** Supress some startup warnings
 
