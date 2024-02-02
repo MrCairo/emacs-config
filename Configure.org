@@ -38,35 +38,20 @@ This ORG file will configure the *init.el* file based upon all of the *emacs-lis
 
 ** Startup Performance
 
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
 
   ;;; =========================================================================
   ;;; startup
   ;;; The default is 800 kilobytes.  Measured in bytes.
+  ;;; Process performance tuning
 
-  (add-hook 'emacs-startup-hook
+  (add-hook 'after-init-hook
      (lambda ()
   	;; warn when opening files bigger than 100MB
   	(setq large-file-warning-threshold 100000000)
   	;; reduce the frequency of garbage collection by making it happen on
   	;; each 50MB of allocated data (the default is on every 0.76MB)
   	(setq gc-cons-threshold 50000000)))
-#+end_src
-
-
-#+begin_src emacs-lisp
-  
-  ;;; =========================================================================
-  ;;; startup
-  ;;; The default is 800 kilobytes.  Measured in bytes.
-  ;;; Process performance tuning
-
-  (let ((normal-gc-cons-threshold (* 20 1024 1024))
-  	(init-gc-cons-threshold (* 128 1024 1024)))
-     (setq gc-cons-threshold init-gc-cons-threshold)
-     (setq gc-cons-threshold 50000000)
-     (add-hook 'emacs-startup-hook
-        (lambda () (setq gc-cons-threshold normal-gc-cons-threshold))))
 
   (setq read-process-output-max (* 4 1024 1024))
   (setq process-adaptive-read-buffering nil)
@@ -78,6 +63,7 @@ This ORG file will configure the *init.el* file based upon all of the *emacs-lis
   	   (float-time
   	      (time-subtract after-init-time before-init-time)))
   	gcs-done))
+
   (add-hook 'emacs-startup-hook #'mrf/display-startup-time)
 
 
@@ -133,7 +119,12 @@ In the early phase of the startup, we include the =lisp= and =site-packages= dir
   ;;    (mrf/integrate-local-site-lisp))
   ;;    ;; (mrf/use-pyenv-version-for-startup)
      
+#+end_src
 
+#+begin_src emacs-lisp
+
+  (add-to-list 'load-path (expand-file-name "lisp" user-emacs-directory))
+  
 #+end_src
 
 ** Emacs Config Directory
@@ -143,7 +134,7 @@ By default, the =user-emacs-directory= points to the .emacs.d* directory from wh
 
   ;;; -------------------------------------------------------------------------
   ;;; Set Emacs Config Directory
-  
+
   (defvar emacs-config-directory user-emacs-directory)
 
   ;;; You'll need to override these from my values. Note that these directories
@@ -161,6 +152,8 @@ By default, the =user-emacs-directory= points to the .emacs.d* directory from wh
 
 ** Frame Setup
 It's nice to know that Emacs is somewhat working. To help this along, we set the Frame (window size fonts) early in the loading process.
+
+*** Define the various font size constants
 
 #+begin_src emacs-lisp
 
@@ -185,58 +178,67 @@ It's nice to know that Emacs is somewhat working. To help this along, we set the
   ;; (defvar mrf/set-frame-maximized t)  ;; or f
 
   ;; Make frame transparency overridable
-  (defvar mrf/frame-transparency '(90 . 90))
+  ;; (defvar mrf/frame-transparency '(90 . 90))
+
+#+end_src
+
+*** Functions to set the frame size
+#+begin_src emacs-lisp
 
   ;; Set frame transparency
   (defun mrf/set-frame-alpha-maximized ()
      "Function to set the alpha and also maximize the frame."
-     (set-frame-parameter (selected-frame) 'alpha mrf/frame-transparency)
+     ;; (set-frame-parameter (selected-frame) 'alpha mrf/frame-transparency)
      (set-frame-parameter (selected-frame) 'fullscreen 'maximized)
      (add-to-list 'default-frame-alist '(fullscreen . maximized)))
 
   ;; default window width and height
   (defun mrf/custom-set-frame-size ()
      "Simple function to set the default frame width/height."
-     (set-frame-parameter (selected-frame) 'alpha mrf/frame-transparency)
+     ;; (set-frame-parameter (selected-frame) 'alpha mrf/frame-transparency)
      (add-to-list 'default-frame-alist '(fullscreen . maximized))
      ;; (add-to-list 'default-frame-alist '(height . 60))
      ;; (add-to-list 'default-frame-alist '(width . 200))
      )
-     (set-frame-parameter (selected-frame) 'fullscreen 'maximized)
+
+#+end_src
+
+*** Default fonts and sizes
+
+#+begin_src emacs-lisp
 
   (defun mrf/update-face-attribute ()
      ;; ====================================
      ;; Set the font faces
      ;; ====================================
      (set-face-attribute 'default nil
-        :font "Menlo"
-        :height mrf/default-font-size
-        :weight 'medium)
+        ;; :font "Hack"
+        ;; :font "Fira Code Retina"
+        ;; :font "Menlo"
+        :font "Andale Mono"
+        :height mrf/default-font-size)
 
      ;; Set the fixed pitch face
      (set-face-attribute 'fixed-pitch nil
         ;; :font "Lantinghei TC Demibold"
         :font "Andale Mono"
+        ;; :font "Fira Code Retina"
         :height mrf/default-font-size)
 
      ;; Set the variable pitch face
      (set-face-attribute 'variable-pitch nil
-        :font "SF Pro"
+        :font "Optima"
         :height mrf/default-variable-font-size
         :weight 'regular))
 
-  ;; (mrf/set-frame-alpha-maximized)
+  (set-frame-parameter (selected-frame) 'fullscreen 'maximized)
+  (mrf/set-frame-alpha-maximized)
   (mrf/update-face-attribute)
-  (mrf/custom-set-frame-size)
-
-  ;;
-  ;; Enable smooth scrolling
-  ;;
-  (setq pixel-scroll-mode t)
+  ;; ==(mrf/custom-set-frame-size)
 
 #+end_src
 
-** Package System Setup
+** Package System Setup (DISABLED)
 
 Emacs has a built in package manager but it doesn't make it easy to automatically install packages on a new system the first time you pull down your configuration.  [[https://github.com/jwiegley/use-package][use-package]] is a really helpful package used in this configuration to make it a lot easier to automate the installation and configuration of everything else we use.
 
@@ -263,25 +265,6 @@ Emacs has a built in package manager but it doesn't make it easy to automaticall
 #+end_src
 
 ** Must Install Packages
-
-#+begin_src emacs-lisp :tangle no
-
-  ;;; -------------------------------------------------------------------------
-  ;;; The following packages aren't properly loaded with the 'require' or
-  ;;; 'use-package' functions (for some reason) so we resort to 'package-install'
-  ;;; instead.
-
-  (defvar mrf/must-install-packages
-     '(
-         cl-lib
-      ))
-
-  (mapc #'(lambda (item)
-            (unless (package-installed-p item)
-              (package-install item)))
-        mrf/must-install-packages)
-
-#+end_src
 
 *** Auto-complete
 Auto-Complete is an intelligent auto-completion extension for Emacs. It extends the standard Emacs completion interface and provides an environment that allows users to concentrate more on their own work.
@@ -328,7 +311,34 @@ Benchmark Emacs Startup time without ever leaving your Emacs.
 
 #+end_src
 
-** Color Theming
+*** spacious-padding
+#+begin_src emacs-lisp
+
+  (use-package spacious-padding
+     :straight (spacious-padding :type git
+    		:host github
+    		:repo "emacs-straight/spacious-padding"
+    		:files ("*" (:exclude ".git")))
+     :hook (after-init . spacious-padding-mode)
+     :custom
+     (spacious-padding-widths
+        '( :internal-border-width 15
+  	  :header-line-width 4
+  	  :mode-line-width 6
+  	  :tab-width 4
+  	  :right-divider-width 30
+  	  :scroll-bar-width 8)))
+
+  ;; Read the doc string of `spacious-padding-subtle-mode-line' as it
+  ;; is very flexible and provides several examples.
+  (setq spacious-padding-subtle-mode-line
+        `( :mode-line-active 'default
+           :mode-line-inactive vertical-border))
+
+#+end_src
+
+
+* Color Theming
 
 #+begin_src emacs-lisp
 
@@ -343,6 +353,11 @@ Benchmark Emacs Startup time without ever leaving your Emacs.
     		:type git :flavor melpa :host github
     		:repo "cpaulik/emacs-material-theme"))
 
+  (use-package modus-themes
+     :straight (modus-themes :type git
+  		:flavor melpa
+  		:host sourcehut :repo "protesilaos/modus-themes"))
+
   (use-package kaolin-themes
      :straight (kaolin-themes
   		:type git
@@ -354,26 +369,26 @@ Benchmark Emacs Startup time without ever leaving your Emacs.
      ;; (load-theme 'kaolin-dark t)
      ;; (kaolin-treemacs-theme))
   		
-
   (use-package color-theme-sanityinc-tomorrow
      :straight (color-theme-sanityinc-tomorrow
   		:type git
   		:flavor melpa
   		:host github
   		:repo "purcell/color-theme-sanityinc-tomorrow"))
-  ;;
-    ;;; --- ---------------------------------------------------------------------
-    ;;; List of favorite themes. Uncomment the one that feels good for the day.
-  ;; (load-theme 'afternoon t)
-  ;; (load-theme 'borland-blue t)
-  ;; (load-theme 'deeper-blue t)
+
+  #+end_src
+
+** Load a theme
+Selec a theme (or themes) to load. The last one specified is the one that is used as the current theme.
+
+*** Doom Themes
+#+begin_src emacs-lisp
   ;; (load-theme 'doom-badger t)
   ;; (load-theme 'doom-challenger-deep t)
   ;; (load-theme 'doom-dark+ t)
   ;; (load-theme 'doom-feather-dark t)
   ;; (load-theme 'doom-gruvbox t)
   ;; (load-theme 'doom-material-dark t)
-  ;; (load-theme 'spacemacs-dark-theme t)
   ;; (load-theme 'doom-monokai-classic t)
   ;; (load-theme 'doom-monokai-machine t)
   ;; (load-theme 'doom-monokai-octagon t)
@@ -385,12 +400,28 @@ Benchmark Emacs Startup time without ever leaving your Emacs.
   ;; (load-theme 'doom-rouge t)
   ;; (load-theme 'doom-tokyo-night t)
   ;; (load-theme 'doom-sourcerer t)
+#+end_src
+
+#+begin_src emacs-lisp
+  ;;
+  ;; List of favorite themes. Uncomment the one that feels good for the day.
+  ;; -----------------------------------------------------------------------
+  ;; (load-theme 'afternoon t)
+  ;; (load-theme 'borland-blue t)
+  ;; (load-theme 'deeper-blue t)
   ;; (load-theme 'material t)
+  ;; (load-theme 'modus-vivendi t)
+  ;; (load-theme 'modus-operandi t)
+  ;; (load-theme 'modus-vivendi-tinted t)
+  ;; (load-theme 'modus-operandi-tinted t)
+  ;; (load-theme 'modus-vivendi-tritanopia t)
+  ;; (load-theme 'modus-operandi-tritanopia t)
   ;; (load-theme 'modus-vivendi-deuteranopia t)
+  ;; (load-theme 'modus-operandi-deuteranopia t)
   ;; (load-theme 'ef-duo-dark :no-confirm)
   ;; (load-theme 'ef-elea-dark :no-confirm)
-  ;; (load-theme 'ef-maris-dark :no-confirm)
-  (load-theme 'kaolin-dark t)
+  (load-theme 'ef-maris-dark :no-confirm)
+  ;; (load-theme 'kaolin-dark t)
   ;; (load-theme 'sanityinc-tomorrow-eighties t)
 
 
@@ -408,6 +439,11 @@ The following values are things that are just general quality-of-life settings.
   (show-paren-mode 1)
 
   (defconst *is-a-mac* (eq system-type 'darwin))
+  (when (eq system-type 'darwin)
+     (setq mac-option-key-is-meta t
+           mac-command-key-is-meta nil
+           mac-command-modifier 'none
+           mac-option-modifier 'meta))
 
   (setq inhibit-startup-message t)  ;; Hide the startup message
   (setq visible-bell t)             ;; Set up the visible bell
@@ -418,7 +454,7 @@ The following values are things that are just general quality-of-life settings.
   (setq auto-save-default nil) ;; disable auto save
 
   (column-number-mode)
-  (global-display-line-numbers-mode t) ;; Line numbers appear everywhere
+  (global-display-line-numbers-mode 1) ;; Line numbers appear everywhere
 
   ;; number of characters until the fill column
   (setq-default fill-column 80)
@@ -460,6 +496,9 @@ The following values are things that are just general quality-of-life settings.
   (if (boundp 'python-shell-completion-native-disabled-interpreters)
      (add-to-list 'python-shell-completion-native-disabled-interpreters "python3")
    (setq python-shell-completion-native-disabled-interpreters '("python3")))
+
+  ;;; smooth scrolling.
+  (setq pixel-scroll-mode t)
 
 #+end_src
 
@@ -550,7 +589,6 @@ Window numbers for Emacs: Navigate your windows and frames using numbers. This i
 
 #+end_src
 
-
 ** Treemacs Config
 
 #+begin_src emacs-lisp
@@ -590,7 +628,8 @@ Window numbers for Emacs: Navigate your windows and frames using numbers. This i
             treemacs-no-png-images                   nil
             treemacs-no-delete-other-windows         t
             treemacs-project-follow-cleanup          nil
-            treemacs-persist-file                    (expand-file-name ".cache/treemacs-persist"
+            treemacs-persist-file                    (expand-file-name
+  							".cache/treemacs-persist"
                                                         user-emacs-directory)
             treemacs-position                        'left
             treemacs-read-string-input               'from-child-frame
@@ -629,17 +668,16 @@ Window numbers for Emacs: Navigate your windows and frames using numbers. This i
       (treemacs-follow-mode t)
       (treemacs-filewatch-mode t)
       (treemacs-fringe-indicator-mode 'always)
-      ;; (when treemacs-python-executable
-      ;;   (treemacs-git-commit-diff-mode t))
+      (when treemacs-python-executable
+        (treemacs-git-commit-diff-mode t))
 
-      ;; (pcase (cons (not (null (executable-find "git")))
-      ;;              (not (null treemacs-python-executable)))
-      ;;   (`(t . t)
-      ;;    (treemacs-git-mode 'deferred))
-      ;;   (`(t . _)
-      ;;    (treemacs-git-mode 'simple)))
-
-      (treemacs-hide-gitignored-files-mode nil))
+      (pcase (cons (not (null (executable-find "git")))
+                   (not (null treemacs-python-executable)))
+         (`(t . t)
+  	  (treemacs-git-mode 'deferred))
+         (`(t . _)
+  	  (treemacs-git-mode 'simple)))
+       (treemacs-hide-gitignored-files-mode nil))
     :bind
     (:map global-map
           ("M-0"       . treemacs-select-window)
@@ -813,9 +851,6 @@ Provides a common protocol for debugging different systems. This is configured f
 
 #+end_src
 
-#+RESULTS:
-: debugpy
-
 ** DAP for Python
 
 #+begin_src emacs-lisp
@@ -846,22 +881,38 @@ Provides a common protocol for debugging different systems. This is configured f
 #+end_src
 
 ** DAP Template for NodeJS
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
 
   ;;; ------------------------------------------------------------------------
   ;;; DAP for NodeJS
 
+  (defun my-setup-dap-node ()
+     "Require dap-node feature and run dap-node-setup if VSCode module isn't already installed"
+     (require 'dap-node)
+     (unless (file-exists-p dap-node-debug-path) (dap-node-setup)))
+
   (use-package dap-node
-     :after (dap-mode)
-     :config
-     (dap-register-debug-template
-        "Launch index.ts"
-        (list :type "node"
-           :request "launch"
-           :program "${workspaceFolder}/index.ts"
-           :dap-compilation "npx tsc index.ts --outdir dist --sourceMap true"
-           :outFiles (list "${workspaceFolder}/dist/**/*.js")
-           :name "Launch index.ts")))
+   :after (dap-mode)
+   :straight (dap-node :type git
+  		:flavor melpa
+  		:files (:defaults "icons" "dap-mode-pkg.el")
+  		:host github
+  		:repo "emacs-lsp/dap-mode")
+   :config
+     (require 'dap-firefox)
+     ;; (dap-register-debug-template
+     ;;    "Launch index.ts"
+     ;;    (list :type "node"
+     ;; 	 :request "launch"
+     ;; 	 :program "${workspaceFolder}/index.ts"
+     ;; 	 :dap-compilation "npx tsc index.ts --outdir dist --sourceMap true"
+     ;; 	 :outFiles (list "${workspaceFolder}/dist/**/*.js")
+     ;; 	 :name "Launch index.ts"))
+     )
+
+  (add-hook 'typescript-mode-hook 'my-setup-dap-node)
+  (add-hook 'javascript-mode-hook 'my-setup-dap-node)
+
 
 #+end_src
 
@@ -872,12 +923,14 @@ This is a package for GNU Emacs that can be used to tie related commands into a 
 The Hydra is vanquished once Hercules, any binding that isn't the Hydra's head, arrives. Note that Hercules, besides vanquishing the Hydra, will still serve his original purpose, calling his proper command. This makes the Hydra very seamless, it's like a minor mode that disables itself auto-magically.
 
 #+begin_src emacs-lisp
+
   (use-package hydra
      :straight (hydra :type git
-  		  :flavor melpa
-  	    :files (:defaults (:exclude "lv.el") "hydra-pkg.el")
-  	      :host github
+  		:flavor melpa
+  		:files (:defaults (:exclude "lv.el") "hydra-pkg.el")
+  		:host github
   		:repo "abo-abo/hydra"))
+  
 #+end_src
 
 
@@ -894,43 +947,48 @@ Ivy is an excellent completion framework for Emacs.  It provides a minimal yet p
 
   (use-package swiper
      :straight (swiper :type git
-		  :flavor melpa
-		  :files ("swiper.el" "swiper-pkg.el")
-		  :host github
-		  :repo "abo-abo/swiper"))
+  		  :flavor melpa
+  		  :files ("swiper.el" "swiper-pkg.el")
+  		  :host github
+  		  :repo "abo-abo/swiper"))
 
   (use-package ivy
-    :diminish
-    :bind (("C-s" . swiper)
-	   :map ivy-minibuffer-map
-  ;;       ("TAB" . ivy-alt-done)
-	   ("C-l" . ivy-alt-done)
-	   ("C-j" . ivy-next-line)
-	   ("C-k" . ivy-previous-line)
-	   :map ivy-switch-buffer-map
-	   ("C-k" . ivy-previous-line)
-	   ("C-l" . ivy-done)
-	   ("C-d" . ivy-switch-buffer-kill)
-	   :map ivy-reverse-i-search-map
-	   ("C-k" . ivy-previous-line)
-	   ("C-d" . ivy-reverse-i-search-kill))
-    :custom     (ivy-use-virtual-buffers t)
-    :config
-    (ivy-mode 1))
+     :diminish
+     :bind (("C-s" . swiper)
+  	    :map ivy-minibuffer-map
+  	    ("TAB" . ivy-alt-done)
+  	    ("C-l" . ivy-alt-done)
+  	    ("C-j" . ivy-next-line)
+  	    ("C-k" . ivy-previous-line)
+  	    :map ivy-switch-buffer-map
+  	    ("C-k" . ivy-previous-line)
+  	    ("C-l" . ivy-done)
+  	    ("C-d" . ivy-switch-buffer-kill)
+  	    :map ivy-reverse-i-search-map
+  	    ("C-k" . ivy-previous-line)
+  	    ("C-d" . ivy-reverse-i-search-kill))
+     :custom (ivy-use-virtual-buffers t)
+     :config
+     (ivy-mode 1))
 
   (use-package ivy-rich
-    :after ivy
+     :after ivy
+    :straight (ivy-rich :type git :flavor melpa :host github :repo "Yevgnen/ivy-rich")
     :init
     (ivy-rich-mode 1))
 
   (use-package counsel
-    :bind (("C-M-j" . 'counsel-switch-buffer)
-	   :map minibuffer-local-map
-	   ("C-r" . 'counsel-minibuffer-history))
-    :custom
-    (counsel-linux-app-format-function #'counsel-linux-app-format-function-name-only)
-    :config
-    (counsel-mode 1))
+     ;; :straight (counsel :type git
+     ;; 		:flavor melpa
+     ;; 		:files ("counsel.el" "counsel-pkg.el")
+     ;; 		:host github :repo "abo-abo/swiper")
+     :bind (("C-M-j" . 'counsel-switch-buffer)
+  	    :map minibuffer-local-map
+  	    ("C-r" . 'counsel-minibuffer-history))
+     :custom
+     (counsel-linux-app-format-function #'counsel-linux-app-format-function-name-only)
+     :config
+     (counsel-mode 1))
 
   (use-package ivy-prescient
     :after counsel
@@ -938,10 +996,11 @@ Ivy is an excellent completion framework for Emacs.  It provides a minimal yet p
     (ivy-prescient-enable-filtering nil)
     :config
     ;; Uncomment the following line to have sorting remembered across sessions!
-    ;; (prescient-persist-mode 1)
+    (prescient-persist-mode 1)
     (ivy-prescient-mode 1))
 
-  (use-package ivy-yasnippet)
+  (use-package ivy-yasnippet
+     :straight (ivy-yasnippet :type git :flavor melpa :host github :repo "mkcms/ivy-yasnippet"))
 
 
 #+end_src
@@ -961,7 +1020,13 @@ Tree-sitter is a parser generator tool and an incremental parsing library. It ca
      (tree-sitter-hl-mode t)
      (ts-fold-mode t))
 
-  (use-package tree-sitter-langs)
+  (use-package tree-sitter-langs
+     :straight (tree-sitter-langs :type git
+  		:flavor melpa
+  		:files (:defaults "queries" "tree-sitter-langs-pkg.el")
+  		:branch "release"
+  		:host github :repo "emacs-tree-sitter/tree-sitter-langs"))
+
   (use-package tree-sitter
      ;; :after (lsp-mode)
      :config
@@ -987,19 +1052,18 @@ Tree-sitter is a parser generator tool and an incremental parsing library. It ca
 
 * Languages
 ** Typescript
-This is a basic configuration for the TypeScript language so that =.ts= files activate =typescript-mode= when opened.  We're also adding a hook to =typescript-mode-hook= to call =lsp-deferred= so that we activate =lsp-mode= to get LSP features every time we edit TypeScript code.
+This is a basic configuration for the TypeScript language so that =.ts= files activate =typescript-ts-mode= when opened.  We're also adding a hook to =typescript-mode-hook= to call =lsp-deferred= so that we activate =lsp-mode= to get LSP features every time we edit TypeScript code.
 
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
 
     ;;; -----------------------------------------------------------------
 
-    (use-package typescript-mode
-       :disabled  ;; Don't use this package .... yet
+    (use-package typescript-ts-mode
        :after (dap-mode)
        :mode "\\.ts\\'"
-       :hook (typescript-mode . lsp-deferred)
+       :hook (typescript-ts-mode . lsp-deferred)
        :config
-       (setq typescript-indent-level 2)
+       (setq typescript-indent-level 4)
        (dap-node-setup))
 
 #+end_src
@@ -1007,7 +1071,23 @@ This is a basic configuration for the TypeScript language so that =.ts= files ac
 ** NodeJS
 #+begin_src emacs-lisp
 
-  (use-package javascript-mode)
+  (defun mrf/load-js-file-hook ()
+     (message "Running JS file hook")
+     (js2-mode)
+     (dap-mode)
+     (dap-firefox-setup)
+     (highlight-indentation-mode -1))
+
+  (use-package js2-mode
+     :straight (js2-mode :type git :flavor melpa :host github :repo "mooz/js2-mode")
+     :custom
+     (js-indent-level 2)
+     (dap-firefox-debug-program
+        '("node" "/Users/strider/.emacs.d.mitchorg/.extension/vscode/firefox-devtools.vscode-firefox-debug/extension/dist/adapter.bundle.js"))
+     :init
+     (require 'dap-firefox))
+
+  (add-to-list 'auto-mode-alist '("\\.[m]js\\'" . mrf/load-js-file-hook))
 
 #+end_src
 
@@ -1018,19 +1098,31 @@ This is a basic configuration for the TypeScript language so that =.ts= files ac
 
   (defun code-compile ()
   "Look for a Makefile and compiles the code with gcc/cpp."
-  (interactive)
-  (unless (file-exists-p "Makefile")
-    (set (make-local-variable 'compile-command)
-         (let ((file (file-name-nondirectory buffer-file-name)))
-           (format "%s -o %s %s"
-                   (if  (equal (file-name-extension file) "cpp") "g++" "gcc" )
-                   (file-name-sans-extension file)
-                   file)))
-    (compile compile-command)))
+     (interactive)
+     (unless (file-exists-p "Makefile")
+        (set (make-local-variable 'compile-command)
+  	 (let ((file (file-name-nondirectory buffer-file-name)))
+              (format "%s -o %s %s"
+                 (if  (equal (file-name-extension file) "cpp") "g++" "gcc" )
+                 (file-name-sans-extension file)
+                 file)))
+        (compile compile-command)))
 
   (global-set-key [f9] 'code-compile)
 
 #+end_src
+
+** Other Languages
+#+begin_src emacs-lisp
+
+  (use-package graphql-mode)
+  (use-package js2-mode)
+  (use-package rust-mode)
+  (use-package swift-mode)
+
+#+end_src
+
+#+RESULTS:
 
 ** Flycheck
 This is more support for a language rather than a langage itself
@@ -1209,71 +1301,78 @@ autopep8 automatically formats Python code to conform to the `PEP 8` style guide
   (defalias 'quote-word
      (kmacro "\" M-d \" <left> C-y"))
 
+  (defalias 'quote-region
+     (kmacro "C-w \" \" <left> C-y <right>"))
+     
+
   ;; (define-key python-mode-map (kbd "C-c ,") 'dap-hydra/body)
   (general-define-key
      :keymaps '(python-mode-map dap-ui-mode-map)
-     "C-c ." 'dap-hydra/body)
+     "C-c C-g"    'elpy-goto-definition-other-window
+     "C-c g"      'elpy-goto-definition
+     "C-c C-q"    'quote-region
+     "C-c q"      'quote-word
+     "C-c ."      'dap-hydra/body)
 
 
 #+end_src
 
 *** DAP-Hydra
 
-#+begin_src emacs-lisp
-  (defhydra dap-hydra (:color pink :hint nil :foreign-keys run)
-    "
-  ^Stepping^          ^Switch^                 ^Breakpoints^          ^Debug^                     ^Eval
-  ^^^^^^^^----------------------------------------------------------------------------------------------------------------
-  _._: Next           _ss_: Session            _bb_: Toggle           _dd_: Debug                 _ee_: Eval
-  _/_: Step in        _st_: Thread             _bd_: Delete           _dr_: Debug recent          _er_: Eval region
-  _,_: Step out       _sf_: Stack frame        _ba_: Add              _dl_: Debug last            _es_: Eval thing at point
-  _c_: Continue       _su_: Up stack frame     _bc_: Set condition    _de_: Edit debug template   _ea_: Add expression.
-  _r_: Restart frame  _sd_: Down stack frame   _bh_: Set hit count    _ds_: Debug restart
-  _Q_: Disconnect     _sl_: List locals        _bl_: Set log message  _dx_: end session
-                    _sb_: List breakpoints                          _dX_: end all sessions
-                    _sS_: List sessions
-                    _sR_: Session Repl
-"
-     ("n" dap-next)
-     ("i" dap-step-in)
-     ("o" dap-step-out)
-     ("." dap-next)
-     ("/" dap-step-in)
-     ("," dap-step-out)
-     ("c" dap-continue)
-     ("r" dap-restart-frame)
-     ("ss" dap-switch-session)
-     ("st" dap-switch-thread)
-     ("sf" dap-switch-stack-frame)
-     ("su" dap-up-stack-frame)
-     ("sd" dap-down-stack-frame)
-     ("sl" dap-ui-locals)
-     ("sb" dap-ui-breakpoints)
-     ("sR" dap-ui-repl)
-     ("sS" dap-ui-sessions)
-     ("bb" dap-breakpoint-toggle)
-     ("ba" dap-breakpoint-add)
-     ("bd" dap-breakpoint-delete)
-     ("bc" dap-breakpoint-condition)
-     ("bh" dap-breakpoint-hit-condition)
-     ("bl" dap-breakpoint-log-message)
-     ("dd" dap-debug)
-     ("dr" dap-debug-recent)
-     ("ds" dap-debug-restart)
-     ("dl" dap-debug-last)
-     ("de" dap-debug-edit-template)
-     ("ee" dap-eval)
-     ("ea" dap-ui-expressions-add)
-     ("er" dap-eval-region)
-     ("es" dap-eval-thing-at-point)
-     ("dx" mrf/end-debug-session)
-     ("dX" mrf/delete-all-debug-sessions)
-     ("q" mrf/end-debug-session "quit" :color blue)
-     ("Q" mrf/delete-all-debug-sessions :color red))  
+#+begin_src emacs-lisp :results none
+    (defhydra dap-hydra (:color pink :hint nil :foreign-keys run)
+      "
+    ^Stepping^          ^Switch^                 ^Breakpoints^          ^Debug^                     ^Eval
+    ^^^^^^^^----------------------------------------------------------------------------------------------------------------
+    _._: Next           _ss_: Session            _bb_: Toggle           _dd_: Debug                 _ee_: Eval
+    _/_: Step in        _st_: Thread             _bd_: Delete           _dr_: Debug recent          _er_: Eval region
+    _,_: Step out       _sf_: Stack frame        _ba_: Add              _dl_: Debug last            _es_: Eval thing at point
+    _c_: Continue       _su_: Up stack frame     _bc_: Set condition    _de_: Edit debug template   _ea_: Add expression.
+    _r_: Restart frame  _sd_: Down stack frame   _bh_: Set hit count    _ds_: Debug restart
+    _Q_: Disconnect     _sl_: List locals        _bl_: Set log message  _dx_: end session
+                      _sb_: List breakpoints                          _dX_: end all sessions
+                      _sS_: List sessions
+                      _sR_: Session Repl
+  "
+       ("n" dap-next)
+       ("i" dap-step-in)
+       ("o" dap-step-out)
+       ("." dap-next)
+       ("/" dap-step-in)
+       ("," dap-step-out)
+       ("c" dap-continue)
+       ("r" dap-restart-frame)
+       ("ss" dap-switch-session)
+       ("st" dap-switch-thread)
+       ("sf" dap-switch-stack-frame)
+       ("su" dap-up-stack-frame)
+       ("sd" dap-down-stack-frame)
+       ("sl" dap-ui-locals)
+       ("sb" dap-ui-breakpoints)
+       ("sR" dap-ui-repl)
+       ("sS" dap-ui-sessions)
+       ("bb" dap-breakpoint-toggle)
+       ("ba" dap-breakpoint-add)
+       ("bd" dap-breakpoint-delete)
+       ("bc" dap-breakpoint-condition)
+       ("bh" dap-breakpoint-hit-condition)
+       ("bl" dap-breakpoint-log-message)
+       ("dd" dap-debug)
+       ("dr" dap-debug-recent)
+       ("ds" dap-debug-restart)
+       ("dl" dap-debug-last)
+       ("de" dap-debug-edit-template)
+       ("ee" dap-eval)
+       ("ea" dap-ui-expressions-add)
+       ("er" dap-eval-region)
+       ("es" dap-eval-thing-at-point)
+       ("dx" mrf/end-debug-session)
+       ("dX" mrf/delete-all-debug-sessions)
+       ("x" nil "exit Hydra" :color yellow)
+       ("q" mrf/end-debug-session "quit" :color blue)
+       ("Q" mrf/delete-all-debug-sessions :color red))  
 
  #+end_src
-
-
 
 #+begin_src emacs-lisp :tangle no
 
@@ -1379,6 +1478,32 @@ We use Pyvenv-auto is a package that automatically changes to the Python virtual
 
 #+end_src
 
+*** Pydoc
+#+begin_src emacs-lisp
+
+    (use-package pydoc-info
+       :ensure
+       :straight (pydoc-info :type git :host github :repo "emacsattic/pydoc-info"))
+
+    (info-lookup-add-help
+       :mode 'python-mode
+       :parse-rule 'pydoc-info-python-symbol-at-point
+       :doc-spec
+       '(("(python)Index" pydoc-info-lookup-transform-entry)
+           ("(sphinx)Index" pydoc-info-lookup-transform-entry)))
+
+    (use-package info-lookmore
+       :straight (info-lookmore :type git
+  		  :host github :repo "emacsmirror/info-lookmore"))
+    
+    (info-lookup-add-help
+       :mode 'python-mode
+       :regexp "[[:alnum:]_]+"
+       :doc-spec
+       '(("(python)Index" nil "")))
+      
+#+end_src
+
 
 * GameBoy Development
 RGBDS is a compiler that has been around quite a long time (since 1997). It supports Z80 and the LR35902 assembler syntaxes that are used in the development of Game Boy and Game Boy color games.
@@ -1403,6 +1528,49 @@ RGBDS is a compiler that has been around quite a long time (since 1997). It supp
      :straight (rgbds-mode
   		:type git :host github
   		:repo "japanoise/rgbds-mode"))
+
+#+end_src
+
+
+* Corfu
+Corfu enhances in-buffer completion with a small completion popup. The current candidates are shown in a popup below or above the point. The candidates can be selected by moving up and down. Corfu is the minimalistic in-buffer completion counterpart of the Vertico minibuffer UI.
+
+#+begin_src emacs-lisp :tangle no
+
+  ;;;; Code Completion
+  (use-package corfu
+     :disabled
+     :ensure
+     ;; Optional customizations
+     :custom
+     (corfu-cycle t)                 ; Allows cycling through candidates
+     (corfu-auto t)                  ; Enable auto completion
+     (corfu-auto-prefix 2)
+     (corfu-auto-delay 0.8)
+     (corfu-popupinfo-delay '(0.5 . 0.2))
+     (corfu-preview-current 'insert) ; insert previewed candidate
+     (corfu-preselect 'prompt)
+     (corfu-on-exact-match nil)      ; Don't auto expand tempel snippets
+     ;; Optionally use TAB for cycling, default is `corfu-complete'.
+     :bind (:map corfu-map
+              ("M-SPC"      . corfu-insert-separator)
+              ("TAB"        . corfu-next)
+              ([tab]        . corfu-next)
+              ("S-TAB"      . corfu-previous)
+              ([backtab]    . corfu-previous)
+              ("S-<return>" . corfu-insert)
+              ("RET"        . nil))
+
+     :init
+     (global-corfu-mode)
+     (corfu-history-mode)
+     (corfu-popupinfo-mode) ; Popup completion info
+     :config
+     (add-hook 'eshell-mode-hook
+        (lambda () (setq-local corfu-quit-at-boundary t
+                      corfu-quit-no-match t
+                      corfu-auto nil)
+           (corfu-mode))))
 
 #+end_src
 
@@ -1435,7 +1603,7 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
         (add-to-list 'company-backends 'company-jedi))
      (add-hook 'python-mode-hook 'my/company-jedi-python-mode-hook))
 
-  (add-hook 'prog-mode-hook 'company-mode)
+  (add-hook 'after-init-hook 'global-company-mode)
 
 #+end_src
 
@@ -1541,8 +1709,7 @@ The =mrf/org-font-setup= function configures various text faces to tweak the siz
 
 This section contains the basic configuration for =org-mode= plus the configuration for Org agendas and capture templates.
 
-#+begin_src emacs-lisp
-
+#+begin_src  emacs-lisp
   ;;; -----------------------------------------------------------------
 
   (defun mrf/org-mode-setup ()
@@ -1563,7 +1730,12 @@ This section contains the basic configuration for =org-mode= plus the configurat
      (setq org-refile-targets
         '(("Archive.org" :maxlevel . 1)
   	  ("Tasks.org" :maxlevel . 1))))
+  
+#+end_src
 
+*** Function to setup the agenda
+
+#+begin_src emacs-lisp
   ;;; -----------------------------------------------------------------
 
   (defun mrf/org-setup-agenda ()
@@ -1614,6 +1786,12 @@ This section contains the basic configuration for =org-mode= plus the configurat
                      ((org-agenda-overriding-header "Cancelled Projects")
                         (org-agenda-files org-agenda-files)))))))
      ) ;; mrf/org-setup-agenda
+  
+#+end_src
+
+*** The capture-templates function
+
+#+begin_src emacs-lisp
 
   ;;; -----------------------------------------------------------------
 
@@ -1647,6 +1825,10 @@ This section contains the basic configuration for =org-mode= plus the configurat
   				       "Weight")
                "| %U | %^{Weight} | %^{Notes} |" :kill-buffer t))))
      
+#+end_src
+
+** The main 'Org' package
+#+begin_src emacs-lisp
   ;;; -----------------------------------------------------------------
 
   (use-package org
@@ -1660,6 +1842,8 @@ This section contains the basic configuration for =org-mode= plus the configurat
      :commands (org-capture org-agenda)
      :hook (org-mode . mrf/org-mode-setup)
      :config
+     (general-def org-mode-map
+        "C-c e" 'org-edit-src-code)
      ;; Save Org buffers after refiling!
      (advice-add 'org-refile :after 'org-save-all-org-buffers)
      (setq org-tag-alist
@@ -1702,7 +1886,7 @@ This section contains the basic configuration for =org-mode= plus the configurat
 ** Visual Fill
 We use [[https://github.com/joostkremers/visual-fill-column][visual-fill-column]] to center =org-mode= buffers for a more pleasing writing experience as it centers the contents of the buffer horizontally to seem more like you are editing a document.  This is really a matter of personal preference so you can remove the block below if you don't like the behavior.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :results silent
 
   ;;; -----------------------------------------------------------------
 
@@ -1725,11 +1909,12 @@ To execute or export code in =org-mode= code blocks, you'll need to set up =org-
   ;;; -----------------------------------------------------------------
 
   (with-eval-after-load 'org
-    (org-babel-do-load-languages
-     'org-babel-load-languages
-     '((emacs-lisp . t)
-       (shell . t)
-       (python . t)))
+     (org-babel-do-load-languages
+        'org-babel-load-languages
+        '((emacs-lisp . t)
+  	(js . t)
+  	(shell . t)
+  	(python . t)))
 
     (push '("conf-unix" . conf-unix) org-src-lang-modes))
 
@@ -1945,7 +2130,7 @@ This snippet adds a hook to =org-mode= buffers so that source code blocks can be
 
 #+begin_src emacs-lisp
 
-  ;; Automatically tangle our Emacs.org config file when we save it
+  ;; Automatically tangle our Configure.org config file when we save it
   ;; Org files that should use this need to add a '#+auto_tangle: t'
   ;; in the org file.
   (use-package org-auto-tangle
@@ -1974,6 +2159,21 @@ While there is standard markdown support built into =org-mode=, this additional 
 (with-eval-after-load 'org
   (require 'ox-gfm nil t))
 
+#+end_src
+
+** Org-AI
+
+#+begin_src emacs-lisp
+  (use-package org-ai
+     :disabled
+     :straight (org-ai :type git
+  		:flavor melpa
+  		:files (:defaults "snippets" "org-ai-pkg.el")
+  		:host github :repo "rksm/org-ai")
+     :custom
+     (org-ai-openai-api-token "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"))
+
+  ;; (load "copilot")
 #+end_src
 
 
@@ -2149,37 +2349,54 @@ Auto-Complete is an intelligent auto-completion extension for Emacs. It extends 
 A great package that allows moving up and down the undo-redo tree.
 
 #+begin_src emacs-lisp
-
-  ;;; -------------------------------------------------------------------------
-  ;;; undo-tree handling
-
-  (defun mrf/undo-tree-hook ()
-     (set-frame-width (selected-frame) 20))
-
-  (use-package undo-tree
-     :defer t
-     ;; :hook (undo-tree-visualizer-mode-hook . mrf/undo-tree-hook)
-     :init
-     (setq undo-tree-visualizer-timestamps t
-        ;; undo-tree-visualizer-diff t
-        undo-tree-enable-undo-in-region t
-        ;; 10X bump of the undo limits to avoid issues with premature
-        ;; Emacs GC which truncages the undo history very aggresively
-        undo-limit 800000
-        undo-strong-limit 12000000
-        undo-outer-limit 120000000)
-     (global-undo-tree-mode))
-    ;; :config
-    ;; restore diff window after quit.  TODO fix upstream
-    ;; (defun mrf/undo-tree-restore-default ()
-    ;;   (setq undo-tree-visualizer-diff nil))
-    ;;  (advice-add 'undo-tree-visualizer-quit :after #'mrf/undo-tree-restore-default))
-
-  ;; This prevents the *.~undo-tree~ files from being persisted.
-  (with-eval-after-load 'undo-tree
-     (setq undo-tree-auto-save-history nil))
+      
+  (use-package vundo
+     :straight (vundo :type git
+  		:host github
+  		:repo "emacs-straight/vundo"
+  		:files ("*" (:exclude ".git")))
+     :bind (("C-x u" . vundo)
+  	  ("C-x r u" . vundo))
+     :config
+     (setq vundo-glyph-alist vundo-unicode-symbols)
+     (set-face-attribute 'vundo-default nil :family "Wingdings2"))  
 
 #+end_src
+
+  
+#+begin_src emacs-lisp :tangle no
+
+      ;;; -------------------------------------------------------------------------
+      ;;; undo-tree handling
+
+      (defun mrf/undo-tree-hook ()
+         (set-frame-width (selected-frame) 20))
+
+      (use-package undo-tree
+         :defer t
+         ;; :hook (undo-tree-visualizer-mode-hook . mrf/undo-tree-hook)
+         :init
+         (setq undo-tree-visualizer-timestamps t
+            ;; undo-tree-visualizer-diff t
+            undo-tree-enable-undo-in-region t
+            ;; 10X bump of the undo limits to avoid issues with premature
+            ;; Emacs GC which truncages the undo history very aggresively
+            undo-limit 800000
+            undo-strong-limit 12000000
+            undo-outer-limit 120000000)
+         (global-undo-tree-mode))
+        ;; :config
+        ;; restore diff window after quit.  TODO fix upstream
+        ;; (defun mrf/undo-tree-restore-default ()
+        ;;   (setq undo-tree-visualizer-diff nil))
+        ;;  (advice-add 'undo-tree-visualizer-quit :after #'mrf/undo-tree-restore-default))
+
+      ;; This prevents the *.~undo-tree~ files from being persisted.
+      (with-eval-after-load 'undo-tree
+         (setq undo-tree-auto-save-history nil))
+
+#+end_src
+
 ** Helpful Help Commands
 
 [[https://github.com/Wilfred/helpful][Helpful]] adds a lot of very helpful (get it?) information to Emacs' =describe-= command buffers.  For example, if you use =describe-function=, you will not only get the documentation about the function, you will also see the source code of the function and where it gets used in other places in the Emacs configuration.  It is very useful for figuring out how things work in Emacs.
@@ -2374,7 +2591,8 @@ Here are some helpful functions that are bound to some (for me) unassigned keys.
 
   (general-define-key
      "C-c i f" 'mrf/insert-buffer-name-at-point
-     "C-c i F" 'mrf/insert-buffer-full-name-at-point)
+     "C-c i F" 'mrf/insert-buffer-full-name-at-point
+     )
 
 #+end_src
 
@@ -2585,9 +2803,9 @@ The following is a list of major mode-hooks variables that are set so that they 
   (dolist (mode '(dashboard-mode-hook
                     eshell-mode-hook
                     eww-mode-hook
+  		  help-mode-hook
                     org-mode-hook
                     shell-mode-hook
-                    term-mode-hook
                     term-mode-hook
                     treemacs-mode-hook
                     vterm-mode-hook))
@@ -2664,7 +2882,7 @@ This little function toggles between a larger font size and the default font siz
 *** Frame support functions
 These functions are used to configure the main frame font size. Based upon a monitor's size, it may be necessary to make the font larger or smaller. Each function is specifically broken out only so that the =describe-key= will show something other than just ~lambda~.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :results silent
 
   (defun mrf/set-frame-font (slot)
      (setq mrf/font-size-slot slot)
@@ -2676,11 +2894,13 @@ These functions are used to configure the main frame font size. Based upon a mon
 
   (defun use-medium-display-font ()
      (interactive)
-     (mrf/set-frame-font 1))
+     (mrf/set-frame-font 1)
+     (mrf/set-frame-alpha-maximized))
 
   (defun use-large-display-font ()
      (interactive)
-     (mrf/set-frame-font 2))
+     (mrf/set-frame-font 2)
+     (mrf/set-frame-alpha-maximized))
 
   (defun use-x-large-display-font ()
      (interactive)
