@@ -1,13 +1,15 @@
-(setq enable-dap 0            ;; Debug Adapter Protocol
-      enable-dape t           ;; DAP for Emacs. Can't do both
-      enable-corfu 0          ;; Alternative to Ivy/Swiper/Company
-      enable-org-ai 0         ;; Interface to OpenAI
-      enable-centaur-tabs 0   ;; Top Tabs for files
-      ;; -------------------->>  Use Anaconda or Elpy but NOT BOTH!
-      enable-anaconda 0       ;; Use Anaconda for python Dev Environment
-      enable-elpy t           ;; Use Elpy as the Python Dev Environment
-      enable-neotree 0        ;; Load Neotree
-      enable-zoom 0)          ;; Re-size active frame to golden ratio
+(setq
+   enable-dap t            ;; Debug Adapter Protocol
+   enable-dape 0           ;; DAP for Emacs. Can't do both
+   enable-corfu 0          ;; Alternative to Ivy/Swiper/Company
+   enable-org-ai 0         ;; Interface to OpenAI
+   enable-centaur-tabs 0   ;; Top Tabs for files
+   ;; -------------------->>  Use Anaconda or Elpy but NOT BOTH!
+   enable-anaconda 0       ;; Use Anaconda for python Dev Environment
+   enable-elpy t           ;; Use Elpy as the Python Dev Environment
+   enable-neotree 0        ;; Load Neotree
+   enable-zoom 0
+   )          ;; Re-size active frame to golden ratio
 
 (defvar bootstrap-version)
 (let ((bootstrap-file
@@ -25,7 +27,8 @@
        (eval-print-last-sexp)))
   (load bootstrap-file nil 'nomessage))
 
-(setq straight-use-package-by-default t)
+(setq straight-use-package-by-default t
+      use-package-verbose t)
 
 ;;; -------------------------------------------------------------------------
 ;;; Use shell paths
@@ -86,6 +89,44 @@
 ;; Make frame transparency overridable
 ;; (defvar mrf/frame-transparency '(90 . 90))
 
+(defun mrf/frame-recenter (&optional frame)
+   "Center FRAME on the screen.  FRAME can be a frame name, a terminal name,
+  or a frame.  If FRAME is omitted or nil, use currently selected frame."
+   (interactive)
+   ;; (set-frame-size (selected-frame) 250 120)
+   (unless (eq 'maximised (frame-parameter nil 'fullscreen))
+      (progn
+       (let ((width (nth 3 (assq 'geometry (car (display-monitor-attributes-list)))))
+  	       (height (nth 4 (assq 'geometry (car (display-monitor-attributes-list))))))
+  	  (cond (( > width 3000) (mrf/update-large-display))
+  	        (( > width 2000) (mrf/update-built-in-display))
+  	        (t (mrf/set-frame-alpha-maximized)))
+  	  )
+       )
+      )
+   )
+
+(defun mrf/update-large-display ()
+   (modify-frame-parameters
+      frame '((user-position . t)
+  	      (top . 0.5)
+  	      (left . 0.68)
+  	      (width . (text-pixels . 2800))
+  	      (height . (text-pixels . 1650))) ;; 1800
+      )
+   )
+
+(defun mrf/update-built-in-display ()
+   (modify-frame-parameters
+      frame '((user-position . t)
+  	      (top . 0.5)
+  	      (left . 0.68)
+  	      (width . (text-pixels . 1758))
+  	      (height . (text-pixels . 1170)));; 1329
+      )
+   )
+
+
 ;; Set frame transparency
 (defun mrf/set-frame-alpha-maximized ()
    "Function to set the alpha and also maximize the frame."
@@ -97,9 +138,11 @@
 (defun mrf/custom-set-frame-size ()
    "Simple function to set the default frame width/height."
    ;; (set-frame-parameter (selected-frame) 'alpha mrf/frame-transparency)
+   (setq swidth (nth 3 (assq 'geometry (car (display-monitor-attributes-list)))))
+   (setq sheight (nth 4 (assq 'geometry (car (display-monitor-attributes-list)))))
+
    (add-to-list 'default-frame-alist '(fullscreen . maximized))
-   ;; (add-to-list 'default-frame-alist '(height . 60))
-   ;; (add-to-list 'default-frame-alist '(width . 200))
+   (mrf/frame-recenter)
    )
 
 (defun mrf/update-face-attribute ()
@@ -112,7 +155,7 @@
       ;; :font "Menlo"
       :family "SF Mono"
       :height mrf/default-font-size
-      :weight 'regular)
+      :weight 'medium)
 
    ;; Set the fixed pitch face
    (set-face-attribute 'fixed-pitch nil
@@ -120,18 +163,18 @@
       :family "SF Mono"
       ;; :font "Fira Code Retina"
       :height mrf/default-font-size
-      :weight 'regular)
+      :weight 'medium)
 
    ;; Set the variable pitch face
    (set-face-attribute 'variable-pitch nil
       :family "SF Pro"
       :height mrf/default-variable-font-size
-      :weight 'regular))
+      :weight 'medium))
 
-(set-frame-parameter (selected-frame) 'fullscreen 'maximized)
-(mrf/set-frame-alpha-maximized)
 (mrf/update-face-attribute)
-;; ==(mrf/custom-set-frame-size)
+;; (add-hook 'window-setup-hook #'mrf/frame-recenter)
+;; (add-hook 'after-init-hook #'mrf/frame-recenter)
+(mrf/frame-recenter)
 
 (use-package esup
    :straight t)
@@ -159,10 +202,10 @@
 ;; (add-to-list 'custom-theme-load-path (concat mrf/docs-dir "/Themes/"))
 
 (use-package ef-themes
-   :straight 1)
+   :straight t)
 
 (use-package modus-themes
-   :straight 1)
+   :straight t)
 
 (use-package color-theme-modern
    :straight t)
@@ -176,7 +219,11 @@
 (use-package zenburn-theme
    :straight t)
 
-;; (use-package kaolin-themes)
+(use-package doom-themes
+   :straight t)
+
+(use-package kaolin-themes
+   :straight t)
 ;;    :straight (kaolin-themes
 ;; 		:type git
 ;; 		:flavor melpa
@@ -197,8 +244,6 @@
 ;; (use-package solarized-theme
 ;;    :ensure nil)
 
-(use-package doom-themes
-   :straight t)
 ;;
 ;; (load-theme 'doom-badger t)
 ;; (load-theme 'doom-challenger-deep t)
@@ -213,7 +258,7 @@
 ;; (load-theme 'doom-monokai-spectrum t)
 ;; (load-theme 'doom-opera t)
 ;; (load-theme 'doom-oksolar-dark t)
-;; (load-theme 'doom-palenight t)
+;; (load-theme 'doom-palenight t)  ;; A1: Include A2 for good combo, in that order
 ;; (load-theme 'doom-rouge t)
 ;; (load-theme 'doom-tokyo-night t)
 ;; (load-theme 'doom-sourcerer t)
@@ -249,6 +294,7 @@
    '(  (bg-mode-line bg-blue-intense)
        (fg-mode-line fg-main)
        (border-mode-line-active blue-intense)))
+
 (load-theme 'ef-symbiosis t)
 ;; (add-hook 'after-init-hook 'mrf/customize-ef-theme)
 
@@ -262,12 +308,11 @@
 ;; (load-theme 'kaolin-dark t)
 ;; (load-theme 'sanityinc-tomorrow-eighties t)
 ;; (load-theme 'timu-caribbean t)
-;; (load-theme 'cobalt t)                   ;; 2
-;; (load-theme 'deeper-blue t)
+;; (load-theme 'deeper-blue t)   ;; A2: Use A1 before this
+;; (load-theme 'cobalt t)       
 ;; (load-theme 'robin-hood t)
 ;; (load-theme 'railscast t)
 ;; (load-theme 'moe-dark t)
-;; (load-theme 'moe t)
 
 ;; Zenburn
 ;; (setq zenburn-override-colors-alist
@@ -275,27 +320,28 @@
 ;;       ("zenburn-bg+1"  . "#2F2F2F")
 ;;       ("zenburn-bg+2"  . "#3F3F3F")
 ;;       ("zenburn-bg+3"  . "#4F4F4F")))
-;; (load-theme 'zenburn-theme)
+;; (load-theme 'zenburn t)
 
 
 ;; For terminal mode we choose Material theme
 (unless (display-graphic-p)
    (load-theme 'material t))
 
-(show-paren-mode 1)
-(setq inhibit-startup-message t)     ;; Hide the startup message
-(setq visible-bell t)                ;; Set up the visible bell
-(save-place-mode 1)                  ;; Remember where we were last editing a file.
-(setq backup-inhibited t)            ;; disable backup (No ~ tilde files)
-(setq auto-save-default nil)         ;; disable auto save
 (column-number-mode)
 (global-display-line-numbers-mode 1) ;; Line numbers appear everywhere
-(setq-default fill-column 80)        ;; number of characters until the fill column
-(setq lisp-indent-offset '3)         ;; emacs lisp tab size
+(save-place-mode 1)                  ;; Remember where we were last editing a file.
 (savehist-mode t)
-(setq history-length 25)             ;; Reasonable buffer length
+(setq auto-save-default nil)         ;; disable auto save
+(setq backup-inhibited t)            ;; disable backup (No ~ tilde files)
 (setq global-auto-revert-mode 1)     ;; Refresh buffer if file has chaned
 (setq global-auto-revert-non-file-buffers t)
+(setq history-length 25)             ;; Reasonable buffer length
+(setq inhibit-startup-message t)     ;; Hide the startup message
+(setq lisp-indent-offset '3)         ;; emacs lisp tab size
+(setq visible-bell t)                ;; Set up the visible bell
+(setq-default fill-column 80)        ;; number of characters until the fill column
+(show-paren-mode 1)
+(tool-bar-mode -1)                   ;; Hide the toolbar
 
 ;; each line of text gets one line on the screen (i.e., text will run
 ;; off the left instead of wrapping around onto a new line)
@@ -1562,7 +1608,7 @@
 ;;; -----------------------------------------------------------------
 
 (defun mrf/org-mode-visual-fill ()
-  (setq visual-fill-column-width 100
+  (setq visual-fill-column-width 110
         visual-fill-column-center-text t)
   (visual-fill-column-mode 1))
 
@@ -2020,37 +2066,36 @@ capture was not aborted."
 
 (defun mrf/update-font-size ()
    (message "adjusting font size")
-   (if (equal mrf/font-size-slot 3)
-      (progn
-         (message "X-Large Font")
-         (setq mrf/default-font-size mrf/x-large-font-size)
-         (setq mrf/default-variable-font-size mrf/x-large-variable-font-size)
-         (setq mrf/font-size-slot 2)
-         (mrf/update-face-attribute))
-      (if (equal mrf/font-size-slot 2)
-         (progn
-            (message "Large Font")
-            (setq mrf/default-font-size mrf/large-font-size)
-            (setq mrf/default-variable-font-size mrf/large-variable-font-size)
-            (setq mrf/font-size-slot 1)
-            (mrf/update-face-attribute))
-         (if (equal mrf/font-size-slot 1)
+   (cond ((equal mrf/font-size-slot 3)
+  	  (progn
+               (message "X-Large Font")
+               (setq mrf/default-font-size mrf/x-large-font-size
+  		mrf/default-variable-font-size mrf/x-large-variable-font-size
+  		mrf/font-size-slot 2)
+               (mrf/update-face-attribute)))
+         ((equal mrf/font-size-slot 2)
+            (progn
+               (message "Large Font")
+               (setq mrf/default-font-size mrf/large-font-size
+  		mrf/default-variable-font-size mrf/large-variable-font-size
+  		mrf/font-size-slot 1)
+               (mrf/update-face-attribute)))       
+         ((equal mrf/font-size-slot 1)
             (progn
                (message "Medium Font")
-               (setq mrf/default-font-size mrf/medium-font-size)
-               (setq mrf/default-variable-font-size mrf/medium-variable-font-size)
-               (setq mrf/font-size-slot 0)
-               (mrf/update-face-attribute))
+               (setq mrf/default-font-size mrf/medium-font-size
+  		mrf/default-variable-font-size mrf/medium-variable-font-size
+  		mrf/font-size-slot 0)
+               (mrf/update-face-attribute)))
+         ((equal mrf/font-size-slot 0)
             (progn
                (message "Small Font")
-               (setq mrf/default-font-size mrf/small-font-size)
-               (setq mrf/default-variable-font-size mrf/small-variable-font-size)
-               (setq mrf/font-size-slot 3)
-               (mrf/update-face-attribute))))))
-
-;; Cycle through all resolutions
-(general-define-key
-   "C-c x" '(lambda () (interactive) (mrf/update-font-size)))
+               (setq mrf/default-font-size mrf/small-font-size
+  		mrf/default-variable-font-size mrf/small-variable-font-size
+  		mrf/font-size-slot 3)
+               (mrf/update-face-attribute)))
+      )
+   )
 
 ;; Some alternate keys below....
 (general-define-key
@@ -2067,25 +2112,33 @@ capture was not aborted."
 
 (defun mrf/set-frame-font (slot)
    (setq mrf/font-size-slot slot)
-   (mrf/update-font-size))
+   (mrf/update-font-size)
+   (mrf/frame-recenter)
+   )
 
 (defun use-small-display-font ()
    (interactive)
-   (mrf/set-frame-font 0))
+   (mrf/set-frame-font 0)
+   (mrf/frame-recenter)
+   )
 
 (defun use-medium-display-font ()
    (interactive)
    (mrf/set-frame-font 1)
-   (mrf/set-frame-alpha-maximized))
+   (mrf/frame-recenter)
+   )
 
 (defun use-large-display-font ()
    (interactive)
    (mrf/set-frame-font 2)
-   (mrf/set-frame-alpha-maximized))
+   (mrf/frame-recenter)
+   )
 
 (defun use-x-large-display-font ()
    (interactive)
-   (mrf/set-frame-font 3))
+   (mrf/set-frame-font 3)
+   (mrf/frame-recenter)
+   )
 
 ;;; ===========================================================================
 (custom-set-variables
