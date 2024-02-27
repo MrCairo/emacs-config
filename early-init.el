@@ -21,6 +21,7 @@
 
 (setq read-process-output-max (* 4 1024 1024))
 (setq process-adaptive-read-buffering nil)
+;; (add-to-list 'default-frame-alist '(undecorated . t))
 
 ;;; -------------------------------------------------------------------------
 ;;; Package setup
