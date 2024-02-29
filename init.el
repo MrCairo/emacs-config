@@ -323,9 +323,9 @@
 ;; each line of text gets one line on the screen (i.e., text will run
 ;; off the left instead of wrapping around onto a new line)
 (setq-default truncate-lines 1)
+(setq truncate-partial-width-windows 1) ;; truncate lines even in partial-width windows
 
 (global-prettify-symbols-mode 1)     ;; Display pretty symbols (i.e. λ = lambda)
-(setq truncate-partial-width-windows 1) ;; truncate lines even in partial-width windows
 
 (use-package page-break-lines
    :config
@@ -410,17 +410,23 @@
 
 (use-package modus-themes)
 
-(use-package color-theme-modern)
+(use-package color-theme-modern
+   :defert t)
 
-(use-package material-theme)
+(use-package material-theme
+   :defer t)
 
-(use-package moe-theme)
+(use-package moe-theme
+   :defer t)
 
-(use-package zenburn-theme)
+(use-package zenburn-theme
+    :defer t)
 
-(use-package doom-themes)
+(use-package doom-themes
+   :defer t)
 
-(use-package kaolin-themes)
+(use-package kaolin-themes
+   :defer t)
 ;;    :straight (kaolin-themes
 ;; 		:type git
 ;; 		:flavor melpa
@@ -435,7 +441,8 @@
 ;; 		:host github
 ;; 		:repo "purcell/color-theme-sanityinc-tomorrow"))
 
-(use-package timu-caribbean-theme)
+(use-package timu-caribbean-theme
+   :defer t)
 
 ;; (use-package solarized-theme
 ;;    :ensure nil)
@@ -571,6 +578,7 @@
    (add-hook 'yas-after-exit-snippet-hook #'help/yas-after-exit-snippet-hook-fn))
 
 (use-package yasnippet-snippets
+   :defer t
    :straight (yasnippet-snippets :type git :flavor melpa
   	      :files ("*.el" "snippets" ".nosearch" "yasnippet-snippets-pkg.el")
   	      :host github
@@ -749,6 +757,7 @@
   (lsp-headerline-breadcrumb-mode))
 
 (use-package lsp-mode
+   :defer t
    :commands (lsp lsp-deferred)
    :hook (lsp-mode . mrf/lsp-mode-setup)
    :init
@@ -757,17 +766,18 @@
    (lsp-enable-which-key-integration t))
 
 (use-package lsp-ui
-  :config (setq lsp-ui-sideline-enable t
-                lsp-ui-sideline-show-hover t
-                lsp-ui-sideline-delay 0.5
-                lsp-ui-sideline-ignore-duplicates t
-                lsp-ui-doc-delay 3
-                lsp-ui-doc-position 'top
-                lsp-ui-doc-alignment 'frame
-                lsp-ui-doc-header nil
-                lsp-ui-doc-show-with-cursor t
-                lsp-ui-doc-include-signature t
-                lsp-ui-doc-use-childframe t)
+   :after lsp
+   :config (setq lsp-ui-sideline-enable t
+                 lsp-ui-sideline-show-hover t
+                 lsp-ui-sideline-delay 0.5
+                 lsp-ui-sideline-ignore-duplicates t
+                 lsp-ui-doc-delay 3
+                 lsp-ui-doc-position 'top
+                 lsp-ui-doc-alignment 'frame
+                 lsp-ui-doc-header nil
+                 lsp-ui-doc-show-with-cursor t
+                 lsp-ui-doc-include-signature t
+                 lsp-ui-doc-use-childframe t)
   :commands lsp-ui-mode
   :custom
   (lsp-ui-doc-position 'bottom)
@@ -796,7 +806,8 @@
 (if (equal enable-dape t)
    (progn
       (use-package dape
-       :after (jsonrpc)
+       :after (python-mode)
+       ;; :defer t
        ;; To use window configuration like gud (gdb-mi)
        ;; :init
        ;; (setq dape-buffer-window-arrangement 'gud)
@@ -827,6 +838,8 @@
        ;; :straight (dape :type git
        ;; 	      :host github :repo "emacs-straight/dape"
        ;; 	      :files ("*" (:exclude ".git")))
+       :config
+       (message "DAPE Configured")
        )
       )
    )
@@ -848,26 +861,26 @@
       (call-process "npx" nil "*snam-install*" t "gulp" "dapDebugServer")
       (message "vscode-js-debug installed")))
 
-(if (equal enable-dape t)
-   (add-to-list 'dape-configs
-      `(vscode-js-node
-  	modes (js-mode js-ts-mode typescript-mode typescript-ts-mode)
-  	host "localhost"
-  	port 8123
-  	command "node"
-  	command-cwd ,(file-name-concat mrf/vscode-js-debug-dir "dist")
-  	command-args ("src/dapDebugServer.js" "8123")
-  	:type "pwa-node"
-  	:request "launch"
-  	:cwd dape-cwd-fn
-  	:program dape--default-cwd
-  	:outputCapture "console"
-  	:sourceMapRenames t
-  	:pauseForSourceMap nil
-  	:enableContentValidation t
-  	:autoAttachChildProcesses t
-  	:console "internalConsole"
-  	:killBehavior "forceful")))
+;; (if (equal enable-dape t)
+;;    (add-to-list 'dape-configs
+;;       `(vscode-js-node
+;; 	  modes (js-mode js-ts-mode typescript-mode typescript-ts-mode)
+;; 	  host "localhost"
+;; 	  port 8123
+;; 	  command "node"
+;; 	  command-cwd ,(file-name-concat mrf/vscode-js-debug-dir "dist")
+;; 	  command-args ("src/dapDebugServer.js" "8123")
+;; 	  :type "pwa-node"
+;; 	  :request "launch"
+;; 	  :cwd dape-cwd-fn
+;; 	  :program dape--default-cwd
+;; 	  :outputCapture "console"
+;; 	  :sourceMapRenames t
+;; 	  :pauseForSourceMap nil
+;; 	  :enableContentValidation t
+;; 	  :autoAttachChildProcesses t
+;; 	  :console "internalConsole"
+;; 	  :killBehavior "forceful")))
 
 (defun mrf/dape-end-debug-session ()
    "End the debug session and delete project Python buffers."
@@ -997,31 +1010,32 @@
 (if (equal enable-dap t)
    (progn
       (use-package dap-node
-	 :straight (dap-node :type git
-		      :flavor melpa
-		      :files (:defaults "icons" "dap-mode-pkg.el")
-		      :host github
-		      :repo "emacs-lsp/dap-mode")
-	 :after (dap-mode)
-	 :config
-	 (require 'dap-firefox)
-	 (dap-register-debug-template
-	    "Launch index.ts"
-	    (list :type "node"
-	       :request "launch"
-	       :program "${workspaceFolder}/index.ts"
-	       :dap-compilation "npx tsc index.ts --outdir dist --sourceMap true"
-	       :outFiles (list "${workspaceFolder}/dist/**/*.js")
-	       :name "Launch index.ts"))
-	 ;; (dap-register-debug-template
-	 ;;    "Launch index.ts"
-	 ;;    (list :type "node"
-	 ;; 	 :request "launch"
-	 ;; 	 :program "${workspaceFolder}/index.ts"
-	 ;; 	 :dap-compilation "npx tsc index.ts --outdir dist --sourceMap true"
-	 ;; 	 :outFiles (list "${workspaceFolder}/dist/**/*.js")
-	 ;; 	 :name "Launch index.ts"))
-	 )
+  	 :defer t
+  	 :straight (dap-node :type git
+  		      :flavor melpa
+  		      :files (:defaults "icons" "dap-mode-pkg.el")
+  		      :host github
+  		      :repo "emacs-lsp/dap-mode")
+  	 :after (dap-mode)
+  	 :config
+  	 (require 'dap-firefox)
+  	 (dap-register-debug-template
+  	    "Launch index.ts"
+  	    (list :type "node"
+  	       :request "launch"
+  	       :program "${workspaceFolder}/index.ts"
+  	       :dap-compilation "npx tsc index.ts --outdir dist --sourceMap true"
+  	       :outFiles (list "${workspaceFolder}/dist/**/*.js")
+  	       :name "Launch index.ts"))
+  	 ;; (dap-register-debug-template
+  	 ;;    "Launch index.ts"
+  	 ;;    (list :type "node"
+  	 ;; 	 :request "launch"
+  	 ;; 	 :program "${workspaceFolder}/index.ts"
+  	 ;; 	 :dap-compilation "npx tsc index.ts --outdir dist --sourceMap true"
+  	 ;; 	 :outFiles (list "${workspaceFolder}/dist/**/*.js")
+  	 ;; 	 :name "Launch index.ts"))
+  	 )
       (add-hook 'typescript-mode-hook 'my-setup-dap-node)
       (add-hook 'js2-mode-hook 'my-setup-dap-node)
       )
@@ -1071,7 +1085,7 @@
 ;;; ==========================================================================
 
 (use-package counsel
-   :straight (counsel :type git :flavor melpa :files ("counsel.el" "counsel-pkg.el") :host github :repo "abo-abo/swiper")
+   :straight t
    :bind (("C-M-j" . 'counsel-switch-buffer)
   	  :map minibuffer-local-map
   	  ("C-r" . 'counsel-minibuffer-history))
@@ -1114,7 +1128,6 @@
                ([backtab]    . corfu-previous)
                ("S-<return>" . corfu-insert)
                ("RET"        . nil))
-
       :init
       (global-corfu-mode)
       (corfu-history-mode)
@@ -1126,7 +1139,8 @@
                   corfu-auto nil)
             (corfu-mode))))
 
-   (use-package corfu-prescient)
+   (use-package corfu-prescient
+      :after corfu)
    )
 
 ;;; ==========================================================================
@@ -1165,7 +1179,6 @@
 
 ;;; ==========================================================================
 
-
 (if (equal enable-dap t)
    (use-package typescript-ts-mode
       ;; :after (dap-mode)
@@ -1179,7 +1192,7 @@
 
 (if (equal enable-dape t)
    (use-package typescript-ts-mode
-      ;; :after (dape-mode)
+      :after (dape-mode)
       :mode ("\\.ts\\'" "\\.js\\'" "\\.mjs\\'")
       :hook
       (typescript-ts-mode . lsp-deferred)
@@ -1249,11 +1262,10 @@
 
 ;; (use-package graphql-mode)
 (use-package js2-mode)
-(use-package rust-mode)
-(use-package swift-mode)
+(use-package rust-mode :defer t)
+(use-package swift-mode :defer t)
 
 ;;; ==========================================================================
-
 
 (use-package flycheck
   :config
@@ -1296,13 +1308,13 @@
    (treemacs t))
 
 ;; (use-package python-mode
-;;    :after lsp-mode
+;;    :defer t
 ;;    :config
 ;;    (if (equal enable-dap t)
 ;;       (progn
 ;; 	 (dap-tooltip 1)
 ;; 	 (dap-ui-controls-mode 1)))
-;;    (toolit-mode 1)
+;;    (tooltip-mode 1)
 ;;    :custom
 ;;    (python-shell-completion-native-enable nil)
 ;;    :bind (:map python-mode-map
@@ -1310,7 +1322,8 @@
 
 ;; (add-hook 'python-mode-hook 'mrf/python-mode-triggered)
 (add-to-list 'auto-mode-alist '("\\.py\\'" . mrf/load-python-file-hook))
-(use-package blacken) ;Format Python file upon save.
+(use-package blacken
+   :after python) ;Format Python file upon save.
 
 (if (boundp 'python-shell-completion-native-disabled-interpreters)
    (add-to-list 'python-shell-completion-native-disabled-interpreters "python3")
@@ -1331,6 +1344,7 @@
 (if (equal enable-elpy t)
    (progn
       (use-package elpy
+       :after python
        :custom
        (elpy-rpc-python-command "python3")
        (display-fill-column-indicator-mode 1)
@@ -1353,9 +1367,8 @@
 ;;; ==========================================================================
 
 (use-package py-autopep8
+   :after python-mode
    :hook ((python-mode) . py-autopep8-mode))
-
-(use-package blacken)
 
 ;;; ==========================================================================
 
@@ -1479,12 +1492,14 @@
 ;;; ==========================================================================
 
 (use-package pyvenv-auto
+   :after python
    :config (message "Starting pyvenv-auto")
-   :hook ((python-mode . pyvenv-auto-run)))
+   :hook (python-mode . pyvenv-auto-run))
 
 ;;; ==========================================================================
 
 (use-package z80-mode
+   :defer t
    :straight (z80-mode
   	      :type git
   	      :host github
@@ -1532,6 +1547,7 @@
    (add-hook 'python-mode-hook 'my/company-jedi-python-mode-hook))
 
 (use-package company-anaconda
+   :after anaconda
    :hook (python-mode . anaconda-mode))
 
 (eval-after-load "company"
@@ -1575,7 +1591,7 @@
 
 (defun mrf/org-theme-override-values ()
    (defface org-block-begin-line
-      '((t (:underline "#1D2C39" :foreground "#898989" :background "#1D2C39")))
+      '((t (:underline "#1D2C39" :foreground "SlateGray" :background "#1D2C39")))
       "Face used for the line delimiting the begin of source blocks.")
 
    (defface org-block
@@ -1583,7 +1599,7 @@
       "Face used for the source block background.")
 
    (defface org-block-end-line
-      '((t (:overline "#A7A6AA" :foreground "#676E95" :background "#1D2C39")))
+      '((t (:overline "#1D2C39" :foreground "SlateGray" :background "#1D2C39")))
       "Face used for the line delimiting the end of source blocks.")
    )
 
@@ -1734,7 +1750,8 @@
 (mrf/org-theme-override-values)
 
 (use-package org
-   :init
+   :defer t
+   ;; :init
    ;; :straight (org :type git
    ;; 		:repo "https://git.savannah.gnu.org/git/emacs/org-mode.git"
    ;; 		:local-repo "org"
@@ -1774,6 +1791,7 @@
 ;; -----------------------------------------------------------------
 
 (use-package org-bullets
+   :after org
   :hook (org-mode . org-bullets-mode)
   :custom
   (org-bullets-bullet-list '("◉" "○" "●" "○" "●" "○" "●")))
@@ -1817,29 +1835,34 @@
 ;; (use-package emacsql-sqlite)
 
 (use-package org-roam
-  :demand t  ;; Ensure org-roam is loaded by default
-  :init
-  (setq org-roam-v2-ack t)
-  :custom
-  (org-roam-directory (concat mrf/docs-dir "/RoamNotes"))
-  (org-roam-completion-everywhere t)
-  :bind (("C-c n l" . org-roam-buffer-toggle)
-         ("C-c n f" . org-roam-node-find)
-         ("C-c n i" . org-roam-node-insert)
-         ("C-c n I" . org-roam-node-insert-immediate)
-         ("C-c n p" . my/org-roam-find-project)
-         ("C-c n t" . my/org-roam-capture-task)
-         ("C-c n b" . my/org-roam-capture-inbox)
-         :map org-mode-map
-         ("C-M-i" . completion-at-point)
-         :map org-roam-dailies-map
-         ("Y" . org-roam-dailies-capture-yesterday)
-         ("T" . org-roam-dailies-capture-tomorrow))
-  :bind-keymap
-  ("C-c n d" . org-roam-dailies-map)
-  :config
-  (require 'org-roam-dailies) ;; Ensure the keymap is available
-  (org-roam-db-autosync-mode))
+   ;; :demand t  ;; Ensure org-roam is loaded by default
+   :init
+   (setq org-roam-v2-ack t)
+   :custom
+   (org-roam-directory (concat mrf/docs-dir "/RoamNotes"))
+   (org-roam-completion-everywhere t)
+   :bind (("C-c n l" . org-roam-buffer-toggle)
+          ("C-c n f" . org-roam-node-find)
+          ("C-c n i" . org-roam-node-insert)
+          ("C-c n I" . org-roam-node-insert-immediate)
+          ("C-c n p" . my/org-roam-find-project)
+          ("C-c n t" . my/org-roam-capture-task)
+          ("C-c n b" . my/org-roam-capture-inbox)
+          :map org-mode-map
+          ("C-M-i" . completion-at-point)
+          :map org-roam-dailies-map
+          ("Y" . org-roam-dailies-capture-yesterday)
+          ("T" . org-roam-dailies-capture-tomorrow))
+   :bind-keymap
+   ("C-c n d" . org-roam-dailies-map)
+   :config
+   (require 'org-roam-dailies) ;; Ensure the keymap is available
+   (my/org-roam-refresh-agenda-list)
+   (add-to-list 'org-after-todo-state-change-hook
+      (lambda ()
+       (when (equal org-state "DONE")
+            (my/org-roam-copy-todo-to-today))))
+   (org-roam-db-autosync-mode))
 
 (defun org-roam-node-insert-immediate (arg &rest args)
    (interactive "P")
@@ -1867,7 +1890,6 @@
   (setq org-agenda-files (my/org-roam-list-notes-by-tag "Project")))
 
 ;; Build the agenda list the first time for the session
-(my/org-roam-refresh-agenda-list)
 
 (defun my/org-roam-project-finalize-hook ()
    "Adds the captured project file to `org-agenda-files' if the
@@ -1935,11 +1957,6 @@ capture was not aborted."
                  (file-truename (buffer-file-name)))
          (org-refile nil nil (list "Tasks" today-file nil pos)))))
 
-(add-to-list 'org-after-todo-state-change-hook
-   (lambda ()
-      (when (equal org-state "DONE")
-         (my/org-roam-copy-todo-to-today))))
-
 ;;; ==========================================================================
 
 ;; Automatically tangle our Configure.org config file when we save it
@@ -1970,6 +1987,7 @@ capture was not aborted."
 
 (if (equal enable-org-ai t)
    (use-package org-ai
+      :after org
       :custom
       (org-ai-openai-api-token "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")
       ;; :config
@@ -2021,7 +2039,6 @@ capture was not aborted."
 
 ;;; ==========================================================================
 
-
 (use-package ace-window
    :config
    (general-define-key
@@ -2029,18 +2046,9 @@ capture was not aborted."
 
 ;;; ==========================================================================
 
-
 (use-package all-the-icons
    :if (display-graphic-p))
 
-;; Value of dashboard-startup-banner can be
-;; - nil to display no banner
-;; - 'official which displays the official emacs logo
-;; - 'logo which displays an alternative emacs logo
-;; - 1, 2 or 3 which displays one of the text banners
-;; - "path/to/your/image.gif", "path/to/your/image.png" or "path/to/your/text.txt"
-;;   which displays whatever gif/image/text you would prefer
-;; - a cons of '("path/to/your/image.png" . "path/to/your/text.txt")
 (use-package dashboard
    :after (dired)
    :preface
@@ -2054,12 +2062,12 @@ capture was not aborted."
    (dashboard-items '((recents . 10)
                       (bookmarks . 5)
                       (projects . 10)))
-   (initial-buffer-choice (lambda () (get-buffer-create "*dashboard*")))
    (dashboard-icon-type 'all-the-icons) ;; use `all-the-icons' package
    (dashboard-display-icons-p t)
    (dashboard-center-content t)
    (dashboard-set-heading-icons t)
    (dashboard-set-file-icons t)
+   (initial-buffer-choice (lambda () (get-buffer-create "*dashboard*")))
    :config
    (dashboard-setup-startup-hook)
    (dashboard-open)
@@ -2094,6 +2102,7 @@ capture was not aborted."
 ;;; ==========================================================================
 
 (use-package term
+  :defer t
   :commands term
   :config
   (setq explicit-shell-file-name "bash") ;; Change this to zsh, etc
@@ -2105,12 +2114,13 @@ capture was not aborted."
 ;;; ==========================================================================
 
 (use-package eterm-256color
+  :defer t
   :hook (term-mode . eterm-256color-mode))
 
 ;;; ==========================================================================
 
-
 (use-package vterm
+  :defer t
   :commands vterm
   :config
   (setq term-prompt-regexp "^[^#$%>\n]*[#$%>] *")  ;; Set this to match your custom shell prompt
@@ -2141,6 +2151,7 @@ capture was not aborted."
    :after eshell)
 
 (use-package eshell
+  :defer t
   :hook (eshell-first-time-mode . efs/configure-eshell)
   :config
   (with-eval-after-load 'esh-opt
@@ -2219,13 +2230,13 @@ capture was not aborted."
 ;;; ==========================================================================
 
 (use-package popper
+  :defer t
   :straight t
-  :bind (("C-`"   . popper-toggle)
-         ("M-`"   . popper-cycle)
-         ("C-M-`" . popper-toggle-type))
   :init
   (setq popper-reference-buffers
      '("\\*Messages\\*"
+       "\\*scratch\\*"
+       "\\*ielm\\*"
          "Output\\*$"
          "\\*Async Shell Command\\*"
        "^\\*eshell.*\\*$" eshell-mode ;eshell as a popup
@@ -2236,6 +2247,11 @@ capture was not aborted."
          compilation-mode))
   (popper-mode +1)
   (popper-echo-mode +1))
+
+(general-define-key
+   "C-`"   'popper-toggle
+   "M-`"   'popper-cycle
+   "C-M-`" 'popper-toggle-type)
 
 ;;; ==========================================================================
 

@@ -269,7 +269,7 @@
    '(bg-region ((((class color) (min-colors 89)) (:background "#2f2630")))) ;;; deeper-blue-theme
    ;; '(org-block-begin-line ((((class color) (min-colors 89)) (:underline "#1D2C39" :foreground "#676E95" :background "#1D2C39"))))
    ;; '(org-block-end-line ((((class color) (min-colors 89)) (:overline "#1D2C39" :foreground "#676E95" :background "#1D2C39"))))
-;;   '(org-block ((((class color) (min-colors 89)) (:background "#242635")))) ;;; deeper-blue-theme
+   ;; '(org-block ((((class color) (min-colors 89)) (:background "#242635")))) ;;; deeper-blue-theme
    ;; '(org-block-background ((((class color) (min-colors 257)) (:background "#FFFFEA" :extend t)))) ;;; deeper-blue-theme
    '(secondary-selection ((((class color) (min-colors 257)) (:background "#676E95" :extend t)) (((class color) (min-colors 256)) (:background "#585858" :extend t)) (((class color) (min-colors 16)) (:background "brightblack" :extend t))))
    '(shadow ((((class color) (min-colors 257)) (:foreground "#676E95")) (((class color) (min-colors 256)) (:foreground "#585858")) (((class color) (min-colors 16)) (:foreground "brightblack"))))
