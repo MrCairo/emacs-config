@@ -1,3 +1,22 @@
+;;; ==========================================================================
+(setq
+   ;; ------------ Primary feature enabling switches ------------
+   enable-dap 0                          ;; Debug Adapter Protocol
+   enable-dap-js 0                       ;; DAP JavaScript support
+   enable-dape t                         ;; DAP for Emacs.
+   enable-corfu 0                        ;; Alternative to Ivy/Swiper/Company
+   enable-org-ai 0                       ;; Interface to OpenAI
+   enable-centaur-tabs 0                 ;; Top Tabs for files
+   enable-neotree 0                      ;; Load Neotree
+   enable-zoom 0                         ;; Re-size active frame to
+                                         ;;   golden ratio
+   enable-anaconda 0                     ;; Use Anaconda for python Dev
+                                         ;;   Environment
+   ;; !!!! Use Anaconda or Elpy but NOT BOTH !!!!
+   enable-elpy t                         ;; Use Elpy as the Python Dev
+                                         ;;   Environment
+   )
+
 ;;; init.el --- emacs main initializationfile
 ;;; Commentary:
 ;;;    Generated from Config.org  
@@ -29,62 +48,132 @@
 
 (use-package el-patch)
 
+;; Load org early on in the process
+(straight-use-package 'org)
+(require 'org-faces)
+
+(setq-default
+   pixel-scroll-mode t                   ;; enable smooth scrolling.
+   dired-dwim-target t                   ;; try to guess target directory
+   truncate-partial-width-windows 1      ;; truncate lines even in
+                                         ;; partial-width windows
+   auto-save-default nil                 ;; disable auto save
+   backup-inhibited t                    ;; disable backup (No ~ tilde files)
+   global-auto-revert-mode 1             ;; Refresh buffer if file has changed
+   global-auto-revert-non-file-buffers t 
+   history-length 25                     ;; Reasonable buffer length
+   inhibit-startup-message t             ;; Hide the startup message
+   lisp-indent-offset '3                 ;; emacs lisp tab size
+   visible-bell t                        ;; Set up the visible bell
+   truncate-lines 1                      ;; long lines of text do not wrap
+   fill-column 80                        ;; Default line limit for fills
+   loaded-theme nil                      ;; Customized loaded theme
+   theme-selector 0                      ;; Index into custom theme list
+   mrf/docs-dir "~/Documents/Emacs-Related"
+   ;; Used as root dir to specify where documents can be stored
+
+   dired-listing-switches "-agho --group-directories-first"
+   ;; Needed to fix an issue on Mac which causes dired to fail
+)
+
+(global-display-line-numbers-mode 1) ;; Line numbers appear everywhere
+(save-place-mode 1)                  ;; Remember where we were last editing a file.
+(savehist-mode t)
+(show-paren-mode 1)
+(tool-bar-mode -1)                   ;; Hide the toolbar
+(global-prettify-symbols-mode 1)     ;; Display pretty symbols (i.e. λ = lambda)
+
 ;;; ==========================================================================
-;; Feature enabling switches
+;;; Set a variable that represents the actual emacs configuration directory.
+;;; This is being done so that the user-emacs-directory which normally points
+;;; to the .emacs.d directory can be re-assigned so that customized files don't
+;;; pollute the configuration directory. This is where things like YASnippet
+;;; snippets are saved and also additional color themese are stored.
 
-(setq
-   enable-dap 0            ;; Debug Adapter Protocol
-   enable-dap-js 0         ;; 
-   enable-dape t           ;; DAP for Emacs.
-   enable-corfu 0          ;; Alternative to Ivy/Swiper/Company
-   enable-org-ai 0         ;; Interface to OpenAI
-   enable-centaur-tabs 0   ;; Top Tabs for files
+(defvar emacs-config-directory user-emacs-directory)
 
-   ;; -------------------->>  Use Anaconda or Elpy but NOT BOTH!
-   enable-anaconda 0       ;; Use Anaconda for python Dev Environment
-   enable-elpy t           ;; Use Elpy as the Python Dev Environment
-   ;; -------------------->>
+;;; The config directory contains the extension part of the actual config
+;;; directory. So ~/.emacs.d.mitchorg becomes mitchorg
+(setq mrf/config-extension
+   (file-name-extension (replace-regexp-in-string
+  			 "/$" "" user-emacs-directory)))
 
-   enable-neotree 0        ;; Load Neotree
-   enable-zoom 0           ;; Re-size active frame to golden ratio
-   )
+;;; Different emacs configuration installs with have their own configuration
+;;; directory.
+(setq mrf/working-files-directory
+   (concat mrf/docs-dir (concat "/emacs-working-files_" mrf/config-extension)))
+(make-directory mrf/working-files-directory t)  ;; Continues to work even if dir exists
+
+;;; Point the user-emacs-directory to the new working directory
+(setq user-emacs-directory mrf/working-files-directory)
+(message (concat ">>> Setting emacs-working-files directory to: " user-emacs-directory))
+
+;;; Put any emacs cusomized variables in a special file
+(setq custom-file (concat mrf/docs-dir "/custom-vars-org.el"))
+(load custom-file 'noerror 'nomessage)
 
 ;;; ==========================================================================
 
-(defcustom theme-selector 0
-  "The index to the 'theme-list' list. Represents the selected theme."
-  :type 'natnum)
+;;
+;; 1. The function `mrf/load-theme-from-selector' is called from the
+;;    "C-= =" Keybinding (just search for it).
+;;
+;; 2. Once the new theme is loaded via the `theme-selector', the previous
+;;    theme is unloaded (or disabled) the function(s) defined in the
+;;    `disable-theme-functions' hook are called (defined in the load-theme.el
+;;    package).
+;;
+;; 3. The function `mrf/cycle-theme-selector' is called by the hook. This
+;;    function increments the theme-selector by 1, cycling the value to 0
+;;    if beyond the `theme-list' bounds.
+;;
 
 ;; The list of my custom choice of themes.
-(setq theme-list '(palenight-deeper-blue
+(defcustom theme-list '(palenight-deeper-blue
   		   ef-symbiosis
                      ef-maris-light
                      ef-maris-dark
                      ef-kassio
                      ef-melissa-dark
                      doom-palenight
-                     deeper-blue))
+                     deeper-blue)
+   "My personal list of themes to cycle through. Indexed by `theme-selector'."
+   :type '(repeat string))
+
+(setq-default loaded-theme (nth theme-selector theme-list))
+(add-to-list 'savehist-additional-variables 'loaded-theme)
+(add-to-list 'savehist-additional-variables 'theme-selector)
+
+;;; ==========================================================================
+
+(defun mrf/cycle-theme-selector (&rest theme)
+   "Cycle the `theme-selector' by 1, resetting to 0 if beyond array bounds."
+   (interactive)
+   (unless (equal (format "%S" theme) "(user)")
+      (if (>= theme-selector (- (length theme-list) 1))
+       (setq theme-selector 0)
+       (setq theme-selector (+ 1 theme-selector)))
+     )
+   )
+
+;; This is used to trigger the cycling of the theme-selector
+;; It is called when a theme is disabled. The theme is disabled from the
+;; `mrf/load-theme-from-selector' function.
+(add-hook 'disable-theme-functions #'mrf/cycle-theme-selector)
+
+;;; ==========================================================================
 
 (defun mrf/load-theme-from-selector ()
+   "Load the theme in `theme-list' indexed by `theme-selector'"
    (interactive)
+   (when loaded-theme
+      (disable-theme loaded-theme))
    (setq loaded-theme (nth theme-selector theme-list))
+   (message (concat ">>> Loading theme " (format "%d: %S" theme-selector loaded-theme)))
    (load-theme loaded-theme t)
-   (message (concat ">>> Loading theme " (format "%S" loaded-theme)))
    (if (equal (fboundp 'mrf/org-font-setup) t)
       (mrf/org-font-setup))
    )
-
-(defun mrf/load-and-cycle-theme ()
-   (interactive)
-   (progn
-      (setopt theme-selector (+ 1 theme-selector))
-      (if (equal theme-selector (length theme-list))
-       (setopt theme-selector 0))
-      )
-   (mrf/load-theme-from-selector)
-   )
-
-;; (customize-set-variable 'theme-selector theme-selector)
 
 ;;; ==========================================================================
 
@@ -104,28 +193,6 @@
 ;;; ==========================================================================
 
 (add-to-list 'load-path (expand-file-name "lisp" user-emacs-directory))
-
-;;; ==========================================================================
-
-;; Set Emacs Config Directory
-
-(defvar emacs-config-directory user-emacs-directory)
-
-;;; You'll need to override these from my values. Note that these directories
-;;; are NOT automatically created if they don't exist.
-;;;
-;;; Optionally Set user-emacs-directory to something external to this directory
-;;; so that transient files do not "polute" the .emacs.d directory.
-;;; (setq user-emacs-directory "~/Documents/Emacs-Related/emacs-working-files")
-
-;;; Setup a documenation directory. This is where things like YASnippet
-;;; snippets are saved and also additional color themese are stored.
-
-(defvar mrf/docs-dir "~/Documents/Emacs-Related")
-
-;;; Put any emacs cusomized variables in a special file
-(setq custom-file (concat mrf/docs-dir "/custom-vars-org.el"))
-(load custom-file 'noerror 'nomessage)
 
 ;;; ==========================================================================
 
@@ -285,47 +352,9 @@
 ;;       `( :mode-line-active 'default
 ;;          :mode-line-inactive vertical-border))
 
-(defun mrf/add-to-emacs-kill-hook ()
-   (message "... Emacs exiting custom hook ...")
-   (session-save-session)
-   (customize-save-customized)
-   )
-
-(use-package session
-   :hook
-   (after-init . session-initialize)
-   ;; (emacs-kill . mrf/add-to-emacs-kill-hook)
-   :config
-   (message "Session initialized.")
-   (add-to-list 'session-globals-exclude 'org-mark-ring)
-   (add-to-list 'session-globals-include 'theme-selector))
-
 ;;; ==========================================================================
 
-;; Common Settings
-
 (column-number-mode)
-(global-display-line-numbers-mode 1) ;; Line numbers appear everywhere
-(save-place-mode 1)                  ;; Remember where we were last editing a file.
-(savehist-mode t)
-(setq auto-save-default nil)         ;; disable auto save
-(setq backup-inhibited t)            ;; disable backup (No ~ tilde files)
-(setq global-auto-revert-mode 1)     ;; Refresh buffer if file has chaned
-(setq global-auto-revert-non-file-buffers t)
-(setq history-length 25)             ;; Reasonable buffer length
-(setq inhibit-startup-message t)     ;; Hide the startup message
-(setq lisp-indent-offset '3)         ;; emacs lisp tab size
-(setq visible-bell t)                ;; Set up the visible bell
-(setq-default fill-column 80)        ;; number of characters until the fill column
-(show-paren-mode 1)
-(tool-bar-mode -1)                   ;; Hide the toolbar
-
-;; each line of text gets one line on the screen (i.e., text will run
-;; off the left instead of wrapping around onto a new line)
-(setq-default truncate-lines 1)
-(setq truncate-partial-width-windows 1) ;; truncate lines even in partial-width windows
-
-(global-prettify-symbols-mode 1)     ;; Display pretty symbols (i.e. λ = lambda)
 
 (use-package page-break-lines
    :config
@@ -335,20 +364,16 @@
   :config
   (rainbow-delimiters-mode))
 
-(setq dired-listing-switches "-agho --group-directories-first")
-(setq dired-dwim-target t)
-(setq pixel-scroll-mode t)           ;; enable smooth scrolling.
-
 ;;; ==========================================================================
 
 ;; Macintosh specific configurations.
 
 (defconst *is-a-mac* (eq system-type 'darwin))
 (when (eq system-type 'darwin)
-   (setq mac-option-key-is-meta t
-         mac-command-key-is-meta nil
-         mac-command-modifier 'none
-         mac-option-modifier 'meta))
+   (setq mac-option-key-is-meta nil
+         mac-command-key-is-meta t
+         mac-command-modifier 'meta
+         mac-option-modifier 'super))
 
 ;;; ==========================================================================
 
@@ -411,7 +436,7 @@
 (use-package modus-themes)
 
 (use-package color-theme-modern
-   :defert t)
+   :defer t)
 
 (use-package material-theme
    :defer t)
@@ -532,8 +557,12 @@
 
 ;;; ==========================================================================
 
+(defun mrf/print-custom-theme-name ()
+   (message (format "Custom theme is %S" loaded-theme)))
+
 (general-define-key
-   "C-=" 'mrf/load-and-cycle-theme)
+   "C-= =" 'mrf/load-theme-from-selector
+   "C-= ?" 'mrf/print-custom-theme-name)
 
 ;;; ==========================================================================
 (mrf/load-theme-from-selector)
@@ -672,7 +701,8 @@
           treemacs-width                           38
           treemacs-width-increment                 1
           treemacs-width-is-initially-locked       t
-          treemacs-workspace-switch-cleanup        nil)
+          treemacs-workspace-switch-cleanup        nil
+       )
 
     ;; The default width and height of the icons is 22 pixels. If you are
     ;; using a Hi-DPI display, uncomment this to double the icon size.
@@ -752,9 +782,12 @@
 ;;; Language Server Protocol
 
 (defun mrf/lsp-mode-setup ()
-  message("Set up LSP header-line.")
-  (setq lsp-headerline-breadcrumb-segments '(path-up-to-project file symbols))
-  (lsp-headerline-breadcrumb-mode))
+   (message "Set up LSP header-line and other vars")
+   (setq lsp-headerline-breadcrumb-segments '(path-up-to-project file symbols))
+   (setq lsp-clangd-binary-path "/Users/strider/Developer/plain_unix/llvm-project/build/bin/clangd")
+   ;;     (setq lsp-clients-clangd-library-directories
+   ;;        ("/Users/strider/Developer/plain_unix/llvm-project/build/lib"))
+   (lsp-headerline-breadcrumb-mode))
 
 (use-package lsp-mode
    :defer t
@@ -801,12 +834,14 @@
 
 ;;; ==========================================================================
 
-(require 'jsonrpc)
+;;; Alternate fork to handle possible performance bug(s)
+(use-package jsonrpc
+   :straight (jsonrpc :type git :host github :repo "svaante/jsonrpc"))
 
 (if (equal enable-dape t)
    (progn
       (use-package dape
-       :after (python-mode)
+       :after (jsonrpc)
        ;; :defer t
        ;; To use window configuration like gud (gdb-mi)
        ;; :init
@@ -815,7 +850,7 @@
        (dape-buffer-window-arrangement 'right)  ;; Info buffers to the right
        ;; To not display info and/or buffers on startup
        ;; (remove-hook 'dape-on-start-hooks 'dape-info)
-       ;; (remove-hook 'dape-on-start-hooks 'dape-repl)
+       (remove-hook 'dape-on-start-hooks 'dape-repl)
 
        ;; To display info and/or repl buffers on stopped
        ;; (add-hook 'dape-on-stopped-hooks 'dape-info)
@@ -834,7 +869,7 @@
        ;;             (save-some-buffers t t)))
 
        ;; Projectile users
-       ;; (setq dape-cwd-fn 'projectile-project-root)
+       (setq dape-cwd-fn 'projectile-project-root)
        ;; :straight (dape :type git
        ;; 	      :host github :repo "emacs-straight/dape"
        ;; 	      :files ("*" (:exclude ".git")))
@@ -861,34 +896,13 @@
       (call-process "npx" nil "*snam-install*" t "gulp" "dapDebugServer")
       (message "vscode-js-debug installed")))
 
-;; (if (equal enable-dape t)
-;;    (add-to-list 'dape-configs
-;;       `(vscode-js-node
-;; 	  modes (js-mode js-ts-mode typescript-mode typescript-ts-mode)
-;; 	  host "localhost"
-;; 	  port 8123
-;; 	  command "node"
-;; 	  command-cwd ,(file-name-concat mrf/vscode-js-debug-dir "dist")
-;; 	  command-args ("src/dapDebugServer.js" "8123")
-;; 	  :type "pwa-node"
-;; 	  :request "launch"
-;; 	  :cwd dape-cwd-fn
-;; 	  :program dape--default-cwd
-;; 	  :outputCapture "console"
-;; 	  :sourceMapRenames t
-;; 	  :pauseForSourceMap nil
-;; 	  :enableContentValidation t
-;; 	  :autoAttachChildProcesses t
-;; 	  :console "internalConsole"
-;; 	  :killBehavior "forceful")))
-
 (defun mrf/dape-end-debug-session ()
-   "End the debug session and delete project Python buffers."
+   "End the debug session."
    (interactive)
    (dape-quit))
 
 (defun mrf/dape-delete-all-debug-sessions ()
-   "End the debug session and delete project Python buffers and all breakpoints."
+   "End the debug session and delete all breakpoints."
    (interactive)
    (dape-breakpoint-remove-all)
    (mrf/dape-end-debug-session))
@@ -936,38 +950,28 @@
          ("Q" mrf/dape-delete-all-debug-sessions :color red))
 
 ;;; ==========================================================================
-
 ;;; Debug Adapter Protocol
-;;   (straight-use-package
-;;      '(dap-mode :type git
-;; 	 :flavor melpa
-;; 	 :files (:defaults "icons" "dap-mode-pkg.el")
-;; 	 :host github
-;; 	 :repo "emacs-lsp/dap-mode"))
-
 (if (equal enable-dap t)
    (progn
       (use-package dap-mode
-       ;; Uncomment the config below if you want all UI panes to be hidden by default!
-       ;; :custom
-       ;; (lsp-enable-dap-auto-configure nil)
-       :config
-       (message "DAP mode loaded.")
-       (dap-ui-mode 1)
-       ;; (setq lsp-enable-dap-auto-configure nil)
-       (setq dap-python-executable "python3") ;; Otherwise it looks for 'python' else error.
-       :commands
-       dap-debug
-       :custom
-       (dap-auto-configure-features '(locals repl))
-       )
+     ;; Uncomment the config below if you want all UI panes to be hidden by default!
+     ;; :custom
+     ;; (lsp-enable-dap-auto-configure nil)
+     :commands
+     dap-debug
+     :custom
+     (dap-auto-configure-features '(sessions locals breakpoints expressions repl controls tooltip))
+     :config
+     (message "DAP mode loaded.")
+     (dap-ui-mode 1)
+     )
+      (require 'dap-lldb)
+      ;; (require 'dap-cpptools)
+      (setq dap-lldb-debug-program `(,(expand-file-name
+  				       "~/Developer/plain_unix/llvm-project/build/bin/lldb-dap")))
+      ;; (setq dap-lldb-debug-program "/Users/strider/Developer/plain_unix/llvm-project/build/bin/lldb-dap")
       )
    )
-
-(setq dap-python-debugger 'debugpy)
-
-;; (use-package dap-hydra
-;;    :hook (dap-stopped . (lambda (arg) (call-interactively #'dap-hydra))))
 
 ;;; ==========================================================================
 
@@ -979,6 +983,8 @@
        :straight (dap-python :type git :host github :repo "emacs-lsp/dap-mode")
        :after (dap-mode)
        :config
+       (setq dap-python-executable "python3") ;; Otherwise it looks for 'python' else error.
+       (setq dap-python-debugger 'debugpy)
        (dap-register-debug-template "Python :: Run file from project directory"
   	  (list :type "python"
   	     :args ""
@@ -1159,6 +1165,8 @@
 (use-package tree-sitter-langs)
 
 (use-package tree-sitter
+   :init
+   (message ">>> Loading tree-sitter")
    ;; :after (lsp-mode)
    :config
    ;; Activate tree-sitter globally (minor mode registered on every buffer)
@@ -1166,6 +1174,8 @@
    :hook
    (tree-sitter-after-on . mrf/tree-sitter-setup)
    (typescript-mode . lsp-deferred)
+   (c-mode . lsp-deferred)
+   (c++-mode . lsp-deferred)
    (js2-mode . lsp-deferred))
 
 (use-package ts-fold
@@ -1193,7 +1203,7 @@
 (if (equal enable-dape t)
    (use-package typescript-ts-mode
       :after (dape-mode)
-      :mode ("\\.ts\\'" "\\.js\\'" "\\.mjs\\'")
+      :mode ("\\.ts\\'")
       :hook
       (typescript-ts-mode . lsp-deferred)
       (js2-mode . lsp-deferred)
@@ -1223,7 +1233,8 @@
 
 (if (equal enable-dap-js t)
    (progn
-      (setq ff-debug-dir (concat emacs-config-directory ".extension/vscode/firefox-devtools.vscode-firefox-debug/extension/dist/adapter.bundle.js"))
+      (setq ff-debug-dir (concat emacs-config-directory
+  	    ".extension/vscode/firefox-devtools.vscode-firefox-debug/extension/dist/adapter.bundle.js"))
       (use-package js2-mode
        :custom
        (js-indent-level 2)
@@ -1241,11 +1252,39 @@
 
 (setq nodejs-repl-command #'mrf/nvm-which)
 
+(use-package js2-mode
+   :hook (js-mode . js2-minor-mode)
+   :mode ("\\.js\\'" "\\.mjs\\'")
+   :custom (js2-highlight-level 3))
+
+(use-package ac-js2
+   :hook (js2-mode . ac-js2-mode))
+
+(general-define-key
+   :keymaps '(js-mode-map)
+   "{" 'paredit-open-curly
+   "}" 'paredit-close-curly-and-newline)
+
+(add-to-list 'auto-mode-alist '("\\.json$" . js-mode))
+
 ;;; ==========================================================================
 
+(defun mrf/load-c-file-hook ()
+   (message "Running C/C++ file hook")
+   (c-mode)
+   (if (featurep 'zoom)
+      (if (default-value 'zoom-mode)
+       (progn
+  	  ;;(zoom--off)
+  	  (message "Turning zoom off")
+  	  )))
+   (if (equal enable-dap t)
+      (dap-mode))
+   (highlight-indentation-mode -1)
+   (display-fill-column-indicator-mode t))
 
 (defun code-compile ()
-"Look for a Makefile and compiles the code with gcc/cpp."
+   "Look for a Makefile and compiles the code with gcc/cpp."
    (interactive)
    (unless (file-exists-p "Makefile")
       (set (make-local-variable 'compile-command)
@@ -1257,6 +1296,7 @@
       (compile compile-command)))
 
 (global-set-key [f9] 'code-compile)
+(add-to-list 'auto-mode-alist '("\\.c\\'" . mrf/load-c-file-hook))
 
 ;;; ==========================================================================
 
@@ -1300,12 +1340,18 @@
   	  )))
    (if (equal enable-dap t)
       (dap-mode))
+   (diff-hl-mode)
    (highlight-indentation-mode -1)
    (display-fill-column-indicator-mode t))
 
 (defun mrf/python-mode-triggered ()
    (message "Calling mrf/python-mode-triggered")
    (treemacs t))
+
+(use-package python-mode
+   :defer t
+   :hook (python-mode . (lambda () (set-fill-column 80)))
+   )
 
 ;; (use-package python-mode
 ;;    :defer t
@@ -1407,14 +1453,14 @@
 
 (if (equal enable-dap t)
    (general-define-key
-      :keymaps '(python-mode-map typescript-ts-mode-map)
+      :keymaps '(python-mode-map typescript-ts-mode-map c-mode-map c++-mode-map)
       "C-c ."      'dap-hydra/body)
    )
 
 (if (equal enable-dape t)
    (general-define-key
-      :keymaps '(python-mode-map typescript-ts-mode-map)
-      "C-c ,"      'dape-hydra/body)
+      :keymaps '(python-mode-map typescript-ts-mode-map c-mode-map c++-mode-map)
+      "C-c ."      'dape-hydra/body)
    )
 
 (defun mrf/end-debug-session ()
@@ -1499,7 +1545,6 @@
 ;;; ==========================================================================
 
 (use-package z80-mode
-   :defer t
    :straight (z80-mode
   	      :type git
   	      :host github
@@ -1625,7 +1670,7 @@
     (set-face-attribute (car face) nil :font "Cantarell" :weight 'regular :height (cdr face)))
 
   ;; Ensure that anything that should be fixed-pitch in Org files appears that way
-  (set-face-attribute 'org-block nil    :foreground nil :inherit 'fixed-pitch)
+  (set-face-attribute 'org-block nil    :foreground 'unspecified :inherit 'fixed-pitch)
   (set-face-attribute 'org-table nil    :inherit 'fixed-pitch)
   (set-face-attribute 'org-formula nil  :inherit 'fixed-pitch)
   (set-face-attribute 'org-code nil     :inherit '(shadow fixed-pitch))
@@ -2123,8 +2168,9 @@ capture was not aborted."
   :defer t
   :commands vterm
   :config
+  (setq vterm-environment ("PS1=\\u@\\h:\\w \n$"))
   (setq term-prompt-regexp "^[^#$%>\n]*[#$%>] *")  ;; Set this to match your custom shell prompt
-  ;;(setq vterm-shell "zsh")                       ;; Set this to customize the shell to launch
+  (setq vterm-shell "zsh")                       ;; Set this to customize the shell to launch
   (setq vterm-max-scrollback 10000))
 
 ;;; ==========================================================================
@@ -2406,6 +2452,8 @@ capture was not aborted."
    (mrf/set-frame-font 3)
    (mrf/frame-recenter)
    )
+
+(add-hook 'after-init-hook 'use-medium-display-font)
 
 ;;; ==========================================================================
 
