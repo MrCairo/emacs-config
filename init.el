@@ -1,3 +1,6 @@
+;; init.el --- My customized emacs init file -- lexical-binding: t --
+;;
+
 ;;; ==========================================================================
 (setq
    ;; ------------ Primary feature enabling switches ------------
@@ -48,33 +51,45 @@
 
 (use-package el-patch)
 
-;; Load org early on in the process
+;; Load org early on in the init process
 (straight-use-package 'org)
 (require 'org-faces)
 
 (setq-default
-   pixel-scroll-mode t                   ;; enable smooth scrolling.
-   dired-dwim-target t                   ;; try to guess target directory
-   truncate-partial-width-windows 1      ;; truncate lines even in
-                                         ;; partial-width windows
-   auto-save-default nil                 ;; disable auto save
-   backup-inhibited t                    ;; disable backup (No ~ tilde files)
-   global-auto-revert-mode 1             ;; Refresh buffer if file has changed
-   global-auto-revert-non-file-buffers t 
-   history-length 25                     ;; Reasonable buffer length
-   inhibit-startup-message t             ;; Hide the startup message
-   lisp-indent-offset '3                 ;; emacs lisp tab size
-   visible-bell t                        ;; Set up the visible bell
-   truncate-lines 1                      ;; long lines of text do not wrap
-   fill-column 80                        ;; Default line limit for fills
-   loaded-theme nil                      ;; Customized loaded theme
-   theme-selector 0                      ;; Index into custom theme list
-   mrf/docs-dir "~/Documents/Emacs-Related"
+   ;; enable smooth scrolling.
+   pixel-scroll-mode t
+   ;; try to guess target directory
+   dired-dwim-target t
+   ;; truncate lines even in partial-width windows
+   truncate-partial-width-windows 1
+   ;; disable auto save
+   auto-save-default nil
+   ;; disable backup (No ~ tilde files)
+   backup-inhibited t
+   ;; Refresh buffer if file has changed
+   global-auto-revert-mode 1
+   global-auto-revert-non-file-buffers t
+   ;; Reasonable buffer length
+   history-length 25
+   ;; Hide the startup message
+   inhibit-startup-message t
+   ;; emacs lisp tab size
+   lisp-indent-offset '3
+   ;; Set up the visible bell
+   visible-bell t
+   ;; long lines of text do not wrap
+   truncate-lines 1
+   ;; Default line limit for fills
+   fill-column 80
+   ;; The text representation of the loaded custom theme 
+   loaded-theme nil
+   ;; The index into the list of custom themes."
+   theme-selector 0
    ;; Used as root dir to specify where documents can be stored
-
-   dired-listing-switches "-agho --group-directories-first"
+   mrf/docs-dir "~/Documents/Emacs-Related"
    ;; Needed to fix an issue on Mac which causes dired to fail
-)
+   dired-listing-switches "-agho --group-directories-first"
+   )
 
 (global-display-line-numbers-mode 1) ;; Line numbers appear everywhere
 (save-place-mode 1)                  ;; Remember where we were last editing a file.
@@ -130,13 +145,13 @@
 
 ;; The list of my custom choice of themes.
 (defcustom theme-list '(palenight-deeper-blue
-  		   ef-symbiosis
-                     ef-maris-light
-                     ef-maris-dark
-                     ef-kassio
-                     ef-melissa-dark
-                     doom-palenight
-                     deeper-blue)
+  		      ef-symbiosis
+  		      ef-maris-light
+  		      ef-maris-dark
+  		      ef-kassio
+  		      ef-melissa-dark
+  		      doom-palenight
+  		      deeper-blue)
    "My personal list of themes to cycle through. Indexed by `theme-selector'."
    :type '(repeat string))
 
@@ -199,24 +214,24 @@
 ;; Frame (view) setup including fonts.
 ;; You will most likely need to adjust this font size for your system!
 
-(defvar mrf/small-font-size 150)
-(defvar mrf/small-variable-font-size 170)
+(setq-default mrf/small-font-size 150)
+(setq-default mrf/small-variable-font-size 170)
 
-(defvar mrf/medium-font-size 170)
-(defvar mrf/medium-variable-font-size 190)
+(setq-default mrf/medium-font-size 170)
+(setq-default mrf/medium-variable-font-size 190)
 
-(defvar mrf/large-font-size 190)
-(defvar mrf/large-variable-font-size 210)
+(setq-default mrf/large-font-size 190)
+(setq-default mrf/large-variable-font-size 210)
 
-(defvar mrf/x-large-font-size 220)
-(defvar mrf/x-large-variable-font-size 240)
+(setq-default mrf/x-large-font-size 220)
+(setq-default mrf/x-large-variable-font-size 240)
 
-(defvar mrf/default-font-size mrf/medium-font-size)
-(defvar mrf/default-variable-font-size mrf/medium-variable-font-size)
-;; (defvar mrf/set-frame-maximized t)  ;; or f
+(setq-default mrf/default-font-size mrf/medium-font-size)
+(setq-default mrf/default-variable-font-size mrf/medium-variable-font-size)
+;; (setq-default mrf/set-frame-maximized t)  ;; or f
 
 ;; Make frame transparency overridable
-;; (defvar mrf/frame-transparency '(90 . 90))
+;; (setq-default mrf/frame-transparency '(90 . 90))
 
 (setq frame-resize-pixelwise t)
 
