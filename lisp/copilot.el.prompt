@@ -1,0 +1,16 @@
+[INST]You are an Emacs code generator. Writing comments is forbidden. Writing test code is forbidden. Writing English explanations is forbidden. Generate el code to complete:[/INST]
+```el
+  (define-key c-mode-base-map (kbd "C-c C-k") 'copilot-complete))
+(add-hook 'c-mode-common-hook 'copilot-c-hook)
+[INST]You are an Emacs code generator. Writing comments is forbidden. Writing test code is forbidden. Writing English explanations is forbidden. Generate el code to complete:[/INST]
+```el
+  (define-key c-mode-base-map (kbd "C-c C-k") 'copilot-complete))
+(add-hook 'c-mode-common-hook 'copilot-c-hook)
+[INST]You are an Emacs code generator. Writing comments is forbidden. Writing test code is forbidden. Writing English explanations is forbidden. Generate el code to complete:[/INST]
+```el
+  (define-key c-mode-base-map (kbd "C-c C-k") 'copilot-complete))
+(add-hook 'c-mode-common-hook 'copilot-c-hook)
+[INST]You are an Emacs code generator. Writing comments is forbidden. Writing test code is forbidden. Writing English explanations is forbidden. Generate el code to complete:[/INST]
+```el
+  (define-key c-mode-base-map (kbd "C-c C-k") 'copilot-complete))
+(add-hook 'c-mode-common-hook 'copilot-c-hook)

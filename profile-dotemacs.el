@@ -68,12 +68,14 @@
 ;;; Download:
 
 ;;  You can always get the latest version from
-;;       http://randomsample.de/profile-dotemacs.el
+;;       http://randomsample.de/profile-dotemacs.elc
 
 ;;; Code:
 
 (require 'thingatpt)
 (require 'benchmark)
+
+(setq package-enable-at-startup nil)
 
 ;; User variables
 
