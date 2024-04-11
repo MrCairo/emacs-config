@@ -360,12 +360,29 @@ Otherwise, the `dashboard' will be available but in the buffer
    (interactive)
    (message (format "Custom theme is %S" loaded-theme)))
 
+;; Quick Helper Functions
+(defun next-theme ()
+    "Go to the next theme in the list."
+    (interactive)
+    (mrf/load-theme-from-selector 1))
+
+(defun previous-theme ()
+    "Go to the next theme in the list."
+    (interactive)
+    (mrf/load-theme-from-selector -1))
+
+(defun which-theme ()
+    "Go to the next theme in the list."
+    (interactive)
+    (mrf/print-custom-theme-name))
+
+
 ;; Go to NEXT theme
-(global-set-key (kbd "C-c C-=") (lambda () (interactive) (mrf/load-theme-from-selector 1)))
+(global-set-key (kbd "C-c C-=") 'next-theme)
 ;; Go to PREVIOUS theme
-(global-set-key (kbd "C-c C--") (lambda () (interactive) (mrf/load-theme-from-selector -1)))
+(global-set-key (kbd "C-c C--") 'previous-theme)
 ;; Print current theme
-(global-set-key (kbd "C-c C-?") (lambda () (interactive) (mrf/print-custom-theme-name)))
+(global-set-key (kbd "C-c C-?") 'which-theme)
 
 ;;; ==========================================================================
 
@@ -690,17 +707,17 @@ Otherwise, the `dashboard' will be available but in the buffer
    (load-theme 'material t))
 
 ;;; ==========================================================================
-
-;; Automatic Package Updates
+;;; Automatic Package Updates
 
 (use-package auto-package-update
-  :custom
-  (auto-package-update-interval 7)
-  (auto-package-update-prompt-before-update t)
-  (auto-package-update-hide-results t)
-  :config
-  (auto-package-update-maybe)
-  (auto-package-update-at-time "09:00"))
+    :ensure t
+    :custom
+    (auto-package-update-interval 7)
+    (auto-package-update-prompt-before-update t)
+    (auto-package-update-hide-results t)
+    :config
+    (auto-package-update-maybe)
+    (auto-package-update-at-time "09:00"))
 
 ;;; ==========================================================================
 
@@ -2417,22 +2434,27 @@ capture was not aborted."
    (mrf/dired-single-keymap-init))
 
 (setq-default initial-scratch-message
-  (concat ";; Hello, World and Happy hacking, "
-      user-login-name "\n;; Press C-c C-m to open the Mitch Menu\n\n"))
+  (concat ";; Hello, World and Happy hacking! "
+      user-login-name "\n;; Press C-c RET (C-c C-m) to open the Mitch Menu\n\n"))
 
 (defvar mmm-keys-minor-mode-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "C-c RET d") 'dashboard-open)
-    (define-key map (kbd "C-c RET f") 'mrf/set-fill-column-interactively)
-    (define-key map (kbd "C-c RET S") 'smartparens-strict-mode)
-    (define-key map (kbd "C-c RET |") 'global-display-fill-column-indicator-mode)
-    map)
-  "mmm-keys-minor-mode keymap.")
+    (let ((map (make-sparse-keymap)))
+      (define-key map (kbd "C-c RET d") 'dashboard-open)
+      (define-key map (kbd "C-c RET f") 'mrf/set-fill-column-interactively)
+      (define-key map (kbd "C-c RET i") 'ielm)
+      (define-key map (kbd "C-c RET v") 'vterm-other-window)
+      (define-key map (kbd "C-c RET S") 'smartparens-strict-mode)
+      (define-key map (kbd "C-c RET |") 'global-display-fill-column-indicator-mode)
+      (define-key map (kbd "C-c RET C-=") 'next-theme)
+      (define-key map (kbd "C-c RET C--") 'previous-theme)
+      (define-key map (kbd "C-c RET C-?") 'which-theme)
+      map)
+    "mmm-keys-minor-mode keymap.")
 
 (define-minor-mode mmm-keys-minor-mode
-  "A minor mode so that my key settings override annoying major modes."
-  :init-value t
-  :lighter " mmm-keys")
+    "A minor mode so that my key settings override annoying major modes."
+    :init-value t
+    :lighter " mmm-keys")
 
 (mmm-keys-minor-mode 1)
 
