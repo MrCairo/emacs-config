@@ -45,12 +45,9 @@
 (use-package el-patch)
 
 ;; Load org early on in the init process
-(use-package org
-    :defer t
-    :ensure t)
-(require 'org-faces)
+(straight-use-package 'org)
 
-;;; Define the customized groups
+;;; Define my customization groups
 
 (defgroup mrf-custom nil
   "Customization toggles for Mitch's Emacs installation."
@@ -68,67 +65,87 @@
    )
 
 ;;; Feature Switches
-(defcustom enable-ivy-counsel-swiper t
-    "If set to t then Ivy, Counsel, and Swiper."
-    :type 'boolean
+(defcustom completion-handler 'enable-vertico
+    "Select the default minibuffer completion handler.
+
+Vertico provides a performant and minimalistic vertical completion UI based on
+the default completion system.
+
+Ivy is a generic completion mechanism for Emacs. While it operates similarly to
+other completion schemes such as icomplete-mode, Ivy aims to be more efficient,
+smaller, simpler, and smoother to use yet highly customizable.  The Ivy package
+also includes Counsel. Counsel provides completion versions of common Emacs
+commands that are customised to make the best use of Ivy.  Swiper is an
+alternative to isearch that uses Ivy to show an overview of all matches."
+    :type '(choice (const :tag "Use the Vertico completion system." enable-vertico)
+               (const :tag "Use Ivy, Counsel, Swiper completion systems" enable-ivy-counsel-swiper))
     :group 'mrf-custom)
 
 (defcustom enable-gb-dev nil
-   "If set to t, the z80-mode and other GameBoy related packages
-will be enabled."
-   :type 'boolean
-   :group 'mrf-custom)
-
-(defcustom enable-dape t
-   "Set to t to enable the Debug Application Protocol for Emacs.
-If this value is set to nil then DAP is used instead."
-  :type 'boolean
-  :group 'mrf-custom)
+    "If set to t, the z80-mode and other GameBoy related packages
+    will be enabled."
+    :type 'boolean
+    :group 'mrf-custom)
 
 (defcustom enable-ts nil
-  "Set to t to enable TypeScript handling."
-  :type 'boolean
-  :group 'mrf-custom)
+    "Set to t to enable TypeScript handling."
+    :type 'boolean
+    :group 'mrf-custom)
 
 (defcustom enable-corfu nil
-  "Setting to t enables Corfu instead of Ivy.
-Corfu is an alternative to the command completion package, IVY which also will
-include Swiper and Company.  If this value is set to nil then Ivy is used."
-  :type 'boolean
-  :group 'mrf-custom)
+    "Setting to t enables Corfu instead of Ivy.
+    Corfu is an alternative to the command completion package, IVY which also will
+    include Swiper and Company.  If this value is set to nil then Ivy is used."
+    :type 'boolean
+    :group 'mrf-custom)
 
 (defcustom enable-vundo t
-  "Set to t to enable `vundo' which is an alternative to Emacs undo.
-Setting this value to nil will activate the alternate `undo-tree' package."
-  :type 'boolean
-  :group 'mrf-custom)
+    "Set to t to enable `vundo' which is an alternative to Emacs undo.
+    Setting this value to nil will activate the alternate `undo-tree' package."
+    :type 'boolean
+    :group 'mrf-custom)
 
 (defcustom enable-centaur-tabs nil
-  "Set to t to enable `centaur-tabs' which uses tabs to represent open buffer."
-  :type 'boolean
-  :group 'mrf-custom)
+    "Set to t to enable `centaur-tabs' which uses tabs to represent open buffer."
+    :type 'boolean
+    :group 'mrf-custom)
 
 (defcustom enable-anaconda nil
-  "Set to t to enable the `anaconda' Python package.
-This OR `enable-elpy' should be set to t but NOT BOTH!"
-  :type 'boolean
-  :group 'mrf-custom)
+    "Set to t to enable the `anaconda' Python package.
+    This OR `enable-elpy' should be set to t but NOT BOTH!"
+    :type 'boolean
+    :group 'mrf-custom)
 
 (defcustom enable-elpy t
-  "Set to t to enable the `elpy' package used for Python development.
-This OR `enable-anaconda' should be set to t but NOT BOTH!"
-  :type 'boolean
-  :group 'mrf-custom)
+    "Set to t to enable the `elpy' package used for Python development.
+    This OR `enable-anaconda' should be set to t but NOT BOTH!"
+    :type 'boolean
+    :group 'mrf-custom)
 
 (defcustom enable-neotree nil
-  "Set to t to enable the `neotree' package."
-  :type 'boolean
-  :group 'mrf-custom)
+    "Set to t to enable the `neotree' package."
+    :type 'boolean
+    :group 'mrf-custom)
 
-(defcustom enable-zoom nil
-  "Set to t to enable `zoom-mode' - golden-rectangle frame for the active buffer."
-  :type 'boolean
-  :group 'mrf-custom)
+(defcustom enable-golden-ratio nil
+    "Set to t to enable `golden-ratio-mode' which resizes the active buffer
+    window to the dimensions of a golden-rectangle "
+    :type 'boolean
+    :group 'mrf-custom)
+
+(defcustom debug-adapter 'enable-dap-mode
+    "Select the debug adapter to use for debugging applications.  dap-mode is an
+    Emacs client/library for Debug Adapter Protocol is a wire protocol for
+    communication between client and Debug Server. It’s similar to the LSP but
+    provides integration with debug server.
+
+    dape (Debug Adapter Protocol for Emacs) is similar to dap-mode but is
+    implemented entirely in Emacs Lisp. There are no other external dependencies
+    with DAPE. DAPE supports most popular languages, however, not as many as
+    dap-mode."
+    :type '(choice (const :tag "Debug Adapter Protocol (DAP)" enable-dap-mode)
+               (const :tag "Debug Adapter Protocol for Emacs (DAPE)" enable-dape))
+    :group 'mrf-custom)
 
 ;;; ------------------------------------------------------------
 ;;; Theming related
@@ -212,23 +229,30 @@ If additional themes are added, they must be previously installed."
     :group 'mrf-custom-fonts)
 
 (defcustom display-dashboard-at-start t
-   "If set to t, the `dashboard' package will be displayed first.
-Otherwise, the `dashboard' will be available but in the buffer
-*dashboard*."
-   :type 'boolean
-   :group 'mrf-custom)
+    "If set to t, the `dashboard' package will be displayed first.
+  Otherwise, the `dashboard' will be available but in the buffer
+  *dashboard*."
+    :type 'boolean
+    :group 'mrf-custom)
 
 (defcustom custom-docs-dir "~/Documents/Emacs-Related"
-   "A directory used to store documents and customized data."
-   :type 'string
-   :group 'mrf-custom)
+    "A directory used to store documents and customized data."
+    :type 'string
+    :group 'mrf-custom)
 
 (defcustom working-files-directory
-   (concat custom-docs-dir
-      (concat "/emacs-working-files_" (concat emacs-version "/")))
-   "The directory where to store Emacs working files."
-   :type 'string
-   :group 'mrf-custom)
+    (concat custom-docs-dir
+        (concat "/emacs-working-files_" (concat emacs-version "/")))
+    "The directory where to store Emacs working files."
+    :type 'string
+    :group 'mrf-custom)
+
+(defcustom custom-org-fill-column 150
+    "The fill column width for Org mode text.
+Note that the text is also centered on the screen so that
+should be taken into consideration when providing a width."
+    :type 'natnum
+    :group 'mrf-custom)
 
 (use-package general :demand t :ensure t)
 
@@ -272,7 +296,13 @@ Otherwise, the `dashboard' will be available but in the buffer
   :config
   (global-page-break-lines-mode))
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
+
+;; (use-package esup
+;;     :ensure t
+;;     :pin melpa)
+
+;;; --------------------------------------------------------------------------
 ;;; Set a variable that represents the actual emacs configuration directory.
 ;;; This is being done so that the user-emacs-directory which normally points
 ;;; to the .emacs.d directory can be re-assigned so that customized files don't
@@ -290,10 +320,10 @@ Otherwise, the `dashboard' will be available but in the buffer
 (message (concat ">>> Setting emacs-working-files directory to: " user-emacs-directory))
 
 ;;; Put any emacs cusomized variables in a special file
-(setq custom-file (concat custom-docs-dir "/custom-vars-org.el"))
+(setq custom-file (concat  working-files-directory "customized-vars.el"))
 (load custom-file 'noerror 'nomessage)
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 ;;
 ;; 1. The function `mrf/load-theme-from-selector' is called from the
@@ -312,7 +342,7 @@ Otherwise, the `dashboard' will be available but in the buffer
 (add-to-list 'savehist-additional-variables 'loaded-theme)
 (add-to-list 'savehist-additional-variables 'theme-selector)
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 (defun mrf/cycle-theme-selector (&rest theme)
     "Cycle the `theme-selector' by 1, resetting to 0 if beyond array bounds."
@@ -337,7 +367,7 @@ Otherwise, the `dashboard' will be available but in the buffer
 
 (add-hook 'disable-theme-functions #'mrf/cycle-theme-selector)
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 (defun mrf/load-theme-from-selector (&optional step)
     "Load the theme in `theme-list' indexed by `theme-selector'."
@@ -384,7 +414,7 @@ Otherwise, the `dashboard' will be available but in the buffer
 ;; Print current theme
 (global-set-key (kbd "C-c C-?") 'which-theme)
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 ;; Use shell path
 
@@ -407,11 +437,11 @@ Otherwise, the `dashboard' will be available but in the buffer
          ;; Needed to fix an issue on Mac which causes dired to fail
          dired-listing-switches "-al --group-directories-first")))
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 (add-to-list 'load-path (expand-file-name "lisp" user-emacs-directory))
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 ;; Frame (view) setup including fonts.
 ;; You will most likely need to adjust this font size for your system!
@@ -437,7 +467,7 @@ Otherwise, the `dashboard' will be available but in the buffer
 
 (setq frame-resize-pixelwise t)
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 ;; Functions to set the frame size
 
@@ -497,7 +527,7 @@ Otherwise, the `dashboard' will be available but in the buffer
    (mrf/frame-recenter)
    )
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 ;; Default fonts
 
@@ -534,7 +564,7 @@ Otherwise, the `dashboard' will be available but in the buffer
    (unless (daemonp)
       (mrf/frame-recenter)))
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 (use-package diminish
     :straight (diminish :type git :flavor melpa :host github :repo "myrjola/diminish.el"))
@@ -553,7 +583,7 @@ Otherwise, the `dashboard' will be available but in the buffer
 
 ;; (use-package pabbrev)
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 (use-package spacious-padding
    :hook (after-init . spacious-padding-mode)
@@ -572,24 +602,31 @@ Otherwise, the `dashboard' will be available but in the buffer
 ;;       `( :mode-line-active 'default
 ;;          :mode-line-inactive vertical-border))
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 (column-number-mode)
 
 (use-package page-break-lines
-   :config
-   (global-page-break-lines-mode))
+    :config
+    (global-page-break-lines-mode))
 
 (use-package rainbow-delimiters
-  :config
-  (rainbow-delimiters-mode))
+    :config
+    (rainbow-delimiters-mode))
 
 (defun mrf/set-fill-column-interactively (num)
-  "Asks for the fill column."
-  (interactive "nColumn: ")
-  (set-fill-column num))
+    "Asks for the fill column."
+    (interactive "nfill-column: ")
+    (set-fill-column num))
 
-;;; ==========================================================================
+(defun mrf/set-org-fill-column-interactively (num)
+    "Asks for the fill column for Org mode."
+    (interactive "norg-fill-column: ")
+    (setq custom-org-fill-column num)
+    (mrf/org-mode-visual-fill)
+    (redraw-display))
+
+;;; --------------------------------------------------------------------------
 
 ;; Macintosh specific configurations.
 
@@ -600,7 +637,7 @@ Otherwise, the `dashboard' will be available but in the buffer
          mac-command-modifier 'meta
          mac-option-modifier 'super))
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 ;; Prompt indicator/Minibuffer
 
@@ -625,7 +662,7 @@ Otherwise, the `dashboard' will be available but in the buffer
   ;; Enable recursive minibuffers
   (setq enable-recursive-minibuffers t))
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 ;; General Keybinding
 
@@ -651,7 +688,7 @@ Otherwise, the `dashboard' will be available but in the buffer
 (global-unset-key (kbd "C-<wheel-down>"))
 (global-unset-key (kbd "C-<wheel-up>"))
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 (let ((docs-dir (concat custom-docs-dir "/Themes/")))
    (add-to-list 'custom-theme-load-path docs-dir))
@@ -662,16 +699,13 @@ Otherwise, the `dashboard' will be available but in the buffer
 (use-package ef-themes)
 (use-package modus-themes)
 (use-package material-theme)
+(use-package color-theme-modern)
 (use-package color-theme-sanityinc-tomorrow )
 (use-package darktooth-theme :ensure t)
-
-(use-package color-theme-modern
-   :defer t)
-
 (use-package zenburn-theme
     :defer t)
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 (defun mrf/customize-modus-theme ()
    (message "Applying modus customization")
@@ -682,12 +716,15 @@ Otherwise, the `dashboard' will be available but in the buffer
 
 (add-hook 'after-init-hook 'mrf/customize-modus-theme)
 
-(setq ef-themes-common-palette-overrides
-   '(  (bg-mode-line bg-blue-intense)
-       (fg-mode-line fg-main)
-       (border-mode-line-active blue-intense)))
+(defun mrf/customize-ef-theme ()
+    (setq ef-themes-common-palette-overrides
+      '(  (bg-mode-line bg-blue-intense)
+  	   (fg-mode-line fg-main)
+  	   (border-mode-line-active blue-intense))))
 
-;;; ==========================================================================
+(add-hook 'after-init-hook 'mrf/customize-ef-theme)
+
+;;; --------------------------------------------------------------------------
 
 (defvar loaded-theme nil
    "The text representation of the loaded custom theme.")
@@ -699,14 +736,14 @@ Otherwise, the `dashboard' will be available but in the buffer
    "C-= =" 'mrf/load-theme-from-selector
    "C-= ?" 'mrf/print-custom-theme-name)
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 (mrf/load-theme-from-selector)
 
 ;; For terminal mode we choose Material theme
 (unless (display-graphic-p)
    (load-theme 'material t))
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 ;;; Automatic Package Updates
 
 (use-package auto-package-update
@@ -719,7 +756,7 @@ Otherwise, the `dashboard' will be available but in the buffer
     (auto-package-update-maybe)
     (auto-package-update-at-time "09:00"))
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 ;; YASnippets
 
@@ -748,7 +785,7 @@ Otherwise, the `dashboard' will be available but in the buffer
               :host github
               :repo "AndreaCrotti/yasnippet-snippets"))
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 ;; Which Key Helper
 
@@ -760,7 +797,7 @@ Otherwise, the `dashboard' will be available but in the buffer
    (which-key-mode)
    (which-key-setup-side-window-right))
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 ;;; --------------------------------------------------------------------------
 ;;; Window Number
@@ -769,7 +806,7 @@ Otherwise, the `dashboard' will be available but in the buffer
    :straight (winum :type git :flavor melpa :host github :repo "deb0ch/emacs-winum"))
 (winum-mode)
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 ;;; Treemacs
 
@@ -866,24 +903,24 @@ Otherwise, the `dashboard' will be available but in the buffer
         ("C-x t C-t" . treemacs-find-file)
         ("C-x t M-t" . treemacs-find-tag)))
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 (use-package treemacs-projectile
   :after (treemacs projectile))
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 (use-package treemacs-magit
   :after (treemacs magit)
    )
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 (use-package treemacs-icons-dired
    :hook (dired-mode . treemacs-icons-dired-enable-once)
    )
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 ;; (use-package treemacs-perspective
 ;;    :disabled
@@ -901,18 +938,22 @@ Otherwise, the `dashboard' will be available but in the buffer
    :after (treemacs persp-mode) ;;or perspective vs. persp-mode
    :config (treemacs-set-scope-type 'Perspectives))
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 (use-package treemacs-tab-bar ;;treemacs-tab-bar if you use tab-bar-mode
   :after (treemacs)
   :config (treemacs-set-scope-type 'Tabs))
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 (use-package treemacs-all-the-icons
  :if (display-graphic-p))
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
+
+(use-package hydra)
+
+;;; --------------------------------------------------------------------------
 ;;; Language Server Protocol
 
 (eval-when-compile (defvar lsp-enable-which-key-integration))
@@ -961,32 +1002,20 @@ Otherwise, the `dashboard' will be available but in the buffer
     (general-def prog-mode-map
       "C-c t" 'treemacs))
 
-(use-package lsp-ivy
-    :if enable-ivy-counsel-swiper
-    :after lsp ivy)
+(if (equal completion-handler 'enable-ivy-counsel-swiper)
+    (use-package lsp-ivy
+      :after lsp ivy))
 
 ;; Make sure that we set the read buffer above the default 4k
 (setq read-process-output-max (* 1024 1024))
 
-;;; Emacs Polyglot is the Emacs LSP client that stays out of your way:
-
-(use-package eglot
-    :defer t
-    :ensure t
-    :hook
-    (c-mode . eglot-ensure)
-    (c++-mode . eglot-ensure)
-    (python-home . eglot-ensure)
-    :config
-    (add-to-list 'eglot-server-programs '((c++-mode c-mode) "clangd")))
-
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 ;;; Alternate fork to handle possible performance bug(s)
 (use-package jsonrpc
-'    :straight (jsonrpc :type git :host github :repo "svaante/jsonrpc"))
+    :straight (jsonrpc :type git :host github :repo "svaante/jsonrpc"))
 
-(if (equal enable-dape t)
+(if (equal debug-adapter 'enable-dape)
     (progn
       (use-package dape
           :after (jsonrpc)
@@ -1025,10 +1054,9 @@ Otherwise, the `dashboard' will be available but in the buffer
           :config
           (message "DAPE Configured")
           )
-      )
-    )
+      ))
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 (setq mrf/vscode-js-debug-dir (file-name-concat user-emacs-directory "dape/vscode-js-debug"))
 
@@ -1098,35 +1126,11 @@ Otherwise, the `dashboard' will be available but in the buffer
          ("q" mrf/dape-end-debug-session "quit" :color blue)
          ("Q" mrf/dape-delete-all-debug-sessions :color red))
 
-;;; ==========================================================================
-;;; Debug Adapter Protocol
-(if (not enable-dape)
-   (progn
-      (use-package dap-mode
-     ;; Uncomment the config below if you want all UI panes to be hidden by default!
-     ;; :custom
-     ;; (lsp-enable-dap-auto-configure nil)
-     :commands
-     dap-debug
-     :custom
-     (dap-auto-configure-features '(sessions locals breakpoints expressions repl controls tooltip))
-     :config
-     (message "DAP mode loaded.")
-     (dap-ui-mode 1)
-     )
-      (require 'dap-lldb)
-      ;; (require 'dap-cpptools)
-      (setq dap-lldb-debug-program `(,(expand-file-name
-                                       "~/Developer/plain_unix/llvm-project/build/bin/lldb-dap")))
-      ;; (setq dap-lldb-debug-program "/Users/strider/Developer/plain_unix/llvm-project/build/bin/lldb-dap")
-      )
-   )
-
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 ;;; DAP for Python
 
-(if (not enable-dape)
+(if (equal debug-adapter 'enable-dap-mode)
    (progn
       (use-package dap-python
        :straight (dap-python :type git :host github :repo "emacs-lsp/dap-mode")
@@ -1153,7 +1157,7 @@ Otherwise, the `dashboard' will be available but in the buffer
       )
    )
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 ;;; DAP for NodeJS
 
@@ -1162,7 +1166,7 @@ Otherwise, the `dashboard' will be available but in the buffer
    (require 'dap-node)
    (unless (file-exists-p dap-node-debug-path) (dap-node-setup)))
 
-(if (not enable-dape)
+(if (equal debug-adapter 'enable-dap-mode)
    (progn
       (use-package dap-node
          :defer t
@@ -1195,373 +1199,6 @@ Otherwise, the `dashboard' will be available but in the buffer
       (add-hook 'js2-mode-hook 'my-setup-dap-node)
       )
    )
-
-;;; ==========================================================================
-
-(use-package hydra)
-
-;;; ==========================================================================
-
-;;; Swiper and IVY mode
-
-(use-package ivy
-    :if enable-ivy-counsel-swiper
-    :diminish I
-    :bind (("C-s" . swiper)
-            :map ivy-minibuffer-map
-          ;;; ("TAB" . ivy-alt-done)
-            ("C-l" . ivy-alt-done)
-            ("C-j" . ivy-next-line)
-            ("C-k" . ivy-previous-line)
-            :map ivy-switch-buffer-map
-            ("C-k" . ivy-previous-line)
-            ("C-l" . ivy-done)
-            ("C-d" . ivy-switch-buffer-kill)
-            :map ivy-reverse-i-search-map
-            ("C-k" . ivy-previous-line)
-            ("C-d" . ivy-reverse-i-search-kill))
-    :custom (ivy-use-virtual-buffers t)
-    :config
-    (ivy-mode 1))
-
-(use-package ivy-rich
-    :if enable-ivy-counsel-swiper
-    :after ivy
-    :init
-    (ivy-rich-mode 1)
-    :config
-    (setcdr (assq t ivy-format-functions-alist) #'ivy-format-function-line))
-
-(use-package ivy-yasnippet
-    :if enable-ivy-counsel-swiper
-    :straight (ivy-yasnippet :type git :flavor melpa :host github :repo "mkcms/ivy-yasnippet"))
-
-;;; ==========================================================================
-
-(use-package swiper
-    :if enable-ivy-counsel-swiper)
-
-;;; ==========================================================================
-
-(use-package counsel
-    :if enable-ivy-counsel-swiper
-
-    :straight t
-    :bind (("C-M-j" . 'counsel-switch-buffer)
-            :map minibuffer-local-map
-            ("C-r" . 'counsel-minibuffer-history))
-    :custom
-    (counsel-linux-app-format-function #'counsel-linux-app-format-function-name-only)
-    :config
-    (counsel-mode 1))
-
-;;; ==========================================================================
-
-(use-package ivy-prescient
-    :if enable-ivy-counsel-swiper
-    :after counsel
-    :custom
-    (ivy-prescient-enable-filtering nil)
-    :config
-    (prescient-persist-mode 1)
-    (ivy-prescient-mode 1))
-
-;;; ==========================================================================
-
-;;;; Code Completion
-(if (equal enable-corfu t)
-   (use-package corfu
-      ;; Optional customizations
-      :custom
-      (corfu-cycle t)                 ; Allows cycling through candidates
-      (corfu-auto t)                  ; Enable auto completion
-      (corfu-auto-prefix 2)
-      (corfu-auto-delay 0.8)
-      (corfu-popupinfo-delay '(0.5 . 0.2))
-      (corfu-preview-current 'insert) ; insert previewed candidate
-      (corfu-preselect 'prompt)
-      (corfu-on-exact-match nil)      ; Don't auto expand tempel snippets
-      ;; Optionally use TAB for cycling, default is `corfu-complete'.
-      :bind (:map corfu-map
-               ("M-SPC"      . corfu-insert-separator)
-               ("TAB"        . corfu-next)
-               ([tab]        . corfu-next)
-               ("S-TAB"      . corfu-previous)
-               ([backtab]    . corfu-previous)
-               ("S-<return>" . corfu-insert)
-               ("RET"        . nil))
-      :init
-      (global-corfu-mode)
-      (corfu-history-mode)
-      (corfu-popupinfo-mode) ; Popup completion info
-      :config
-      (add-hook 'eshell-mode-hook
-       (lambda () (setq-local corfu-quit-at-boundary t
-                  corfu-quit-no-match t
-                  corfu-auto nil)
-            (corfu-mode))))
-
-   (use-package corfu-prescient
-      :after corfu)
-   )
-
-;;; ==========================================================================
-
-(use-package orderless
-  :custom
-  (completion-styles '(orderless basic))
-  (completion-category-overrides '((file (styles basic partial-completion)))))
-
-;;; ==========================================================================
-
-(defun mrf/tree-sitter-setup ()
-   (tree-sitter-hl-mode t)
-   (ts-fold-mode t))
-
-(use-package tree-sitter-langs)
-
-(use-package tree-sitter
-   :init
-   (message ">>> Loading tree-sitter")
-   ;; :after (lsp-mode)
-   :config
-   ;; Activate tree-sitter globally (minor mode registered on every buffer)
-   (global-tree-sitter-mode)
-   :hook
-   (tree-sitter-after-on . mrf/tree-sitter-setup)
-   (typescript-mode . lsp-deferred)
-   (c-mode . lsp-deferred)
-   (c++-mode . lsp-deferred)
-   (js2-mode . lsp-deferred))
-
-(use-package ts-fold
-   :straight (ts-fold :type git
-              :host github
-              :repo "emacs-tree-sitter/ts-fold")
-   :config
-   (general-define-key
-      "C-<tab>" 'ts-fold-toggle
-      "C-c f"   'ts-fold-open-all))
-
-;;; ==========================================================================
-
-(if (not enable-dape)
-   (use-package typescript-ts-mode
-      ;; :after (dap-mode)
-      :mode "\\.ts\\'"
-      :hook
-      (typescript-ts-mode . lsp-deferred)
-      (js2-mode . lsp-deferred)
-      :config
-      (setq typescript-indent-level 4)
-      (dap-node-setup)))
-
-(if enable-dape
-   (use-package typescript-ts-mode
-      :after (dape-mode)
-      :mode ("\\.ts\\'")
-      :hook
-      (typescript-ts-mode . lsp-deferred)
-      (js2-mode . lsp-deferred)
-      :config
-      (general-define-key
-       :keymaps '(typescript-ts-mode-map)
-       "C-c ." 'dape-hydra/body)
-      (setq typescript-indent-level 4)))
-
-(add-to-list 'auto-mode-alist '("\\.ts\\'" . typescript-ts-mode))
-
-(use-package js2-mode
-   :hook (js-mode . js2-minor-mode)
-   :mode ("\\.js\\'" "\\.mjs\\'")
-   :custom (js2-highlight-level 3))
-
-(use-package ac-js2
-   :hook (js2-mode . ac-js2-mode))
-
-(general-define-key
-   :keymaps '(js-mode-map)
-   "{" 'paredit-open-curly
-   "}" 'paredit-close-curly-and-newline)
-
-(add-to-list 'auto-mode-alist '("\\.json$" . js-mode))
-
-;;; ==========================================================================
-
-(defun mrf/load-c-file-hook ()
-   (message "Running C/C++ file hook")
-   (c-mode)
-   (if (featurep 'zoom)
-      (if (default-value 'zoom-mode)
-       (progn
-          ;;(zoom--off)
-          (message "Turning zoom off")
-          )))
-   (if (not enable-dape)
-      (dap-mode))
-   (highlight-indentation-mode -1)
-   (display-fill-column-indicator-mode t))
-
-(defun code-compile ()
-   "Look for a Makefile and compiles the code with gcc/cpp."
-   (interactive)
-   (unless (file-exists-p "Makefile")
-      (set (make-local-variable 'compile-command)
-       (let ((file (file-name-nondirectory buffer-file-name)))
-            (format "%s -o %s %s"
-               (if  (equal (file-name-extension file) "cpp") "g++" "gcc" )
-               (file-name-sans-extension file)
-               file)))
-      (compile compile-command)))
-
-(global-set-key [f9] 'code-compile)
-(add-to-list 'auto-mode-alist '("\\.c\\'" . mrf/load-c-file-hook))
-
-;;; ==========================================================================
-
-;; (use-package graphql-mode)
-(use-package js2-mode :defer t)
-(use-package rust-mode :defer t)
-(use-package swift-mode :defer t)
-
-;;; ==========================================================================
-
-(use-package flycheck
-  :config
-  (global-flycheck-mode))
-
-(use-package flycheck-package)
-
-(eval-after-load 'flycheck
-  '(flycheck-package-setup))
-
-(defun mrf/before-save ()
-  "Force the check of the current python file being saved."
-  (when (eq major-mode 'python-mode) ;; Python Only
-     (flycheck-mode 0)
-     (flycheck-mode t)
-     (message "deleting trailing whitespace enabled")
-     (delete-trailing-whitespace)))
-
-(add-hook 'before-save-hook 'mrf/before-save)
-
-;;; ==========================================================================
-
-
-(defun mrf/load-python-file-hook ()
-    (message "Running python file hook")
-    (python-mode)
-
-    (if (not enable-dape)
-      (dap-mode)
-      (if (not (featurep 'dape))
-        (use-package dape :demand t)))
-
-    (diff-hl-mode)
-    (highlight-indentation-mode -1)
-    (display-fill-column-indicator-mode t))
-
-(defun mrf/python-mode-triggered ()
-    (message "Calling mrf/python-mode-triggered")
-    (treemacs t))
-
-(use-package python-mode
-    :defer t
-    :hook (python-mode . (lambda () (set-fill-column 80)))
-    )
-
-(add-to-list 'auto-mode-alist '("\\.py\\'" . mrf/load-python-file-hook))
-(use-package blacken
-    :after python) ;Format Python file upon save.
-
-(if (boundp 'python-shell-completion-native-disabled-interpreters)
-    (add-to-list 'python-shell-completion-native-disabled-interpreters "python3")
-    (setq python-shell-completion-native-disabled-interpreters '("python3")))
-
-;;; ==========================================================================
-
-(if (equal enable-anaconda t)
-   (use-package anaconda-mode
-      :bind (("C-c C-x" . next-error))
-      :config
-      (require 'pyvenv)
-      :hook
-      (python-mode-hook . anaconda-eldoc-mode)))
-
-;;; ==========================================================================
-
-(if (equal enable-elpy t)
-    (progn
-        (use-package elpy
-            :after python
-            :custom
-            (elpy-rpc-python-command "python3")
-            (display-fill-column-indicator-mode 1)
-            (highlight-indentation-mode 0)
-            :config
-            (message "elpy loaded")
-            (elpy-enable))
-        ;; Enable Flycheck
-        (use-package flycheck
-            :after elpy
-            :straight (flycheck :type git :flavor melpa
-                          :host github
-                          :repo "flycheck/flycheck")
-            :config
-            (setq elpy-modules (delq 'elpy-module-flymake elpy-modules))
-            :hook (elpy-mode . flycheck-mode))))
-
-;;; ==========================================================================
-
-(use-package py-autopep8
-   :after python-mode
-   :hook ((python-mode) . py-autopep8-mode))
-
-;;; ==========================================================================
-
-(if (equal enable-elpy t)
- (general-define-key
-    :keymaps '(python-mode-map)
-    "C-c g a"    'elpy-goto-assignment
-    "C-c g o"    'elpy-goto-definition-other-window
-    "C-c g g"    'elpy-goto-definition
-    "C-c g ?"    'elpy-doc))
-
-;;; ==========================================================================
-
-(if (equal enable-anaconda t)
-   (general-define-key
-      :keymaps '(python-mode-map)
-      "C-c g o"    'anaconda-mode-find-definitions-other-frame
-      "C-c g g"    'anaconda-mode-find-definitions))
-
-;;; ==========================================================================
-
-;; This is a helpful macro that is used to put double quotes around a word.
-(defalias 'quote-word
-   (kmacro "\" M-d \" <left> C-y"))
-
-(defalias 'quote-region
-   (kmacro "C-w \" \" <left> C-y <right>"))
-
-(general-define-key
-   :keymaps '(python-mode-map)
-   "C-c C-q"    'quote-region
-   "C-c q"      'quote-word
-   "C-c |"      'display-fill-column-indicator-mode)
-
-;;; ==========================================================================
-
-(if (not enable-dape)
-   (general-define-key
-      :keymaps '(python-mode-map typescript-ts-mode-map c-mode-map c++-mode-map)
-      "C-c ."      'dap-hydra/body)
-   )
-
-(if enable-dape
-   (general-define-key
-      :keymaps '(python-mode-map typescript-ts-mode-map c-mode-map c++-mode-map)
-      "C-c ."      'dape-hydra/body))
 
 (defun mrf/end-debug-session ()
    "End the debug session and delete project Python buffers."
@@ -1635,14 +1272,364 @@ Otherwise, the `dashboard' will be available but in the buffer
    ("q" mrf/end-debug-session "quit" :color blue)
    ("Q" mrf/delete-all-debug-sessions :color red))
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
+
+;;; Swiper and IVY mode
+
+(if (equal completion-handler 'enable-ivy-counsel-swiper)
+    (progn
+      (use-package ivy
+  	  :diminish I
+  	  :bind (("C-s" . swiper)
+  		    :map ivy-minibuffer-map
+          ;;; ("TAB" . ivy-alt-done)
+  		    ("C-l" . ivy-alt-done)
+  		    ("C-j" . ivy-next-line)
+  		    ("C-k" . ivy-previous-line)
+  		    :map ivy-switch-buffer-map
+  		    ("C-k" . ivy-previous-line)
+  		    ("C-l" . ivy-done)
+  		    ("C-d" . ivy-switch-buffer-kill)
+  		    :map ivy-reverse-i-search-map
+  		    ("C-k" . ivy-previous-line)
+  		    ("C-d" . ivy-reverse-i-search-kill))
+  	  :custom (ivy-use-virtual-buffers t)
+  	  :config
+  	  (ivy-mode 1))
+
+      (use-package ivy-rich
+  	  :after ivy
+  	  :init
+  	  (ivy-rich-mode 1)
+  	  :config
+  	  (setcdr (assq t ivy-format-functions-alist) #'ivy-format-function-line))
+
+      (use-package ivy-yasnippet
+  	  :straight (ivy-yasnippet :type git :flavor melpa :host github :repo "mkcms/ivy-yasnippet"))
+      ))
+
+;;; --------------------------------------------------------------------------
+
+(if (equal completion-handler 'enable-ivy-counsel-swiper)
+    (use-package swiper))
+
+;;; --------------------------------------------------------------------------
+
+(if (equal completion-handler 'enable-ivy-counsel-swiper)
+    (use-package counsel
+      :straight t
+      :bind (("C-M-j" . 'counsel-switch-buffer)
+  		:map minibuffer-local-map
+  		("C-r" . 'counsel-minibuffer-history))
+      :custom
+      (counsel-linux-app-format-function #'counsel-linux-app-format-function-name-only)
+      :config
+      (counsel-mode 1)))
+
+;;; --------------------------------------------------------------------------
+
+(if (equal completion-handler 'enable-ivy-counsel-swiper)
+    (use-package ivy-prescient
+      :after counsel
+      :custom
+      (ivy-prescient-enable-filtering nil)
+      :config
+      (prescient-persist-mode 1)
+      (ivy-prescient-mode 1)))
+
+;;; --------------------------------------------------------------------------
+
+;;;; Code Completion
+(if (equal enable-corfu t)
+   (use-package corfu
+      ;; Optional customizations
+      :custom
+      (corfu-cycle t)                 ; Allows cycling through candidates
+      (corfu-auto t)                  ; Enable auto completion
+      (corfu-auto-prefix 2)
+      (corfu-auto-delay 0.8)
+      (corfu-popupinfo-delay '(0.5 . 0.2))
+      (corfu-preview-current 'insert) ; insert previewed candidate
+      (corfu-preselect 'prompt)
+      (corfu-on-exact-match nil)      ; Don't auto expand tempel snippets
+      ;; Optionally use TAB for cycling, default is `corfu-complete'.
+      :bind (:map corfu-map
+               ("M-SPC"      . corfu-insert-separator)
+               ("TAB"        . corfu-next)
+               ([tab]        . corfu-next)
+               ("S-TAB"      . corfu-previous)
+               ([backtab]    . corfu-previous)
+               ("S-<return>" . corfu-insert)
+               ("RET"        . nil))
+      :init
+      (global-corfu-mode)
+      (corfu-history-mode)
+      (corfu-popupinfo-mode) ; Popup completion info
+      :config
+      (add-hook 'eshell-mode-hook
+       (lambda () (setq-local corfu-quit-at-boundary t
+                  corfu-quit-no-match t
+                  corfu-auto nil)
+            (corfu-mode))))
+
+   (use-package corfu-prescient
+      :after corfu)
+   )
+
+;;; --------------------------------------------------------------------------
+
+(defun mrf/tree-sitter-setup ()
+   (tree-sitter-hl-mode t)
+   (ts-fold-mode t))
+
+(use-package tree-sitter-langs)
+
+(use-package tree-sitter
+   :init
+   (message ">>> Loading tree-sitter")
+   ;; :after (lsp-mode)
+   :config
+   ;; Activate tree-sitter globally (minor mode registered on every buffer)
+   (global-tree-sitter-mode)
+   :hook
+   (tree-sitter-after-on . mrf/tree-sitter-setup)
+   (typescript-mode . lsp-deferred)
+   (c-mode . lsp-deferred)
+   (c++-mode . lsp-deferred)
+   (js2-mode . lsp-deferred))
+
+(use-package ts-fold
+   :straight (ts-fold :type git
+              :host github
+              :repo "emacs-tree-sitter/ts-fold")
+   :config
+   (general-define-key
+      "C-<tab>" 'ts-fold-toggle
+      "C-c f"   'ts-fold-open-all))
+
+;;; --------------------------------------------------------------------------
+
+(if (equal debug-adapter 'enable-dap-mode)
+   (use-package typescript-ts-mode
+      ;; :after (dap-mode)
+      :mode "\\.ts\\'"
+      :hook
+      (typescript-ts-mode . lsp-deferred)
+      (js2-mode . lsp-deferred)
+      :config
+      (setq typescript-indent-level 4)
+      (dap-node-setup)))
+
+(if (equal debug-adapter 'enable-dape)
+   (use-package typescript-ts-mode
+      :after (dape-mode)
+      :mode ("\\.ts\\'")
+      :hook
+      (typescript-ts-mode . lsp-deferred)
+      (js2-mode . lsp-deferred)
+      :config
+      (general-define-key
+       :keymaps '(typescript-ts-mode-map)
+       "C-c ." 'dape-hydra/body)
+      (setq typescript-indent-level 4)))
+
+(add-to-list 'auto-mode-alist '("\\.ts\\'" . typescript-ts-mode))
+
+(use-package js2-mode
+   :hook (js-mode . js2-minor-mode)
+   :mode ("\\.js\\'" "\\.mjs\\'")
+   :custom (js2-highlight-level 3))
+
+(use-package ac-js2
+   :hook (js2-mode . ac-js2-mode))
+
+(general-define-key
+   :keymaps '(js-mode-map)
+   "{" 'paredit-open-curly
+   "}" 'paredit-close-curly-and-newline)
+
+(add-to-list 'auto-mode-alist '("\\.json$" . js-mode))
+
+;;; --------------------------------------------------------------------------
+
+(defun mrf/load-c-file-hook ()
+    (message "Running C/C++ file hook")
+    (c-mode)
+    (when (equal debug-adapter 'enable-dap-mode)
+      (dap-mode))
+    (highlight-indentation-mode -1)
+    (display-fill-column-indicator-mode t))
+
+(defun code-compile ()
+    "Look for a Makefile and compiles the code with gcc/cpp."
+    (interactive)
+    (unless (file-exists-p "Makefile")
+      (set (make-local-variable 'compile-command)
+  	  (let ((file (file-name-nondirectory buffer-file-name)))
+  	      (format "%s -o %s %s"
+  		  (if  (equal (file-name-extension file) "cpp") "g++" "gcc" )
+  		  (file-name-sans-extension file)
+  		  file)))
+      (compile compile-command)))
+
+(global-set-key [f9] 'code-compile)
+(add-to-list 'auto-mode-alist '("\\.c\\'" . mrf/load-c-file-hook))
+
+;;; --------------------------------------------------------------------------
+
+;; (use-package graphql-mode)
+(use-package js2-mode :defer t)
+(use-package rust-mode :defer t)
+(use-package swift-mode :defer t)
+
+;;; --------------------------------------------------------------------------
+
+(use-package flycheck
+  :config
+  (global-flycheck-mode))
+
+(use-package flycheck-package)
+
+(eval-after-load 'flycheck
+  '(flycheck-package-setup))
+
+(defun mrf/before-save ()
+  "Force the check of the current python file being saved."
+  (when (eq major-mode 'python-mode) ;; Python Only
+     (flycheck-mode 0)
+     (flycheck-mode t)
+     (message "deleting trailing whitespace enabled")
+     (delete-trailing-whitespace)))
+
+(add-hook 'before-save-hook 'mrf/before-save)
+
+;;; --------------------------------------------------------------------------
+
+
+(defun mrf/load-python-file-hook ()
+    (message "Running python file hook")
+    (python-mode)
+
+    (if (equal debug-adapter 'enable-dap-mode)
+      (unless (featurep 'dap-mode)
+  	  (dap-mode))
+      (if (not (featurep 'dape))
+          (use-package dape :demand t)))
+
+    (diff-hl-mode)
+    (highlight-indentation-mode -1)
+    (display-fill-column-indicator-mode t))
+
+(defun mrf/python-mode-triggered ()
+    (message "Calling mrf/python-mode-triggered")
+    (treemacs t))
+
+(use-package python-mode
+    :defer t
+    :hook (python-mode . (lambda () (set-fill-column 80)))
+    )
+
+(add-to-list 'auto-mode-alist '("\\.py\\'" . mrf/load-python-file-hook))
+(use-package blacken
+    :after python) ;Format Python file upon save.
+
+(if (boundp 'python-shell-completion-native-disabled-interpreters)
+    (add-to-list 'python-shell-completion-native-disabled-interpreters "python3")
+    (setq python-shell-completion-native-disabled-interpreters '("python3")))
+
+;;; --------------------------------------------------------------------------
+
+(if (equal enable-anaconda t)
+   (use-package anaconda-mode
+      :bind (("C-c C-x" . next-error))
+      :config
+      (require 'pyvenv)
+      :hook
+      (python-mode-hook . anaconda-eldoc-mode)))
+
+;;; --------------------------------------------------------------------------
+
+(if (equal enable-elpy t)
+    (progn
+        (use-package elpy
+            :after python
+            :custom
+            (elpy-rpc-python-command "python3")
+            (display-fill-column-indicator-mode 1)
+            (highlight-indentation-mode 0)
+            :config
+            (message "elpy loaded")
+            (elpy-enable))
+        ;; Enable Flycheck
+        (use-package flycheck
+            :after elpy
+            :straight (flycheck :type git :flavor melpa
+                          :host github
+                          :repo "flycheck/flycheck")
+            :config
+            (setq elpy-modules (delq 'elpy-module-flymake elpy-modules))
+            :hook (elpy-mode . flycheck-mode))))
+
+;;; --------------------------------------------------------------------------
+
+(use-package py-autopep8
+   :after python-mode
+   :hook ((python-mode) . py-autopep8-mode))
+
+;;; --------------------------------------------------------------------------
+
+(if (equal enable-elpy t)
+ (general-define-key
+    :keymaps '(python-mode-map)
+    "C-c g a"    'elpy-goto-assignment
+    "C-c g o"    'elpy-goto-definition-other-window
+    "C-c g g"    'elpy-goto-definition
+    "C-c g ?"    'elpy-doc))
+
+;;; --------------------------------------------------------------------------
+
+(if (equal enable-anaconda t)
+   (general-define-key
+      :keymaps '(python-mode-map)
+      "C-c g o"    'anaconda-mode-find-definitions-other-frame
+      "C-c g g"    'anaconda-mode-find-definitions))
+
+;;; --------------------------------------------------------------------------
+
+;; This is a helpful macro that is used to put double quotes around a word.
+(defalias 'quote-word
+   (kmacro "\" M-d \" <left> C-y"))
+
+(defalias 'quote-region
+   (kmacro "C-w \" \" <left> C-y <right>"))
+
+(general-define-key
+   :keymaps '(python-mode-map)
+   "C-c C-q"    'quote-region
+   "C-c q"      'quote-word
+   "C-c |"      'display-fill-column-indicator-mode)
+
+;;; --------------------------------------------------------------------------
+
+(when (equal debug-adapter 'enable-dap-mode)
+   (general-define-key
+      :keymaps '(python-mode-map typescript-ts-mode-map c-mode-map c++-mode-map)
+      "C-c ."      'dap-hydra/body)
+   )
+
+(if (equal debug-adapter 'enable-dape)
+   (general-define-key
+      :keymaps '(python-mode-map typescript-ts-mode-map c-mode-map c++-mode-map)
+      "C-c ."      'dape-hydra/body))
+
+;;; --------------------------------------------------------------------------
 
 (use-package pyvenv-auto
    :after python
    :config (message "Starting pyvenv-auto")
    :hook (python-mode . pyvenv-auto-run))
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 (use-package z80-mode
     :if enable-gb-dev
@@ -1666,7 +1653,7 @@ Otherwise, the `dashboard' will be available but in the buffer
                 :type git :host github
                 :repo "japanoise/rgbds-mode"))
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 (use-package company
    :after lsp-mode
@@ -1681,7 +1668,7 @@ Otherwise, the `dashboard' will be available but in the buffer
 
 (add-hook 'after-init-hook 'global-company-mode)
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 (use-package company-box
    :diminish cb
@@ -1701,7 +1688,7 @@ Otherwise, the `dashboard' will be available but in the buffer
 (eval-after-load "company"
    '(add-to-list 'company-backends 'company-anaconda))
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 
 (use-package projectile
@@ -1715,14 +1702,14 @@ Otherwise, the `dashboard' will be available but in the buffer
     (setq projectile-project-search-path '("~/Developer")))
   (setq projectile-switch-project-action #'projectile-dired))
 
-(use-package counsel-projectile
-  :after projectile
-  :config (counsel-projectile-mode))
+(if (equal completion-handler 'enable-ivy-counsel-swiper)
+    (use-package counsel-projectile
+      :after projectile
+      :config
+      (setq projectile-completion-system 'ivy)
+      (counsel-projectile-mode)))
 
-(if enable-ivy-counsel-swiper
-    (setq projectile-completion-system 'ivy))
-
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 (use-package magit
    :defer t
@@ -1752,39 +1739,41 @@ Otherwise, the `dashboard' will be available but in the buffer
       "Face used for the line delimiting the end of source blocks.")
    )
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 (defun mrf/org-font-setup ()
   "Setup org mode fonts."
-  (font-lock-add-keywords
-     'org-mode
-     '(("^ *\\([-]\\) "
-          (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))))
-   ;; (setq org-src-fontify-natively t)
+    (require 'org-faces)
 
-  ;; Set faces for heading levels
-  (dolist (face '((org-level-1 . 1.2)
-                  (org-level-2 . 1.1)
-                  (org-level-3 . 1.05)
-                  (org-level-4 . 1.0)
-                  (org-level-5 . 1.1)
-                  (org-level-6 . 1.1)
-                  (org-level-7 . 1.1)
-                  (org-level-8 . 1.1)))
-    (set-face-attribute (car face) nil :font "Cantarell" :weight 'regular :height (cdr face)))
+    (font-lock-add-keywords
+      'org-mode
+      '(("^ *\\([-]\\) "
+              (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))))
+    ;; (setq org-src-fontify-natively t)
 
-  ;; Ensure that anything that should be fixed-pitch in Org files appears that way
-  (set-face-attribute 'org-block nil    :foreground 'unspecified :inherit 'fixed-pitch)
-  (set-face-attribute 'org-table nil    :inherit 'fixed-pitch)
-  (set-face-attribute 'org-formula nil  :inherit 'fixed-pitch)
-  (set-face-attribute 'org-code nil     :inherit '(shadow fixed-pitch))
-  (set-face-attribute 'org-table nil    :inherit '(shadow fixed-pitch))
-  (set-face-attribute 'org-verbatim nil :inherit '(shadow fixed-pitch))
-  (set-face-attribute 'org-special-keyword nil :inherit '(font-lock-comment-face fixed-pitch))
-  (set-face-attribute 'org-meta-line nil :inherit '(font-lock-comment-face fixed-pitch))
-  (set-face-attribute 'org-checkbox nil  :inherit 'fixed-pitch)
-  (set-face-attribute 'line-number nil :inherit 'fixed-pitch)
-  (set-face-attribute 'line-number-current-line nil :inherit 'fixed-pitch))
+    ;; Set faces for heading levels
+    (dolist (face '((org-level-1 . 1.2)
+                       (org-level-2 . 1.1)
+                       (org-level-3 . 1.05)
+                       (org-level-4 . 1.0)
+                       (org-level-5 . 1.1)
+                       (org-level-6 . 1.1)
+                       (org-level-7 . 1.1)
+                       (org-level-8 . 1.1)))
+      (set-face-attribute (car face) nil :font "Cantarell" :weight 'regular :height (cdr face)))
+
+    ;; Ensure that anything that should be fixed-pitch in Org files appears that way
+    (set-face-attribute 'org-block nil    :foreground 'unspecified :inherit 'fixed-pitch)
+    (set-face-attribute 'org-table nil    :inherit 'fixed-pitch)
+    (set-face-attribute 'org-formula nil  :inherit 'fixed-pitch)
+    (set-face-attribute 'org-code nil     :inherit '(shadow fixed-pitch))
+    (set-face-attribute 'org-table nil    :inherit '(shadow fixed-pitch))
+    (set-face-attribute 'org-verbatim nil :inherit '(shadow fixed-pitch))
+    (set-face-attribute 'org-special-keyword nil :inherit '(font-lock-comment-face fixed-pitch))
+    (set-face-attribute 'org-meta-line nil :inherit '(font-lock-comment-face fixed-pitch))
+    (set-face-attribute 'org-checkbox nil  :inherit 'fixed-pitch)
+    (set-face-attribute 'line-number nil :inherit 'fixed-pitch)
+    (set-face-attribute 'line-number-current-line nil :inherit 'fixed-pitch))
 
 ;; -----------------------------------------------------------------
 
@@ -1807,7 +1796,7 @@ Otherwise, the `dashboard' will be available but in the buffer
       '(("Archive.org" :maxlevel . 1)
         ("Tasks.org" :maxlevel . 1))))
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 ;; -----------------------------------------------------------------
 
 (defun mrf/org-setup-agenda ()
@@ -1859,7 +1848,7 @@ Otherwise, the `dashboard' will be available but in the buffer
                       (org-agenda-files org-agenda-files)))))))
    ) ;; mrf/org-setup-agenda
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 ;; -----------------------------------------------------------------
 
@@ -1893,7 +1882,7 @@ Otherwise, the `dashboard' will be available but in the buffer
                                      "Weight")
              "| %U | %^{Weight} | %^{Notes} |" :kill-buffer t))))
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 ;; -----------------------------------------------------------------
 
 (mrf/org-theme-override-values)
@@ -1925,9 +1914,13 @@ Otherwise, the `dashboard' will be available but in the buffer
    (mrf/org-setup-capture-templates)
    (define-key global-map (kbd "C-c j")
       (lambda () (interactive) (org-capture nil "jj")))
-   (mrf/org-font-setup))
+    (mrf/org-font-setup))
 
-;;; ==========================================================================
+(use-package org-modern
+    :after org
+    :hook (org-mode . org-modern-mode))
+
+;;; --------------------------------------------------------------------------
 
 ;; -----------------------------------------------------------------
 
@@ -1940,28 +1933,28 @@ Otherwise, the `dashboard' will be available but in the buffer
 ;; -----------------------------------------------------------------
 
 (defun mrf/org-mode-visual-fill ()
-  (setq visual-fill-column-width 110
+  (setq visual-fill-column-width custom-org-fill-column
         visual-fill-column-center-text t)
   (visual-fill-column-mode 1))
 
 (use-package visual-fill-column
   :hook (org-mode . mrf/org-mode-visual-fill))
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 ;; -----------------------------------------------------------------
 
-(with-eval-after-load 'org
-   (org-babel-do-load-languages
+(with-eval-after-load 'org    
+    (org-babel-do-load-languages
       'org-babel-load-languages
       '((emacs-lisp . t)
-      (js . t)
-      (shell . t)
-      (python . t)))
+  	   (js . t)
+  	   (shell . t)
+  	   (python . t)))
 
-  (push '("conf-unix" . conf-unix) org-src-lang-modes))
+    (push '("conf-unix" . conf-unix) org-src-lang-modes))
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 ;; -----------------------------------------------------------------
 
@@ -2098,7 +2091,7 @@ capture was not aborted."
                  (file-truename (buffer-file-name)))
          (org-refile nil nil (list "Tasks" today-file nil pos)))))
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 ;; Automatically tangle our Configure.org config file when we save it
 ;; Org files that should use this need to add a '#+auto_tangle: t'
@@ -2107,37 +2100,192 @@ capture was not aborted."
    :defer t
    :hook (org-mode . org-auto-tangle-mode))
 
-;; no longer used but I keep it jic
-;; (defun mrf/org-babel-tangle-save-hook ()
-;;    "Save emacs-lisp blocks."
-;;   (when (eq major-mode 'org-mode) ;; Org-mode Only
-;;      (when (string-equal (file-name-directory (buffer-file-name))
-;;               (expand-file-name emacs-config-directory))
-;;         (message "org-mode-hook: Executing mrf/org-babel-tangle-config")
-;;         ;; Dynamic scoping to the rescue
-;;         (let ((org-confirm-babel-evaluate nil))
-;;            (message "... tangle emacs-lisp")
-;;            (org-babel-tangle)))))
-
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 (with-eval-after-load 'org
   (require 'ox-gfm nil t))
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
-(use-package marginalia)
+(if (equal completion-handler 'enable-vertico)
+    (progn
+      (use-package vertico
+  	  :demand t   ; Otherwise won't get loaded immediately
+  	  :straight (vertico :files (:defaults "extensions/*") ; Special recipe to load extensions conveniently
+  			:includes (vertico-indexed
+  				      vertico-flat
+  				      vertico-grid
+  				      vertico-mouse
+  				      vertico-quick
+  				      vertico-buffer
+  				      vertico-repeat
+  				      vertico-reverse
+  				      vertico-directory
+  				      vertico-multiform
+  				      vertico-unobtrusive
+  				      ))
+  	  :config
+  	  (vertico-mode)
+  	  (recentf-mode t)
+  	  (vertico-multiform-mode)
+  	  (vertico-count 13)
+  	  (vertico-cycle nil)
+  	   ; Clean up file path when typing
+  	  :hook ((rfn-eshadow-update-overlay . vertico-directory-tidy)
+  		     ; Make sure vertico state is saved
+  		    (minibuffer-setup . vertico-repeat-save)))
 
-(use-package vertico)
-(vertico-mode 1)
+      (use-package vertico-prescient
+  	  :after vertico)
 
-;; (use-package vertico-posframe
-;;    :custom
-;;    (vertico-posframe-parameters
-;;       '((left-fringe . 8)
-;;           (right-fringe . 8))))
+      (use-package vertico-posframe
+  	  :straight t
+  	  :custom
+  	  (vertico-posframe-parameters
+  	      '((left-fringe . 8)
+  		   (right-fringe . 8))))
+      ))
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
+
+(if (equal completion-handler 'enable-vertico)
+    (use-package marginalia
+        :custom
+        (marginalia-max-relative-age 0)
+        (marginalia-align 'right)
+        :config
+        (marginalia-mode t)))
+
+;;; --------------------------------------------------------------------------
+(if (equal completion-handler 'enable-vertico)
+    (use-package orderless
+      :custom
+      (completion-styles '(orderless basic))
+      (completion-category-overrides '((file (styles basic partial-completion))))))
+
+;; Example configuration for Consult
+(if (equal completion-handler 'enable-vertico)
+    (use-package consult
+      :straight t
+      ;; Replace bindings. Lazily loaded due by `use-package'.
+      :bind (;; C-c bindings in `mode-specific-map'
+  		("C-c M-x" . consult-mode-command)
+  		("C-c h" . consult-history)
+  		("C-c k" . consult-kmacro)
+  		("C-c m" . consult-man)
+  		("C-c i" . consult-info)
+  		([remap Info-search] . consult-info)
+  		;; C-x bindings in `ctl-x-map'
+  		("C-x M-:" . consult-complex-command)     ;; orig. repeat-complex-command
+  		("C-x b" . consult-buffer)                ;; orig. switch-to-buffer
+  		("C-x 4 b" . consult-buffer-other-window) ;; orig. switch-to-buffer-other-window
+  		("C-x 5 b" . consult-buffer-other-frame)  ;; orig. switch-to-buffer-other-frame
+  		("C-x t b" . consult-buffer-other-tab)    ;; orig. switch-to-buffer-other-tab
+  		("C-x r b" . consult-bookmark)            ;; orig. bookmark-jump
+  		("C-x p b" . consult-project-buffer)      ;; orig. project-switch-to-buffer
+  		;; Custom M-# bindings for fast register access
+  		("M-#" . consult-register-load)
+  		("M-'" . consult-register-store)          ;; orig. abbrev-prefix-mark (unrelated)
+  		("C-M-#" . consult-register)
+  		;; Other custom bindings
+  		("M-y" . consult-yank-pop)                ;; orig. yank-pop
+  		;; M-g bindings in `goto-map'
+  		("M-g e" . consult-compile-error)
+  		("M-g f" . consult-flymake)               ;; Alternative: consult-flycheck
+  		("M-g g" . consult-goto-line)             ;; orig. goto-line
+  		("M-g M-g" . consult-goto-line)           ;; orig. goto-line
+  		("M-g o" . consult-outline)               ;; Alternative: consult-org-heading
+  		("M-g m" . consult-mark)
+  		("M-g k" . consult-global-mark)
+  		("M-g i" . consult-imenu)
+  		("M-g I" . consult-imenu-multi)
+  		;; M-s bindings in `search-map'
+  		("M-s d" . consult-find)                  ;; Alternative: consult-fd
+  		("M-s c" . consult-locate)
+  		("M-s g" . consult-grep)
+  		("M-s G" . consult-git-grep)
+  		("M-s r" . consult-ripgrep)
+  		("M-s l" . consult-line)
+  		("M-s L" . consult-line-multi)
+  		("M-s k" . consult-keep-lines)
+  		("M-s u" . consult-focus-lines)
+  		;; Isearch integration
+  		("M-s e" . consult-isearch-history)
+  		:map isearch-mode-map
+  		("M-e" . consult-isearch-history)         ;; orig. isearch-edit-string
+  		("M-s e" . consult-isearch-history)       ;; orig. isearch-edit-string
+  		("M-s l" . consult-line)                  ;; needed by consult-line to detect isearch
+  		("M-s L" . consult-line-multi)            ;; needed by consult-line to detect isearch
+  		;; Minibuffer history
+  		:map minibuffer-local-map
+  		("M-s" . consult-history)                 ;; orig. next-matching-history-element
+  		("M-r" . consult-history))                ;; orig. previous-matching-history-element
+
+      ;; Enable automatic preview at point in the *Completions* buffer. This is
+      ;; relevant when you use the default completion UI.
+      :hook (completion-list-mode . consult-preview-at-point-mode)
+
+      ;; The :init configuration is always executed (Not lazy)
+      :init
+
+      ;; Optionally configure the register formatting. This improves the register
+      ;; preview for `consult-register', `consult-register-load',
+      ;; `consult-register-store' and the Emacs built-ins.
+      (setq register-preview-delay 0.5
+            register-preview-function #'consult-register-format)
+
+      ;; Optionally tweak the register preview window.
+      ;; This adds thin lines, sorting and hides the mode line of the window.
+      (advice-add #'register-preview :override #'consult-register-window)
+
+      ;; Use Consult to select xref locations with preview
+      (setq xref-show-xrefs-function #'consult-xref
+            xref-show-definitions-function #'consult-xref)
+
+      ;; Configure other variables and modes in the :config section,
+      ;; after lazily loading the package.
+      :config
+
+      ;; Optionally configure preview. The default value
+      ;; is 'any, such that any key triggers the preview.
+      ;; (setq consult-preview-key 'any)
+      ;; (setq consult-preview-key "M-.")
+      ;; (setq consult-preview-key '("S-<down>" "S-<up>"))
+      ;; For some commands and buffer sources it is useful to configure the
+      ;; :preview-key on a per-command basis using the `consult-customize' macro.
+      (consult-customize
+  	  consult-theme :preview-key '(:debounce 0.2 any)
+  	  consult-ripgrep consult-git-grep consult-grep
+  	  consult-bookmark consult-recent-file consult-xref
+  	  consult--source-bookmark consult--source-file-register
+  	  consult--source-recent-file consult--source-project-recent-file
+  	  ;; :preview-key "M-."
+  	  :preview-key '(:debounce 0.4 any))
+
+      ;; Optionally configure the narrowing key.
+      ;; Both < and C-+ work reasonably well.
+      (setq consult-narrow-key "<") ;; "C-+"
+
+      ;; Optionally make narrowing help available in the minibuffer.
+      ;; You may want to use `embark-prefix-help-command' or which-key instead.
+      ;; (define-key consult-narrow-map (vconcat consult-narrow-key "?") #'consult-narrow-help)
+
+      ;; By default `consult-project-function' uses `project-root' from project.el.
+      ;; Optionally configure a different project root function.
+  ;;;; 1. project.el (the default)
+      ;; (setq consult-project-function #'consult--default-project--function)
+  ;;;; 2. vc.el (vc-root-dir)
+      ;; (setq consult-project-function (lambda (_) (vc-root-dir)))
+  ;;;; 3. locate-dominating-file
+      ;; (setq consult-project-function (lambda (_) (locate-dominating-file "." ".git")))
+  ;;;; 4. projectile.el (projectile-project-root)
+      ;; (autoload 'projectile-project-root "projectile")
+      ;; (setq consult-project-function (lambda (_) (projectile-project-root)))
+  ;;;; 5. No project support
+      ;; (setq consult-project-function nil)
+      ))
+
+;;; --------------------------------------------------------------------------
 
 (use-package solaire-mode
    :hook (after-init . solaire-global-mode)
@@ -2145,36 +2293,41 @@ capture was not aborted."
    (push '(treemacs-window-background-face . solaire-default-face) solaire-mode-remap-alist)
    (push '(treemacs-hl-line-face . solaire-hl-line-face) solaire-mode-remap-alist))
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
-;; Golen Ratio / Zoom
+;; Golen Ratio
 
-(if (equal enable-zoom 1)
-   (use-package zoom
-      :hook (after-init . zoom-mode)
-      :custom
-      (zoom-size '(0.618 . 0.618))
-      ;; (golden-ratio-auto-scale t)
-      (zoom-ignored-major-modes '(dired-mode occur-mode
-                                  undo-tree-visualizer-mode
-                                  inferior-python-mode
-                                  vundo-mode
-                                  python-mode
-                                  help-mode
-                                  dap-ui-repl-mode
-                                  dap-mode
-                                  dap-ui-mode
-                                  dap-ui-many-windows-mode
-                                  markdown-mode))))
+(if enable-golden-ratio
+    (use-package golden-ratio
+        :custom
+        (golden-ratio-auto-scale t)
+        (golden-ratio-adjust-factor .4)
+        (golden-ratio-wide-adjust-factor .4)
+        (golden-ratio-max-width 100)
+        (golden-ratio-exclude-modes '(treemacs-mode
+                                      undo-tree-visdualizer-mode
+                                      inferior-python-mode
+  				    vundo-mode
+  	    	                      which-key-mode
+                                      c-mode
+                                      cc-mode
+                                      dashboard-mode
+                                      python-mode
+                                      markdown-mode))
+        (golden-ratio-exclude-buffer-regexp '("dap*"
+  					    "*dape*"
+                                              "*python*"))
+        :config
+        (golden-ratio-mode 1)))
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 (use-package ace-window
    :config
    (general-define-key
       "M-o" 'ace-window))
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 (use-package all-the-icons
    :if (display-graphic-p))
@@ -2214,33 +2367,63 @@ capture was not aborted."
    :hook ((after-init     . mrf/setup-dashboard-buffer)
           (dashboard-mode . mrf/dashboard-banner)))
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 ;; A cleaner undo package from undo-tree.
 
-(use-package vundo
-   :bind (("C-x u" . vundo)
-        ("C-x r u" . vundo))
-   :config
-   (setq vundo-glyph-alist vundo-unicode-symbols)
-   (set-face-attribute 'vundo-default nil :family "Wingdings2"))
+(if enable-vundo
+    (use-package vundo
+      :bind (("C-x u" . vundo)
+  		("C-x r u" . vundo))
+      :config
+      (setq vundo-glyph-alist vundo-unicode-symbols)
+      (set-face-attribute 'vundo-default nil :family "Wingdings2")))
 
-;;; ==========================================================================
+;; undo-tree handling
+;; NOTE: vundo is cleaner looking. Both are great!
+
+(defun mrf/undo-tree-hook ()
+    (set-frame-width (selected-frame) 20))
+
+(if (not enable-vundo)
+    (use-package undo-tree
+        ;; :hook (undo-tree-visualizer-mode-hook . mrf/undo-tree-hook)
+        :init
+        (setq undo-tree-visualizer-timestamps t
+  	      ;; undo-tree-visualizer-diff t
+  	      undo-tree-enable-undo-in-region t
+  	      ;; 10X bump of the undo limits to avoid issues with premature
+  	      ;; Emacs GC which truncages the undo history very aggresively
+  	      undo-limit 800000
+  	      undo-strong-limit 12000000
+  	      undo-outer-limit 120000000)
+        (global-undo-tree-mode))
+    ;; This prevents the *.~undo-tree~ files from being persisted.
+    (with-eval-after-load 'undo-tree
+        (setq undo-tree-auto-save-history nil)))
+
+;;; --------------------------------------------------------------------------
 
 ;; helpful package
 
-(use-package helpful
-  :commands (helpful-callable helpful-variable helpful-command helpful-key)
-  :custom
-  (counsel-describe-function-function #'helpful-callable)
-  (counsel-describe-variable-function #'helpful-variable)
-  :bind
-  ([remap describe-function] . counsel-describe-function)
-  ([remap describe-command] . helpful-command)
-  ([remap describe-variable] . counsel-describe-variable)
-  ([remap describe-key] . helpful-key))
+(if (equal completion-handler 'enable-ivy-counsel-swiper)
+    (use-package helpful
+      :commands (helpful-callable helpful-variable helpful-command helpful-key)
+      :custom
+      (counsel-describe-function-function #'helpful-callable)
+      (counsel-describe-variable-function #'helpful-variable)
+      :bind
+      ([remap describe-function] . counsel-describe-function)
+      ([remap describe-command] . helpful-command)
+      ([remap describe-variable] . counsel-describe-variable)
+      ([remap describe-key] . helpful-key))
+  (use-package helpful
+      :commands (helpful-callable helpful-variable helpful-command helpful-key)
+      :bind
+      ([remap describe-command] . helpful-command)
+      ([remap describe-key] . helpful-key)))
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 (use-package term
   :defer t
@@ -2252,13 +2435,13 @@ capture was not aborted."
   ;; Match the default Bash shell prompt.  Update this if you have a custom prompt
   (setq term-prompt-regexp "^[^#$%>\n]*[#$%>] *"))
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 (use-package eterm-256color
   :defer t
   :hook (term-mode . eterm-256color-mode))
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 (use-package vterm
   :defer t
@@ -2269,7 +2452,7 @@ capture was not aborted."
   (setq vterm-shell "zsh")                       ;; Set this to customize the shell to launch
   (setq vterm-max-scrollback 10000))
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 
 (defun efs/configure-eshell ()
@@ -2302,7 +2485,7 @@ capture was not aborted."
 
   (eshell-git-prompt-use-theme 'powerline))
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 (if (equal enable-neotree t)
    (use-package neotree
@@ -2310,7 +2493,7 @@ capture was not aborted."
       (global-set-key [f8] 'neotree-toggle)
       (setq neo-theme (if (display-graphic-p) 'icons 'arrow))))
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 (use-package all-the-icons)
 
@@ -2319,22 +2502,7 @@ capture was not aborted."
 ;;   :init (doom-modeline-mode 1)
 ;;   :custom ((doom-modeline-height 15)))
 
-;; Functions to insert the buffer file name at the current cursor position
-;;
-(defun mrf/insert-buffer-full-name-at-point ()
-   (interactive)
-   (insert buffer-file-name))
-
-(defun mrf/insert-buffer-name-at-point ()
-   (interactive)
-   (insert (file-name-nondirectory (buffer-file-name))))
-
-(general-define-key
-   "C-c i f" 'mrf/insert-buffer-name-at-point
-   "C-c i F" 'mrf/insert-buffer-full-name-at-point
-   )
-
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 ;; Enable tabs for each buffer
 
@@ -2350,11 +2518,11 @@ capture was not aborted."
       :config ;; Enable centaur-tabs
       (centaur-tabs-mode t)))
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 (use-package diff-hl)
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 (use-package pulsar
    :config
@@ -2369,7 +2537,7 @@ capture was not aborted."
    (pulsar-face 'pulsar-magenta)
    (pulsar-highlight-face 'pulsar-yellow))
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 (use-package popper
   :defer t
@@ -2395,7 +2563,7 @@ capture was not aborted."
    "M-`"   'popper-cycle
    "C-M-`" 'popper-toggle-type)
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 ;; Prefer g-prefixed coreutils version of standard utilities when available
 (let ((gls (executable-find "gls")))
@@ -2415,7 +2583,7 @@ capture was not aborted."
 (use-package dired-hide-dotfiles
   :hook (dired-mode . dired-hide-dotfiles-mode))
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 ;; Single Window dired - don't continually open new buffers
 
@@ -2441,6 +2609,7 @@ capture was not aborted."
     (let ((map (make-sparse-keymap)))
       (define-key map (kbd "C-c RET d") 'dashboard-open)
       (define-key map (kbd "C-c RET f") 'mrf/set-fill-column-interactively)
+      (define-key map (kbd "C-c RET F") 'mrf/set-org-fill-column-interactively)
       (define-key map (kbd "C-c RET i") 'ielm)
       (define-key map (kbd "C-c RET v") 'vterm-other-window)
       (define-key map (kbd "C-c RET S") 'smartparens-strict-mode)
@@ -2462,7 +2631,7 @@ capture was not aborted."
 (which-key-add-key-based-replacements "C-c RET" "Mitch's Menu")
 (diminish 'mmm-keys-minor-mode "m3k")
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 ;; Ignore Line Numbers for the following modes:
 
@@ -2486,7 +2655,7 @@ capture was not aborted."
                                  (use-package)
                                  (python-mode)))
 
-;;; ==========================================================================
+;;; --------------------------------------------------------------------------
 
 ;; Frame font selection
 
@@ -2572,26 +2741,3 @@ capture was not aborted."
 
 (when (display-graphic-p)
    (add-hook 'after-init-hook 'use-medium-display-font))
-
-;;; ==========================================================================
-
-(custom-set-variables
-   ;; custom-set-variables was added by Custom.
-   ;; If you edit it by hand, you could mess it up, so be careful.
-   ;; Your init file should contain only one such instance.
-   ;; If there is more than one, they won't work right.
-   '(warning-suppress-log-types
-       '(((python python-shell-completion-native-turn-on-maybe))
-         ((package reinitialization))
-         (comp)
-         (treesit)
-         (use-package)
-         (python-mode)
-         (package-initialize))))
-  ;;; init.el ends here.
-(custom-set-faces
-   ;; custom-set-faces was added by Custom.
-   ;; If you edit it by hand, you could mess it up, so be careful.
-   ;; Your init file should contain only one such instance.
-   ;; If there is more than one, they won't work right.
-   )
