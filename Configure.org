@@ -548,8 +548,8 @@ This directory is expected to be in the ~emacs-config-direcory~ dir. This can be
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
 
-  (add-to-list 'load-path (expand-file-name "lisp" user-emacs-directory))
-  
+  (add-to-list 'load-path (expand-file-name "lisp" emacs-config-directory))
+
 #+end_src
 
 ** Frame Setup
@@ -650,7 +650,6 @@ It's nice to know that Emacs is somewhat working. To help this along, we set the
   
 #+end_src
 
-
 *** Default fonts and sizes
 
 #+begin_src emacs-lisp
@@ -717,7 +716,6 @@ It's nice to know that Emacs is somewhat working. To help this along, we set the
   ;; (use-package pabbrev)
 #+end_src
 
-
 *** Auto-complete
 Auto-Complete is an intelligent auto-completion extension for Emacs. It extends the standard Emacs completion interface and provides an environment that allows users to concentrate more on their own work.
 
@@ -754,7 +752,6 @@ Features:
   ;; case sensitivity is important when finding matches
   (setq ac-ignore-case nil)
 #+end_src
-
 
 *** Bind-key
 
@@ -1329,72 +1326,71 @@ The Hydra is vanquished once Hercules, any binding that isn't the Hydra's head, 
   (use-package eglot
       :defer t
       :init
-      (add-to-list 'eglot-server-programs
-          '((c++-mode c-mode) "clangd"))
       (setq company-backends
           (cons 'company-capf
               (remove 'company-capf company-backends)))
       :hook
       (c-mode . eglot-ensure)
       (c++-mode . eglot-ensure)
-      (python-home . eglot-ensure)
+      (python-mode . eglot-ensure)
       :config
-      (with-eval-after-load 'project
-  	(add-to-list 'project-find-functions
-              'mrf/projectile-proj-find-function)))
-  
+      (add-to-list 'eglot-server-programs '((c-mode c++-mode) "clangd")))
+      ;; (with-eval-after-load 'project
+      ;; 	(add-to-list 'project-find-functions
+      ;;         'mrf/projectile-proj-find-function)))
+
 #+end_src
 
 
 * Debug Adapter Protocol for Emacs (DAPE)
 #+begin_src emacs-lisp
-  ;;; --------------------------------------------------------------------------
+    ;;; ------------------------------------------------------------------------
 
-  ;;; Alternate fork to handle possible performance bug(s)
+    ;;; Alternate fork to handle possible performance bug(s)
   (use-package jsonrpc
-      :straight (jsonrpc :type git :host github :repo "svaante/jsonrpc"))
+      :straight (jsonrpc :type git :host github :repo "emacs-straight/jsonrpc" :files ("*" (:exclude ".git"))))
 
-  (if (equal debug-adapter 'enable-dape)
-      (progn
-        (use-package dape
-            :after (jsonrpc)
-            :defer t
-            ;; :defer t
-            ;; To use window configuration like gud (gdb-mi)
-            ;; :init
-            ;; (setq dape-buffer-window-arrangement 'gud)
-            :custom
-            (dape-buffer-window-arrangement 'right)  ;; Info buffers to the right
-            ;; To not display info and/or buffers on startup
-            ;; (remove-hook 'dape-on-start-hooks 'dape-info)
-            (remove-hook 'dape-on-start-hooks 'dape-repl)
+    (if (equal debug-adapter 'enable-dape)
+        (progn
+          (use-package dape
+              :after (jsonrpc)
+              :defer t
+              ;; :defer t
+              ;; To use window configuration like gud (gdb-mi)
+              ;; :init
+              ;; (setq dape-buffer-window-arrangement 'gud)
+              :custom
+              (dape-buffer-window-arrangement 'right)  ;; Info buffers to the right
+              ;; To not display info and/or buffers on startup
+              ;; (remove-hook 'dape-on-start-hooks 'dape-info)
+              (remove-hook 'dape-on-start-hooks 'dape-repl)
 
-            ;; To display info and/or repl buffers on stopped
-            ;; (add-hook 'dape-on-stopped-hooks 'dape-info)
-            ;; (add-hook 'dape-on-stopped-hooks 'dape-repl)
+              ;; To display info and/or repl buffers on stopped
+              ;; (add-hook 'dape-on-stopped-hooks 'dape-info)
+              ;; (add-hook 'dape-on-stopped-hooks 'dape-repl)
 
-            ;; By default dape uses gdb keybinding prefix
-            ;; If you do not want to use any prefix, set it to nil.
-            ;; (setq dape-key-prefix "\C-x\C-a")
+              ;; By default dape uses gdb keybinding prefix
+              ;; If you do not want to use any prefix, set it to nil.
+              ;; (setq dape-key-prefix "\C-x\C-a")
 
-            ;; Kill compile buffer on build success
-            ;; (add-hook 'dape-compile-compile-hooks 'kill-buffer)
+              ;; Kill compile buffer on build success
+              ;; (add-hook 'dape-compile-compile-hooks 'kill-buffer)
 
-            ;; Save buffers on startup, useful for interpreted languages
-            ;; (add-hook 'dape-on-start-hooks
-            ;;           (defun dape--save-on-start ()
-            ;;             (save-some-buffers t t)))
+              ;; Save buffers on startup, useful for interpreted languages
+              ;; (add-hook 'dape-on-start-hooks
+              ;;           (defun dape--save-on-start ()
+              ;;             (save-some-buffers t t)))
 
-            ;; Projectile users
-            (setq dape-cwd-fn 'projectile-project-root)
-            ;; :straight (dape :type git
-            ;;           :host github :repo "emacs-straight/dape"
-            ;;           :files ("*" (:exclude ".git")))
-            :config
-            (message "DAPE Configured")
-            )
-        ))
-  
+              ;; Projectile users
+              (setq dape-cwd-fn 'projectile-project-root)
+              ;; :straight (dape :type git
+              ;;           :host github :repo "emacs-straight/dape"
+              ;;           :files ("*" (:exclude ".git")))
+              :config
+              (message "DAPE Configured")
+              )
+          ))
+    
 #+end_src
 
 ** Dape for TypeScript
@@ -1492,26 +1488,21 @@ This is meant to be evaluated and run once. Calling this function will clone the
 
 Provides a common protocol for debugging different systems. This is configured for Python
 
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
-  ;;; Debug Adapter Protocol
+  ;;; Debug Adapter Protocol      
   (if (equal debug-adapter 'enable-dap-mode)
       (progn
   	(use-package dap-mode
   	    ;; Uncomment the config below if you want all UI panes to be hidden by default!
   	    ;; :custom
   	    ;; (lsp-enable-dap-auto-configure nil)
-  	    :defer t
-  	    :commands
+    	      :commands
   	    dap-debug
   	    :custom
   	    (dap-auto-configure-features '(sessions locals breakpoints expressions repl controls tooltip))
   	    :config
   	    (dap-ui-mode 1)
-  	    (setq dap-lldb-debug-program
-  		"/Users/strider/Developer/plain_unix/llvm-project/build/bin/lldb-dap")
-  	    (require 'dap-lldb)
-  	    (require 'dap-cpptools)
   	    (message "DAP mode loaded and configured.")
   	    )
   	)
@@ -1524,14 +1515,20 @@ Provides a common protocol for debugging different systems. This is configured f
 
   (if (equal debug-adapter 'enable-dap-mode)
       (use-package dap-lldb
+  	:straight (dap-lldb :type git :host github :repo "emacs-lsp/dap-mode")
   	:config
+  	(setq dap-lldb-debug-program
+  	    "/Users/strider/Developer/plain_unix/llvm-project/build/bin/lldb-dap")
   	(dap-register-debug-template "LLDB :: Run file from project directory"
   	    (list :type "lldb-dap"
   		:args ""
   		:cwd nil
   		:module nil
   		:program "${workspaceFolder}/a.out"
-  		:request "launch"))))
+  		:request "launch")))
+
+      (use-package dap-cpptools
+  	:straight (dap-lldb :type git :host github :repo "emacs-lsp/dap-mode")))
 
 #+end_src
 
@@ -2085,7 +2082,6 @@ This is the standard python mode setup.
 
 #+end_src
 
-
 *** Anaconda-mode
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
@@ -2608,7 +2604,7 @@ We use [[https://github.com/joostkremers/visual-fill-column][visual-fill-column]
 
   (defun mrf/org-mode-visual-fill ()
     (setq visual-fill-column-width custom-org-fill-column
-          visual-fill-column-center-text t)
+          visual-fill-column-center-text nil)
     (visual-fill-column-mode 1))
 
   (use-package visual-fill-column
@@ -2865,6 +2861,7 @@ While there is standard markdown support built into =org-mode=, this additional 
 (with-eval-after-load 'org
   (require 'ox-gfm nil t))
 #+end_src
+
 
 * Quality of Life
 

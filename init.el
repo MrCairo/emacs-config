@@ -439,7 +439,7 @@ should be taken into consideration when providing a width."
 
 ;;; --------------------------------------------------------------------------
 
-(add-to-list 'load-path (expand-file-name "lisp" user-emacs-directory))
+(add-to-list 'load-path (expand-file-name "lisp" emacs-config-directory))
 
 ;;; --------------------------------------------------------------------------
 
@@ -1009,52 +1009,52 @@ should be taken into consideration when providing a width."
 ;; Make sure that we set the read buffer above the default 4k
 (setq read-process-output-max (* 1024 1024))
 
-;;; --------------------------------------------------------------------------
+;;; ------------------------------------------------------------------------
 
-;;; Alternate fork to handle possible performance bug(s)
+  ;;; Alternate fork to handle possible performance bug(s)
 (use-package jsonrpc
-    :straight (jsonrpc :type git :host github :repo "svaante/jsonrpc"))
+    :straight (jsonrpc :type git :host github :repo "emacs-straight/jsonrpc" :files ("*" (:exclude ".git"))))
 
-(if (equal debug-adapter 'enable-dape)
-    (progn
-      (use-package dape
-          :after (jsonrpc)
-          :defer t
-          ;; :defer t
-          ;; To use window configuration like gud (gdb-mi)
-          ;; :init
-          ;; (setq dape-buffer-window-arrangement 'gud)
-          :custom
-          (dape-buffer-window-arrangement 'right)  ;; Info buffers to the right
-          ;; To not display info and/or buffers on startup
-          ;; (remove-hook 'dape-on-start-hooks 'dape-info)
-          (remove-hook 'dape-on-start-hooks 'dape-repl)
+  (if (equal debug-adapter 'enable-dape)
+      (progn
+        (use-package dape
+            :after (jsonrpc)
+            :defer t
+            ;; :defer t
+            ;; To use window configuration like gud (gdb-mi)
+            ;; :init
+            ;; (setq dape-buffer-window-arrangement 'gud)
+            :custom
+            (dape-buffer-window-arrangement 'right)  ;; Info buffers to the right
+            ;; To not display info and/or buffers on startup
+            ;; (remove-hook 'dape-on-start-hooks 'dape-info)
+            (remove-hook 'dape-on-start-hooks 'dape-repl)
 
-          ;; To display info and/or repl buffers on stopped
-          ;; (add-hook 'dape-on-stopped-hooks 'dape-info)
-          ;; (add-hook 'dape-on-stopped-hooks 'dape-repl)
+            ;; To display info and/or repl buffers on stopped
+            ;; (add-hook 'dape-on-stopped-hooks 'dape-info)
+            ;; (add-hook 'dape-on-stopped-hooks 'dape-repl)
 
-          ;; By default dape uses gdb keybinding prefix
-          ;; If you do not want to use any prefix, set it to nil.
-          ;; (setq dape-key-prefix "\C-x\C-a")
+            ;; By default dape uses gdb keybinding prefix
+            ;; If you do not want to use any prefix, set it to nil.
+            ;; (setq dape-key-prefix "\C-x\C-a")
 
-          ;; Kill compile buffer on build success
-          ;; (add-hook 'dape-compile-compile-hooks 'kill-buffer)
+            ;; Kill compile buffer on build success
+            ;; (add-hook 'dape-compile-compile-hooks 'kill-buffer)
 
-          ;; Save buffers on startup, useful for interpreted languages
-          ;; (add-hook 'dape-on-start-hooks
-          ;;           (defun dape--save-on-start ()
-          ;;             (save-some-buffers t t)))
+            ;; Save buffers on startup, useful for interpreted languages
+            ;; (add-hook 'dape-on-start-hooks
+            ;;           (defun dape--save-on-start ()
+            ;;             (save-some-buffers t t)))
 
-          ;; Projectile users
-          (setq dape-cwd-fn 'projectile-project-root)
-          ;; :straight (dape :type git
-          ;;           :host github :repo "emacs-straight/dape"
-          ;;           :files ("*" (:exclude ".git")))
-          :config
-          (message "DAPE Configured")
-          )
-      ))
+            ;; Projectile users
+            (setq dape-cwd-fn 'projectile-project-root)
+            ;; :straight (dape :type git
+            ;;           :host github :repo "emacs-straight/dape"
+            ;;           :files ("*" (:exclude ".git")))
+            :config
+            (message "DAPE Configured")
+            )
+        ))
 
 ;;; --------------------------------------------------------------------------
 
@@ -1125,6 +1125,25 @@ should be taken into consideration when providing a width."
          ("x" nil "exit Hydra" :color yellow)
          ("q" mrf/dape-end-debug-session "quit" :color blue)
          ("Q" mrf/dape-delete-all-debug-sessions :color red))
+
+;;; --------------------------------------------------------------------------
+;;; Debug Adapter Protocol      
+(if (equal debug-adapter 'enable-dap-mode)
+    (progn
+      (use-package dap-mode
+  	  ;; Uncomment the config below if you want all UI panes to be hidden by default!
+  	  ;; :custom
+  	  ;; (lsp-enable-dap-auto-configure nil)
+    	    :commands
+  	  dap-debug
+  	  :custom
+  	  (dap-auto-configure-features '(sessions locals breakpoints expressions repl controls tooltip))
+  	  :config
+  	  (dap-ui-mode 1)
+  	  (message "DAP mode loaded and configured.")
+  	  )
+      )
+    )
 
 ;;; --------------------------------------------------------------------------
 
@@ -1934,7 +1953,7 @@ should be taken into consideration when providing a width."
 
 (defun mrf/org-mode-visual-fill ()
   (setq visual-fill-column-width custom-org-fill-column
-        visual-fill-column-center-text t)
+        visual-fill-column-center-text nil)
   (visual-fill-column-mode 1))
 
 (use-package visual-fill-column
