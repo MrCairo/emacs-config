@@ -32,6 +32,11 @@ This ORG file will configure the *init.el* file based upon all of the *emacs-lis
 #+end_src
 
 ** Early init and setup
+Bootstrap the =straight= system
+
+#+INCLUDE: "~/.emacs-profiles.el" :lines "-10"
+
+
 #+begin_src emacs-lisp
 
   (defvar bootstrap-version)
@@ -64,10 +69,7 @@ This ORG file will configure the *init.el* file based upon all of the *emacs-lis
   (use-package el-patch)
 
   ;; Load org early on in the init process
-  (use-package org
-      :defer t
-      :ensure t)
-  (require 'org-faces)
+  (straight-use-package 'org)
 
   #+end_src
 
@@ -79,9 +81,10 @@ Set various variables to =t= to turn on a specific feature or =0= to disable it.
 Other variables are also defined here that define other emacs behaviors and defaults.
 
 *** Define the custom groups
+
 #+begin_src emacs-lisp
 
-  ;;; Define the customized groups
+  ;;; Define my customization groups
   
   (defgroup mrf-custom nil
     "Customization toggles for Mitch's Emacs installation."
@@ -104,68 +107,87 @@ Other variables are also defined here that define other emacs behaviors and defa
 
 #+begin_src emacs-lisp
 
-  ;;; Feature Switches
-  (defcustom enable-ivy-counsel-swiper t
-      "If set to t then Ivy, Counsel, and Swiper."
-      :type 'boolean
+      ;;; Feature Switches
+  (defcustom completion-handler 'enable-vertico
+      "Select the default minibuffer completion handler.
+
+  Vertico provides a performant and minimalistic vertical completion UI based on
+  the default completion system.
+
+  Ivy is a generic completion mechanism for Emacs. While it operates similarly to
+  other completion schemes such as icomplete-mode, Ivy aims to be more efficient,
+  smaller, simpler, and smoother to use yet highly customizable.  The Ivy package
+  also includes Counsel. Counsel provides completion versions of common Emacs
+  commands that are customised to make the best use of Ivy.  Swiper is an
+  alternative to isearch that uses Ivy to show an overview of all matches."
+      :type '(choice (const :tag "Use the Vertico completion system." enable-vertico)
+                 (const :tag "Use Ivy, Counsel, Swiper completion systems" enable-ivy-counsel-swiper))
       :group 'mrf-custom)
 
   (defcustom enable-gb-dev nil
-     "If set to t, the z80-mode and other GameBoy related packages
-  will be enabled."
-     :type 'boolean
-     :group 'mrf-custom)
-
-  (defcustom enable-dape t
-     "Set to t to enable the Debug Application Protocol for Emacs.
-  If this value is set to nil then DAP is used instead."
-    :type 'boolean
-    :group 'mrf-custom)
+      "If set to t, the z80-mode and other GameBoy related packages
+      will be enabled."
+      :type 'boolean
+      :group 'mrf-custom)
 
   (defcustom enable-ts nil
-    "Set to t to enable TypeScript handling."
-    :type 'boolean
-    :group 'mrf-custom)
+      "Set to t to enable TypeScript handling."
+      :type 'boolean
+      :group 'mrf-custom)
 
   (defcustom enable-corfu nil
-    "Setting to t enables Corfu instead of Ivy.
-  Corfu is an alternative to the command completion package, IVY which also will
-  include Swiper and Company.  If this value is set to nil then Ivy is used."
-    :type 'boolean
-    :group 'mrf-custom)
+      "Setting to t enables Corfu instead of Ivy.
+      Corfu is an alternative to the command completion package, IVY which also will
+      include Swiper and Company.  If this value is set to nil then Ivy is used."
+      :type 'boolean
+      :group 'mrf-custom)
 
   (defcustom enable-vundo t
-    "Set to t to enable `vundo' which is an alternative to Emacs undo.
-  Setting this value to nil will activate the alternate `undo-tree' package."
-    :type 'boolean
-    :group 'mrf-custom)
+      "Set to t to enable `vundo' which is an alternative to Emacs undo.
+      Setting this value to nil will activate the alternate `undo-tree' package."
+      :type 'boolean
+      :group 'mrf-custom)
 
   (defcustom enable-centaur-tabs nil
-    "Set to t to enable `centaur-tabs' which uses tabs to represent open buffer."
-    :type 'boolean
-    :group 'mrf-custom)
+      "Set to t to enable `centaur-tabs' which uses tabs to represent open buffer."
+      :type 'boolean
+      :group 'mrf-custom)
 
   (defcustom enable-anaconda nil
-    "Set to t to enable the `anaconda' Python package.
-  This OR `enable-elpy' should be set to t but NOT BOTH!"
-    :type 'boolean
-    :group 'mrf-custom)
+      "Set to t to enable the `anaconda' Python package.
+      This OR `enable-elpy' should be set to t but NOT BOTH!"
+      :type 'boolean
+      :group 'mrf-custom)
 
   (defcustom enable-elpy t
-    "Set to t to enable the `elpy' package used for Python development.
-  This OR `enable-anaconda' should be set to t but NOT BOTH!"
-    :type 'boolean
-    :group 'mrf-custom)
+      "Set to t to enable the `elpy' package used for Python development.
+      This OR `enable-anaconda' should be set to t but NOT BOTH!"
+      :type 'boolean
+      :group 'mrf-custom)
 
   (defcustom enable-neotree nil
-    "Set to t to enable the `neotree' package."
-    :type 'boolean
-    :group 'mrf-custom)
+      "Set to t to enable the `neotree' package."
+      :type 'boolean
+      :group 'mrf-custom)
 
   (defcustom enable-zoom nil
-    "Set to t to enable `zoom-mode' - golden-rectangle frame for the active buffer."
-    :type 'boolean
-    :group 'mrf-custom)
+      "Set to t to enable `zoom-mode' - golden-rectangle frame for the active buffer."
+      :type 'boolean
+      :group 'mrf-custom)
+
+  (defcustom debug-adapter 'enable-dap-mode
+      "Select the debug adapter to use for debugging applications.  dap-mode is an
+      Emacs client/library for Debug Adapter Protocol is a wire protocol for
+      communication between client and Debug Server. It’s similar to the LSP but
+      provides integration with debug server.
+
+      dape (Debug Adapter Protocol for Emacs) is similar to dap-mode but is
+      implemented entirely in Emacs Lisp. There are no other external dependencies
+      with DAPE. DAPE supports most popular languages, however, not as many as
+      dap-mode."
+      :type '(choice (const :tag "Debug Adapter Protocol (DAP)" enable-dap-mode)
+                 (const :tag "Debug Adapter Protocol for Emacs (DAPE)" enable-dape))
+      :group 'mrf-custom)
 
 #+end_src
 
@@ -258,23 +280,30 @@ Other variables are also defined here that define other emacs behaviors and defa
 #+begin_src emacs-lisp
 
   (defcustom display-dashboard-at-start t
-     "If set to t, the `dashboard' package will be displayed first.
-  Otherwise, the `dashboard' will be available but in the buffer
-  ,*dashboard*."
-     :type 'boolean
-     :group 'mrf-custom)
+      "If set to t, the `dashboard' package will be displayed first.
+    Otherwise, the `dashboard' will be available but in the buffer
+    ,*dashboard*."
+      :type 'boolean
+      :group 'mrf-custom)
 
   (defcustom custom-docs-dir "~/Documents/Emacs-Related"
-     "A directory used to store documents and customized data."
-     :type 'string
-     :group 'mrf-custom)
+      "A directory used to store documents and customized data."
+      :type 'string
+      :group 'mrf-custom)
 
   (defcustom working-files-directory
-     (concat custom-docs-dir
-        (concat "/emacs-working-files_" (concat emacs-version "/")))
-     "The directory where to store Emacs working files."
-     :type 'string
-     :group 'mrf-custom)
+      (concat custom-docs-dir
+          (concat "/emacs-working-files_" (concat emacs-version "/")))
+      "The directory where to store Emacs working files."
+      :type 'string
+      :group 'mrf-custom)
+
+  (defcustom custom-org-fill-column 150
+      "The fill column width for Org mode text.
+  Note that the text is also centered on the screen so that
+  should be taken into consideration when providing a width."
+      :type 'natnum
+      :group 'mrf-custom)
 
 #+end_src
 
@@ -359,7 +388,7 @@ By default, the =user-emacs-directory= points to the .emacs.d* directory from wh
   (message (concat ">>> Setting emacs-working-files directory to: " user-emacs-directory))
 
   ;;; Put any emacs cusomized variables in a special file
-  (setq custom-file (concat custom-docs-dir "/custom-vars-org.el"))
+  (setq custom-file (concat  working-files-directory "customized-vars.el"))
   (load custom-file 'noerror 'nomessage)
 
 #+end_src
@@ -834,18 +863,24 @@ The following values are things that are just general common settings.
   (column-number-mode)
 
   (use-package page-break-lines
-     :config
-     (global-page-break-lines-mode))
+      :config
+      (global-page-break-lines-mode))
 
   (use-package rainbow-delimiters
-    :config
-    (rainbow-delimiters-mode))
+      :config
+      (rainbow-delimiters-mode))
 
   (defun mrf/set-fill-column-interactively (num)
-    "Asks for the fill column."
-    (interactive "nColumn: ")
-    (set-fill-column num))
+      "Asks for the fill column."
+      (interactive "nfill-column: ")
+      (set-fill-column num))
 
+  (defun mrf/set-org-fill-column-interactively (num)
+      "Asks for the fill column for Org mode."
+      (interactive "norg-fill-column: ")
+      (setq custom-org-fill-column num)
+      (mrf/org-mode-visual-fill)
+      (redraw-display))
 
 #+end_src
 
@@ -1199,6 +1234,7 @@ Window numbers for Emacs: Navigate your windows and frames using numbers. This i
           ("C-x t B"   . treemacs-bookmark)
           ("C-x t C-t" . treemacs-find-file)
           ("C-x t M-t" . treemacs-find-tag)))
+  
 #+end_src
 
 *** Treemacs Projectile
@@ -1267,6 +1303,19 @@ Window numbers for Emacs: Navigate your windows and frames using numbers. This i
  #+end_src
  
 
+* Hydra
+This is a package for GNU Emacs that can be used to tie related commands into a family of short bindings with a common prefix - a Hydra. Once you summon the Hydra through the prefixed binding (the body + any one head), all heads can be called in succession with only a short extension.
+
+The Hydra is vanquished once Hercules, any binding that isn't the Hydra's head, arrives. Note that Hercules, besides vanquishing the Hydra, will still serve his original purpose, calling his proper command. This makes the Hydra very seamless, it's like a minor mode that disables itself auto-magically.
+
+#+begin_src emacs-lisp
+  ;;; ==========================================================================
+
+  (use-package hydra)
+  
+#+end_src
+
+
 * Language Server Protocol
 
 #+begin_src emacs-lisp
@@ -1319,9 +1368,9 @@ Window numbers for Emacs: Navigate your windows and frames using numbers. This i
       (general-def prog-mode-map
   	"C-c t" 'treemacs))
 
-  (use-package lsp-ivy
-      :if enable-ivy-counsel-swiper
-      :after lsp ivy)
+  (if (equal completion-handler 'enable-ivy-counsel-swiper)
+      (use-package lsp-ivy
+  	:after lsp ivy))
 
   ;; Make sure that we set the read buffer above the default 4k
   (setq read-process-output-max (* 1024 1024))
@@ -1334,65 +1383,34 @@ Window numbers for Emacs: Navigate your windows and frames using numbers. This i
 
   ;;; Emacs Polyglot is the Emacs LSP client that stays out of your way:
 
+  (defvar mrf/clangd-path (executable-find "clangd")
+      "Clangd executable path.")
+
+  (defun mrf/projectile-proj-find-function (dir)
+      "Find the project `DIR' function for Projectile.
+  Thanks @wyuenho on GitHub"
+      (let ((root (projectile-project-root dir)))
+  	(and root (cons 'transient root))))
+
   (use-package eglot
       :defer t
       :ensure t
+      :init
+      (add-to-list 'eglot-server-programs
+          `((c++-mode c-mode) ,mrf/clangd-path))
+      (setq company-backends
+          (cons 'company-capf
+              (remove 'company-capf company-backends)))
+      :custom
       :hook
       (c-mode . eglot-ensure)
       (c++-mode . eglot-ensure)
       (python-home . eglot-ensure)
       :config
-      (add-to-list 'eglot-server-programs '((c++-mode c-mode) "clangd")))
-
-#+end_src
-
-** Python Keybinding for Realgud
-Since Realgud is options (in our configuratrion), we add it's keybindings conditionally. *Note* that these keybindings are still compatible with =dap-mode= keybindings.
-
-#+begin_src emacs-lisp :tangle no
-
-  ;;; =========================================================================
-  (if (package-installed-p 'realgud)
-     (general-def python-mode-map
-        "M-p" 'python-nav-backward-defun
-        "M-n" 'python-nav-forward-defun
-        "C-c p" 'elpy-goto-definition
-        "C-c h" 'elpy-doc
-        "C-c , j" 'realgud:cmd-jump
-        "C-c , k" 'realgud:cmd-kill
-        "C-c , s" 'realgud:cmd-step
-        "C-c , n" 'realgud:cmd-next
-        "C-c , q" 'realgud:cmd-quit
-        "C-c , F" 'realgud:window-bt
-        "C-c , U" 'realgud:cmd-until
-        "C-c , X" 'realgud:cmd-clear
-        "C-c , !" 'realgud:cmd-shell
-        "C-c , b" 'realgud:cmd-break
-        "C-c , f" 'realgud:cmd-finish
-        "C-c , D" 'realgud:cmd-delete
-        "C-c , +" 'realgud:cmd-enable
-        "C-c , R" 'realgud:cmd-restart
-        "C-c , -" 'realgud:cmd-disable
-        "C-c , B" 'realgud:window-brkpt
-        "C-c , c" 'realgud:cmd-continue
-        "C-c , e" 'realgud:cmd-eval-dwim
-        "C-c , Q" 'realgud:cmd-terminate
-        "C-c , T" 'realgud:cmd-backtrace
-        "C-c , h" 'realgud:cmd-until-here
-        "C-c , u" 'realgud:cmd-older-frame
-        "C-c , 4" 'realgud:cmd-goto-loc-hist-4
-        "C-c , 5" 'realgud:cmd-goto-loc-hist-5
-        "C-c , 6" 'realgud:cmd-goto-loc-hist-6
-        "C-c , 7" 'realgud:cmd-goto-loc-hist-7
-        "C-c , 8" 'realgud:cmd-goto-loc-hist-8
-        "C-c , 9" 'realgud:cmd-goto-loc-hist-9
-        "C-c , d" 'realgud:cmd-newer-frame
-        "C-c , RET" 'realgud:cmd-repeat-last
-        "C-c , E" 'realgud:cmd-eval-at-point
-        "C-c , I" 'realgud:cmdbuf-info-describe
-        "C-c , C-d" 'realgud:pdb
-        "C-c , C-f" 'realgud:flake8-goto-msg-line
-        "C-c , C-i" 'realgud:cmd-info-breakpoints))
+      (with-eval-after-load 'project
+  	(add-to-list 'project-find-functions
+              'mrf/projectile-proj-find-function)))
+  
 #+end_src
 
 
@@ -1402,9 +1420,9 @@ Since Realgud is options (in our configuratrion), we add it's keybindings condit
 
   ;;; Alternate fork to handle possible performance bug(s)
   (use-package jsonrpc
-  '    :straight (jsonrpc :type git :host github :repo "svaante/jsonrpc"))
+      :straight (jsonrpc :type git :host github :repo "svaante/jsonrpc"))
 
-  (if (equal enable-dape t)
+  (if (equal debug-adapter 'enable-dape)
       (progn
         (use-package dape
             :after (jsonrpc)
@@ -1443,8 +1461,8 @@ Since Realgud is options (in our configuratrion), we add it's keybindings condit
             :config
             (message "DAPE Configured")
             )
-        )
-      )
+        ))
+  
 #+end_src
 
 ** Dape for TypeScript
@@ -1469,7 +1487,7 @@ Since Realgud is options (in our configuratrion), we add it's keybindings condit
   
 #+end_src
 
-*** Run Only Once!
+*** Run This Only Once!
 
 This is meant to be evaluated and run once. Calling this function will clone the vscode-js-debug framework. This is a DAP-based JavaScript debugger. It debugs Node.js, Chrome, Edge, WebView2, VS Code extensions, and more. It has been the default JavaScript debugger in Visual Studio Code since 1.46, and is gradually rolling out in Visual Studio proper.
 
@@ -1479,7 +1497,8 @@ This is meant to be evaluated and run once. Calling this function will clone the
   
 #+end_src
 
-** DAPE-Hydra
+** DAPE Hydra
+
 #+begin_src emacs-lisp :results none
   (defun mrf/dape-end-debug-session ()
      "End the debug session."
@@ -1542,29 +1561,29 @@ This is meant to be evaluated and run once. Calling this function will clone the
 Provides a common protocol for debugging different systems. This is configured for Python
 
 #+begin_src emacs-lisp
-    ;;; ==========================================================================
-    ;;; Debug Adapter Protocol
-    (if (not enable-dape)
-       (progn
-          (use-package dap-mode
-         ;; Uncomment the config below if you want all UI panes to be hidden by default!
-         ;; :custom
-         ;; (lsp-enable-dap-auto-configure nil)
-         :commands
-         dap-debug
-         :custom
-         (dap-auto-configure-features '(sessions locals breakpoints expressions repl controls tooltip))
-         :config
-         (message "DAP mode loaded.")
-         (dap-ui-mode 1)
-         )
-          (require 'dap-lldb)
-          ;; (require 'dap-cpptools)
-          (setq dap-lldb-debug-program `(,(expand-file-name
-                                           "~/Developer/plain_unix/llvm-project/build/bin/lldb-dap")))
-          ;; (setq dap-lldb-debug-program "/Users/strider/Developer/plain_unix/llvm-project/build/bin/lldb-dap")
-          )
-       )
+  ;;; ==========================================================================
+  ;;; Debug Adapter Protocol
+  (if (equal debug-adapter 'enable-dap-mode)
+      (progn
+  	(use-package dap-mode
+  	    ;; Uncomment the config below if you want all UI panes to be hidden by default!
+  	    ;; :custom
+  	    ;; (lsp-enable-dap-auto-configure nil)
+  	    :defer t
+  	    :commands
+  	    dap-debug
+  	    :custom
+  	    (dap-auto-configure-features '(sessions locals breakpoints expressions repl controls tooltip))
+  	    :config
+  	    (dap-ui-mode 1)
+  	    (setq dap-lldb-debug-program
+  		"/Users/strider/Developer/plain_unix/llvm-project/build/bin/lldb-dap")
+  	    (require 'dap-lldb)
+  	    (require 'dap-cpptools)
+  	    (message "DAP mode loaded and configured.")
+  	    )
+  	)
+      )
 
  #+end_src
 
@@ -1590,7 +1609,7 @@ Provides a common protocol for debugging different systems. This is configured f
 
   ;;; DAP for Python
 
-  (if (not enable-dape)
+  (if (equal debug-adapter 'enable-dap-mode)
      (progn
         (use-package dap-python
          :straight (dap-python :type git :host github :repo "emacs-lsp/dap-mode")
@@ -1630,7 +1649,7 @@ Provides a common protocol for debugging different systems. This is configured f
      (require 'dap-node)
      (unless (file-exists-p dap-node-debug-path) (dap-node-setup)))
 
-  (if (not enable-dape)
+  (if (equal debug-adapter 'enable-dap-mode)
      (progn
         (use-package dap-node
            :defer t
@@ -1665,18 +1684,82 @@ Provides a common protocol for debugging different systems. This is configured f
      )
 #+end_src
 
+** DAP Hydra
 
-* Hydra
-This is a package for GNU Emacs that can be used to tie related commands into a family of short bindings with a common prefix - a Hydra. Once you summon the Hydra through the prefixed binding (the body + any one head), all heads can be called in succession with only a short extension.
+#+begin_src emacs-lisp :results none
+  (defun mrf/end-debug-session ()
+     "End the debug session and delete project Python buffers."
+     (interactive)
+     (kill-matching-buffers "\*Python :: Run file [from|\(buffer]*" nil :NO-ASK)
+     (kill-matching-buffers "\*Python: Current File*" nil :NO-ASK)
+     (kill-matching-buffers "\*dap-ui-*" nil :NO-ASK)
+     (dap-disconnect (dap--cur-session)))
 
-The Hydra is vanquished once Hercules, any binding that isn't the Hydra's head, arrives. Note that Hercules, besides vanquishing the Hydra, will still serve his original purpose, calling his proper command. This makes the Hydra very seamless, it's like a minor mode that disables itself auto-magically.
+  (defun mrf/delete-all-debug-sessions ()
+     "End the debug session and delete project Python buffers and all breakpoints."
+     (interactive)
+     (dap-breakpoint-delete-all)
+     (mrf/end-debug-session))
 
-#+begin_src emacs-lisp
-  ;;; ==========================================================================
+  (defun mrf/begin-debug-session ()
+     "Begin a debug session with several dap windows enabled."
+     (interactive)
+     (dap-ui-show-many-windows)
+     (dap-debug))
 
-  (use-package hydra)
-  
-#+end_src
+  (defhydra dap-hydra (:color pink :hint nil :foreign-keys run)
+     "
+    ^Stepping^          ^Switch^                 ^Breakpoints^          ^Debug^                     ^Eval
+    ^^^^^^^^----------------------------------------------------------------------------------------------------------------
+    _._: Next           _ss_: Session            _bb_: Toggle           _dd_: Debug                 _ee_: Eval
+    _/_: Step in        _st_: Thread             _bd_: Delete           _dr_: Debug recent          _er_: Eval region
+    _,_: Step out       _sf_: Stack frame        _ba_: Add              _dl_: Debug last            _es_: Eval thing at point
+    _c_: Continue       _su_: Up stack frame     _bc_: Set condition    _de_: Edit debug template   _ea_: Add expression.
+    _r_: Restart frame  _sd_: Down stack frame   _bh_: Set hit count    _ds_: Debug restart
+    _Q_: Disconnect     _sl_: List locals        _bl_: Set log message  _dx_: end session
+                      _sb_: List breakpoints                          _dX_: end all sessions
+                      _sS_: List sessions
+                      _sR_: Session Repl
+  "
+     ("n" dap-next)
+     ("i" dap-step-in)
+     ("o" dap-step-out)
+     ("." dap-next)
+     ("/" dap-step-in)
+     ("," dap-step-out)
+     ("c" dap-continue)
+     ("r" dap-restart-frame)
+     ("ss" dap-switch-session)
+     ("st" dap-switch-thread)
+     ("sf" dap-switch-stack-frame)
+     ("su" dap-up-stack-frame)
+     ("sd" dap-down-stack-frame)
+     ("sl" dap-ui-locals)
+     ("sb" dap-ui-breakpoints)
+     ("sR" dap-ui-repl)
+     ("sS" dap-ui-sessions)
+     ("bb" dap-breakpoint-toggle)
+     ("ba" dap-breakpoint-add)
+     ("bd" dap-breakpoint-delete)
+     ("bc" dap-breakpoint-condition)
+     ("bh" dap-breakpoint-hit-condition)
+     ("bl" dap-breakpoint-log-message)
+     ("dd" dap-debug)
+     ("dr" dap-debug-recent)
+     ("ds" dap-debug-restart)
+     ("dl" dap-debug-last)
+     ("de" dap-debug-edit-template)
+     ("ee" dap-eval)
+     ("ea" dap-ui-expressions-add)
+     ("er" dap-eval-region)
+     ("es" dap-eval-thing-at-point)
+     ("dx" mrf/end-debug-session)
+     ("dX" mrf/delete-all-debug-sessions)
+     ("x" nil "exit Hydra" :color yellow)
+     ("q" mrf/end-debug-session "quit" :color blue)
+     ("Q" mrf/delete-all-debug-sessions :color red))  
+
+ #+end_src
 
 
 * Completion Systems
@@ -1690,37 +1773,37 @@ Ivy is an excellent completion framework for Emacs.  It provides a minimal yet p
 
   ;;; Swiper and IVY mode
 
-  (use-package ivy
-      :if enable-ivy-counsel-swiper
-      :diminish I
-      :bind (("C-s" . swiper)
-              :map ivy-minibuffer-map
+  (if (equal completion-handler 'enable-ivy-counsel-swiper)
+      (progn
+  	(use-package ivy
+  	    :diminish I
+  	    :bind (("C-s" . swiper)
+  		      :map ivy-minibuffer-map
             ;;; ("TAB" . ivy-alt-done)
-              ("C-l" . ivy-alt-done)
-              ("C-j" . ivy-next-line)
-              ("C-k" . ivy-previous-line)
-              :map ivy-switch-buffer-map
-              ("C-k" . ivy-previous-line)
-              ("C-l" . ivy-done)
-              ("C-d" . ivy-switch-buffer-kill)
-              :map ivy-reverse-i-search-map
-              ("C-k" . ivy-previous-line)
-              ("C-d" . ivy-reverse-i-search-kill))
-      :custom (ivy-use-virtual-buffers t)
-      :config
-      (ivy-mode 1))
+  		      ("C-l" . ivy-alt-done)
+  		      ("C-j" . ivy-next-line)
+  		      ("C-k" . ivy-previous-line)
+  		      :map ivy-switch-buffer-map
+  		      ("C-k" . ivy-previous-line)
+  		      ("C-l" . ivy-done)
+  		      ("C-d" . ivy-switch-buffer-kill)
+  		      :map ivy-reverse-i-search-map
+  		      ("C-k" . ivy-previous-line)
+  		      ("C-d" . ivy-reverse-i-search-kill))
+  	    :custom (ivy-use-virtual-buffers t)
+  	    :config
+  	    (ivy-mode 1))
 
-  (use-package ivy-rich
-      :if enable-ivy-counsel-swiper
-      :after ivy
-      :init
-      (ivy-rich-mode 1)
-      :config
-      (setcdr (assq t ivy-format-functions-alist) #'ivy-format-function-line))
+  	(use-package ivy-rich
+  	    :after ivy
+  	    :init
+  	    (ivy-rich-mode 1)
+  	    :config
+  	    (setcdr (assq t ivy-format-functions-alist) #'ivy-format-function-line))
 
-  (use-package ivy-yasnippet
-      :if enable-ivy-counsel-swiper
-      :straight (ivy-yasnippet :type git :flavor melpa :host github :repo "mkcms/ivy-yasnippet"))
+  	(use-package ivy-yasnippet
+  	    :straight (ivy-yasnippet :type git :flavor melpa :host github :repo "mkcms/ivy-yasnippet"))
+  	))
 
 #+end_src
 
@@ -1730,9 +1813,8 @@ Swiper is an alternative to isearch that uses Ivy to show an overview of all mat
 #+begin_src emacs-lisp
   ;;; ==========================================================================
 
-  (use-package swiper
-      :if enable-ivy-counsel-swiper)
-
+  (if (equal completion-handler 'enable-ivy-counsel-swiper)
+      (use-package swiper))
 
 #+end_src
 
@@ -1744,17 +1826,16 @@ Counsel takes this further, providing versions of common Emacs commands that are
 #+begin_src emacs-lisp
   ;;; ==========================================================================
 
-  (use-package counsel
-      :if enable-ivy-counsel-swiper
-
-      :straight t
-      :bind (("C-M-j" . 'counsel-switch-buffer)
-              :map minibuffer-local-map
-              ("C-r" . 'counsel-minibuffer-history))
-      :custom
-      (counsel-linux-app-format-function #'counsel-linux-app-format-function-name-only)
-      :config
-      (counsel-mode 1))
+  (if (equal completion-handler 'enable-ivy-counsel-swiper)
+      (use-package counsel
+  	:straight t
+  	:bind (("C-M-j" . 'counsel-switch-buffer)
+  		  :map minibuffer-local-map
+  		  ("C-r" . 'counsel-minibuffer-history))
+  	:custom
+  	(counsel-linux-app-format-function #'counsel-linux-app-format-function-name-only)
+  	:config
+  	(counsel-mode 1)))
 
 #+end_src
 
@@ -1764,14 +1845,14 @@ Counsel takes this further, providing versions of common Emacs commands that are
 #+begin_src emacs-lisp
   ;;; ==========================================================================
 
-  (use-package ivy-prescient
-      :if enable-ivy-counsel-swiper
-      :after counsel
-      :custom
-      (ivy-prescient-enable-filtering nil)
-      :config
-      (prescient-persist-mode 1)
-      (ivy-prescient-mode 1))
+  (if (equal completion-handler 'enable-ivy-counsel-swiper)
+      (use-package ivy-prescient
+  	:after counsel
+  	:custom
+  	(ivy-prescient-enable-filtering nil)
+  	:config
+  	(prescient-persist-mode 1)
+  	(ivy-prescient-mode 1)))
 
 #+end_src
 
@@ -1817,19 +1898,6 @@ Corfu enhances in-buffer completion with a small completion popup. The current c
      (use-package corfu-prescient
         :after corfu)
      )
-#+end_src
-
-*** Orderless
-This package provides an orderless completion style that divides the pattern into space-separated components, and matches candidates that match all of the components in any order. Each component can match in any one of several ways: literally, as a regexp, as an initialism, in the flex style, or as multiple word prefixes. By default, regexp and literal matches are enabled.
-
-#+begin_src emacs-lisp
-  ;;; ==========================================================================
-    
-  (use-package orderless
-    :custom
-    (completion-styles '(orderless basic))
-    (completion-category-overrides '((file (styles basic partial-completion)))))
-  
 #+end_src
 
 
@@ -1883,7 +1951,7 @@ This is a basic configuration for the TypeScript language so that =.ts= files ac
 #+begin_src emacs-lisp
   ;;; ==========================================================================
 
-  (if (not enable-dape)
+  (if (equal debug-adapter 'enable-dap-mode)
      (use-package typescript-ts-mode
         ;; :after (dap-mode)
         :mode "\\.ts\\'"
@@ -1894,7 +1962,7 @@ This is a basic configuration for the TypeScript language so that =.ts= files ac
         (setq typescript-indent-level 4)
         (dap-node-setup)))
 
-  (if enable-dape
+  (if (equal debug-adapter 'enable-dape)
      (use-package typescript-ts-mode
         :after (dape-mode)
         :mode ("\\.ts\\'")
@@ -1918,11 +1986,11 @@ This is a basic configuration for the TypeScript language so that =.ts= files ac
   (defun mrf/load-js-file-hook ()
      (message "Running JS file hook")
      (js2-mode)
-     (if (not enable-dape)
+     (if (equal debug-adapter 'enable-dap-mode)
         (progn
          (dap-mode)
          (dap-firefox-setup)))
-     (if enable-dape
+     (if (equal debug-adapter 'enable-dape)
         (dape))
      (dap-firefox-setup)
      (highlight-indentation-mode -1))
@@ -1977,30 +2045,30 @@ This is a basic configuration for the TypeScript language so that =.ts= files ac
   ;;; ==========================================================================
 
   (defun mrf/load-c-file-hook ()
-     (message "Running C/C++ file hook")
-     (c-mode)
-     (if (featurep 'zoom)
-        (if (default-value 'zoom-mode)
-         (progn
-            ;;(zoom--off)
-            (message "Turning zoom off")
-            )))
-     (if (not enable-dape)
-        (dap-mode))
-     (highlight-indentation-mode -1)
-     (display-fill-column-indicator-mode t))
+      (message "Running C/C++ file hook")
+      (c-mode)
+      (if (featurep 'zoom)
+  	(if (default-value 'zoom-mode)
+  	    (progn
+  		;;(zoom--off)
+  		(message "Turning zoom off")
+  		)))
+      (when (equal debug-adapter 'enable-dap-mode)
+  	(dap-mode))
+      (highlight-indentation-mode -1)
+      (display-fill-column-indicator-mode t))
 
   (defun code-compile ()
-     "Look for a Makefile and compiles the code with gcc/cpp."
-     (interactive)
-     (unless (file-exists-p "Makefile")
-        (set (make-local-variable 'compile-command)
-         (let ((file (file-name-nondirectory buffer-file-name)))
-              (format "%s -o %s %s"
-                 (if  (equal (file-name-extension file) "cpp") "g++" "gcc" )
-                 (file-name-sans-extension file)
-                 file)))
-        (compile compile-command)))
+      "Look for a Makefile and compiles the code with gcc/cpp."
+      (interactive)
+      (unless (file-exists-p "Makefile")
+  	(set (make-local-variable 'compile-command)
+  	    (let ((file (file-name-nondirectory buffer-file-name)))
+  		(format "%s -o %s %s"
+  		    (if  (equal (file-name-extension file) "cpp") "g++" "gcc" )
+  		    (file-name-sans-extension file)
+  		    file)))
+  	(compile compile-command)))
 
   (global-set-key [f9] 'code-compile)
   (add-to-list 'auto-mode-alist '("\\.c\\'" . mrf/load-c-file-hook))
@@ -2070,40 +2138,42 @@ message
 This is the standard python mode setup.
 
 #+begin_src emacs-lisp
-   ;;; ==========================================================================
+  ;;; ==========================================================================
 
 
-   (defun mrf/load-python-file-hook ()
-       (message "Running python file hook")
-       (python-mode)
-       
-       (if (not enable-dape)
-         (dap-mode)
-         (if (not (featurep 'dape))
-           (use-package dape :demand t)))
-       
-       (diff-hl-mode)
-       (highlight-indentation-mode -1)
-       (display-fill-column-indicator-mode t))
+  (defun mrf/load-python-file-hook ()
+      (message "Running python file hook")
+      (python-mode)
+      
+      (if (equal debug-adapter 'enable-dap-mode)
+  	(unless (featurep 'dap-mode)
+  	    (dap-mode))
+        (if (not (featurep 'dape))
+            (use-package dape :demand t)))
+      
+      (diff-hl-mode)
+      (highlight-indentation-mode -1)
+      (display-fill-column-indicator-mode t))
 
-   (defun mrf/python-mode-triggered ()
-       (message "Calling mrf/python-mode-triggered")
-       (treemacs t))
+  (defun mrf/python-mode-triggered ()
+      (message "Calling mrf/python-mode-triggered")
+      (treemacs t))
 
-   (use-package python-mode
-       :defer t
-       :hook (python-mode . (lambda () (set-fill-column 80)))
-       )
+  (use-package python-mode
+      :defer t
+      :hook (python-mode . (lambda () (set-fill-column 80)))
+      )
 
-   (add-to-list 'auto-mode-alist '("\\.py\\'" . mrf/load-python-file-hook))
-   (use-package blacken
-       :after python) ;Format Python file upon save.
+  (add-to-list 'auto-mode-alist '("\\.py\\'" . mrf/load-python-file-hook))
+  (use-package blacken
+      :after python) ;Format Python file upon save.
 
-   (if (boundp 'python-shell-completion-native-disabled-interpreters)
-       (add-to-list 'python-shell-completion-native-disabled-interpreters "python3")
-       (setq python-shell-completion-native-disabled-interpreters '("python3")))
+  (if (boundp 'python-shell-completion-native-disabled-interpreters)
+      (add-to-list 'python-shell-completion-native-disabled-interpreters "python3")
+      (setq python-shell-completion-native-disabled-interpreters '("python3")))
 
 #+end_src
+
 
 *** Anaconda-mode
 #+begin_src emacs-lisp
@@ -2209,95 +2279,18 @@ autopep8 automatically formats Python code to conform to the `PEP 8` style guide
 #+begin_src emacs-lisp
   ;;; ==========================================================================
 
-  (if (not enable-dape)
+  (when (equal debug-adapter 'enable-dap-mode)
      (general-define-key
         :keymaps '(python-mode-map typescript-ts-mode-map c-mode-map c++-mode-map)
         "C-c ."      'dap-hydra/body)
      )
 
-  (if enable-dape
+  (if (equal debug-adapter 'enable-dape)
      (general-define-key
         :keymaps '(python-mode-map typescript-ts-mode-map c-mode-map c++-mode-map)
         "C-c ."      'dape-hydra/body))
   
 #+end_src
-
-*** DAP-Hydra
-
-#+begin_src emacs-lisp :results none
-  (defun mrf/end-debug-session ()
-     "End the debug session and delete project Python buffers."
-     (interactive)
-     (kill-matching-buffers "\*Python :: Run file [from|\(buffer]*" nil :NO-ASK)
-     (kill-matching-buffers "\*Python: Current File*" nil :NO-ASK)
-     (kill-matching-buffers "\*dap-ui-*" nil :NO-ASK)
-     (dap-disconnect (dap--cur-session)))
-
-  (defun mrf/delete-all-debug-sessions ()
-     "End the debug session and delete project Python buffers and all breakpoints."
-     (interactive)
-     (dap-breakpoint-delete-all)
-     (mrf/end-debug-session))
-
-  (defun mrf/begin-debug-session ()
-     "Begin a debug session with several dap windows enabled."
-     (interactive)
-     (dap-ui-show-many-windows)
-     (dap-debug))
-
-  (defhydra dap-hydra (:color pink :hint nil :foreign-keys run)
-     "
-    ^Stepping^          ^Switch^                 ^Breakpoints^          ^Debug^                     ^Eval
-    ^^^^^^^^----------------------------------------------------------------------------------------------------------------
-    _._: Next           _ss_: Session            _bb_: Toggle           _dd_: Debug                 _ee_: Eval
-    _/_: Step in        _st_: Thread             _bd_: Delete           _dr_: Debug recent          _er_: Eval region
-    _,_: Step out       _sf_: Stack frame        _ba_: Add              _dl_: Debug last            _es_: Eval thing at point
-    _c_: Continue       _su_: Up stack frame     _bc_: Set condition    _de_: Edit debug template   _ea_: Add expression.
-    _r_: Restart frame  _sd_: Down stack frame   _bh_: Set hit count    _ds_: Debug restart
-    _Q_: Disconnect     _sl_: List locals        _bl_: Set log message  _dx_: end session
-                      _sb_: List breakpoints                          _dX_: end all sessions
-                      _sS_: List sessions
-                      _sR_: Session Repl
-  "
-     ("n" dap-next)
-     ("i" dap-step-in)
-     ("o" dap-step-out)
-     ("." dap-next)
-     ("/" dap-step-in)
-     ("," dap-step-out)
-     ("c" dap-continue)
-     ("r" dap-restart-frame)
-     ("ss" dap-switch-session)
-     ("st" dap-switch-thread)
-     ("sf" dap-switch-stack-frame)
-     ("su" dap-up-stack-frame)
-     ("sd" dap-down-stack-frame)
-     ("sl" dap-ui-locals)
-     ("sb" dap-ui-breakpoints)
-     ("sR" dap-ui-repl)
-     ("sS" dap-ui-sessions)
-     ("bb" dap-breakpoint-toggle)
-     ("ba" dap-breakpoint-add)
-     ("bd" dap-breakpoint-delete)
-     ("bc" dap-breakpoint-condition)
-     ("bh" dap-breakpoint-hit-condition)
-     ("bl" dap-breakpoint-log-message)
-     ("dd" dap-debug)
-     ("dr" dap-debug-recent)
-     ("ds" dap-debug-restart)
-     ("dl" dap-debug-last)
-     ("de" dap-debug-edit-template)
-     ("ee" dap-eval)
-     ("ea" dap-ui-expressions-add)
-     ("er" dap-eval-region)
-     ("es" dap-eval-thing-at-point)
-     ("dx" mrf/end-debug-session)
-     ("dX" mrf/delete-all-debug-sessions)
-     ("x" nil "exit Hydra" :color yellow)
-     ("q" mrf/end-debug-session "quit" :color blue)
-     ("Q" mrf/delete-all-debug-sessions :color red))  
-
- #+end_src
 
 *** Python Virtual Environment Support
 We use Pyvenv-auto is a package that automatically changes to the Python virtual environment based upon the project's directory.  pyvenv-auto looks at the root director of the project for a =.venv= or =venv= (and a few others)
@@ -2412,12 +2405,13 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
       (setq projectile-project-search-path '("~/Developer")))
     (setq projectile-switch-project-action #'projectile-dired))
 
-  (use-package counsel-projectile
-    :after projectile
-    :config (counsel-projectile-mode))
+  (if (equal completion-handler 'enable-ivy-counsel-swiper)
+      (use-package counsel-projectile
+  	:after projectile
+  	:config
+  	(setq projectile-completion-system 'ivy)
+  	(counsel-projectile-mode)))
 
-  (if enable-ivy-counsel-swiper
-      (setq projectile-completion-system 'ivy))
 #+end_src
 
 
@@ -2479,35 +2473,37 @@ The =mrf/org-font-setup= function configures various text faces to tweak the siz
 
   (defun mrf/org-font-setup ()
     "Setup org mode fonts."
-    (font-lock-add-keywords
-       'org-mode
-       '(("^ *\\([-]\\) "
-            (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))))
-     ;; (setq org-src-fontify-natively t)
+      (require 'org-faces)
 
-    ;; Set faces for heading levels
-    (dolist (face '((org-level-1 . 1.2)
-                    (org-level-2 . 1.1)
-                    (org-level-3 . 1.05)
-                    (org-level-4 . 1.0)
-                    (org-level-5 . 1.1)
-                    (org-level-6 . 1.1)
-                    (org-level-7 . 1.1)
-                    (org-level-8 . 1.1)))
-      (set-face-attribute (car face) nil :font "Cantarell" :weight 'regular :height (cdr face)))
+      (font-lock-add-keywords
+  	'org-mode
+  	'(("^ *\\([-]\\) "
+                (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))))
+      ;; (setq org-src-fontify-natively t)
 
-    ;; Ensure that anything that should be fixed-pitch in Org files appears that way
-    (set-face-attribute 'org-block nil    :foreground 'unspecified :inherit 'fixed-pitch)
-    (set-face-attribute 'org-table nil    :inherit 'fixed-pitch)
-    (set-face-attribute 'org-formula nil  :inherit 'fixed-pitch)
-    (set-face-attribute 'org-code nil     :inherit '(shadow fixed-pitch))
-    (set-face-attribute 'org-table nil    :inherit '(shadow fixed-pitch))
-    (set-face-attribute 'org-verbatim nil :inherit '(shadow fixed-pitch))
-    (set-face-attribute 'org-special-keyword nil :inherit '(font-lock-comment-face fixed-pitch))
-    (set-face-attribute 'org-meta-line nil :inherit '(font-lock-comment-face fixed-pitch))
-    (set-face-attribute 'org-checkbox nil  :inherit 'fixed-pitch)
-    (set-face-attribute 'line-number nil :inherit 'fixed-pitch)
-    (set-face-attribute 'line-number-current-line nil :inherit 'fixed-pitch))
+      ;; Set faces for heading levels
+      (dolist (face '((org-level-1 . 1.2)
+                         (org-level-2 . 1.1)
+                         (org-level-3 . 1.05)
+                         (org-level-4 . 1.0)
+                         (org-level-5 . 1.1)
+                         (org-level-6 . 1.1)
+                         (org-level-7 . 1.1)
+                         (org-level-8 . 1.1)))
+  	(set-face-attribute (car face) nil :font "Cantarell" :weight 'regular :height (cdr face)))
+
+      ;; Ensure that anything that should be fixed-pitch in Org files appears that way
+      (set-face-attribute 'org-block nil    :foreground 'unspecified :inherit 'fixed-pitch)
+      (set-face-attribute 'org-table nil    :inherit 'fixed-pitch)
+      (set-face-attribute 'org-formula nil  :inherit 'fixed-pitch)
+      (set-face-attribute 'org-code nil     :inherit '(shadow fixed-pitch))
+      (set-face-attribute 'org-table nil    :inherit '(shadow fixed-pitch))
+      (set-face-attribute 'org-verbatim nil :inherit '(shadow fixed-pitch))
+      (set-face-attribute 'org-special-keyword nil :inherit '(font-lock-comment-face fixed-pitch))
+      (set-face-attribute 'org-meta-line nil :inherit '(font-lock-comment-face fixed-pitch))
+      (set-face-attribute 'org-checkbox nil  :inherit 'fixed-pitch)
+      (set-face-attribute 'line-number nil :inherit 'fixed-pitch)
+      (set-face-attribute 'line-number-current-line nil :inherit 'fixed-pitch))
 
 #+end_src
 
@@ -2669,8 +2665,11 @@ This section contains the basic configuration for =org-mode= plus the configurat
      (mrf/org-setup-capture-templates)
      (define-key global-map (kbd "C-c j")
         (lambda () (interactive) (org-capture nil "jj")))
-     (mrf/org-font-setup))
+      (mrf/org-font-setup))
 
+  (use-package org-modern
+      :after org
+      :hook (org-mode . org-modern-mode))
 
 #+end_src
 
@@ -2698,7 +2697,7 @@ We use [[https://github.com/joostkremers/visual-fill-column][visual-fill-column]
   ;; -----------------------------------------------------------------
 
   (defun mrf/org-mode-visual-fill ()
-    (setq visual-fill-column-width 110
+    (setq visual-fill-column-width custom-org-fill-column
           visual-fill-column-center-text t)
     (visual-fill-column-mode 1))
 
@@ -2945,17 +2944,6 @@ This snippet adds a hook to =org-mode= buffers so that source code blocks can be
      :defer t
      :hook (org-mode . org-auto-tangle-mode))
 
-  ;; no longer used but I keep it jic
-  ;; (defun mrf/org-babel-tangle-save-hook ()
-  ;;    "Save emacs-lisp blocks."
-  ;;   (when (eq major-mode 'org-mode) ;; Org-mode Only
-  ;;      (when (string-equal (file-name-directory (buffer-file-name))
-  ;;               (expand-file-name emacs-config-directory))
-  ;;         (message "org-mode-hook: Executing mrf/org-babel-tangle-config")
-  ;;         ;; Dynamic scoping to the rescue
-  ;;         (let ((org-confirm-babel-evaluate nil))
-  ;;            (message "... tangle emacs-lisp")
-  ;;            (org-babel-tangle)))))
 #+end_src
 
 ** Markdown support
@@ -2992,20 +2980,228 @@ The following packages are some additional quality of life features.
 #+begin_src emacs-lisp
   ;;; ==========================================================================
 
-  (use-package marginalia)
+  (if (equal completion-handler 'enable-vertico)
+      (progn
+  	(use-package vertico
+  	    :demand t   ; Otherwise won't get loaded immediately
+  	    :straight (vertico :files (:defaults "extensions/*") ; Special recipe to load extensions conveniently
+  			  :includes (vertico-indexed
+  					vertico-flat
+  					vertico-grid
+  					vertico-mouse
+  					vertico-quick
+  					vertico-buffer
+  					vertico-repeat
+  					vertico-reverse
+  					vertico-directory
+  					vertico-multiform
+  					vertico-unobtrusive
+  					))
+  	    :config
+  	    (vertico-mode)
+  	    (vertico-multiform-mode)
+  	    (vertico-count 13)
+  	    ;; ;; (vertico-resize t)
+  	    (vertico-cycle nil)
+  	    ;; ;; Extensions
+  	    ;; (vertico-grid-separator "       ")
+  	    ;; (vertico-grid-lookahead 50)
+  	    ;; (vertico-buffer-display-action '(display-buffer-reuse-window))
+  	    ;; (vertico-multiform-categories
+  	    ;; 	'((file reverse)
+  	    ;; 	     (consult-grep buffer)
+  	    ;; 	     (consult-location)
+  	    ;; 	     (imenu buffer)
+  	    ;; 	     (library reverse indexed)
+  	    ;; 	     (org-roam-node reverse indexed)
+  	    ;; 	     (t reverse)
+  	    ;; 	     ))
+  	    ;; (vertico-multiform-commands
+  	    ;; 	'(("flyspell-correct-*" grid reverse)
+  	    ;; 	     (org-refile grid reverse indexed)
+  	    ;; 	     (consult-yank-pop indexed)
+  	    ;; 	     (consult-flycheck)
+  	    ;; 	     (consult-lsp-diagnostics)
+  	    ;; 	     ))
+  	     ; Clean up file path when typing
+  	    :hook ((rfn-eshadow-update-overlay . vertico-directory-tidy)
+  		       ; Make sure vertico state is saved
+  		      (minibuffer-setup . vertico-repeat-save)))
 
-  (use-package vertico)
-  (vertico-mode 1)
+  	(use-package vertico-prescient
+  	    :after vertico)
 
-  ;; (use-package vertico-posframe
-  ;;    :custom
-  ;;    (vertico-posframe-parameters
-  ;;       '((left-fringe . 8)
-  ;;           (right-fringe . 8))))
+  	(use-package vertico-posframe
+  	    :straight t
+  	    :custom
+  	    (vertico-posframe-parameters
+  		'((left-fringe . 8)
+  		     (right-fringe . 8))))
+  	))
 #+end_src
 
-#+RESULTS:
-: t
+** Marginalia
+
+Marginalia are marks or annotations placed at the margin of the page of a book  or in this case helpful colorful annotations placed at the margin of the  minibuffer for your completion candidates. Marginalia can only add annotations  to the completion candidates. It cannot modify the appearance of the candidates  themselves, which are shown unaltered as supplied by the original command.
+ 
+#+begin_src emacs-lisp
+
+  ;;; ==========================================================================
+  
+  (if (equal completion-handler 'enable-vertico)
+      (use-package marginalia
+          :general
+          (:keymaps 'minibuffer-local-map
+              "M-A" 'marginalia-cycle)
+          :custom
+          (marginalia-max-relative-age 0)
+          (marginalia-align 'right)
+          :init
+          (marginalia-mode)))
+
+#+end_src
+
+** Orderless
+This package provides an orderless completion style that divides the pattern into space-separated components, and matches candidates that match all of the components in any order. Each component can match in any one of several ways: literally, as a regexp, as an initialism, in the flex style, or as multiple word prefixes. By default, regexp and literal matches are enabled.
+
+#+begin_src emacs-lisp
+  ;;; ==========================================================================
+  (if (equal completion-handler 'enable-vertico)
+      (use-package orderless
+  	:custom
+  	(completion-styles '(orderless basic))
+  	(completion-category-overrides '((file (styles basic partial-completion))))))
+
+#+end_src
+
+** Consult
+Consult provides search and navigation commands based on the Emacs completion function completing-read. Completion allows you to quickly select an item from a list of candidates. Consult offers asynchronous and interactive consult-grep and  consult-ripgrep commands, and the line-based search command consult-line. Furthermore Consult provides an advanced buffer switching command consult-buffer to switch between buffers, recently opened files, bookmarks and buffer-like candidates from other sources. Some of the Consult commands are enhanced versions of built-in Emacs commands.
+
+#+begin_src emacs-lisp
+
+  ;; Example configuration for Consult
+  (if (equal completion-handler 'enable-vertico)
+      (use-package consult
+  	:straight t
+  	;; Replace bindings. Lazily loaded due by `use-package'.
+  	:bind (;; C-c bindings in `mode-specific-map'
+  		  ("C-c M-x" . consult-mode-command)
+  		  ("C-c h" . consult-history)
+  		  ("C-c k" . consult-kmacro)
+  		  ("C-c m" . consult-man)
+  		  ("C-c i" . consult-info)
+  		  ([remap Info-search] . consult-info)
+  		  ;; C-x bindings in `ctl-x-map'
+  		  ("C-x M-:" . consult-complex-command)     ;; orig. repeat-complex-command
+  		  ("C-x b" . consult-buffer)                ;; orig. switch-to-buffer
+  		  ("C-x 4 b" . consult-buffer-other-window) ;; orig. switch-to-buffer-other-window
+  		  ("C-x 5 b" . consult-buffer-other-frame)  ;; orig. switch-to-buffer-other-frame
+  		  ("C-x t b" . consult-buffer-other-tab)    ;; orig. switch-to-buffer-other-tab
+  		  ("C-x r b" . consult-bookmark)            ;; orig. bookmark-jump
+  		  ("C-x p b" . consult-project-buffer)      ;; orig. project-switch-to-buffer
+  		  ;; Custom M-# bindings for fast register access
+  		  ("M-#" . consult-register-load)
+  		  ("M-'" . consult-register-store)          ;; orig. abbrev-prefix-mark (unrelated)
+  		  ("C-M-#" . consult-register)
+  		  ;; Other custom bindings
+  		  ("M-y" . consult-yank-pop)                ;; orig. yank-pop
+  		  ;; M-g bindings in `goto-map'
+  		  ("M-g e" . consult-compile-error)
+  		  ("M-g f" . consult-flymake)               ;; Alternative: consult-flycheck
+  		  ("M-g g" . consult-goto-line)             ;; orig. goto-line
+  		  ("M-g M-g" . consult-goto-line)           ;; orig. goto-line
+  		  ("M-g o" . consult-outline)               ;; Alternative: consult-org-heading
+  		  ("M-g m" . consult-mark)
+  		  ("M-g k" . consult-global-mark)
+  		  ("M-g i" . consult-imenu)
+  		  ("M-g I" . consult-imenu-multi)
+  		  ;; M-s bindings in `search-map'
+  		  ("M-s d" . consult-find)                  ;; Alternative: consult-fd
+  		  ("M-s c" . consult-locate)
+  		  ("M-s g" . consult-grep)
+  		  ("M-s G" . consult-git-grep)
+  		  ("M-s r" . consult-ripgrep)
+  		  ("M-s l" . consult-line)
+  		  ("M-s L" . consult-line-multi)
+  		  ("M-s k" . consult-keep-lines)
+  		  ("M-s u" . consult-focus-lines)
+  		  ;; Isearch integration
+  		  ("M-s e" . consult-isearch-history)
+  		  :map isearch-mode-map
+  		  ("M-e" . consult-isearch-history)         ;; orig. isearch-edit-string
+  		  ("M-s e" . consult-isearch-history)       ;; orig. isearch-edit-string
+  		  ("M-s l" . consult-line)                  ;; needed by consult-line to detect isearch
+  		  ("M-s L" . consult-line-multi)            ;; needed by consult-line to detect isearch
+  		  ;; Minibuffer history
+  		  :map minibuffer-local-map
+  		  ("M-s" . consult-history)                 ;; orig. next-matching-history-element
+  		  ("M-r" . consult-history))                ;; orig. previous-matching-history-element
+
+  	;; Enable automatic preview at point in the *Completions* buffer. This is
+  	;; relevant when you use the default completion UI.
+  	:hook (completion-list-mode . consult-preview-at-point-mode)
+
+  	;; The :init configuration is always executed (Not lazy)
+  	:init
+
+  	;; Optionally configure the register formatting. This improves the register
+  	;; preview for `consult-register', `consult-register-load',
+  	;; `consult-register-store' and the Emacs built-ins.
+  	(setq register-preview-delay 0.5
+              register-preview-function #'consult-register-format)
+
+  	;; Optionally tweak the register preview window.
+  	;; This adds thin lines, sorting and hides the mode line of the window.
+  	(advice-add #'register-preview :override #'consult-register-window)
+
+  	;; Use Consult to select xref locations with preview
+  	(setq xref-show-xrefs-function #'consult-xref
+              xref-show-definitions-function #'consult-xref)
+
+  	;; Configure other variables and modes in the :config section,
+  	;; after lazily loading the package.
+  	:config
+
+  	;; Optionally configure preview. The default value
+  	;; is 'any, such that any key triggers the preview.
+  	;; (setq consult-preview-key 'any)
+  	;; (setq consult-preview-key "M-.")
+  	;; (setq consult-preview-key '("S-<down>" "S-<up>"))
+  	;; For some commands and buffer sources it is useful to configure the
+  	;; :preview-key on a per-command basis using the `consult-customize' macro.
+  	(consult-customize
+  	    consult-theme :preview-key '(:debounce 0.2 any)
+  	    consult-ripgrep consult-git-grep consult-grep
+  	    consult-bookmark consult-recent-file consult-xref
+  	    consult--source-bookmark consult--source-file-register
+  	    consult--source-recent-file consult--source-project-recent-file
+  	    ;; :preview-key "M-."
+  	    :preview-key '(:debounce 0.4 any))
+
+  	;; Optionally configure the narrowing key.
+  	;; Both < and C-+ work reasonably well.
+  	(setq consult-narrow-key "<") ;; "C-+"
+
+  	;; Optionally make narrowing help available in the minibuffer.
+  	;; You may want to use `embark-prefix-help-command' or which-key instead.
+  	;; (define-key consult-narrow-map (vconcat consult-narrow-key "?") #'consult-narrow-help)
+
+  	;; By default `consult-project-function' uses `project-root' from project.el.
+  	;; Optionally configure a different project root function.
+    ;;;; 1. project.el (the default)
+  	;; (setq consult-project-function #'consult--default-project--function)
+    ;;;; 2. vc.el (vc-root-dir)
+  	;; (setq consult-project-function (lambda (_) (vc-root-dir)))
+    ;;;; 3. locate-dominating-file
+  	;; (setq consult-project-function (lambda (_) (locate-dominating-file "." ".git")))
+    ;;;; 4. projectile.el (projectile-project-root)
+  	;; (autoload 'projectile-project-root "projectile")
+  	;; (setq consult-project-function (lambda (_) (projectile-project-root)))
+    ;;;; 5. No project support
+  	;; (setq consult-project-function nil)
+  	))
+#+end_src
+
 ** Solair mode
 #+begin_src emacs-lisp
   ;;; ==========================================================================
@@ -3039,30 +3235,44 @@ The following packages are some additional quality of life features.
      )
 #+end_src
 
-** Zoom (ala Golden Ratio)
+** Zoom (aka Golden Ratio)
 #+begin_src emacs-lisp
   ;;; ==========================================================================
 
   ;; Golen Ratio / Zoom
-  
-  (if (equal enable-zoom 1)
-     (use-package zoom
-        :hook (after-init . zoom-mode)
-        :custom
-        (zoom-size '(0.618 . 0.618))
-        ;; (golden-ratio-auto-scale t)
-        (zoom-ignored-major-modes '(dired-mode occur-mode
-                                    undo-tree-visualizer-mode
-                                    inferior-python-mode
-                                    vundo-mode
-                                    python-mode
-                                    help-mode
-                                    dap-ui-repl-mode
-                                    dap-mode
-                                    dap-ui-mode
-                                    dap-ui-many-windows-mode
-                                    markdown-mode))))
+
+  (if enable-zoom
+      (use-package golden-ratio
+  	:straight (golden-ratio :type git
+  		      :flavor melpa
+  		      :host github
+  		      :repo "roman/golden-ratio.el")
+  	:config
+  	(setq golden-ratio-auto-scale t)
+  	(setq golden-ratio-adjust-factor .4)
+  	(setq golden-ratio-wide-adjust-factor .4)
+  	(setq golden-ratio-max-width 100)
+  	(golden-ratio-mode 1)))
+     ;; (use-package zoom
+     ;;    :hook (after-init . zoom-mode)
+     ;;    :custom
+     ;;    (zoom-size '(0.618 . 0.618))
+     ;;    ;; (golden-ratio-auto-scale t)
+     ;;    (zoom-ignored-major-modes '(dired-mode occur-mode
+     ;;                                undo-tree-visualizer-mode
+     ;;                                inferior-python-mode
+     ;;                                vundo-mode
+     ;;                                python-mode
+     ;;                                help-mode
+     ;;                                dap-ui-repl-mode
+     ;;                                dap-mode
+     ;;                                dap-ui-mode
+     ;;                                dap-ui-many-windows-mode
+     ;;                                markdown-mode))))
 #+end_src
+
+#+RESULTS:
+: t
 
 ** Ace Window
 [[https://github.com/abo-abo/ace-window][ace-window]] is a package for selecting a window to switch to. Like =other-window= but better!
@@ -3189,16 +3399,23 @@ A great package that allows moving up and down the undo-redo tree.
 
   ;; helpful package
 
-  (use-package helpful
-    :commands (helpful-callable helpful-variable helpful-command helpful-key)
-    :custom
-    (counsel-describe-function-function #'helpful-callable)
-    (counsel-describe-variable-function #'helpful-variable)
-    :bind
-    ([remap describe-function] . counsel-describe-function)
-    ([remap describe-command] . helpful-command)
-    ([remap describe-variable] . counsel-describe-variable)
-    ([remap describe-key] . helpful-key))
+  (if (equal completion-handler 'enable-ivy-counsel-swiper)
+      (use-package helpful
+  	:commands (helpful-callable helpful-variable helpful-command helpful-key)
+  	:custom
+  	(counsel-describe-function-function #'helpful-callable)
+  	(counsel-describe-variable-function #'helpful-variable)
+  	:bind
+  	([remap describe-function] . counsel-describe-function)
+  	([remap describe-command] . helpful-command)
+  	([remap describe-variable] . counsel-describe-variable)
+  	([remap describe-key] . helpful-key))
+    (use-package helpful
+        :commands (helpful-callable helpful-variable helpful-command helpful-key)
+        :bind
+        ([remap describe-command] . helpful-command)
+        ([remap describe-key] . helpful-key)))
+
 #+end_src
 
 ** Terminals
@@ -3361,9 +3578,9 @@ Using [[https://github.com/seagle0128/doom-modeline][doom-modeline]] is a very a
 #+end_src
 
 ** Useful functions and Keybindings
-Here are some helpful functions that are bound to some (for me) unassigned keys.
+Here are some helpful functions.
 
-#+begin_src emacs-lisp :results silent
+#+begin_src emacs-lisp :results silent :tangle no
 
   ;; Functions to insert the buffer file name at the current cursor position
   ;;
@@ -3374,11 +3591,6 @@ Here are some helpful functions that are bound to some (for me) unassigned keys.
   (defun mrf/insert-buffer-name-at-point ()
      (interactive)
      (insert (file-name-nondirectory (buffer-file-name))))
-
-  (general-define-key
-     "C-c i f" 'mrf/insert-buffer-name-at-point
-     "C-c i F" 'mrf/insert-buffer-full-name-at-point
-     )
   
 #+end_src
 
@@ -3617,6 +3829,7 @@ Some final configuratiion to be done at the end of this configuration.
       (let ((map (make-sparse-keymap)))
   	(define-key map (kbd "C-c RET d") 'dashboard-open)
   	(define-key map (kbd "C-c RET f") 'mrf/set-fill-column-interactively)
+  	(define-key map (kbd "C-c RET F") 'mrf/set-org-fill-column-interactively)
   	(define-key map (kbd "C-c RET i") 'ielm)
   	(define-key map (kbd "C-c RET v") 'vterm-other-window)
   	(define-key map (kbd "C-c RET S") 'smartparens-strict-mode)
@@ -3780,31 +3993,4 @@ These functions are used to configure the main frame font size. Based upon a mon
   (when (display-graphic-p)
      (add-hook 'after-init-hook 'use-medium-display-font))
 
-#+end_src
-
-** Supress some startup warnings
-
-#+begin_src emacs-lisp
-  ;;; ==========================================================================
-
-  (custom-set-variables
-     ;; custom-set-variables was added by Custom.
-     ;; If you edit it by hand, you could mess it up, so be careful.
-     ;; Your init file should contain only one such instance.
-     ;; If there is more than one, they won't work right.
-     '(warning-suppress-log-types
-         '(((python python-shell-completion-native-turn-on-maybe))
-           ((package reinitialization))
-           (comp)
-           (treesit)
-           (use-package)
-           (python-mode)
-           (package-initialize))))
-    ;;; init.el ends here.
-  (custom-set-faces
-     ;; custom-set-faces was added by Custom.
-     ;; If you edit it by hand, you could mess it up, so be careful.
-     ;; Your init file should contain only one such instance.
-     ;; If there is more than one, they won't work right.
-     )
 #+end_src
