@@ -614,6 +614,14 @@ should be taken into consideration when providing a width."
     :config
     (rainbow-delimiters-mode))
 
+(use-package dash
+    :straight (dash
+  		:type git
+  		:flavor melpa
+  		:files ("dash.el" "dash.texi" "dash-pkg.el")
+  		:host github
+  		:repo "magnars/dash.el"))
+
 (defun mrf/set-fill-column-interactively (num)
     "Asks for the fill column."
     (interactive "nfill-column: ")
@@ -1176,49 +1184,6 @@ should be taken into consideration when providing a width."
       )
    )
 
-;;; --------------------------------------------------------------------------
-
-;;; DAP for NodeJS
-
-(defun my-setup-dap-node ()
-   "Require dap-node feature and run dap-node-setup if VSCode module isn't already installed"
-   (require 'dap-node)
-   (unless (file-exists-p dap-node-debug-path) (dap-node-setup)))
-
-(if (equal debug-adapter 'enable-dap-mode)
-   (progn
-      (use-package dap-node
-         :defer t
-         :straight (dap-node :type git
-                      :flavor melpa
-                      :files (:defaults "icons" "dap-mode-pkg.el")
-                      :host github
-                      :repo "emacs-lsp/dap-mode")
-         :after (dap-mode)
-         :config
-         (require 'dap-firefox)
-         (dap-register-debug-template
-            "Launch index.ts"
-            (list :type "node"
-               :request "launch"
-               :program "${workspaceFolder}/index.ts"
-               :dap-compilation "npx tsc index.ts --outdir dist --sourceMap true"
-               :outFiles (list "${workspaceFolder}/dist/**/*.js")
-               :name "Launch index.ts"))
-         ;; (dap-register-debug-template
-         ;;    "Launch index.ts"
-         ;;    (list :type "node"
-         ;;    :request "launch"
-         ;;    :program "${workspaceFolder}/index.ts"
-         ;;    :dap-compilation "npx tsc index.ts --outdir dist --sourceMap true"
-         ;;    :outFiles (list "${workspaceFolder}/dist/**/*.js")
-         ;;    :name "Launch index.ts"))
-         )
-      (add-hook 'typescript-mode-hook 'my-setup-dap-node)
-      (add-hook 'js2-mode-hook 'my-setup-dap-node)
-      )
-   )
-
 (defun mrf/end-debug-session ()
    "End the debug session and delete project Python buffers."
    (interactive)
@@ -1474,8 +1439,8 @@ should be taken into consideration when providing a width."
 (defun mrf/load-c-file-hook ()
     (message "Running C/C++ file hook")
     (c-mode)
-    (when (equal debug-adapter 'enable-dap-mode)
-      (dap-mode))
+    (unless (featurep 'realgud))
+      (use-package realgud)
     (highlight-indentation-mode -1)
     (display-fill-column-indicator-mode t))
 
@@ -1588,6 +1553,55 @@ should be taken into consideration when providing a width."
             :config
             (setq elpy-modules (delq 'elpy-module-flymake elpy-modules))
             :hook (elpy-mode . flycheck-mode))))
+
+;;; =========================================================================
+(use-package realgud
+    :after c-mode
+    :defer t)
+
+(use-package realgud-lldb
+    :after realgud
+    :straight (realgud-lldb
+  		:type git
+  		:flavor melpa
+  		:files (:defaults ("lldb" "lldb/*.el") "realgud-lldb-pkg.el")
+  		:host github
+  		:repo "realgud/realgud-lldb"))
+
+(general-def c-mode-map
+    "C-c , j" 'realgud:cmd-jump
+    "C-c , k" 'realgud:cmd-kill
+    "C-c , s" 'realgud:cmd-step
+    "C-c , n" 'realgud:cmd-next
+    "C-c , q" 'realgud:cmd-quit
+    "C-c , F" 'realgud:window-bt
+    "C-c , U" 'realgud:cmd-until
+    "C-c , X" 'realgud:cmd-clear
+    "C-c , !" 'realgud:cmd-shell
+    "C-c , b" 'realgud:cmd-break
+    "C-c , f" 'realgud:cmd-finish
+    "C-c , D" 'realgud:cmd-delete
+    "C-c , +" 'realgud:cmd-enable
+    "C-c , R" 'realgud:cmd-restart
+    "C-c , -" 'realgud:cmd-disable
+    "C-c , B" 'realgud:window-brkpt
+    "C-c , c" 'realgud:cmd-continue
+    "C-c , e" 'realgud:cmd-eval-dwim
+    "C-c , Q" 'realgud:cmd-terminate
+    "C-c , T" 'realgud:cmd-backtrace
+    "C-c , h" 'realgud:cmd-until-here
+    "C-c , u" 'realgud:cmd-older-frame
+    "C-c , 4" 'realgud:cmd-goto-loc-hist-4
+    "C-c , 5" 'realgud:cmd-goto-loc-hist-5
+    "C-c , 6" 'realgud:cmd-goto-loc-hist-6
+    "C-c , 7" 'realgud:cmd-goto-loc-hist-7
+    "C-c , 8" 'realgud:cmd-goto-loc-hist-8
+    "C-c , 9" 'realgud:cmd-goto-loc-hist-9
+    "C-c , d" 'realgud:cmd-newer-frame
+    "C-c , RET" 'realgud:cmd-repeat-last
+    "C-c , E" 'realgud:cmd-eval-at-point
+    "C-c , I" 'realgud:cmdbuf-info-describe
+    "C-c , C-i" 'realgud:cmd-info-breakpoints)
 
 ;;; --------------------------------------------------------------------------
 
