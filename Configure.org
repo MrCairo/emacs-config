@@ -8,7 +8,23 @@
 
 This ORG file will configure the *init.el* file based upon all of the *emacs-lisp* source blocks. The emacs-lisp source blocks are defined in an organized order. While these blocks cn generally be moved around, there are some order dependencies. So it's generally best that this order be preserved to prevent any runtime issues. This =org= file is largely taken from the System Crafter's sessions on configuring Emacs.
 
-*NOTE:* Most of the code below has been taken from the [[https://systemcrafters.net][System Crafters]] site run by David Wilson. Please visit that site for lots of great stuff!
+Most of the code below has been taken from the [[https://systemcrafters.net][System Crafters]] site run by David Wilson. Please visit that site for lots of great stuff!
+
+
+* README:
+-----
+
+- The C/C++ debugger for these type of programs are done via LSP/LLDB and [[RealGUD][RealGUD]]. The chosen =debug-adapter= custom variable doesn't apply. The reason for this is that the DAP/LSP/LLDB interaction doesn't work properly on my =Apple Silicon= mac. Until GDB supports =ARM= instruction sets then this (=RealGUD=) will remain as the only best way to support a more integrated debugging experience.
+  
+- Python can use either =dap= or =dape= which is the reasoning behind the =debug-adapter= custom variable.
+  
+- If auto-tangling doesn't work because of a problem in the generated ~init.el~ file, then tangling can be done manually by either using ~(C-c C-v t)~ or by calling the =org-babel-tangle= M-x command.
+  
+- When starting this Configuration for the very first time, set the =use-package-always-ensure= variable to =t=. This will force all packages to be installed even if deferred. Make sure to set this value back to =nil= after everything is loaded otherwize Emacs startup time will be impacted. This can be found in the [[Bootstrap straight][Bootstrap straight]] section.
+
+- Take a look a the [[Custom Variables][Custom Variables]] section to see what options exist. It's important to note that these variables need to be adhered to. Another thing to note is that the various =enable*= flags are not implemented using the =:if= option in =use-package=. Instead, the enture package is ignored/included if the custom flag is true (or set to whatever). This is done so that the package is actually never loaded or installed if the condition is false. This reduces disk space and, possibly, startup time.
+   
+-----
 
 ** Lispy Header
 #+begin_src emacs-lisp
@@ -19,9 +35,13 @@ This ORG file will configure the *init.el* file based upon all of the *emacs-lis
   ;; This file bootstraps the configuration which is created from tangling
   ;; Configuration.org into this init.el file.
   ;;
-  ;; So, DO NOT MODIFY. THIS FILE IS GENERATED
+  ;; So, DO NOT MODIFY.  THIS FILE IS GENERATED
   ;; Edit the Configure.org file, save (auto-tangle) and this file will be
-  ;; generated.
+  ;; generated.  Plus, there are a lot of comments that are in the Configure.org
+  ;; file that are not exported as part of this source.  The comments provide more
+  ;; detail for certain modes as well as other important details.  If there is a
+  ;; question as to why something is a certain way or how a package may work,
+  ;; the Configure.org file may contain those answers.
 
   ;;; Code:
 
@@ -31,8 +51,7 @@ This ORG file will configure the *init.el* file based upon all of the *emacs-lis
 
 #+end_src
 
-** Early init and setup
-Bootstrap the =straight= system
+** Bootstrap straight
 
 #+begin_src emacs-lisp
 
@@ -70,7 +89,8 @@ Bootstrap the =straight= system
 
   #+end_src
 
-** Feature Switches and Globals
+** Custom Variables
+
 Set various variables to =t= to turn on a specific feature or =0= to disable it. Changing any of these values will require a restart of ~emacs~ since these values are inspected only during startup.
 
 *Note:* There are no thorough dependency check done if any of these values is enabled or disabled. There has been some effort, for example, to enable a keymap if ~dap~ or ~dape~ is enabled. But if something enabled requires some not obvious package to be installed, this isn't checked.
@@ -2119,7 +2139,7 @@ This is the standard python mode setup.
 
 #+end_src
 
-*** ELPY and RealGUD
+*** ELPY
 Elpy is an Emacs package to bring powerful Python editing to Emacs.  It combines and configures a number of other packages, both written in Emacs Lisp as well as Python.  Elpy is fully documented at [[https://elpy.readthedocs.io/en/latest/index.html][read the docs]].
 
 #+begin_src emacs-lisp
@@ -2145,62 +2165,6 @@ Elpy is an Emacs package to bring powerful Python editing to Emacs.  It combines
               :config
               (setq elpy-modules (delq 'elpy-module-flymake elpy-modules))
               :hook (elpy-mode . flycheck-mode))))
-
-#+end_src
-
-*** RealGUD and keybindings
-Since Realgud is options (in our configuratrion), we add it's keybindings conditionally. *Note* that these keybindings are still compatible with =dap-mode= keybindings.
-
-#+begin_src emacs-lisp
-
-  ;;; =========================================================================
-  (use-package realgud
-      :after c-mode
-      :defer t)
-
-  (use-package realgud-lldb
-      :after realgud
-      :straight (realgud-lldb
-  		  :type git
-  		  :flavor melpa
-  		  :files (:defaults ("lldb" "lldb/*.el") "realgud-lldb-pkg.el")
-  		  :host github
-  		  :repo "realgud/realgud-lldb"))
-
-  (general-def c-mode-map
-      "C-c , j" 'realgud:cmd-jump
-      "C-c , k" 'realgud:cmd-kill
-      "C-c , s" 'realgud:cmd-step
-      "C-c , n" 'realgud:cmd-next
-      "C-c , q" 'realgud:cmd-quit
-      "C-c , F" 'realgud:window-bt
-      "C-c , U" 'realgud:cmd-until
-      "C-c , X" 'realgud:cmd-clear
-      "C-c , !" 'realgud:cmd-shell
-      "C-c , b" 'realgud:cmd-break
-      "C-c , f" 'realgud:cmd-finish
-      "C-c , D" 'realgud:cmd-delete
-      "C-c , +" 'realgud:cmd-enable
-      "C-c , R" 'realgud:cmd-restart
-      "C-c , -" 'realgud:cmd-disable
-      "C-c , B" 'realgud:window-brkpt
-      "C-c , c" 'realgud:cmd-continue
-      "C-c , e" 'realgud:cmd-eval-dwim
-      "C-c , Q" 'realgud:cmd-terminate
-      "C-c , T" 'realgud:cmd-backtrace
-      "C-c , h" 'realgud:cmd-until-here
-      "C-c , u" 'realgud:cmd-older-frame
-      "C-c , 4" 'realgud:cmd-goto-loc-hist-4
-      "C-c , 5" 'realgud:cmd-goto-loc-hist-5
-      "C-c , 6" 'realgud:cmd-goto-loc-hist-6
-      "C-c , 7" 'realgud:cmd-goto-loc-hist-7
-      "C-c , 8" 'realgud:cmd-goto-loc-hist-8
-      "C-c , 9" 'realgud:cmd-goto-loc-hist-9
-      "C-c , d" 'realgud:cmd-newer-frame
-      "C-c , RET" 'realgud:cmd-repeat-last
-      "C-c , E" 'realgud:cmd-eval-at-point
-      "C-c , I" 'realgud:cmdbuf-info-describe
-      "C-c , C-i" 'realgud:cmd-info-breakpoints)
 
 #+end_src
 
@@ -2290,6 +2254,68 @@ We use Pyvenv-auto is a package that automatically changes to the Python virtual
      :config (message "Starting pyvenv-auto")
      :hook (python-mode . pyvenv-auto-run))
   
+#+end_src
+
+
+* RealGUD
+Since Realgud is options (in our configuratrion), we add it's keybindings conditionally. *Note* that these keybindings are still compatible with =dap-mode= keybindings.
+#+begin_src emacs-lisp
+
+  ;;; --------------------------------------------------------------------------
+
+  (use-package realgud
+      :after c-mode
+      :defer t)
+
+  (use-package realgud-lldb
+      :after realgud
+      :straight (realgud-lldb
+  		  :type git
+  		  :flavor melpa
+  		  :files (:defaults ("lldb" "lldb/*.el") "realgud-lldb-pkg.el")
+  		  :host github
+  		  :repo "realgud/realgud-lldb"))
+
+#+end_src
+
+** REALGud Keybindings
+#+begin_src emacs-lisp
+
+    (general-def c-mode-map
+      "C-c , j" 'realgud:cmd-jump
+      "C-c , k" 'realgud:cmd-kill
+      "C-c , s" 'realgud:cmd-step
+      "C-c , n" 'realgud:cmd-next
+      "C-c , q" 'realgud:cmd-quit
+      "C-c , F" 'realgud:window-bt
+      "C-c , U" 'realgud:cmd-until
+      "C-c , X" 'realgud:cmd-clear
+      "C-c , !" 'realgud:cmd-shell
+      "C-c , b" 'realgud:cmd-break
+      "C-c , f" 'realgud:cmd-finish
+      "C-c , D" 'realgud:cmd-delete
+      "C-c , +" 'realgud:cmd-enable
+      "C-c , R" 'realgud:cmd-restart
+      "C-c , -" 'realgud:cmd-disable
+      "C-c , B" 'realgud:window-brkpt
+      "C-c , c" 'realgud:cmd-continue
+      "C-c , e" 'realgud:cmd-eval-dwim
+      "C-c , Q" 'realgud:cmd-terminate
+      "C-c , T" 'realgud:cmd-backtrace
+      "C-c , h" 'realgud:cmd-until-here
+      "C-c , u" 'realgud:cmd-older-frame
+      "C-c , 4" 'realgud:cmd-goto-loc-hist-4
+      "C-c , 5" 'realgud:cmd-goto-loc-hist-5
+      "C-c , 6" 'realgud:cmd-goto-loc-hist-6
+      "C-c , 7" 'realgud:cmd-goto-loc-hist-7
+      "C-c , 8" 'realgud:cmd-goto-loc-hist-8
+      "C-c , 9" 'realgud:cmd-goto-loc-hist-9
+      "C-c , d" 'realgud:cmd-newer-frame
+      "C-c , RET" 'realgud:cmd-repeat-last
+      "C-c , E" 'realgud:cmd-eval-at-point
+      "C-c , I" 'realgud:cmdbuf-info-describe
+      "C-c , C-i" 'realgud:cmd-info-breakpoints)
+
 #+end_src
 
 
@@ -2448,8 +2474,12 @@ The =mrf/org-font-setup= function configures various text faces to tweak the siz
 
      (defface org-block-end-line
         '((t (:overline "#1D2C39" :foreground "SlateGray" :background "#1D2C39")))
-        "Face used for the line delimiting the end of source blocks.")
-     )
+         "Face used for the line delimiting the end of source blocks.")
+      
+     (defface org-modern-horizontal-rule
+        '((t (:strike-through "green" :weight bold)))
+         "Face used for the Horizontal like (-----)")
+      )
 
 #+end_src
 
@@ -3781,14 +3811,14 @@ The following is a list of major mode-hooks variables that are set so that they 
   ;; ... except for when in these modes
   (dolist (mode '(dashboard-mode-hook
                   helpful-mode-hook
-                    eshell-mode-hook
-                    eww-mode-hook
+                  eshell-mode-hook
+                  eww-mode-hook
                   help-mode-hook
-                    org-mode-hook
-                    shell-mode-hook
-                    term-mode-hook
-                    treemacs-mode-hook
-                    vterm-mode-hook))
+                  org-mode-hook
+                  shell-mode-hook
+                  term-mode-hook
+                  treemacs-mode-hook
+                  vterm-mode-hook))
      (add-hook mode (lambda () (display-line-numbers-mode 0))))
 
   (setq warning-suppress-types '((package reinitialization)
@@ -3906,4 +3936,10 @@ These functions are used to configure the main frame font size. Based upon a mon
   (when (display-graphic-p)
      (add-hook 'after-init-hook 'use-medium-display-font))
 
+#+end_src
+
+#+begin_src emacs-lisp
+
+  ;;; init.el ends here.
+  
 #+end_src

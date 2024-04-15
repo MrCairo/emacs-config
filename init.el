@@ -5,9 +5,13 @@
 ;; This file bootstraps the configuration which is created from tangling
 ;; Configuration.org into this init.el file.
 ;;
-;; So, DO NOT MODIFY. THIS FILE IS GENERATED
+;; So, DO NOT MODIFY.  THIS FILE IS GENERATED
 ;; Edit the Configure.org file, save (auto-tangle) and this file will be
-;; generated.
+;; generated.  Plus, there are a lot of comments that are in the Configure.org
+;; file that are not exported as part of this source.  The comments provide more
+;; detail for certain modes as well as other important details.  If there is a
+;; question as to why something is a certain way or how a package may work,
+;; the Configure.org file may contain those answers.
 
 ;;; Code:
 
@@ -1554,55 +1558,6 @@ should be taken into consideration when providing a width."
             (setq elpy-modules (delq 'elpy-module-flymake elpy-modules))
             :hook (elpy-mode . flycheck-mode))))
 
-;;; =========================================================================
-(use-package realgud
-    :after c-mode
-    :defer t)
-
-(use-package realgud-lldb
-    :after realgud
-    :straight (realgud-lldb
-  		:type git
-  		:flavor melpa
-  		:files (:defaults ("lldb" "lldb/*.el") "realgud-lldb-pkg.el")
-  		:host github
-  		:repo "realgud/realgud-lldb"))
-
-(general-def c-mode-map
-    "C-c , j" 'realgud:cmd-jump
-    "C-c , k" 'realgud:cmd-kill
-    "C-c , s" 'realgud:cmd-step
-    "C-c , n" 'realgud:cmd-next
-    "C-c , q" 'realgud:cmd-quit
-    "C-c , F" 'realgud:window-bt
-    "C-c , U" 'realgud:cmd-until
-    "C-c , X" 'realgud:cmd-clear
-    "C-c , !" 'realgud:cmd-shell
-    "C-c , b" 'realgud:cmd-break
-    "C-c , f" 'realgud:cmd-finish
-    "C-c , D" 'realgud:cmd-delete
-    "C-c , +" 'realgud:cmd-enable
-    "C-c , R" 'realgud:cmd-restart
-    "C-c , -" 'realgud:cmd-disable
-    "C-c , B" 'realgud:window-brkpt
-    "C-c , c" 'realgud:cmd-continue
-    "C-c , e" 'realgud:cmd-eval-dwim
-    "C-c , Q" 'realgud:cmd-terminate
-    "C-c , T" 'realgud:cmd-backtrace
-    "C-c , h" 'realgud:cmd-until-here
-    "C-c , u" 'realgud:cmd-older-frame
-    "C-c , 4" 'realgud:cmd-goto-loc-hist-4
-    "C-c , 5" 'realgud:cmd-goto-loc-hist-5
-    "C-c , 6" 'realgud:cmd-goto-loc-hist-6
-    "C-c , 7" 'realgud:cmd-goto-loc-hist-7
-    "C-c , 8" 'realgud:cmd-goto-loc-hist-8
-    "C-c , 9" 'realgud:cmd-goto-loc-hist-9
-    "C-c , d" 'realgud:cmd-newer-frame
-    "C-c , RET" 'realgud:cmd-repeat-last
-    "C-c , E" 'realgud:cmd-eval-at-point
-    "C-c , I" 'realgud:cmdbuf-info-describe
-    "C-c , C-i" 'realgud:cmd-info-breakpoints)
-
 ;;; --------------------------------------------------------------------------
 
 (use-package py-autopep8
@@ -1661,6 +1616,56 @@ should be taken into consideration when providing a width."
    :after python
    :config (message "Starting pyvenv-auto")
    :hook (python-mode . pyvenv-auto-run))
+
+;;; --------------------------------------------------------------------------
+
+(use-package realgud
+    :after c-mode
+    :defer t)
+
+(use-package realgud-lldb
+    :after realgud
+    :straight (realgud-lldb
+  		:type git
+  		:flavor melpa
+  		:files (:defaults ("lldb" "lldb/*.el") "realgud-lldb-pkg.el")
+  		:host github
+  		:repo "realgud/realgud-lldb"))
+
+(general-def c-mode-map
+  "C-c , j" 'realgud:cmd-jump
+  "C-c , k" 'realgud:cmd-kill
+  "C-c , s" 'realgud:cmd-step
+  "C-c , n" 'realgud:cmd-next
+  "C-c , q" 'realgud:cmd-quit
+  "C-c , F" 'realgud:window-bt
+  "C-c , U" 'realgud:cmd-until
+  "C-c , X" 'realgud:cmd-clear
+  "C-c , !" 'realgud:cmd-shell
+  "C-c , b" 'realgud:cmd-break
+  "C-c , f" 'realgud:cmd-finish
+  "C-c , D" 'realgud:cmd-delete
+  "C-c , +" 'realgud:cmd-enable
+  "C-c , R" 'realgud:cmd-restart
+  "C-c , -" 'realgud:cmd-disable
+  "C-c , B" 'realgud:window-brkpt
+  "C-c , c" 'realgud:cmd-continue
+  "C-c , e" 'realgud:cmd-eval-dwim
+  "C-c , Q" 'realgud:cmd-terminate
+  "C-c , T" 'realgud:cmd-backtrace
+  "C-c , h" 'realgud:cmd-until-here
+  "C-c , u" 'realgud:cmd-older-frame
+  "C-c , 4" 'realgud:cmd-goto-loc-hist-4
+  "C-c , 5" 'realgud:cmd-goto-loc-hist-5
+  "C-c , 6" 'realgud:cmd-goto-loc-hist-6
+  "C-c , 7" 'realgud:cmd-goto-loc-hist-7
+  "C-c , 8" 'realgud:cmd-goto-loc-hist-8
+  "C-c , 9" 'realgud:cmd-goto-loc-hist-9
+  "C-c , d" 'realgud:cmd-newer-frame
+  "C-c , RET" 'realgud:cmd-repeat-last
+  "C-c , E" 'realgud:cmd-eval-at-point
+  "C-c , I" 'realgud:cmdbuf-info-describe
+  "C-c , C-i" 'realgud:cmd-info-breakpoints)
 
 ;;; --------------------------------------------------------------------------
 
@@ -1769,8 +1774,12 @@ should be taken into consideration when providing a width."
 
    (defface org-block-end-line
       '((t (:overline "#1D2C39" :foreground "SlateGray" :background "#1D2C39")))
-      "Face used for the line delimiting the end of source blocks.")
-   )
+       "Face used for the line delimiting the end of source blocks.")
+
+   (defface org-modern-horizontal-rule
+      '((t (:strike-through "green" :weight bold)))
+       "Face used for the Horizontal like (-----)")
+    )
 
 ;;; --------------------------------------------------------------------------
 
@@ -2672,14 +2681,14 @@ capture was not aborted."
 ;; ... except for when in these modes
 (dolist (mode '(dashboard-mode-hook
                 helpful-mode-hook
-                  eshell-mode-hook
-                  eww-mode-hook
+                eshell-mode-hook
+                eww-mode-hook
                 help-mode-hook
-                  org-mode-hook
-                  shell-mode-hook
-                  term-mode-hook
-                  treemacs-mode-hook
-                  vterm-mode-hook))
+                org-mode-hook
+                shell-mode-hook
+                term-mode-hook
+                treemacs-mode-hook
+                vterm-mode-hook))
    (add-hook mode (lambda () (display-line-numbers-mode 0))))
 
 (setq warning-suppress-types '((package reinitialization)
@@ -2774,3 +2783,5 @@ capture was not aborted."
 
 (when (display-graphic-p)
    (add-hook 'after-init-hook 'use-medium-display-font))
+
+;;; init.el ends here.
