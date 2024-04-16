@@ -19,6 +19,8 @@
 ;; (setq debug-on-error t)
 ;;
 
+;;; --------------------------------------------------------------------------
+
 (defvar bootstrap-version)
 (let ((bootstrap-file
        (expand-file-name
@@ -51,6 +53,7 @@
 ;; Load org early on in the init process
 (straight-use-package 'org)
 
+;;; --------------------------------------------------------------------------
 ;;; Define my customization groups
 
 (defgroup mrf-custom nil
@@ -68,7 +71,9 @@
    :group 'mrf-custom
    )
 
+;;; --------------------------------------------------------------------------
 ;;; Feature Switches
+
 (defcustom completion-handler 'enable-vertico
     "Select the default minibuffer completion handler.
 
@@ -151,7 +156,7 @@ alternative to isearch that uses Ivy to show an overview of all matches."
                (const :tag "Debug Adapter Protocol for Emacs (DAPE)" enable-dape))
     :group 'mrf-custom)
 
-;;; ------------------------------------------------------------
+;;; --------------------------------------------------------------------------
 ;;; Theming related
 
 (defcustom theme-list '("palenight-deeper-blue"
@@ -174,8 +179,6 @@ If additional themes are added, they must be previously installed."
     :group 'mrf-custom-theming
     :type 'natnum)
 
-
-;;; ------------------------------------------------------------
 ;;; Font related
 (defcustom default-font-family "Hack"
     "The font family used as the default font."
@@ -232,6 +235,8 @@ If additional themes are added, they must be previously installed."
     :type 'natnum
     :group 'mrf-custom-fonts)
 
+;;; --------------------------------------------------------------------------
+
 (defcustom display-dashboard-at-start t
     "If set to t, the `dashboard' package will be displayed first.
   Otherwise, the `dashboard' will be available but in the buffer
@@ -258,7 +263,9 @@ should be taken into consideration when providing a width."
     :type 'natnum
     :group 'mrf-custom)
 
-(use-package general :demand t :ensure t)
+;;; --------------------------------------------------------------------------
+
+(use-package general :demand t :straight t)
 
 (setq-default
    ;; enable smooth scrolling.
@@ -769,7 +776,6 @@ should be taken into consideration when providing a width."
     (auto-package-update-at-time "09:00"))
 
 ;;; --------------------------------------------------------------------------
-
 ;; YASnippets
 
 (use-package yasnippet
@@ -798,7 +804,6 @@ should be taken into consideration when providing a width."
               :repo "AndreaCrotti/yasnippet-snippets"))
 
 ;;; --------------------------------------------------------------------------
-
 ;; Which Key Helper
 
 (use-package which-key
@@ -810,8 +815,6 @@ should be taken into consideration when providing a width."
    (which-key-setup-side-window-right))
 
 ;;; --------------------------------------------------------------------------
-
-;;; --------------------------------------------------------------------------
 ;;; Window Number
 
 (use-package winum
@@ -819,7 +822,6 @@ should be taken into consideration when providing a width."
 (winum-mode)
 
 ;;; --------------------------------------------------------------------------
-
 ;;; Treemacs
 
 (use-package treemacs
@@ -1022,7 +1024,6 @@ should be taken into consideration when providing a width."
 (setq read-process-output-max (* 1024 1024))
 
 ;;; ------------------------------------------------------------------------
-
   ;;; Alternate fork to handle possible performance bug(s)
 (use-package jsonrpc
     :straight (jsonrpc :type git :host github :repo "emacs-straight/jsonrpc" :files ("*" (:exclude ".git"))))
@@ -1084,6 +1085,8 @@ should be taken into consideration when providing a width."
       (message "npm dependencies installed")
       (call-process "npx" nil "*snam-install*" t "gulp" "dapDebugServer")
       (message "vscode-js-debug installed")))
+
+;;; --------------------------------------------------------------------------
 
 (defun mrf/dape-end-debug-session ()
    "End the debug session."
@@ -1158,7 +1161,6 @@ should be taken into consideration when providing a width."
     )
 
 ;;; --------------------------------------------------------------------------
-
 ;;; DAP for Python
 
 (if (equal debug-adapter 'enable-dap-mode)
@@ -1187,6 +1189,8 @@ should be taken into consideration when providing a width."
        )
       )
    )
+
+;;; --------------------------------------------------------------------------
 
 (defun mrf/end-debug-session ()
    "End the debug session and delete project Python buffers."
@@ -1261,7 +1265,6 @@ should be taken into consideration when providing a width."
    ("Q" mrf/delete-all-debug-sessions :color red))
 
 ;;; --------------------------------------------------------------------------
-
 ;;; Swiper and IVY mode
 
 (if (equal completion-handler 'enable-ivy-counsel-swiper)
@@ -1423,6 +1426,8 @@ should be taken into consideration when providing a width."
 
 (add-to-list 'auto-mode-alist '("\\.ts\\'" . typescript-ts-mode))
 
+;;; --------------------------------------------------------------------------
+
 (use-package js2-mode
    :hook (js-mode . js2-minor-mode)
    :mode ("\\.js\\'" "\\.mjs\\'")
@@ -1492,7 +1497,6 @@ should be taken into consideration when providing a width."
 (add-hook 'before-save-hook 'mrf/before-save)
 
 ;;; --------------------------------------------------------------------------
-
 
 (defun mrf/load-python-file-hook ()
     (message "Running python file hook")
@@ -1632,40 +1636,42 @@ should be taken into consideration when providing a width."
   		:host github
   		:repo "realgud/realgud-lldb"))
 
+;;; --------------------------------------------------------------------------
+
 (general-def c-mode-map
-  "C-c , j" 'realgud:cmd-jump
-  "C-c , k" 'realgud:cmd-kill
-  "C-c , s" 'realgud:cmd-step
-  "C-c , n" 'realgud:cmd-next
-  "C-c , q" 'realgud:cmd-quit
-  "C-c , F" 'realgud:window-bt
-  "C-c , U" 'realgud:cmd-until
-  "C-c , X" 'realgud:cmd-clear
-  "C-c , !" 'realgud:cmd-shell
-  "C-c , b" 'realgud:cmd-break
-  "C-c , f" 'realgud:cmd-finish
-  "C-c , D" 'realgud:cmd-delete
-  "C-c , +" 'realgud:cmd-enable
-  "C-c , R" 'realgud:cmd-restart
-  "C-c , -" 'realgud:cmd-disable
-  "C-c , B" 'realgud:window-brkpt
-  "C-c , c" 'realgud:cmd-continue
-  "C-c , e" 'realgud:cmd-eval-dwim
-  "C-c , Q" 'realgud:cmd-terminate
-  "C-c , T" 'realgud:cmd-backtrace
-  "C-c , h" 'realgud:cmd-until-here
-  "C-c , u" 'realgud:cmd-older-frame
-  "C-c , 4" 'realgud:cmd-goto-loc-hist-4
-  "C-c , 5" 'realgud:cmd-goto-loc-hist-5
-  "C-c , 6" 'realgud:cmd-goto-loc-hist-6
-  "C-c , 7" 'realgud:cmd-goto-loc-hist-7
-  "C-c , 8" 'realgud:cmd-goto-loc-hist-8
-  "C-c , 9" 'realgud:cmd-goto-loc-hist-9
-  "C-c , d" 'realgud:cmd-newer-frame
-  "C-c , RET" 'realgud:cmd-repeat-last
-  "C-c , E" 'realgud:cmd-eval-at-point
-  "C-c , I" 'realgud:cmdbuf-info-describe
-  "C-c , C-i" 'realgud:cmd-info-breakpoints)
+    "C-c , j" 'realgud:cmd-jump
+    "C-c , k" 'realgud:cmd-kill
+    "C-c , s" 'realgud:cmd-step
+    "C-c , n" 'realgud:cmd-next
+    "C-c , q" 'realgud:cmd-quit
+    "C-c , F" 'realgud:window-bt
+    "C-c , U" 'realgud:cmd-until
+    "C-c , X" 'realgud:cmd-clear
+    "C-c , !" 'realgud:cmd-shell
+    "C-c , b" 'realgud:cmd-break
+    "C-c , f" 'realgud:cmd-finish
+    "C-c , D" 'realgud:cmd-delete
+    "C-c , +" 'realgud:cmd-enable
+    "C-c , R" 'realgud:cmd-restart
+    "C-c , -" 'realgud:cmd-disable
+    "C-c , B" 'realgud:window-brkpt
+    "C-c , c" 'realgud:cmd-continue
+    "C-c , e" 'realgud:cmd-eval-dwim
+    "C-c , Q" 'realgud:cmd-terminate
+    "C-c , T" 'realgud:cmd-backtrace
+    "C-c , h" 'realgud:cmd-until-here
+    "C-c , u" 'realgud:cmd-older-frame
+    "C-c , 4" 'realgud:cmd-goto-loc-hist-4
+    "C-c , 5" 'realgud:cmd-goto-loc-hist-5
+    "C-c , 6" 'realgud:cmd-goto-loc-hist-6
+    "C-c , 7" 'realgud:cmd-goto-loc-hist-7
+    "C-c , 8" 'realgud:cmd-goto-loc-hist-8
+    "C-c , 9" 'realgud:cmd-goto-loc-hist-9
+    "C-c , d" 'realgud:cmd-newer-frame
+    "C-c , RET" 'realgud:cmd-repeat-last
+    "C-c , E" 'realgud:cmd-eval-at-point
+    "C-c , I" 'realgud:cmdbuf-info-describe
+    "C-c , C-i" 'realgud:cmd-info-breakpoints)
 
 ;;; --------------------------------------------------------------------------
 
@@ -1728,7 +1734,6 @@ should be taken into consideration when providing a width."
 
 ;;; --------------------------------------------------------------------------
 
-
 (use-package projectile
   :diminish Proj
   :config (projectile-mode)
@@ -1762,6 +1767,8 @@ should be taken into consideration when providing a width."
 
 (use-package forge
   :after magit)
+
+;;; --------------------------------------------------------------------------
 
 (defun mrf/org-theme-override-values ()
    (defface org-block-begin-line
@@ -1839,7 +1846,6 @@ should be taken into consideration when providing a width."
         ("Tasks.org" :maxlevel . 1))))
 
 ;;; --------------------------------------------------------------------------
-;; -----------------------------------------------------------------
 
 (defun mrf/org-setup-agenda ()
    (setq org-agenda-custom-commands
@@ -1892,8 +1898,6 @@ should be taken into consideration when providing a width."
 
 ;;; --------------------------------------------------------------------------
 
-;; -----------------------------------------------------------------
-
 (defun mrf/org-setup-capture-templates ()
    (setq org-capture-templates
       `(("t" "Tasks / Projects")
@@ -1925,7 +1929,6 @@ should be taken into consideration when providing a width."
              "| %U | %^{Weight} | %^{Notes} |" :kill-buffer t))))
 
 ;;; --------------------------------------------------------------------------
-;; -----------------------------------------------------------------
 
 (mrf/org-theme-override-values)
 
@@ -1964,15 +1967,13 @@ should be taken into consideration when providing a width."
 
 ;;; --------------------------------------------------------------------------
 
-;; -----------------------------------------------------------------
-
 (use-package org-bullets
    :after org
   :hook (org-mode . org-bullets-mode)
   :custom
   (org-bullets-bullet-list '("◉" "○" "●" "○" "●" "○" "●")))
 
-;; -----------------------------------------------------------------
+;;; --------------------------------------------------------------------------
 
 (defun mrf/org-mode-visual-fill ()
   (setq visual-fill-column-width custom-org-fill-column
@@ -1983,8 +1984,6 @@ should be taken into consideration when providing a width."
   :hook (org-mode . mrf/org-mode-visual-fill))
 
 ;;; --------------------------------------------------------------------------
-
-;; -----------------------------------------------------------------
 
 (with-eval-after-load 'org    
     (org-babel-do-load-languages
@@ -1998,8 +1997,6 @@ should be taken into consideration when providing a width."
 
 ;;; --------------------------------------------------------------------------
 
-;; -----------------------------------------------------------------
-
 (with-eval-after-load 'org
   ;; This is needed as of Org 9.2
 
@@ -2007,6 +2004,7 @@ should be taken into consideration when providing a width."
   (add-to-list 'org-structure-template-alist '("el" . "src emacs-lisp"))
   (add-to-list 'org-structure-template-alist '("py" . "src python")))
 
+;;; --------------------------------------------------------------------------
 ;; (use-package emacsql)
 ;; (use-package emacsql-sqlite)
 
@@ -2048,6 +2046,7 @@ should be taken into consideration when providing a width."
                        '(:immediate-finish t)))))
     (apply #'org-roam-node-insert args)))
 
+;;; --------------------------------------------------------------------------
 ;; The buffer you put this code in must have lexical-binding set to t!
 ;; See the final configuration at the end for more details.
 
@@ -2066,6 +2065,8 @@ should be taken into consideration when providing a width."
   (setq org-agenda-files (my/org-roam-list-notes-by-tag "Project")))
 
 ;; Build the agenda list the first time for the session
+
+;;; --------------------------------------------------------------------------
 
 (defun my/org-roam-project-finalize-hook ()
    "Adds the captured project file to `org-agenda-files' if the
@@ -2095,11 +2096,15 @@ capture was not aborted."
 
 (global-set-key (kbd "C-c n p") #'my/org-roam-find-project)
 
+;;; --------------------------------------------------------------------------
+
 (defun my/org-roam-capture-inbox ()
    (interactive)
    (org-roam-capture- :node (org-roam-node-create)
       :templates '(("i" "inbox" plain "* %?"
                       :if-new (file+head "Inbox.org" "#+title: Inbox\n")))))
+
+;;; --------------------------------------------------------------------------
 
 (defun my/org-roam-capture-task ()
   (interactive)
@@ -2114,6 +2119,8 @@ capture was not aborted."
                       (file+head+olp "%<%Y%m%d%H%M%S>-${slug}.org"
                          "#+title: ${title}\n#+category: ${title}\n#+filetags: Project"
                          ("Tasks"))))))
+
+;;; --------------------------------------------------------------------------
 
 (defun my/org-roam-copy-todo-to-today ()
    (interactive)
@@ -2134,7 +2141,6 @@ capture was not aborted."
          (org-refile nil nil (list "Tasks" today-file nil pos)))))
 
 ;;; --------------------------------------------------------------------------
-
 ;; Automatically tangle our Configure.org config file when we save it
 ;; Org files that should use this need to add a '#+auto_tangle: t'
 ;; in the org file.
@@ -2145,7 +2151,7 @@ capture was not aborted."
 ;;; --------------------------------------------------------------------------
 
 (with-eval-after-load 'org
-  (require 'ox-gfm nil t))
+    (require 'ox-gfm nil t))
 
 ;;; --------------------------------------------------------------------------
 
@@ -2199,13 +2205,16 @@ capture was not aborted."
         (marginalia-mode t)))
 
 ;;; --------------------------------------------------------------------------
+
 (if (equal completion-handler 'enable-vertico)
     (use-package orderless
       :custom
       (completion-styles '(orderless basic))
       (completion-category-overrides '((file (styles basic partial-completion))))))
 
+;;; --------------------------------------------------------------------------
 ;; Example configuration for Consult
+
 (if (equal completion-handler 'enable-vertico)
     (use-package consult
       :straight t
@@ -2336,7 +2345,6 @@ capture was not aborted."
    (push '(treemacs-hl-line-face . solaire-hl-line-face) solaire-mode-remap-alist))
 
 ;;; --------------------------------------------------------------------------
-
 ;; Golen Ratio
 
 (if enable-golden-ratio
@@ -2410,8 +2418,7 @@ capture was not aborted."
           (dashboard-mode . mrf/dashboard-banner)))
 
 ;;; --------------------------------------------------------------------------
-
-;; A cleaner undo package from undo-tree.
+;; A cleaner and simpler undo package.
 
 (if enable-vundo
     (use-package vundo
@@ -2421,8 +2428,9 @@ capture was not aborted."
       (setq vundo-glyph-alist vundo-unicode-symbols)
       (set-face-attribute 'vundo-default nil :family "Wingdings2")))
 
-;; undo-tree handling
-;; NOTE: vundo is cleaner looking. Both are great!
+;;; --------------------------------------------------------------------------
+;; Full-featured undo-tree handling. Look to Vundo for something a little
+;; simpler.
 
 (defun mrf/undo-tree-hook ()
     (set-frame-width (selected-frame) 20))
@@ -2445,7 +2453,6 @@ capture was not aborted."
         (setq undo-tree-auto-save-history nil)))
 
 ;;; --------------------------------------------------------------------------
-
 ;; helpful package
 
 (if (equal completion-handler 'enable-ivy-counsel-swiper)
@@ -2496,7 +2503,6 @@ capture was not aborted."
 
 ;;; --------------------------------------------------------------------------
 
-
 (defun efs/configure-eshell ()
   ;; Save command history when commands are entered
   (add-hook 'eshell-pre-command-hook 'eshell-save-some-history)
@@ -2538,6 +2544,7 @@ capture was not aborted."
 ;;; --------------------------------------------------------------------------
 
 (use-package all-the-icons)
+(use-package nerd-icons)
 
 ;; (use-package doom-modeline
 ;;   :diabled
@@ -2545,7 +2552,6 @@ capture was not aborted."
 ;;   :custom ((doom-modeline-height 15)))
 
 ;;; --------------------------------------------------------------------------
-
 ;; Enable tabs for each buffer
 
 (if (equal enable-centaur-tabs t)
@@ -2574,7 +2580,7 @@ capture was not aborted."
       (define-key map (kbd "C-c h h") #'pulsar-highlight-line))
    :custom
    (pulsar-pulse t)
-   (pulsar-delay 0.055)
+   (pulsar-delay 0.10)
    (pulsar-iterations 10)
    (pulsar-face 'pulsar-magenta)
    (pulsar-highlight-face 'pulsar-yellow))
@@ -2583,7 +2589,6 @@ capture was not aborted."
 
 (use-package popper
   :defer t
-  :straight t
   :init
   (setq popper-reference-buffers
      '("\\*Messages\\*"
@@ -2626,7 +2631,6 @@ capture was not aborted."
   :hook (dired-mode . dired-hide-dotfiles-mode))
 
 ;;; --------------------------------------------------------------------------
-
 ;; Single Window dired - don't continually open new buffers
 
 (defun mrf/dired-single-keymap-init ()
@@ -2643,9 +2647,13 @@ capture was not aborted."
    :config
    (mrf/dired-single-keymap-init))
 
+;;; --------------------------------------------------------------------------
+
 (setq-default initial-scratch-message
   (concat ";; Hello, World and Happy hacking! "
       user-login-name "\n;; Press C-c RET (C-c C-m) to open the Mitch Menu\n\n"))
+
+;;; --------------------------------------------------------------------------
 
 (defvar mmm-keys-minor-mode-map
     (let ((map (make-sparse-keymap)))
@@ -2674,7 +2682,6 @@ capture was not aborted."
 (diminish 'mmm-keys-minor-mode "m3k")
 
 ;;; --------------------------------------------------------------------------
-
 ;; Ignore Line Numbers for the following modes:
 
 ;; Line #'s appear everywhere
@@ -2698,7 +2705,6 @@ capture was not aborted."
                                  (python-mode)))
 
 ;;; --------------------------------------------------------------------------
-
 ;; Frame font selection
 
 (defvar mrf/font-size-slot 1)
@@ -2736,7 +2742,9 @@ capture was not aborted."
       )
    )
 
+;;; --------------------------------------------------------------------------
 ;; Some alternate keys below....
+
 (general-define-key
    "C-c 1" 'use-small-display-font)
 
@@ -2749,6 +2757,7 @@ capture was not aborted."
 (general-define-key
    "C-c 4" 'use-x-large-display-font)
 
+;;; --------------------------------------------------------------------------
 ;; Frame support functions
 
 (defun mrf/set-frame-font (slot)

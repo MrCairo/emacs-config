@@ -8,8 +8,6 @@
 
 This ORG file will configure the *init.el* file based upon all of the *emacs-lisp* source blocks. The emacs-lisp source blocks are defined in an organized order. While these blocks cn generally be moved around, there are some order dependencies. So it's generally best that this order be preserved to prevent any runtime issues. This =org= file is largely taken from the System Crafter's sessions on configuring Emacs.
 
-Most of the code below has been taken from the [[https://systemcrafters.net][System Crafters]] site run by David Wilson. Please visit that site for lots of great stuff!
-
 
 * README:
 -----
@@ -22,11 +20,16 @@ Most of the code below has been taken from the [[https://systemcrafters.net][Sys
   
 - When starting this Configuration for the very first time, set the =use-package-always-ensure= variable to =t=. This will force all packages to be installed even if deferred. Make sure to set this value back to =nil= after everything is loaded otherwize Emacs startup time will be impacted. This can be found in the [[Bootstrap straight][Bootstrap straight]] section.
 
-- Take a look a the [[Custom Variables][Custom Variables]] section to see what options exist. It's important to note that these variables need to be adhered to. Another thing to note is that the various =enable*= flags are not implemented using the =:if= option in =use-package=. Instead, the enture package is ignored/included if the custom flag is true (or set to whatever). This is done so that the package is actually never loaded or installed if the condition is false. This reduces disk space and, possibly, startup time.
+- Take a look a the [[Custom enable flags][Custom Variables]] and [[Custom groups][Groups]] section to see what options exist. It's important to note that these variables need to be adhered to. Another thing to note is that the various =enable*= flags are not used as =:if= option in =use-package= statement. Instead, a lisp conditional statement is used so that the package is actually never loaded or installed. This improves overall startup performance.
    
 -----
 
+
+* Early Setup
+
 ** Lispy Header
+This is the standard format of a =lisp= header that should appear for all =lisp= scripts. It also indicates that the ~init.el~ file is generated from this ~Configure.org~ file.
+
 #+begin_src emacs-lisp
   ;;; init.el --- My customized emacs init file -- lexical-binding: t --
   ;;;
@@ -53,8 +56,12 @@ Most of the code below has been taken from the [[https://systemcrafters.net][Sys
 
 ** Bootstrap straight
 
+=Straight= is an alternative package manager that installs packages through Git checkouts instead of downloading tarballs from one of the package archives. Doing so allows installing forked packages, altering local package checkouts, and locking packages to exact versions for reproducable setups.
+
 #+begin_src emacs-lisp
 
+  ;;; --------------------------------------------------------------------------
+  
   (defvar bootstrap-version)
   (let ((bootstrap-file
          (expand-file-name
@@ -89,7 +96,8 @@ Most of the code below has been taken from the [[https://systemcrafters.net][Sys
 
   #+end_src
 
-** Custom Variables
+
+* Custom Variables and Groups
 
 Set various variables to =t= to turn on a specific feature or =0= to disable it. Changing any of these values will require a restart of ~emacs~ since these values are inspected only during startup.
 
@@ -97,12 +105,12 @@ Set various variables to =t= to turn on a specific feature or =0= to disable it.
 
 Other variables are also defined here that define other emacs behaviors and defaults.
 
-*** Define the custom groups
+*** Custom groups
 
 #+begin_src emacs-lisp
-
+  ;;; --------------------------------------------------------------------------
   ;;; Define my customization groups
-  
+
   (defgroup mrf-custom nil
     "Customization toggles for Mitch's Emacs installation."
     :group 'Local
@@ -120,11 +128,12 @@ Other variables are also defined here that define other emacs behaviors and defa
 
 #+end_src
 
-*** Define enable flags
+*** Custom Enable Flags
 
 #+begin_src emacs-lisp
-
-      ;;; Feature Switches
+  ;;; --------------------------------------------------------------------------
+  ;;; Feature Switches
+  
   (defcustom completion-handler 'enable-vertico
       "Select the default minibuffer completion handler.
 
@@ -209,9 +218,9 @@ Other variables are also defined here that define other emacs behaviors and defa
 
 #+end_src
 
-*** Define Theme Specific Customized Variables
+*** Theme Specific Customized Variables
 #+begin_src emacs-lisp
-  ;;; ------------------------------------------------------------
+  ;;; --------------------------------------------------------------------------
   ;;; Theming related
 
   (defcustom theme-list '("palenight-deeper-blue"
@@ -234,8 +243,6 @@ Other variables are also defined here that define other emacs behaviors and defa
       :group 'mrf-custom-theming
       :type 'natnum)
 
-
-  ;;; ------------------------------------------------------------
   ;;; Font related
   (defcustom default-font-family "Hack"
       "The font family used as the default font."
@@ -294,9 +301,10 @@ Other variables are also defined here that define other emacs behaviors and defa
 
 #+end_src
 
-*** Define other customized variables
+*** Other customized variables
 #+begin_src emacs-lisp
-
+  ;;; --------------------------------------------------------------------------
+  
   (defcustom display-dashboard-at-start t
       "If set to t, the `dashboard' package will be displayed first.
     Otherwise, the `dashboard' will be available but in the buffer
@@ -328,7 +336,9 @@ Other variables are also defined here that define other emacs behaviors and defa
 ** Other switches and globals
 #+begin_src emacs-lisp
 
-  (use-package general :demand t :ensure t)
+  ;;; --------------------------------------------------------------------------
+  
+  (use-package general :demand t :straight t)
 
   (setq-default
      ;; enable smooth scrolling.
@@ -712,7 +722,6 @@ It's nice to know that Emacs is somewhat working. To help this along, we set the
 
 #+end_src
 
-
 ** Must Install Packages
 *** Diminish
 #+begin_src emacs-lisp
@@ -746,7 +755,7 @@ Features:
 - Extensibility
   
 #+begin_src emacs-lisp :tangle no 
-
+  ;;; --------------------------------------------------------------------------
   ;; Auto Complete
 
   (use-package auto-complete)
@@ -984,7 +993,6 @@ Function and code to cycle through some selcted themes.
 
 #+end_src
 
-
 *** Selected theme
 This includes the theme to use in both graphical and non-graphical.
 
@@ -1027,7 +1035,6 @@ These are useful snippets of code that are commonly used in various languages. Y
 
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
-
   ;; YASnippets
 
   (use-package yasnippet
@@ -1064,7 +1071,6 @@ These are useful snippets of code that are commonly used in various languages. Y
 
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
-
   ;; Which Key Helper
   
   (use-package which-key
@@ -1085,8 +1091,6 @@ Treemacs is a file and project explorer similar to NeoTree or vim’s NerdTree, 
 Window numbers for Emacs: Navigate your windows and frames using numbers. This is not only handy but used by Treemacs.
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
-
-  ;;; --------------------------------------------------------------------------
   ;;; Window Number
 
   (use-package winum
@@ -1098,7 +1102,6 @@ Window numbers for Emacs: Navigate your windows and frames using numbers. This i
 
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
-
   ;;; Treemacs
 
   (use-package treemacs
@@ -1339,7 +1342,7 @@ The Hydra is vanquished once Hercules, any binding that isn't the Hydra's head, 
 ** EGlot
 
 #+begin_src emacs-lisp :tangle no
-
+  ;;; --------------------------------------------------------------------------
   ;;; Emacs Polyglot is the Emacs LSP client that stays out of your way:
 
   (defvar mrf/clangd-path (executable-find "clangd")
@@ -1373,7 +1376,6 @@ The Hydra is vanquished once Hercules, any binding that isn't the Hydra's head, 
 * Debug Adapter Protocol for Emacs (DAPE)
 #+begin_src emacs-lisp
     ;;; ------------------------------------------------------------------------
-
     ;;; Alternate fork to handle possible performance bug(s)
   (use-package jsonrpc
       :straight (jsonrpc :type git :host github :repo "emacs-straight/jsonrpc" :files ("*" (:exclude ".git"))))
@@ -1459,6 +1461,8 @@ This is meant to be evaluated and run once. Calling this function will clone the
 ** DAPE Hydra
 
 #+begin_src emacs-lisp :results none
+  ;;; --------------------------------------------------------------------------
+  
   (defun mrf/dape-end-debug-session ()
      "End the debug session."
      (interactive)
@@ -1543,7 +1547,8 @@ Provides a common protocol for debugging different systems. This is configured f
 
 ** DAP for C/C++
 #+begin_src emacs-lisp :tangle no
-
+  ;;; --------------------------------------------------------------------------
+  
   (setq dap-lldb-debug-program
       "/Users/strider/Developer/plain_unix/llvm-project/build/bin/lldb-dap")
 
@@ -1579,7 +1584,6 @@ Provides a common protocol for debugging different systems. This is configured f
 
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
-
   ;;; DAP for Python
 
   (if (equal debug-adapter 'enable-dap-mode)
@@ -1614,7 +1618,6 @@ Provides a common protocol for debugging different systems. This is configured f
 ** DAP Template for NodeJS
 #+begin_src emacs-lisp :tangle no
   ;;; --------------------------------------------------------------------------
-
   ;;; DAP for NodeJS
 
   (defun my-setup-dap-node ()
@@ -1660,6 +1663,8 @@ Provides a common protocol for debugging different systems. This is configured f
 ** DAP Hydra
 
 #+begin_src emacs-lisp :results none
+  ;;; --------------------------------------------------------------------------
+  
   (defun mrf/end-debug-session ()
      "End the debug session and delete project Python buffers."
      (interactive)
@@ -1743,7 +1748,6 @@ Ivy is an excellent completion framework for Emacs.  It provides a minimal yet p
 
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
-
   ;;; Swiper and IVY mode
 
   (if (equal completion-handler 'enable-ivy-counsel-swiper)
@@ -1980,7 +1984,8 @@ This is a basic configuration for the TypeScript language so that =.ts= files ac
 
 ** JavaScript
 #+begin_src emacs-lisp
-
+  ;;; --------------------------------------------------------------------------
+  
   (use-package js2-mode
      :hook (js-mode . js2-minor-mode)
      :mode ("\\.js\\'" "\\.mjs\\'")
@@ -2037,7 +2042,6 @@ This is a basic configuration for the TypeScript language so that =.ts= files ac
   (use-package swift-mode :defer t)
 #+end_src
 
-
 ** Flycheck
 This is more support for a language rather than a langage itself
 
@@ -2090,7 +2094,6 @@ This is the standard python mode setup.
 
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
-
 
   (defun mrf/load-python-file-hook ()
       (message "Running python file hook")
@@ -2167,7 +2170,6 @@ Elpy is an Emacs package to bring powerful Python editing to Emacs.  It combines
               :hook (elpy-mode . flycheck-mode))))
 
 #+end_src
-
 
 *** Auto-pep 8
 autopep8 automatically formats Python code to conform to the `PEP 8` style guide.  It uses the pycodestyle_ utility to determine what parts of the code needs to be formatted.  autopep8 is capable of fixing most of the formatting issues_ that can be reported by pycodestyle. Refer to the [[IMPORTANT][IMPORTANT]] section above for possible issues when autopep8 is installed.
@@ -2280,8 +2282,9 @@ Since Realgud is options (in our configuratrion), we add it's keybindings condit
 
 ** REALGud Keybindings
 #+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
 
-    (general-def c-mode-map
+  (general-def c-mode-map
       "C-c , j" 'realgud:cmd-jump
       "C-c , k" 'realgud:cmd-kill
       "C-c , s" 'realgud:cmd-step
@@ -2405,7 +2408,6 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
 
-
   (use-package projectile
     :diminish Proj
     :config (projectile-mode)
@@ -2462,7 +2464,8 @@ The =mrf/org-font-setup= function configures various text faces to tweak the siz
 ** Theme Override Values
 
 #+begin_src emacs-lisp
-
+  ;;; --------------------------------------------------------------------------
+  
   (defun mrf/org-theme-override-values ()
      (defface org-block-begin-line
         '((t (:underline "#1D2C39" :foreground "SlateGray" :background "#1D2C39")))
@@ -2555,7 +2558,6 @@ This section contains the basic configuration for =org-mode= plus the configurat
 
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
-  ;; -----------------------------------------------------------------
 
   (defun mrf/org-setup-agenda ()
      (setq org-agenda-custom-commands
@@ -2613,8 +2615,6 @@ This section contains the basic configuration for =org-mode= plus the configurat
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
 
-  ;; -----------------------------------------------------------------
-
   (defun mrf/org-setup-capture-templates ()
      (setq org-capture-templates
         `(("t" "Tasks / Projects")
@@ -2650,7 +2650,6 @@ This section contains the basic configuration for =org-mode= plus the configurat
 ** The main 'Org' package
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
-  ;; -----------------------------------------------------------------
 
   (mrf/org-theme-override-values)
 
@@ -2695,8 +2694,6 @@ This section contains the basic configuration for =org-mode= plus the configurat
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
 
-  ;; -----------------------------------------------------------------
-
   (use-package org-bullets
      :after org
     :hook (org-mode . org-bullets-mode)
@@ -2709,8 +2706,7 @@ This section contains the basic configuration for =org-mode= plus the configurat
 We use [[https://github.com/joostkremers/visual-fill-column][visual-fill-column]] to center =org-mode= buffers for a more pleasing writing experience as it centers the contents of the buffer horizontally to seem more like you are editing a document.  This is really a matter of personal preference so you can remove the block below if you don't like the behavior.
 
 #+begin_src emacs-lisp 
-
-  ;; -----------------------------------------------------------------
+  ;;; --------------------------------------------------------------------------
 
   (defun mrf/org-mode-visual-fill ()
     (setq visual-fill-column-width custom-org-fill-column
@@ -2727,8 +2723,6 @@ To execute or export code in =org-mode= code blocks, you'll need to set up =org-
 
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
-
-  ;; -----------------------------------------------------------------
 
   (with-eval-after-load 'org    
       (org-babel-do-load-languages
@@ -2749,8 +2743,6 @@ This snippet adds a hook to =org-mode= buffers so that =mrf/org-babel-tangle-con
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
 
-  ;; -----------------------------------------------------------------
-
   (with-eval-after-load 'org
     ;; This is needed as of Org 9.2
 
@@ -2770,7 +2762,7 @@ Org Roam is an extension to Org Mode which solves a couple of the biggest proble
 Org Roam solves these problems by making it easy to create topic-focused Org Files and link them together so that you can treat the information as nodes in a network rather than as hierarchical documents. You can think of it like a personal wiki!
 
 #+begin_src emacs-lisp 
-
+  ;;; --------------------------------------------------------------------------
   ;; (use-package emacsql)
   ;; (use-package emacsql-sqlite)
 
@@ -2822,7 +2814,7 @@ Typically you won’t want to pull in all of your Org Roam notes, so we’ll onl
 Here is a snippet that will find all the notes with a specific tag and then set your org-agenda-list with the corresponding note files.
 
 #+begin_src emacs-lisp 
-
+  ;;; --------------------------------------------------------------------------
   ;; The buffer you put this code in must have lexical-binding set to t!
   ;; See the final configuration at the end for more details.
 
@@ -2853,8 +2845,7 @@ One added benefit is that we can override the set of capture templates that get 
 This means that we can automatically create a new note with our project capture template if the note doesn’t already exist!
 
 #+begin_src emacs-lisp 
-
-
+  ;;; --------------------------------------------------------------------------
 
   (defun my/org-roam-project-finalize-hook ()
      "Adds the captured project file to `org-agenda-files' if the
@@ -2890,8 +2881,8 @@ If you want to quickly capture new notes and tasks with a single keybinding into
 
 Even though this file won’t have the timestamped filename, it will still be treated as a node in your Org Roam notes.
 #+begin_src emacs-lisp 
-
-
+  ;;; --------------------------------------------------------------------------
+  
   (defun my/org-roam-capture-inbox ()
      (interactive)
      (org-roam-capture- :node (org-roam-node-create)
@@ -2905,7 +2896,7 @@ If you’ve set up project note files like we mentioned earlier, you can set up 
 Much like the example before, we can either select a project that exists or automatically create a project note when it doesn’t exist yet.
 
 #+begin_src emacs-lisp 
-
+  ;;; --------------------------------------------------------------------------
 
   (defun my/org-roam-capture-task ()
     (interactive)
@@ -2926,6 +2917,8 @@ Much like the example before, we can either select a project that exists or auto
 The following snippet sets up a hook for all Org task state changes and then copies the completed (DONE) entry to today’s note file
 
 #+begin_src emacs-lisp 
+  ;;; --------------------------------------------------------------------------
+  
   (defun my/org-roam-copy-todo-to-today ()
      (interactive)
      (let ((org-refile-keep t) ;; Set this to nil to delete the original!
@@ -2952,7 +2945,6 @@ This snippet adds a hook to =org-mode= buffers so that source code blocks can be
 
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
-
   ;; Automatically tangle our Configure.org config file when we save it
   ;; Org files that should use this need to add a '#+auto_tangle: t'
   ;; in the org file.
@@ -2968,8 +2960,8 @@ While there is standard markdown support built into =org-mode=, this additional 
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
 
-(with-eval-after-load 'org
-  (require 'ox-gfm nil t))
+  (with-eval-after-load 'org
+      (require 'ox-gfm nil t))
 #+end_src
 
 
@@ -3026,7 +3018,6 @@ The following packages are some additional quality of life features.
 Marginalia are marks or annotations placed at the margin of the page of a book  or in this case helpful colorful annotations placed at the margin of the  minibuffer for your completion candidates. Marginalia can only add annotations  to the completion candidates. It cannot modify the appearance of the candidates  themselves, which are shown unaltered as supplied by the original command.
  
 #+begin_src emacs-lisp
-
   ;;; --------------------------------------------------------------------------
   
   (if (equal completion-handler 'enable-vertico)
@@ -3044,6 +3035,7 @@ This package provides an orderless completion style that divides the pattern int
 
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
+  
   (if (equal completion-handler 'enable-vertico)
       (use-package orderless
   	:custom
@@ -3056,8 +3048,9 @@ This package provides an orderless completion style that divides the pattern int
 Consult provides search and navigation commands based on the Emacs completion function completing-read. Completion allows you to quickly select an item from a list of candidates. Consult offers asynchronous and interactive consult-grep and  consult-ripgrep commands, and the line-based search command consult-line. Furthermore Consult provides an advanced buffer switching command consult-buffer to switch between buffers, recently opened files, bookmarks and buffer-like candidates from other sources. Some of the Consult commands are enhanced versions of built-in Emacs commands.
 
 #+begin_src emacs-lisp
-
+  ;;; --------------------------------------------------------------------------
   ;; Example configuration for Consult
+  
   (if (equal completion-handler 'enable-vertico)
       (use-package consult
   	:straight t
@@ -3192,10 +3185,9 @@ Consult provides search and navigation commands based on the Emacs completion fu
   
 #+end_src
 
-** Golden Ratio)
+** Golden Ratio
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
-
   ;; Golen Ratio
 
   (if enable-golden-ratio
@@ -3221,7 +3213,6 @@ Consult provides search and navigation commands based on the Emacs completion fu
           :config
           (golden-ratio-mode 1)))
 #+end_src
-
 
 ** Ace Window
 [[https://github.com/abo-abo/ace-window][ace-window]] is a package for selecting a window to switch to. Like =other-window= but better!
@@ -3293,8 +3284,7 @@ A great package that allows moving up and down the undo-redo tree.
 
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
-
-  ;; A cleaner undo package from undo-tree.
+  ;; A cleaner and simpler undo package.
 
   (if enable-vundo
       (use-package vundo
@@ -3309,9 +3299,9 @@ A great package that allows moving up and down the undo-redo tree.
 ** Undo-Tree
 #+begin_src emacs-lisp
 
-
-  ;; undo-tree handling
-  ;; NOTE: vundo is cleaner looking. Both are great!
+  ;;; --------------------------------------------------------------------------
+  ;; Full-featured undo-tree handling. Look to Vundo for something a little
+  ;; simpler.
 
   (defun mrf/undo-tree-hook ()
       (set-frame-width (selected-frame) 20))
@@ -3341,7 +3331,6 @@ A great package that allows moving up and down the undo-redo tree.
 
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
-
   ;; helpful package
 
   (if (equal completion-handler 'enable-ivy-counsel-swiper)
@@ -3460,7 +3449,6 @@ For more thoughts on Eshell, check out these articles by Pierre Neidhardt:
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
 
-
   (defun efs/configure-eshell ()
     ;; Save command history when commands are entered
     (add-hook 'eshell-pre-command-hook 'eshell-save-some-history)
@@ -3515,6 +3503,7 @@ Using [[https://github.com/seagle0128/doom-modeline][doom-modeline]] is a very a
   ;;; --------------------------------------------------------------------------
 
   (use-package all-the-icons)
+  (use-package nerd-icons)
 
   ;; (use-package doom-modeline
   ;;   :diabled
@@ -3526,7 +3515,7 @@ Using [[https://github.com/seagle0128/doom-modeline][doom-modeline]] is a very a
 Here are some helpful functions.
 
 #+begin_src emacs-lisp  :tangle no
-
+  ;;; --------------------------------------------------------------------------
   ;; Functions to insert the buffer file name at the current cursor position
   ;;
   (defun mrf/insert-buffer-full-name-at-point ()
@@ -3543,7 +3532,8 @@ Here are some helpful functions.
 GNU Hyperbole (pronounced Ga-new Hi-per-bo-lee), or just Hyperbole, is like Markdown for hypertext. Hyperbole automatically recognizes dozens of common, pre-existing patterns in any buffer regardless of mode and can instantly activate them as hyperbuttons with a single key: email addresses, URLs, grep -n outputs, programming backtraces, sequences of Emacs keys, programming identifiers, Texinfo and Info cross-references, Org links, Markdown links and on and on. All you do is load Hyperbole and then your text comes to life with no extra effort or complex formatting.
 
 #+begin_src emacs-lisp :tangle no 
-
+  ;;; --------------------------------------------------------------------------
+  
   (unless (package-installed-p 'hyperbole)
     (package-refresh-contents)
     (package-install 'hyperbole))
@@ -3552,7 +3542,8 @@ GNU Hyperbole (pronounced Ga-new Hi-per-bo-lee), or just Hyperbole, is like Mark
 
 ** ChatGPT
 #+begin_src emacs-lisp :tangle no
-
+  ;;; --------------------------------------------------------------------------
+  
   (use-package chatgpt-shell
      :custom
      (chatgpt-shell-openai-key "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"))
@@ -3561,7 +3552,6 @@ GNU Hyperbole (pronounced Ga-new Hi-per-bo-lee), or just Hyperbole, is like Mark
 ** Centaur Tabs
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
-
   ;; Enable tabs for each buffer
 
   (if (equal enable-centaur-tabs t)
@@ -3585,6 +3575,7 @@ GNU Hyperbole (pronounced Ga-new Hi-per-bo-lee), or just Hyperbole, is like Mark
   ;;; --------------------------------------------------------------------------
 
   (use-package diff-hl)
+  
 #+end_src
 
 ** Pulsar
@@ -3599,7 +3590,7 @@ GNU Hyperbole (pronounced Ga-new Hi-per-bo-lee), or just Hyperbole, is like Mark
         (define-key map (kbd "C-c h h") #'pulsar-highlight-line))
      :custom
      (pulsar-pulse t)
-     (pulsar-delay 0.055)
+     (pulsar-delay 0.10)
      (pulsar-iterations 10)
      (pulsar-face 'pulsar-magenta)
      (pulsar-highlight-face 'pulsar-yellow))
@@ -3616,7 +3607,6 @@ Designate any buffer to “popup” status, and it will stay out of your way. Di
 
   (use-package popper
     :defer t
-    :straight t
     :init
     (setq popper-reference-buffers
        '("\\*Messages\\*"
@@ -3734,7 +3724,6 @@ Dired, by default, opens up multiple windows - one for each directory. It would 
 
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
-
   ;; Single Window dired - don't continually open new buffers
 
   (defun mrf/dired-single-keymap-init ()
@@ -3760,7 +3749,8 @@ Some final configuratiion to be done at the end of this configuration.
 
 ** Initial scratch message
 #+begin_src emacs-lisp
-
+  ;;; --------------------------------------------------------------------------
+  
   (setq-default initial-scratch-message
     (concat ";; Hello, World and Happy hacking! "
         user-login-name "\n;; Press C-c RET (C-c C-m) to open the Mitch Menu\n\n"))
@@ -3769,7 +3759,8 @@ Some final configuratiion to be done at the end of this configuration.
 
 ** Mitch's Menu Keybinding
 #+begin_src emacs-lisp
-
+  ;;; --------------------------------------------------------------------------
+  
   (defvar mmm-keys-minor-mode-map
       (let ((map (make-sparse-keymap)))
   	(define-key map (kbd "C-c RET d") 'dashboard-open)
@@ -3798,13 +3789,11 @@ Some final configuratiion to be done at the end of this configuration.
 
 #+end_src
 
-
 ** Ignore Line Number Mode
 The following is a list of major mode-hooks variables that are set so that they don't follow the normal global line number mode. If there is any mode that doesn't appear here, more than likely it will have line numbers added. Just add the hook name here to make it so that major mode not have line numbers. This doesn't effect minor modes.
 
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
-
   ;; Ignore Line Numbers for the following modes:
 
   ;; Line #'s appear everywhere
@@ -3836,7 +3825,6 @@ This little function toggles between a larger font size and the default font siz
 
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
-
   ;; Frame font selection
 
   (defvar mrf/font-size-slot 1)
@@ -3880,8 +3868,9 @@ This little function toggles between a larger font size and the default font siz
 Som key kindings to switch to different screen resolutions.
 
 #+begin_src emacs-lisp
-
-    ;; Some alternate keys below....
+  ;;; --------------------------------------------------------------------------
+  ;; Some alternate keys below....
+  
   (general-define-key
      "C-c 1" 'use-small-display-font)
 
@@ -3897,10 +3886,10 @@ Som key kindings to switch to different screen resolutions.
 #+end_src
 
 *** Frame support functions
-These functions are used to configure the main frame font size. Based upon a monitor's size, it may be necessary to make the font larger or smaller. Each function is specifically broken out only so that the =describe-key= will show something other than just ~lambda~.
+These functions are used to configure the main frame font size. Based upon a monitor's size, it may be necessary to make the font larger or smaller.
 
 #+begin_src emacs-lisp 
-
+  ;;; --------------------------------------------------------------------------
   ;; Frame support functions
 
   (defun mrf/set-frame-font (slot)
