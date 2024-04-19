@@ -1510,11 +1510,14 @@ should be taken into consideration when providing a width."
 
 (if (equal enable-anaconda t)
    (use-package anaconda-mode
-      :bind (("C-c C-x" . next-error))
-      :config
-      (require 'pyvenv)
-      :hook
-      (python-mode-hook . anaconda-eldoc-mode)))
+      :bind (:map python-mode-map
+    	      ("C-c g o" . anaconda-mode-find-definitions-other-frame)
+    	      ("C-c g g" . anaconda-mode-find-definitions)
+  	      ("C-c C-x" . next-error))
+       :config
+       (require 'pyvenv)
+       :hook
+       (python-mode-hook . anaconda-eldoc-mode)))
 
 ;;; --------------------------------------------------------------------------
 
@@ -1526,40 +1529,29 @@ should be taken into consideration when providing a width."
             (elpy-rpc-python-command "python3")
             (display-fill-column-indicator-mode 1)
             (highlight-indentation-mode 0)
-            :config
-            (message "elpy loaded")
-            (elpy-enable))
+  	  :bind (:map python-mode-map
+  		    ("C-c g a" . elpy-goto-assignment)
+  		    ("C-c g o" . elpy-goto-definition-other-window)
+  		    ("C-c g g" . elpy-goto-definition)
+  		    ("C-c g ?" . elpy-doc))
+  	  :config
+  	  (message "elpy loaded")
+  	  (elpy-enable))
         ;; Enable Flycheck
         (use-package flycheck
-            :after elpy
-            :straight (flycheck :type git :flavor melpa
+  	  :after elpy
+  	  :straight (flycheck :type git :flavor melpa
                           :host github
                           :repo "flycheck/flycheck")
-            :config
-            (setq elpy-modules (delq 'elpy-module-flymake elpy-modules))
-            :hook (elpy-mode . flycheck-mode))))
+  	  :config
+  	  (setq elpy-modules (delq 'elpy-module-flymake elpy-modules))
+  	  :hook (elpy-mode . flycheck-mode))))
 
 ;;; --------------------------------------------------------------------------
 
 (use-package py-autopep8
    :after python-mode
    :hook ((python-mode) . py-autopep8-mode))
-
-;;; --------------------------------------------------------------------------
-
-(if (equal enable-elpy t)
-    (bind-keys :map python-mode-map
-      ("C-c g a" . elpy-goto-assignment)
-      ("C-c g o" . elpy-goto-definition-other-window)
-      ("C-c g g" . elpy-goto-definition)
-      ("C-c g ?" . elpy-doc)))
-
-;;; --------------------------------------------------------------------------
-
-(if (equal enable-anaconda t)
-    (bind-keys :map python-mode-map
-      ("C-c g o" . anaconda-mode-find-definitions-other-frame)
-      ("C-c g g" . anaconda-mode-find-definitions)))
 
 ;;; --------------------------------------------------------------------------
 
@@ -1580,14 +1572,17 @@ should be taken into consideration when providing a width."
 
 (when (equal debug-adapter 'enable-dap-mode)
     ;; (dolist (m (list python-mode-map typescript-ts-mode-map c-mode-map c++-mode-map))
-      (bind-keys :map prog-mode-map
-            ("C-c ." . dap-hydra/body)))
-
+    (use-package dap
+      :defer t
+      :bind (:map prog-mode-map
+  		("C-c ." . dap-hydra/body))))
 
 (when (equal debug-adapter 'enable-dape)
     ;; (dolist (m (list python-mode-map typescript-ts-mode-map c-mode-map c++-mode-map))
-      (bind-keys :map prog-mode-map
-            ("C-c ." . dape-hydra/body)))
+    (use-package dape
+      :defer t
+      :bind (:map prog-mode-map
+  		("C-c ." . dape-hydra/body))))
 
 ;;; --------------------------------------------------------------------------
 
