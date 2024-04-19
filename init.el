@@ -42,7 +42,7 @@
 
 (straight-use-package 'use-package)
 
-(setq use-package-compute-statistics nil
+(setq use-package-compute-statistics t
     use-package-verbose t
     use-package-always-ensure nil
     use-package-always-demand nil
@@ -265,8 +265,6 @@ should be taken into consideration when providing a width."
 
 ;;; --------------------------------------------------------------------------
 
-(use-package general :demand t :straight t)
-
 (setq-default
    ;; enable smooth scrolling.
    pixel-scroll-precision-mode t
@@ -312,6 +310,11 @@ should be taken into consideration when providing a width."
 ;; (use-package esup
 ;;     :ensure t
 ;;     :pin melpa)
+
+(defun mrf/process-prog-mode-hook ()
+    (message ">>> Executing prog-mode-hook"))
+
+;; (add-hook 'prog-mode-hook #'mrf/process-prog-mode-hook)
 
 ;;; --------------------------------------------------------------------------
 ;;; Set a variable that represents the actual emacs configuration directory.
@@ -586,6 +589,7 @@ should be taken into consideration when providing a width."
    (diminish 'tree-sitter-mode "ts")
    (diminish 'ts-fold-mode)
    (diminish 'counsel-mode)
+   (diminish 'golden-ratio-mode)
    (diminish 'company-box-mode)
    (diminish 'company-mode))
 
@@ -683,19 +687,21 @@ should be taken into consideration when providing a width."
 
 ;;; --------------------------------------------------------------------------
 
-;; General Keybinding
-
-(require 'general)
-
-(general-def prog-mode-map
-   "C-c ]"  'indent-region
-   "C-c }"  'indent-region)
-
-(general-define-key
-   "C-x C-j" 'dired-jump)
+(bind-key "C-c ]" 'indent-region prog-mode-map)
+(bind-key "C-c }" 'indent-region prog-mode-map)
+(bind-key "C-x C-j" 'dired-jump)
 
 (use-package evil-nerd-commenter
-   :bind ("M-/" . evilnc-comment-or-uncomment-lines))
+    :bind ("M-/" . evilnc-comment-or-uncomment-lines))
+
+;;
+;; A little better than just the typical "C-x o"
+;; windmove is a built-in Emacs package.
+;;
+(global-set-key (kbd "C-c <left>")  'windmove-left)
+(global-set-key (kbd "C-c <right>") 'windmove-right)
+(global-set-key (kbd "C-c <up>")    'windmove-up)
+(global-set-key (kbd "C-c <down>")  'windmove-down)
 
 ;;
 ;; Ctl-mouse to adjust/scale fonts will be disabled.
@@ -706,6 +712,8 @@ should be taken into consideration when providing a width."
 (global-unset-key (kbd "C-<mouse-5>"))
 (global-unset-key (kbd "C-<wheel-down>"))
 (global-unset-key (kbd "C-<wheel-up>"))
+
+
 
 ;;; --------------------------------------------------------------------------
 
@@ -751,9 +759,9 @@ should be taken into consideration when providing a width."
 (defun mrf/print-custom-theme-name ()
    (message (format "Custom theme is %S" loaded-theme)))
 
-(general-define-key
-   "C-= =" 'mrf/load-theme-from-selector
-   "C-= ?" 'mrf/print-custom-theme-name)
+(bind-keys
+    ("C-= =" . mrf/load-theme-from-selector)
+    ("C-= ?" . mrf/print-custom-theme-name))
 
 ;;; --------------------------------------------------------------------------
 (mrf/load-theme-from-selector)
@@ -763,19 +771,6 @@ should be taken into consideration when providing a width."
    (load-theme 'material t))
 
 ;;; --------------------------------------------------------------------------
-;;; Automatic Package Updates
-
-(use-package auto-package-update
-    :ensure t
-    :custom
-    (auto-package-update-interval 7)
-    (auto-package-update-prompt-before-update t)
-    (auto-package-update-hide-results t)
-    :config
-    (auto-package-update-maybe)
-    (auto-package-update-at-time "09:00"))
-
-;;; --------------------------------------------------------------------------
 ;; YASnippets
 
 (use-package yasnippet
@@ -783,7 +778,6 @@ should be taken into consideration when providing a width."
               :files ("yasnippet.el" "snippets" "yasnippet-pkg.el")
               :host github
               :repo "joaotavora/yasnippet")
-   :defer t
    :config
    (yas-global-mode t)
    (define-key yas-minor-mode-map (kbd "<tab>") nil)
@@ -961,6 +955,7 @@ should be taken into consideration when providing a width."
 ;;; --------------------------------------------------------------------------
 
 (use-package treemacs-all-the-icons
+    :defer t
  :if (display-graphic-p))
 
 ;;; --------------------------------------------------------------------------
@@ -981,6 +976,7 @@ should be taken into consideration when providing a width."
 
 (use-package lsp-mode
     :defer t
+    :after eglot
     :commands (lsp lsp-deferred)
     :hook (lsp-mode . mrf/lsp-mode-setup)
     :init
@@ -1002,19 +998,18 @@ should be taken into consideration when providing a width."
                 lsp-ui-doc-include-signature t
                 lsp-ui-doc-use-childframe t)
     :commands lsp-ui-mode
+    :bind (:map lsp-ui-mode-map
+          ("C-c l d" . lsp-ui-doc-focus-frame))
     :custom
     (lsp-ui-doc-position 'bottom)
     :hook (lsp-mode . lsp-ui-mode))
 
-(general-def lsp-ui-mode-map
-    "C-c l d" 'lsp-ui-doc-focus-frame)
-
 (use-package lsp-treemacs
     :after lsp
+    :bind (:map prog-mode-map
+  	    ("C-c t" . treemacs))
     :config
-    (lsp-treemacs-sync-mode 1)
-    (general-def prog-mode-map
-      "C-c t" 'treemacs))
+    (lsp-treemacs-sync-mode 1))
 
 (if (equal completion-handler 'enable-ivy-counsel-swiper)
     (use-package lsp-ivy
@@ -1031,7 +1026,7 @@ should be taken into consideration when providing a width."
   (if (equal debug-adapter 'enable-dape)
       (progn
         (use-package dape
-            :after (jsonrpc)
+            :after jsonrpc
             :defer t
             ;; :defer t
             ;; To use window configuration like gud (gdb-mi)
@@ -1226,43 +1221,25 @@ should be taken into consideration when providing a width."
                     _sS_: List sessions
                     _sR_: Session Repl
 "
-   ("n" dap-next)
-   ("i" dap-step-in)
-   ("o" dap-step-out)
-   ("." dap-next)
-   ("/" dap-step-in)
-   ("," dap-step-out)
-   ("c" dap-continue)
-   ("r" dap-restart-frame)
-   ("ss" dap-switch-session)
-   ("st" dap-switch-thread)
-   ("sf" dap-switch-stack-frame)
-   ("su" dap-up-stack-frame)
-   ("sd" dap-down-stack-frame)
-   ("sl" dap-ui-locals)
-   ("sb" dap-ui-breakpoints)
-   ("sR" dap-ui-repl)
-   ("sS" dap-ui-sessions)
-   ("bb" dap-breakpoint-toggle)
-   ("ba" dap-breakpoint-add)
-   ("bd" dap-breakpoint-delete)
-   ("bc" dap-breakpoint-condition)
-   ("bh" dap-breakpoint-hit-condition)
-   ("bl" dap-breakpoint-log-message)
-   ("dd" dap-debug)
-   ("dr" dap-debug-recent)
-   ("ds" dap-debug-restart)
-   ("dl" dap-debug-last)
-   ("de" dap-debug-edit-template)
-   ("ee" dap-eval)
-   ("ea" dap-ui-expressions-add)
-   ("er" dap-eval-region)
-   ("es" dap-eval-thing-at-point)
-   ("dx" mrf/end-debug-session)
-   ("dX" mrf/delete-all-debug-sessions)
-   ("x" nil "exit Hydra" :color yellow)
-   ("q" mrf/end-debug-session "quit" :color blue)
-   ("Q" mrf/delete-all-debug-sessions :color red))
+    ("n" dap-next)    ("i" dap-step-in)    ("o" dap-step-out)   ("." dap-next)
+    ("/" dap-step-in) ("," dap-step-out)   ("c" dap-continue)   ("r" dap-restart-frame)
+
+    ("ss" dap-switch-session) ("st" dap-switch-thread)    ("sf" dap-switch-stack-frame)
+    ("su" dap-up-stack-frame) ("sd" dap-down-stack-frame) ("sl" dap-ui-locals)
+    ("sb" dap-ui-breakpoints) ("sR" dap-ui-repl)          ("sS" dap-ui-sessions)
+
+    ("bb" dap-breakpoint-toggle)    ("ba" dap-breakpoint-add)           ("bd" dap-breakpoint-delete)
+    ("bc" dap-breakpoint-condition) ("bh" dap-breakpoint-hit-condition) ("bl" dap-breakpoint-log-message)
+
+    ("dd" dap-debug)      ("dr" dap-debug-recent) ("ds" dap-debug-restart)
+    ("dl" dap-debug-last) ("de" dap-debug-edit-template)
+
+    ("ee" dap-eval) ("ea" dap-ui-expressions-add) ("er" dap-eval-region) ("es" dap-eval-thing-at-point)
+
+    ("dx" mrf/end-debug-session) ("dX" mrf/delete-all-debug-sessions)
+
+    ("x" nil "exit Hydra" :color yellow) ("q" mrf/end-debug-session "quit" :color blue)
+    ("Q" mrf/delete-all-debug-sessions :color red))
 
 ;;; --------------------------------------------------------------------------
 ;;; Swiper and IVY mode
@@ -1393,35 +1370,34 @@ should be taken into consideration when providing a width."
    :straight (ts-fold :type git
               :host github
               :repo "emacs-tree-sitter/ts-fold")
-   :config
-   (general-define-key
-      "C-<tab>" 'ts-fold-toggle
-      "C-c f"   'ts-fold-open-all))
+    :bind (("C-<tab>" . ts-fold-toggle)
+  	 ("C-c f"   . ts-fold-open-all)))
 
 ;;; --------------------------------------------------------------------------
 
 (if (equal debug-adapter 'enable-dap-mode)
-   (use-package typescript-ts-mode
+    (use-package typescript-ts-mode
       ;; :after (dap-mode)
       :mode "\\.ts\\'"
       :hook
       (typescript-ts-mode . lsp-deferred)
       (js2-mode . lsp-deferred)
+      :bind (:map typescript-mode-map
+  		("C-c ." . dap-hydra/body))
       :config
       (setq typescript-indent-level 4)
       (dap-node-setup)))
 
 (if (equal debug-adapter 'enable-dape)
-   (use-package typescript-ts-mode
+    (use-package typescript-ts-mode
       :after (dape-mode)
       :mode ("\\.ts\\'")
       :hook
       (typescript-ts-mode . lsp-deferred)
       (js2-mode . lsp-deferred)
+      :bind (:map typescript-mode-map
+  		("C-c ." . dape-hydra/body))
       :config
-      (general-define-key
-       :keymaps '(typescript-ts-mode-map)
-       "C-c ." 'dape-hydra/body)
       (setq typescript-indent-level 4)))
 
 (add-to-list 'auto-mode-alist '("\\.ts\\'" . typescript-ts-mode))
@@ -1430,16 +1406,14 @@ should be taken into consideration when providing a width."
 
 (use-package js2-mode
    :hook (js-mode . js2-minor-mode)
+    :bind (:map js2-mode-map
+              ("{" . paredit-open-curly)
+  	    ("}" . paredit-close-curly-and-newline))
    :mode ("\\.js\\'" "\\.mjs\\'")
    :custom (js2-highlight-level 3))
 
 (use-package ac-js2
    :hook (js2-mode . ac-js2-mode))
-
-(general-define-key
-   :keymaps '(js-mode-map)
-   "{" 'paredit-open-curly
-   "}" 'paredit-close-curly-and-newline)
 
 (add-to-list 'auto-mode-alist '("\\.json$" . js-mode))
 
@@ -1478,10 +1452,12 @@ should be taken into consideration when providing a width."
 ;;; --------------------------------------------------------------------------
 
 (use-package flycheck
-  :config
-  (global-flycheck-mode))
+    :defer t
+    :config
+    (global-flycheck-mode))
 
-(use-package flycheck-package)
+(use-package flycheck-package
+    :after flycheck)
 
 (eval-after-load 'flycheck
   '(flycheck-package-setup))
@@ -1514,7 +1490,8 @@ should be taken into consideration when providing a width."
 
 (defun mrf/python-mode-triggered ()
     (message "Calling mrf/python-mode-triggered")
-    (treemacs t))
+    (eglot-ensure)
+    (set-fill-column 80))
 
 (use-package python-mode
     :defer t
@@ -1571,20 +1548,18 @@ should be taken into consideration when providing a width."
 ;;; --------------------------------------------------------------------------
 
 (if (equal enable-elpy t)
- (general-define-key
-    :keymaps '(python-mode-map)
-    "C-c g a"    'elpy-goto-assignment
-    "C-c g o"    'elpy-goto-definition-other-window
-    "C-c g g"    'elpy-goto-definition
-    "C-c g ?"    'elpy-doc))
+    (bind-keys :map python-mode-map
+      ("C-c g a" . elpy-goto-assignment)
+      ("C-c g o" . elpy-goto-definition-other-window)
+      ("C-c g g" . elpy-goto-definition)
+      ("C-c g ?" . elpy-doc)))
 
 ;;; --------------------------------------------------------------------------
 
 (if (equal enable-anaconda t)
-   (general-define-key
-      :keymaps '(python-mode-map)
-      "C-c g o"    'anaconda-mode-find-definitions-other-frame
-      "C-c g g"    'anaconda-mode-find-definitions))
+    (bind-keys :map python-mode-map
+      ("C-c g o" . anaconda-mode-find-definitions-other-frame)
+      ("C-c g g" . anaconda-mode-find-definitions)))
 
 ;;; --------------------------------------------------------------------------
 
@@ -1595,24 +1570,24 @@ should be taken into consideration when providing a width."
 (defalias 'quote-region
    (kmacro "C-w \" \" <left> C-y <right>"))
 
-(general-define-key
-   :keymaps '(python-mode-map)
-   "C-c C-q"    'quote-region
-   "C-c q"      'quote-word
-   "C-c |"      'display-fill-column-indicator-mode)
+(eval-after-load "python"
+    #'(bind-keys :map python-mode-map
+  	("C-c C-q" . quote-region)
+  	("C-c q"   . quote-word)
+  	("C-c |"   . display-fill-column-indicator-mode)))
 
 ;;; --------------------------------------------------------------------------
 
 (when (equal debug-adapter 'enable-dap-mode)
-   (general-define-key
-      :keymaps '(python-mode-map typescript-ts-mode-map c-mode-map c++-mode-map)
-      "C-c ."      'dap-hydra/body)
-   )
+    ;; (dolist (m (list python-mode-map typescript-ts-mode-map c-mode-map c++-mode-map))
+      (bind-keys :map prog-mode-map
+            ("C-c ." . dap-hydra/body)))
 
-(if (equal debug-adapter 'enable-dape)
-   (general-define-key
-      :keymaps '(python-mode-map typescript-ts-mode-map c-mode-map c++-mode-map)
-      "C-c ."      'dape-hydra/body))
+
+(when (equal debug-adapter 'enable-dape)
+    ;; (dolist (m (list python-mode-map typescript-ts-mode-map c-mode-map c++-mode-map))
+      (bind-keys :map prog-mode-map
+            ("C-c ." . dape-hydra/body)))
 
 ;;; --------------------------------------------------------------------------
 
@@ -1638,40 +1613,42 @@ should be taken into consideration when providing a width."
 
 ;;; --------------------------------------------------------------------------
 
-(general-def c-mode-map
-    "C-c , j" 'realgud:cmd-jump
-    "C-c , k" 'realgud:cmd-kill
-    "C-c , s" 'realgud:cmd-step
-    "C-c , n" 'realgud:cmd-next
-    "C-c , q" 'realgud:cmd-quit
-    "C-c , F" 'realgud:window-bt
-    "C-c , U" 'realgud:cmd-until
-    "C-c , X" 'realgud:cmd-clear
-    "C-c , !" 'realgud:cmd-shell
-    "C-c , b" 'realgud:cmd-break
-    "C-c , f" 'realgud:cmd-finish
-    "C-c , D" 'realgud:cmd-delete
-    "C-c , +" 'realgud:cmd-enable
-    "C-c , R" 'realgud:cmd-restart
-    "C-c , -" 'realgud:cmd-disable
-    "C-c , B" 'realgud:window-brkpt
-    "C-c , c" 'realgud:cmd-continue
-    "C-c , e" 'realgud:cmd-eval-dwim
-    "C-c , Q" 'realgud:cmd-terminate
-    "C-c , T" 'realgud:cmd-backtrace
-    "C-c , h" 'realgud:cmd-until-here
-    "C-c , u" 'realgud:cmd-older-frame
-    "C-c , 4" 'realgud:cmd-goto-loc-hist-4
-    "C-c , 5" 'realgud:cmd-goto-loc-hist-5
-    "C-c , 6" 'realgud:cmd-goto-loc-hist-6
-    "C-c , 7" 'realgud:cmd-goto-loc-hist-7
-    "C-c , 8" 'realgud:cmd-goto-loc-hist-8
-    "C-c , 9" 'realgud:cmd-goto-loc-hist-9
-    "C-c , d" 'realgud:cmd-newer-frame
-    "C-c , RET" 'realgud:cmd-repeat-last
-    "C-c , E" 'realgud:cmd-eval-at-point
-    "C-c , I" 'realgud:cmdbuf-info-describe
-    "C-c , C-i" 'realgud:cmd-info-breakpoints)
+(if (package-installed-p 'realgud)
+    (use-package cc-mode
+      :bind (:map c-mode-map
+  		("C-c , j" . realgud:cmd-jump)
+  		("C-c , k" . realgud:cmd-kill)
+  		("C-c , s" . realgud:cmd-step)
+  		("C-c , n" . realgud:cmd-next)
+  		("C-c , q" . realgud:cmd-quit)
+  		("C-c , F" . realgud:window-bt)
+  		("C-c , U" . realgud:cmd-until)
+  		("C-c , X" . realgud:cmd-clear)
+  		("C-c , !" . realgud:cmd-shell)
+  		("C-c , b" . realgud:cmd-break)
+  		("C-c , f" . realgud:cmd-finish)
+  		("C-c , D" . realgud:cmd-delete)
+  		("C-c , +" . realgud:cmd-enable)
+  		("C-c , R" . realgud:cmd-restart)
+  		("C-c , -" . realgud:cmd-disable)
+  		("C-c , B" . realgud:window-brkpt)
+  		("C-c , c" . realgud:cmd-continue)
+  		("C-c , e" . realgud:cmd-eval-dwim)
+  		("C-c , Q" . realgud:cmd-terminate)
+  		("C-c , T" . realgud:cmd-backtrace)
+  		("C-c , h" . realgud:cmd-until-here)
+  		("C-c , u" . realgud:cmd-older-frame)
+  		("C-c , 4" . realgud:cmd-goto-loc-hist-4)
+  		("C-c , 5" . realgud:cmd-goto-loc-hist-5)
+  		("C-c , 6" . realgud:cmd-goto-loc-hist-6)
+  		("C-c , 7" . realgud:cmd-goto-loc-hist-7)
+  		("C-c , 8" . realgud:cmd-goto-loc-hist-8)
+  		("C-c , 9" . realgud:cmd-goto-loc-hist-9)
+  		("C-c , d" . realgud:cmd-newer-frame)
+  		("C-c , RET" . realgud:cmd-repeat-last)
+  		("C-c , E" . realgud:cmd-eval-at-point)
+  		("C-c , I" . realgud:cmdbuf-info-describe)
+  		("C-c , C-i" . realgud:cmd-info-breakpoints))))
 
 ;;; --------------------------------------------------------------------------
 
@@ -1936,9 +1913,9 @@ should be taken into consideration when providing a width."
    :defer t
    :commands (org-capture org-agenda)
    :hook (org-mode . mrf/org-mode-setup)
+    :bind (:map org-mode-map
+  	("C-c e" . org-edit-src-code))
    :config
-   (general-def org-mode-map
-      "C-c e" 'org-edit-src-code)
    ;; Save Org buffers after refiling!
    (advice-add 'org-refile :after 'org-save-all-org-buffers)
    (setq org-tag-alist
@@ -2373,9 +2350,7 @@ capture was not aborted."
 ;;; --------------------------------------------------------------------------
 
 (use-package ace-window
-   :config
-   (general-define-key
-      "M-o" 'ace-window))
+    :bind ("M-o" . ace-window))
 
 ;;; --------------------------------------------------------------------------
 
@@ -2588,27 +2563,25 @@ capture was not aborted."
 ;;; --------------------------------------------------------------------------
 
 (use-package popper
-  :defer t
-  :init
-  (setq popper-reference-buffers
-     '("\\*Messages\\*"
-       "\\*scratch\\*"
-       "\\*ielm\\*"
-         "Output\\*$"
-         "\\*Async Shell Command\\*"
-       "^\\*eshell.*\\*$" eshell-mode ;eshell as a popup
-         "^\\*shell.*\\*$"  shell-mode  ;shell as a popup
-         "^\\*term.*\\*$"   term-mode   ;term as a popup
-         "^\\*vterm.*\\*$"  vterm-mode  ;vterm as a popup
-         help-mode
-         compilation-mode))
-  (popper-mode +1)
-  (popper-echo-mode +1))
-
-(general-define-key
-   "C-`"   'popper-toggle
-   "M-`"   'popper-cycle
-   "C-M-`" 'popper-toggle-type)
+    :defer t
+    :bind (("C-`"   . popper-toggle)
+  	 ("M-`"   . popper-cycle)
+  	 ("C-M-`" . popper-toggle-type))
+    :init
+    (setq popper-reference-buffers
+      '("\\*Messages\\*"
+  	   "\\*scratch\\*"
+  	   "\\*ielm\\*"
+             "Output\\*$"
+             "\\*Async Shell Command\\*"
+  	   "^\\*eshell.*\\*$" eshell-mode ;eshell as a popup
+             "^\\*shell.*\\*$"  shell-mode  ;shell as a popup
+             "^\\*term.*\\*$"   term-mode   ;term as a popup
+             "^\\*vterm.*\\*$"  vterm-mode  ;vterm as a popup
+             help-mode
+             compilation-mode))
+    (popper-mode +1)
+    (popper-echo-mode +1))
 
 ;;; --------------------------------------------------------------------------
 
@@ -2745,17 +2718,10 @@ capture was not aborted."
 ;;; --------------------------------------------------------------------------
 ;; Some alternate keys below....
 
-(general-define-key
-   "C-c 1" 'use-small-display-font)
-
-(general-define-key
-   "C-c 2" 'use-medium-display-font)
-
-(general-define-key
-   "C-c 3" 'use-large-display-font)
-
-(general-define-key
-   "C-c 4" 'use-x-large-display-font)
+(bind-keys ("C-c 1". use-small-display-font)
+    ("C-c 2". use-medium-display-font)
+    ("C-c 3". use-large-display-font)
+    ("C-c 4". use-x-large-display-font))
 
 ;;; --------------------------------------------------------------------------
 ;; Frame support functions

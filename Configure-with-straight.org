@@ -83,7 +83,7 @@ This is the standard format of a =lisp= header that should appear for all =lisp=
 
   (straight-use-package 'use-package)
 
-  (setq use-package-compute-statistics nil
+  (setq use-package-compute-statistics t
       use-package-verbose t
       use-package-always-ensure nil
       use-package-always-demand nil
@@ -338,8 +338,6 @@ Other variables are also defined here that define other emacs behaviors and defa
 
   ;;; --------------------------------------------------------------------------
   
-  (use-package general :demand t :straight t)
-
   (setq-default
      ;; enable smooth scrolling.
      pixel-scroll-precision-mode t
@@ -391,6 +389,11 @@ Benchmark Emacs Startup time without ever leaving your Emacs.
   ;; (use-package esup
   ;;     :ensure t
   ;;     :pin melpa)
+
+  (defun mrf/process-prog-mode-hook ()
+      (message ">>> Executing prog-mode-hook"))
+
+  ;; (add-hook 'prog-mode-hook #'mrf/process-prog-mode-hook)
 
 #+end_src
 
@@ -736,6 +739,7 @@ It's nice to know that Emacs is somewhat working. To help this along, we set the
      (diminish 'tree-sitter-mode "ts")
      (diminish 'ts-fold-mode)
      (diminish 'counsel-mode)
+     (diminish 'golden-ratio-mode)
      (diminish 'company-box-mode)
      (diminish 'company-mode))
 
@@ -897,23 +901,25 @@ The following values are things that are just general common settings.
   
 #+end_src
 
-** General key-binding
+** Global key-binding
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
 
-  ;; General Keybinding
-
-  (require 'general)
-
-  (general-def prog-mode-map
-     "C-c ]"  'indent-region
-     "C-c }"  'indent-region)
-
-  (general-define-key
-     "C-x C-j" 'dired-jump)
+  (bind-key "C-c ]" 'indent-region prog-mode-map)
+  (bind-key "C-c }" 'indent-region prog-mode-map)
+  (bind-key "C-x C-j" 'dired-jump)
 
   (use-package evil-nerd-commenter
-     :bind ("M-/" . evilnc-comment-or-uncomment-lines))
+      :bind ("M-/" . evilnc-comment-or-uncomment-lines))
+
+  ;;
+  ;; A little better than just the typical "C-x o"
+  ;; windmove is a built-in Emacs package.
+  ;;
+  (global-set-key (kbd "C-c <left>")  'windmove-left)
+  (global-set-key (kbd "C-c <right>") 'windmove-right)
+  (global-set-key (kbd "C-c <up>")    'windmove-up)
+  (global-set-key (kbd "C-c <down>")  'windmove-down)
 
   ;;
   ;; Ctl-mouse to adjust/scale fonts will be disabled.
@@ -925,6 +931,11 @@ The following values are things that are just general common settings.
   (global-unset-key (kbd "C-<wheel-down>"))
   (global-unset-key (kbd "C-<wheel-up>"))
 
+#+end_src
+
+** eldoc
+#+begin_src emacs-lisp
+  
 #+end_src
 
 
@@ -987,9 +998,9 @@ Function and code to cycle through some selcted themes.
   (defun mrf/print-custom-theme-name ()
      (message (format "Custom theme is %S" loaded-theme)))
 
-  (general-define-key
-     "C-= =" 'mrf/load-theme-from-selector
-     "C-= ?" 'mrf/print-custom-theme-name)
+  (bind-keys
+      ("C-= =" . mrf/load-theme-from-selector)
+      ("C-= ?" . mrf/print-custom-theme-name))
 
 #+end_src
 
@@ -1013,7 +1024,7 @@ The auto-package-update package helps us keep our Emacs packages up to date!  It
 
 You can also use =M-x auto-package-update-now= to update right now!
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   ;;; --------------------------------------------------------------------------
   ;;; Automatic Package Updates
 
@@ -1042,7 +1053,6 @@ These are useful snippets of code that are commonly used in various languages. Y
                 :files ("yasnippet.el" "snippets" "yasnippet-pkg.el")
                 :host github
                 :repo "joaotavora/yasnippet")
-     :defer t
      :config
      (yas-global-mode t)
      (define-key yas-minor-mode-map (kbd "<tab>") nil)
@@ -1260,6 +1270,7 @@ Window numbers for Emacs: Navigate your windows and frames using numbers. This i
   ;;; --------------------------------------------------------------------------
 
   (use-package treemacs-all-the-icons
+      :defer t
    :if (display-graphic-p))
 
  #+end_src
@@ -1278,68 +1289,7 @@ The Hydra is vanquished once Hercules, any binding that isn't the Hydra's head, 
 #+end_src
 
 
-* Language Server Protocol
-
-#+begin_src emacs-lisp
-  ;;; --------------------------------------------------------------------------
-  ;;; Language Server Protocol
-
-  (eval-when-compile (defvar lsp-enable-which-key-integration))
-
-  (defun mrf/lsp-mode-setup ()
-      "Custom LSP setup function."
-      (message "Set up LSP header-line and other vars")
-      (setq lsp-headerline-breadcrumb-segments '(path-up-to-project file symbols))
-      (setq lsp-clangd-binary-path "/usr/bin/clangd")'
-      (lsp-headerline-breadcrumb-mode))
-
-  (use-package lsp-mode
-      :defer t
-      :commands (lsp lsp-deferred)
-      :hook (lsp-mode . mrf/lsp-mode-setup)
-      :init
-      (setq lsp-keymap-prefix "C-c l")  ;; Or 'C-l', 's-l'
-      :config
-      (lsp-enable-which-key-integration t))
-
-  (use-package lsp-ui
-      :after lsp
-      :config (setq lsp-ui-sideline-enable t
-                  lsp-ui-sideline-show-hover t
-                  lsp-ui-sideline-delay 0.5
-                  lsp-ui-sideline-ignore-duplicates t
-                  lsp-ui-doc-delay 3
-                  lsp-ui-doc-position 'top
-                  lsp-ui-doc-alignment 'frame
-                  lsp-ui-doc-header nil
-                  lsp-ui-doc-show-with-cursor t
-                  lsp-ui-doc-include-signature t
-                  lsp-ui-doc-use-childframe t)
-      :commands lsp-ui-mode
-      :custom
-      (lsp-ui-doc-position 'bottom)
-      :hook (lsp-mode . lsp-ui-mode))
-
-  (general-def lsp-ui-mode-map
-      "C-c l d" 'lsp-ui-doc-focus-frame)
-
-  (use-package lsp-treemacs
-      :after lsp
-      :config
-      (lsp-treemacs-sync-mode 1)
-      (general-def prog-mode-map
-  	"C-c t" 'treemacs))
-
-  (if (equal completion-handler 'enable-ivy-counsel-swiper)
-      (use-package lsp-ivy
-  	:after lsp ivy))
-
-  ;; Make sure that we set the read buffer above the default 4k
-  (setq read-process-output-max (* 1024 1024))
-
-#+end_src
-
-** EGlot
+* EGlot
 
 #+begin_src emacs-lisp :tangle no
   ;;; --------------------------------------------------------------------------
@@ -1361,14 +1311,126 @@ The Hydra is vanquished once Hercules, any binding that isn't the Hydra's head, 
           (cons 'company-capf
               (remove 'company-capf company-backends)))
       :hook
+      (lisp-mode . eglot-ensure)
       (c-mode . eglot-ensure)
       (c++-mode . eglot-ensure)
       (python-mode . eglot-ensure)
+      (prog-mode . eglot-ensure)
       :config
-      (add-to-list 'eglot-server-programs '((c-mode c++-mode) "clangd")))
-      ;; (with-eval-after-load 'project
-      ;; 	(add-to-list 'project-find-functions
-      ;;         'mrf/projectile-proj-find-function)))
+      (add-to-list 'eglot-server-programs '((c-mode c++-mode) "clangd"))
+      (add-to-list 'eglot-server-programs '(python-mode . ("pylsp")))
+        (setq-default eglot-workspace-configuration
+        '((:pylsp . (:configurationSources ["flake8"]
+                        :plugins (
+                                     :pycodestyle (:enabled :json-false)
+                                     :mccabe (:enabled :json-false)
+                                     :pyflakes (:enabled :json-false)
+                                     :flake8 (:enabled :json-false
+                                                 :maxLineLength 88)
+                                     :ruff (:enabled t
+                                               :lineLength 88)
+                                     :pydocstyle (:enabled t
+                                                     :convention "numpy")
+                                     :yapf (:enabled :json-false)
+                                     :autopep8 (:enabled :json-false)
+                                     :black (:enabled t
+                                                :line_length 88
+                                                :cache_config t)))))))
+      ;; (setq-default eglot-workspace-configuration
+      ;;     '((:pylsp . (:configurationSources ["flake8"]
+      ;; 			:plugins (:pycodestyle (:enabled nil)
+      ;; 				     :mccabe (:enabled nil)
+      ;; 				     :flake8 (:enabled t))))))
+
+  ;; (with-eval-after-load 'project
+  ;; 	(add-to-list 'project-find-functions
+  ;;         'mrf/projectile-proj-find-function)))
+
+#+end_src
+
+** Eglot workspace for Python
+
+#+begin_src emacs-lisp :tangle no
+
+  (setq-default eglot-workspace-configuration
+      '((:pylsp . (:configurationSources ["flake8"]
+                      :plugins (
+                                   :pycodestyle (:enabled :json-false)
+                                   :mccabe (:enabled :json-false)
+                                   :pyflakes (:enabled :json-false)
+                                   :flake8 (:enabled :json-false
+                                               :maxLineLength 88)
+                                   :ruff (:enabled t
+                                             :lineLength 88)
+                                   :pydocstyle (:enabled t
+                                                   :convention "numpy")
+                                   :yapf (:enabled :json-false)
+                                   :autopep8 (:enabled :json-false)
+                                   :black (:enabled t
+                                              :line_length 88
+                                              :cache_config t))))))
+
+#+end_src
+
+
+* Language Server Protocol
+
+#+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
+  ;;; Language Server Protocol
+
+  (eval-when-compile (defvar lsp-enable-which-key-integration))
+
+  (defun mrf/lsp-mode-setup ()
+      "Custom LSP setup function."
+      (message "Set up LSP header-line and other vars")
+      (setq lsp-headerline-breadcrumb-segments '(path-up-to-project file symbols))
+      (setq lsp-clangd-binary-path "/usr/bin/clangd")'
+      (lsp-headerline-breadcrumb-mode))
+
+  (use-package lsp-mode
+      :defer t
+      :after eglot
+      :commands (lsp lsp-deferred)
+      :hook (lsp-mode . mrf/lsp-mode-setup)
+      :init
+      (setq lsp-keymap-prefix "C-c l")  ;; Or 'C-l', 's-l'
+      :config
+      (lsp-enable-which-key-integration t))
+
+  (use-package lsp-ui
+      :after lsp
+      :config (setq lsp-ui-sideline-enable t
+                  lsp-ui-sideline-show-hover t
+                  lsp-ui-sideline-delay 0.5
+                  lsp-ui-sideline-ignore-duplicates t
+                  lsp-ui-doc-delay 3
+                  lsp-ui-doc-position 'top
+                  lsp-ui-doc-alignment 'frame
+                  lsp-ui-doc-header nil
+                  lsp-ui-doc-show-with-cursor t
+                  lsp-ui-doc-include-signature t
+                  lsp-ui-doc-use-childframe t)
+      :commands lsp-ui-mode
+      :bind (:map lsp-ui-mode-map
+            ("C-c l d" . lsp-ui-doc-focus-frame))
+      :custom
+      (lsp-ui-doc-position 'bottom)
+      :hook (lsp-mode . lsp-ui-mode))
+
+  (use-package lsp-treemacs
+      :after lsp
+      :bind (:map prog-mode-map
+  	      ("C-c t" . treemacs))
+      :config
+      (lsp-treemacs-sync-mode 1))
+
+  (if (equal completion-handler 'enable-ivy-counsel-swiper)
+      (use-package lsp-ivy
+  	:after lsp ivy))
+
+  ;; Make sure that we set the read buffer above the default 4k
+  (setq read-process-output-max (* 1024 1024))
 
 #+end_src
 
@@ -1383,7 +1445,7 @@ The Hydra is vanquished once Hercules, any binding that isn't the Hydra's head, 
     (if (equal debug-adapter 'enable-dape)
         (progn
           (use-package dape
-              :after (jsonrpc)
+              :after jsonrpc
               :defer t
               ;; :defer t
               ;; To use window configuration like gud (gdb-mi)
@@ -1664,7 +1726,7 @@ Provides a common protocol for debugging different systems. This is configured f
 
 #+begin_src emacs-lisp :results none
   ;;; --------------------------------------------------------------------------
-  
+
   (defun mrf/end-debug-session ()
      "End the debug session and delete project Python buffers."
      (interactive)
@@ -1699,43 +1761,25 @@ Provides a common protocol for debugging different systems. This is configured f
                       _sS_: List sessions
                       _sR_: Session Repl
   "
-     ("n" dap-next)
-     ("i" dap-step-in)
-     ("o" dap-step-out)
-     ("." dap-next)
-     ("/" dap-step-in)
-     ("," dap-step-out)
-     ("c" dap-continue)
-     ("r" dap-restart-frame)
-     ("ss" dap-switch-session)
-     ("st" dap-switch-thread)
-     ("sf" dap-switch-stack-frame)
-     ("su" dap-up-stack-frame)
-     ("sd" dap-down-stack-frame)
-     ("sl" dap-ui-locals)
-     ("sb" dap-ui-breakpoints)
-     ("sR" dap-ui-repl)
-     ("sS" dap-ui-sessions)
-     ("bb" dap-breakpoint-toggle)
-     ("ba" dap-breakpoint-add)
-     ("bd" dap-breakpoint-delete)
-     ("bc" dap-breakpoint-condition)
-     ("bh" dap-breakpoint-hit-condition)
-     ("bl" dap-breakpoint-log-message)
-     ("dd" dap-debug)
-     ("dr" dap-debug-recent)
-     ("ds" dap-debug-restart)
-     ("dl" dap-debug-last)
-     ("de" dap-debug-edit-template)
-     ("ee" dap-eval)
-     ("ea" dap-ui-expressions-add)
-     ("er" dap-eval-region)
-     ("es" dap-eval-thing-at-point)
-     ("dx" mrf/end-debug-session)
-     ("dX" mrf/delete-all-debug-sessions)
-     ("x" nil "exit Hydra" :color yellow)
-     ("q" mrf/end-debug-session "quit" :color blue)
-     ("Q" mrf/delete-all-debug-sessions :color red))  
+      ("n" dap-next)    ("i" dap-step-in)    ("o" dap-step-out)   ("." dap-next)
+      ("/" dap-step-in) ("," dap-step-out)   ("c" dap-continue)   ("r" dap-restart-frame)
+      
+      ("ss" dap-switch-session) ("st" dap-switch-thread)    ("sf" dap-switch-stack-frame)
+      ("su" dap-up-stack-frame) ("sd" dap-down-stack-frame) ("sl" dap-ui-locals)
+      ("sb" dap-ui-breakpoints) ("sR" dap-ui-repl)          ("sS" dap-ui-sessions)
+      
+      ("bb" dap-breakpoint-toggle)    ("ba" dap-breakpoint-add)           ("bd" dap-breakpoint-delete)
+      ("bc" dap-breakpoint-condition) ("bh" dap-breakpoint-hit-condition) ("bl" dap-breakpoint-log-message)
+      
+      ("dd" dap-debug)      ("dr" dap-debug-recent) ("ds" dap-debug-restart)
+      ("dl" dap-debug-last) ("de" dap-debug-edit-template)
+      
+      ("ee" dap-eval) ("ea" dap-ui-expressions-add) ("er" dap-eval-region) ("es" dap-eval-thing-at-point)
+      
+      ("dx" mrf/end-debug-session) ("dX" mrf/delete-all-debug-sessions)
+      
+      ("x" nil "exit Hydra" :color yellow) ("q" mrf/end-debug-session "quit" :color blue)
+      ("Q" mrf/delete-all-debug-sessions :color red))  
 
  #+end_src
 
@@ -1913,10 +1957,8 @@ Tree-sitter is a parser generator tool and an incremental parsing library. It ca
      :straight (ts-fold :type git
                 :host github
                 :repo "emacs-tree-sitter/ts-fold")
-     :config
-     (general-define-key
-        "C-<tab>" 'ts-fold-toggle
-        "C-c f"   'ts-fold-open-all))
+      :bind (("C-<tab>" . ts-fold-toggle)
+  	   ("C-c f"   . ts-fold-open-all)))
 
 #+end_src
 
@@ -1929,31 +1971,32 @@ This is a basic configuration for the TypeScript language so that =.ts= files ac
   ;;; --------------------------------------------------------------------------
 
   (if (equal debug-adapter 'enable-dap-mode)
-     (use-package typescript-ts-mode
-        ;; :after (dap-mode)
-        :mode "\\.ts\\'"
-        :hook
-        (typescript-ts-mode . lsp-deferred)
-        (js2-mode . lsp-deferred)
-        :config
-        (setq typescript-indent-level 4)
-        (dap-node-setup)))
+      (use-package typescript-ts-mode
+  	;; :after (dap-mode)
+  	:mode "\\.ts\\'"
+  	:hook
+  	(typescript-ts-mode . lsp-deferred)
+  	(js2-mode . lsp-deferred)
+  	:bind (:map typescript-mode-map
+  		  ("C-c ." . dap-hydra/body))
+  	:config
+  	(setq typescript-indent-level 4)
+  	(dap-node-setup)))
 
   (if (equal debug-adapter 'enable-dape)
-     (use-package typescript-ts-mode
-        :after (dape-mode)
-        :mode ("\\.ts\\'")
-        :hook
-        (typescript-ts-mode . lsp-deferred)
-        (js2-mode . lsp-deferred)
-        :config
-        (general-define-key
-         :keymaps '(typescript-ts-mode-map)
-         "C-c ." 'dape-hydra/body)
-        (setq typescript-indent-level 4)))
-     
+      (use-package typescript-ts-mode
+  	:after (dape-mode)
+  	:mode ("\\.ts\\'")
+  	:hook
+  	(typescript-ts-mode . lsp-deferred)
+  	(js2-mode . lsp-deferred)
+  	:bind (:map typescript-mode-map
+  		  ("C-c ." . dape-hydra/body))
+  	:config
+  	(setq typescript-indent-level 4)))
+
   (add-to-list 'auto-mode-alist '("\\.ts\\'" . typescript-ts-mode))
-  
+
 #+end_src
 
 ** NodeJS
@@ -1985,19 +2028,17 @@ This is a basic configuration for the TypeScript language so that =.ts= files ac
 ** JavaScript
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
-  
+
   (use-package js2-mode
      :hook (js-mode . js2-minor-mode)
+      :bind (:map js2-mode-map
+                ("{" . paredit-open-curly)
+  	      ("}" . paredit-close-curly-and-newline))
      :mode ("\\.js\\'" "\\.mjs\\'")
      :custom (js2-highlight-level 3))
 
   (use-package ac-js2
      :hook (js2-mode . ac-js2-mode))
-
-  (general-define-key
-     :keymaps '(js-mode-map)
-     "{" 'paredit-open-curly
-     "}" 'paredit-close-curly-and-newline)
 
   (add-to-list 'auto-mode-alist '("\\.json$" . js-mode))
 
@@ -2040,6 +2081,7 @@ This is a basic configuration for the TypeScript language so that =.ts= files ac
   (use-package js2-mode :defer t)
   (use-package rust-mode :defer t)
   (use-package swift-mode :defer t)
+  
 #+end_src
 
 ** Flycheck
@@ -2049,10 +2091,12 @@ This is more support for a language rather than a langage itself
   ;;; --------------------------------------------------------------------------
 
   (use-package flycheck
-    :config
-    (global-flycheck-mode))
+      :defer t
+      :config
+      (global-flycheck-mode))
 
-  (use-package flycheck-package)
+  (use-package flycheck-package
+      :after flycheck)
 
   (eval-after-load 'flycheck
     '(flycheck-package-setup))
@@ -2111,7 +2155,8 @@ This is the standard python mode setup.
 
   (defun mrf/python-mode-triggered ()
       (message "Calling mrf/python-mode-triggered")
-      (treemacs t))
+      (eglot-ensure)
+      (set-fill-column 80))
 
   (use-package python-mode
       :defer t
@@ -2189,23 +2234,23 @@ autopep8 automatically formats Python code to conform to the `PEP 8` style guide
   ;;; --------------------------------------------------------------------------
 
   (if (equal enable-elpy t)
-   (general-define-key
-      :keymaps '(python-mode-map)
-      "C-c g a"    'elpy-goto-assignment
-      "C-c g o"    'elpy-goto-definition-other-window
-      "C-c g g"    'elpy-goto-definition
-      "C-c g ?"    'elpy-doc))
-#+end_src
+      (bind-keys :map python-mode-map
+  	("C-c g a" . elpy-goto-assignment)
+  	("C-c g o" . elpy-goto-definition-other-window)
+  	("C-c g g" . elpy-goto-definition)
+  	("C-c g ?" . elpy-doc)))
+
+   #+end_src
 
 **** Anaconda Specific
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
-  
+
   (if (equal enable-anaconda t)
-     (general-define-key
-        :keymaps '(python-mode-map)
-        "C-c g o"    'anaconda-mode-find-definitions-other-frame
-        "C-c g g"    'anaconda-mode-find-definitions))
+      (bind-keys :map python-mode-map
+  	("C-c g o" . anaconda-mode-find-definitions-other-frame)
+  	("C-c g g" . anaconda-mode-find-definitions)))
+        
 
         #+end_src
 
@@ -2219,13 +2264,13 @@ autopep8 automatically formats Python code to conform to the `PEP 8` style guide
 
   (defalias 'quote-region
      (kmacro "C-w \" \" <left> C-y <right>"))
-     
-  (general-define-key
-     :keymaps '(python-mode-map)
-     "C-c C-q"    'quote-region
-     "C-c q"      'quote-word
-     "C-c |"      'display-fill-column-indicator-mode)
-     
+
+  (eval-after-load "python"
+      #'(bind-keys :map python-mode-map
+  	  ("C-c C-q" . quote-region)
+  	  ("C-c q"   . quote-word)
+  	  ("C-c |"   . display-fill-column-indicator-mode)))
+    
 #+end_src
 
 **** Debuggers
@@ -2233,16 +2278,16 @@ autopep8 automatically formats Python code to conform to the `PEP 8` style guide
   ;;; --------------------------------------------------------------------------
 
   (when (equal debug-adapter 'enable-dap-mode)
-     (general-define-key
-        :keymaps '(python-mode-map typescript-ts-mode-map c-mode-map c++-mode-map)
-        "C-c ."      'dap-hydra/body)
-     )
+      ;; (dolist (m (list python-mode-map typescript-ts-mode-map c-mode-map c++-mode-map))
+  	(bind-keys :map prog-mode-map
+              ("C-c ." . dap-hydra/body)))
 
-  (if (equal debug-adapter 'enable-dape)
-     (general-define-key
-        :keymaps '(python-mode-map typescript-ts-mode-map c-mode-map c++-mode-map)
-        "C-c ."      'dape-hydra/body))
-  
+
+  (when (equal debug-adapter 'enable-dape)
+      ;; (dolist (m (list python-mode-map typescript-ts-mode-map c-mode-map c++-mode-map))
+  	(bind-keys :map prog-mode-map
+              ("C-c ." . dape-hydra/body)))
+
 #+end_src
 
 *** Python Virtual Environment Support
@@ -2284,40 +2329,42 @@ Since Realgud is options (in our configuratrion), we add it's keybindings condit
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
 
-  (general-def c-mode-map
-      "C-c , j" 'realgud:cmd-jump
-      "C-c , k" 'realgud:cmd-kill
-      "C-c , s" 'realgud:cmd-step
-      "C-c , n" 'realgud:cmd-next
-      "C-c , q" 'realgud:cmd-quit
-      "C-c , F" 'realgud:window-bt
-      "C-c , U" 'realgud:cmd-until
-      "C-c , X" 'realgud:cmd-clear
-      "C-c , !" 'realgud:cmd-shell
-      "C-c , b" 'realgud:cmd-break
-      "C-c , f" 'realgud:cmd-finish
-      "C-c , D" 'realgud:cmd-delete
-      "C-c , +" 'realgud:cmd-enable
-      "C-c , R" 'realgud:cmd-restart
-      "C-c , -" 'realgud:cmd-disable
-      "C-c , B" 'realgud:window-brkpt
-      "C-c , c" 'realgud:cmd-continue
-      "C-c , e" 'realgud:cmd-eval-dwim
-      "C-c , Q" 'realgud:cmd-terminate
-      "C-c , T" 'realgud:cmd-backtrace
-      "C-c , h" 'realgud:cmd-until-here
-      "C-c , u" 'realgud:cmd-older-frame
-      "C-c , 4" 'realgud:cmd-goto-loc-hist-4
-      "C-c , 5" 'realgud:cmd-goto-loc-hist-5
-      "C-c , 6" 'realgud:cmd-goto-loc-hist-6
-      "C-c , 7" 'realgud:cmd-goto-loc-hist-7
-      "C-c , 8" 'realgud:cmd-goto-loc-hist-8
-      "C-c , 9" 'realgud:cmd-goto-loc-hist-9
-      "C-c , d" 'realgud:cmd-newer-frame
-      "C-c , RET" 'realgud:cmd-repeat-last
-      "C-c , E" 'realgud:cmd-eval-at-point
-      "C-c , I" 'realgud:cmdbuf-info-describe
-      "C-c , C-i" 'realgud:cmd-info-breakpoints)
+  (if (package-installed-p 'realgud)
+      (use-package cc-mode
+  	:bind (:map c-mode-map
+  		  ("C-c , j" . realgud:cmd-jump)
+  		  ("C-c , k" . realgud:cmd-kill)
+  		  ("C-c , s" . realgud:cmd-step)
+  		  ("C-c , n" . realgud:cmd-next)
+  		  ("C-c , q" . realgud:cmd-quit)
+  		  ("C-c , F" . realgud:window-bt)
+  		  ("C-c , U" . realgud:cmd-until)
+  		  ("C-c , X" . realgud:cmd-clear)
+  		  ("C-c , !" . realgud:cmd-shell)
+  		  ("C-c , b" . realgud:cmd-break)
+  		  ("C-c , f" . realgud:cmd-finish)
+  		  ("C-c , D" . realgud:cmd-delete)
+  		  ("C-c , +" . realgud:cmd-enable)
+  		  ("C-c , R" . realgud:cmd-restart)
+  		  ("C-c , -" . realgud:cmd-disable)
+  		  ("C-c , B" . realgud:window-brkpt)
+  		  ("C-c , c" . realgud:cmd-continue)
+  		  ("C-c , e" . realgud:cmd-eval-dwim)
+  		  ("C-c , Q" . realgud:cmd-terminate)
+  		  ("C-c , T" . realgud:cmd-backtrace)
+  		  ("C-c , h" . realgud:cmd-until-here)
+  		  ("C-c , u" . realgud:cmd-older-frame)
+  		  ("C-c , 4" . realgud:cmd-goto-loc-hist-4)
+  		  ("C-c , 5" . realgud:cmd-goto-loc-hist-5)
+  		  ("C-c , 6" . realgud:cmd-goto-loc-hist-6)
+  		  ("C-c , 7" . realgud:cmd-goto-loc-hist-7)
+  		  ("C-c , 8" . realgud:cmd-goto-loc-hist-8)
+  		  ("C-c , 9" . realgud:cmd-goto-loc-hist-9)
+  		  ("C-c , d" . realgud:cmd-newer-frame)
+  		  ("C-c , RET" . realgud:cmd-repeat-last)
+  		  ("C-c , E" . realgud:cmd-eval-at-point)
+  		  ("C-c , I" . realgud:cmdbuf-info-describe)
+  		  ("C-c , C-i" . realgud:cmd-info-breakpoints))))
 
 #+end_src
 
@@ -2657,9 +2704,9 @@ This section contains the basic configuration for =org-mode= plus the configurat
      :defer t
      :commands (org-capture org-agenda)
      :hook (org-mode . mrf/org-mode-setup)
+      :bind (:map org-mode-map
+  	  ("C-c e" . org-edit-src-code))
      :config
-     (general-def org-mode-map
-        "C-c e" 'org-edit-src-code)
      ;; Save Org buffers after refiling!
      (advice-add 'org-refile :after 'org-save-all-org-buffers)
      (setq org-tag-alist
@@ -2965,6 +3012,15 @@ While there is standard markdown support built into =org-mode=, this additional 
 #+end_src
 
 
+* IRC Client
+#+begin_src emacs-lisp :tangle no
+
+  (add-hook 'rcirc-mode-hook #'rcirc-track-minor-mode)
+  (add-hook 'rcirc-mode-hook #'rcirc-omit-mode)
+
+#+end_src
+
+
 * Quality of Life
 
 The following packages are some additional quality of life features.
@@ -3221,9 +3277,8 @@ Consult provides search and navigation commands based on the Emacs completion fu
   ;;; --------------------------------------------------------------------------
 
   (use-package ace-window
-     :config
-     (general-define-key
-        "M-o" 'ace-window))
+      :bind ("M-o" . ace-window))
+
 #+end_src
 
 ** Dashboard
@@ -3606,33 +3661,30 @@ Designate any buffer to “popup” status, and it will stay out of your way. Di
   ;;; --------------------------------------------------------------------------
 
   (use-package popper
-    :defer t
-    :init
-    (setq popper-reference-buffers
-       '("\\*Messages\\*"
-         "\\*scratch\\*"
-         "\\*ielm\\*"
-           "Output\\*$"
-           "\\*Async Shell Command\\*"
-         "^\\*eshell.*\\*$" eshell-mode ;eshell as a popup
-           "^\\*shell.*\\*$"  shell-mode  ;shell as a popup
-           "^\\*term.*\\*$"   term-mode   ;term as a popup
-           "^\\*vterm.*\\*$"  vterm-mode  ;vterm as a popup
-           help-mode
-           compilation-mode))
-    (popper-mode +1)
-    (popper-echo-mode +1))
-
-  (general-define-key
-     "C-`"   'popper-toggle
-     "M-`"   'popper-cycle
-     "C-M-`" 'popper-toggle-type)
+      :defer t
+      :bind (("C-`"   . popper-toggle)
+  	   ("M-`"   . popper-cycle)
+  	   ("C-M-`" . popper-toggle-type))
+      :init
+      (setq popper-reference-buffers
+  	'("\\*Messages\\*"
+  	     "\\*scratch\\*"
+  	     "\\*ielm\\*"
+               "Output\\*$"
+               "\\*Async Shell Command\\*"
+  	     "^\\*eshell.*\\*$" eshell-mode ;eshell as a popup
+               "^\\*shell.*\\*$"  shell-mode  ;shell as a popup
+               "^\\*term.*\\*$"   term-mode   ;term as a popup
+               "^\\*vterm.*\\*$"  vterm-mode  ;vterm as a popup
+               help-mode
+               compilation-mode))
+      (popper-mode +1)
+      (popper-echo-mode +1))
 
 #+end_src
 
 
 * File Management
-
 ** Dired
 
 Dired is a built-in file manager for Emacs that does some pretty amazing things!  Here are some key bindings you should try out:
@@ -3815,8 +3867,6 @@ The following is a list of major mode-hooks variables that are set so that they 
                                    (package)
                                    (use-package)
                                    (python-mode)))
-
-
   #+end_src
   
 ** Helper to up the font size for a higher-res monitor.
@@ -3870,18 +3920,11 @@ Som key kindings to switch to different screen resolutions.
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
   ;; Some alternate keys below....
-  
-  (general-define-key
-     "C-c 1" 'use-small-display-font)
 
-  (general-define-key
-     "C-c 2" 'use-medium-display-font)
-
-  (general-define-key
-     "C-c 3" 'use-large-display-font)
-
-  (general-define-key
-     "C-c 4" 'use-x-large-display-font)
+  (bind-keys ("C-c 1". use-small-display-font)
+      ("C-c 2". use-medium-display-font)
+      ("C-c 3". use-large-display-font)
+      ("C-c 4". use-x-large-display-font))
 
 #+end_src
 
