@@ -44,14 +44,16 @@
 
 (setq use-package-compute-statistics t
     use-package-verbose t
-    use-package-always-ensure nil
+    use-package-always-ensure t
     use-package-always-demand nil
     use-package-always-defer nil)
 
 (use-package el-patch)
 
 ;; Load org early on in the init process
-(straight-use-package 'org)
+;; (use-package org :straight t)
+;; Make sure that we set the read buffer above the default 4k
+(setq read-process-output-max (* 1024 1024))
 
 ;;; --------------------------------------------------------------------------
 ;;; Define my customization groups
@@ -59,6 +61,11 @@
 (defgroup mrf-custom nil
   "Customization toggles for Mitch's Emacs installation."
   :group 'Local
+  )
+
+(defgroup mrf-custom-selection nil
+  "Customization from a selection of features."
+  :group 'mrf-custom
   )
 
 (defgroup mrf-custom-fonts nil
@@ -73,22 +80,6 @@
 
 ;;; --------------------------------------------------------------------------
 ;;; Feature Switches
-
-(defcustom completion-handler 'enable-vertico
-    "Select the default minibuffer completion handler.
-
-Vertico provides a performant and minimalistic vertical completion UI based on
-the default completion system.
-
-Ivy is a generic completion mechanism for Emacs. While it operates similarly to
-other completion schemes such as icomplete-mode, Ivy aims to be more efficient,
-smaller, simpler, and smoother to use yet highly customizable.  The Ivy package
-also includes Counsel. Counsel provides completion versions of common Emacs
-commands that are customised to make the best use of Ivy.  Swiper is an
-alternative to isearch that uses Ivy to show an overview of all matches."
-    :type '(choice (const :tag "Use the Vertico completion system." enable-vertico)
-               (const :tag "Use Ivy, Counsel, Swiper completion systems" enable-ivy-counsel-swiper))
-    :group 'mrf-custom)
 
 (defcustom enable-gb-dev nil
     "If set to t, the z80-mode and other GameBoy related packages
@@ -119,18 +110,6 @@ alternative to isearch that uses Ivy to show an overview of all matches."
     :type 'boolean
     :group 'mrf-custom)
 
-(defcustom enable-anaconda nil
-    "Set to t to enable the `anaconda' Python package.
-    This OR `enable-elpy' should be set to t but NOT BOTH!"
-    :type 'boolean
-    :group 'mrf-custom)
-
-(defcustom enable-elpy t
-    "Set to t to enable the `elpy' package used for Python development.
-    This OR `enable-anaconda' should be set to t but NOT BOTH!"
-    :type 'boolean
-    :group 'mrf-custom)
-
 (defcustom enable-neotree nil
     "Set to t to enable the `neotree' package."
     :type 'boolean
@@ -142,19 +121,56 @@ alternative to isearch that uses Ivy to show an overview of all matches."
     :type 'boolean
     :group 'mrf-custom)
 
+(defcustom completion-handler 'comphand-vertico
+    "Select the default minibuffer completion handler.
+
+Vertico provides a performant and minimalistic vertical completion UI based on
+the default completion system.
+
+Ivy is a generic completion mechanism for Emacs. While it operates similarly to
+other completion schemes such as icomplete-mode, Ivy aims to be more efficient,
+smaller, simpler, and smoother to use yet highly customizable.  The Ivy package
+also includes Counsel. Counsel provides completion versions of common Emacs
+commands that are customised to make the best use of Ivy.  Swiper is an
+alternative to isearch that uses Ivy to show an overview of all matches."
+    :type '(choice (const :tag "Use the Vertico completion system." comphand-vertico)
+               (const :tag "Use Ivy, Counsel, Swiper completion systems" comphand-ivy-counsel))
+    :group 'mrf-custom-selection)
+
 (defcustom debug-adapter 'enable-dap-mode
     "Select the debug adapter to use for debugging applications.  dap-mode is an
-    Emacs client/library for Debug Adapter Protocol is a wire protocol for
-    communication between client and Debug Server. It’s similar to the LSP but
-    provides integration with debug server.
+Emacs client/library for Debug Adapter Protocol is a wire protocol for
+communication between client and Debug Server. It’s similar to the LSP but
+provides integration with debug server.
 
-    dape (Debug Adapter Protocol for Emacs) is similar to dap-mode but is
-    implemented entirely in Emacs Lisp. There are no other external dependencies
-    with DAPE. DAPE supports most popular languages, however, not as many as
-    dap-mode."
+dape (Debug Adapter Protocol for Emacs) is similar to dap-mode but is
+implemented entirely in Emacs Lisp. There are no other external dependencies
+with DAPE. DAPE supports most popular languages, however, not as many as
+dap-mode."
     :type '(choice (const :tag "Debug Adapter Protocol (DAP)" enable-dap-mode)
                (const :tag "Debug Adapter Protocol for Emacs (DAPE)" enable-dape))
-    :group 'mrf-custom)
+    :group 'mrf-custom-selection)
+
+(defcustom python-ide 'python-ide-elpy
+    "Select which IDE will be used for Python development.
+
+Elpy is an Emacs package to bring powerful Python editing to Emacs. It
+combines and configures a number of other packages, both written in Emacs
+Lisp as well as Python. Elpy is fully documented at
+https://elpy.readthedocs.io/en/latest/index.html.
+
+Elgot/LSP Eglot is the Emacs client for the Language Server Protocol
+(LSP). Eglot provides infrastructure and a set of commands for enriching the
+source code editing capabilities of Emacs via LSP. Eglot itself is
+completely language-agnostic, but it can support any programming language
+for which there is a language server and an Emacs major mode.
+
+Anaconda-mode is another IDE for Python very much like Elpy. It is not as
+configurable but has a host of great feaures that just work."
+    :type '(choice (const :tag "Elpy: Emacs Lisp Python Environment" python-ide-elpy)
+               (const :tag "Elgot/Language Server Protocol" python-ide-elgot-lsp)
+  		 (const :tag "Python Anaconda-mode for Emacs" python-ide-anaconda))
+    :group 'mrf-custom-selection)
 
 ;;; --------------------------------------------------------------------------
 ;;; Theming related
@@ -306,17 +322,6 @@ should be taken into consideration when providing a width."
   (global-page-break-lines-mode))
 
 ;;; --------------------------------------------------------------------------
-
-;; (use-package esup
-;;     :ensure t
-;;     :pin melpa)
-
-(defun mrf/process-prog-mode-hook ()
-    (message ">>> Executing prog-mode-hook"))
-
-;; (add-hook 'prog-mode-hook #'mrf/process-prog-mode-hook)
-
-;;; --------------------------------------------------------------------------
 ;;; Set a variable that represents the actual emacs configuration directory.
 ;;; This is being done so that the user-emacs-directory which normally points
 ;;; to the .emacs.d directory can be re-assigned so that customized files don't
@@ -427,6 +432,16 @@ should be taken into consideration when providing a width."
 (global-set-key (kbd "C-c C--") 'previous-theme)
 ;; Print current theme
 (global-set-key (kbd "C-c C-?") 'which-theme)
+
+;; Normally not used but it's here so it's easy to change the block colors.
+(defun mrf/customize-org-block-colors ()
+    (defface org-block-begin-line
+      '((t (:underline "#1D2C39" :foreground "#676E95" :background "#1D2C39")))
+      "Face used for the line delimiting the begin of source blocks.")
+
+    (defface org-block-end-line
+      '((t (:overline "#1D2C39" :foreground "#676E95" :background "#1D2C39")))
+      "Face used for the line delimiting the end of source blocks."))
 
 ;;; --------------------------------------------------------------------------
 
@@ -601,15 +616,16 @@ should be taken into consideration when providing a width."
 ;;; --------------------------------------------------------------------------
 
 (use-package spacious-padding
-   :hook (after-init . spacious-padding-mode)
-   :custom
-   (spacious-padding-widths
+    :hook (after-init . spacious-padding-mode)
+    :custom
+    (spacious-padding-widths
       '( :internal-border-width 15
-        :header-line-width 4
-        :mode-line-width 6
-        :tab-width 4
-        :right-divider-width 30
-        :scroll-bar-width 8)))
+           :header-line-width 4
+           :mode-line-width 6
+  	 :fringe-width 10
+           :tab-width 4
+           :right-divider-width 30
+           :scroll-bar-width 8)))
 
 ;; Read the doc string of `spacious-padding-subtle-mode-line' as it
 ;; is very flexible and provides several examples.
@@ -630,6 +646,7 @@ should be taken into consideration when providing a width."
     (rainbow-delimiters-mode))
 
 (use-package dash
+    :disabled
     :straight (dash
   		:type git
   		:flavor melpa
@@ -713,7 +730,59 @@ should be taken into consideration when providing a width."
 (global-unset-key (kbd "C-<wheel-down>"))
 (global-unset-key (kbd "C-<wheel-up>"))
 
+;;; --------------------------------------------------------------------------
 
+(use-package hydra)
+
+;;; --------------------------------------------------------------------------
+;; Which Key Helper
+
+(use-package which-key
+   :diminish which-key-mode
+   :custom (which-key-idle-delay 1)
+   :config
+   (which-key-mode)
+   (which-key-setup-side-window-right))
+
+;;; --------------------------------------------------------------------------
+;;; Automatic Package Updates
+
+(use-package auto-package-update
+    :defer t
+    :ensure t
+    :custom
+    (auto-package-update-interval 7)
+    (auto-package-update-prompt-before-update t)
+    (auto-package-update-hide-results t)
+    :config
+    (auto-package-update-maybe)
+    (auto-package-update-at-time "09:00"))
+
+;;; --------------------------------------------------------------------------
+;; YASnippets
+
+(use-package yasnippet
+    :defer t
+    :bind (:map yas-minor-mode-map
+              ("<C-'>" . yas-expand))
+    :config
+    (message ">>> YASnippet Configured")
+    (setq yas-global-mode t)
+    (setq yas-minor-mode t)
+    (define-key yas-minor-mode-map (kbd "<tab>") nil)
+    (add-to-list #'yas-snippet-dirs (concat custom-docs-dir "/Snippets"))
+    (yas-reload-all)
+    (setq yas-prompt-functions '(yas-ido-prompt))
+    (defun help/yas-after-exit-snippet-hook-fn ()
+      (prettify-symbols-mode))
+    (add-hook 'yas-after-exit-snippet-hook #'help/yas-after-exit-snippet-hook-fn))
+
+;;; --------------------------------------------------------------------------
+
+(use-package yasnippet-snippets
+  :after yasnippet
+  :config
+  (message ">>> YASnippet-Snippets Configured"))
 
 ;;; --------------------------------------------------------------------------
 
@@ -769,44 +838,6 @@ should be taken into consideration when providing a width."
 ;; For terminal mode we choose Material theme
 (unless (display-graphic-p)
    (load-theme 'material t))
-
-;;; --------------------------------------------------------------------------
-;; YASnippets
-
-(use-package yasnippet
-   :straight (yasnippet :type git :flavor melpa
-              :files ("yasnippet.el" "snippets" "yasnippet-pkg.el")
-              :host github
-              :repo "joaotavora/yasnippet")
-   :config
-   (yas-global-mode t)
-   (define-key yas-minor-mode-map (kbd "<tab>") nil)
-   (define-key yas-minor-mode-map (kbd "C-'") #'yas-expand)
-   (add-to-list #'yas-snippet-dirs (concat custom-docs-dir "/Snippets"))
-   (yas-reload-all)
-   (setq yas-prompt-functions '(yas-ido-prompt))
-   (defun help/yas-after-exit-snippet-hook-fn ()
-      (prettify-symbols-mode)
-      (prettify-symbols-mode))
-   (add-hook 'yas-after-exit-snippet-hook #'help/yas-after-exit-snippet-hook-fn))
-
-(use-package yasnippet-snippets
-   :defer t
-   :straight (yasnippet-snippets :type git :flavor melpa
-              :files ("*.el" "snippets" ".nosearch" "yasnippet-snippets-pkg.el")
-              :host github
-              :repo "AndreaCrotti/yasnippet-snippets"))
-
-;;; --------------------------------------------------------------------------
-;; Which Key Helper
-
-(use-package which-key
-   :defer 0
-   :diminish which-key-mode
-   :custom (which-key-idle-delay 1)
-   :config
-   (which-key-mode)
-   (which-key-setup-side-window-right))
 
 ;;; --------------------------------------------------------------------------
 ;;; Window Number
@@ -959,64 +990,166 @@ should be taken into consideration when providing a width."
  :if (display-graphic-p))
 
 ;;; --------------------------------------------------------------------------
+;;; Emacs Polyglot is the Emacs LSP client that stays out of your way:
 
-(use-package hydra)
+(defvar mrf/clangd-path (executable-find "clangd")
+    "Clangd executable path.")
+
+(defun mrf/projectile-proj-find-function (dir)
+    "Find the project `DIR' function for Projectile.
+Thanks @wyuenho on GitHub"
+    (let ((root (projectile-project-root dir)))
+        (and root (cons 'transient root))))
+
+(if (equal python-ide 'python-ide-eglot-lsp)
+    (use-package eglot
+        :defer t
+        :init
+        (setq company-backends
+            (cons 'company-capf
+                (remove 'company-capf company-backends)))
+        :hook
+        (lisp-mode . eglot-ensure)
+        (c-mode . eglot-ensure)
+        (c++-mode . eglot-ensure)
+        (python-mode . eglot-ensure)
+        (prog-mode . eglot-ensure)
+        (rust-mode-hook . eglot-ensure)
+        :bind (:map python-mode-map
+                  ("C-c g r" . lsp-find-references)
+                  ("C-c g o" . xref-find-definitions-other-window)
+                  ("C-c g g" . xref-find-definitions)
+                  ("C-c g ?" . eldoc-doc-buffer))
+        :config
+      (which-key-add-key-based-replacements "C-c g r" "find-symbol-reference")
+      (which-key-add-key-based-replacements "C-c g o" "find-defitions-other-window")
+      (which-key-add-key-based-replacements "C-c g g" "find-defitions")
+      (which-key-add-key-based-replacements "C-c g ?" "eldoc-definition")
+        (add-to-list 'eglot-server-programs '((c-mode c++-mode) "clangd"))
+        (add-to-list 'eglot-server-programs '(python-mode . ("pylsp")))
+        (add-to-list 'eglot-server-programs
+            '((rust-ts-mode rust-mode) .
+                 ("rust-analyzer" :initializationOptions (:check (:command "clippy")))))
+        (setq-default eglot-workspace-configuration
+            '((:pylsp . (:configurationSources ["flake8"]
+                            :plugins (:pycodestyle (:enabled :json-false)
+                                      :mccabe (:enabled :json-false)
+                                      :pyflakes (:enabled :json-false)
+                                      :flake8 (:enabled :json-false
+                                                  :maxLineLength 88)
+                                      :pydocstyle (:enabled t
+                                                      :convention "numpy")
+                                      :yapf (:enabled :json-false)
+                                      :autopep8 (:enabled :json-false)
+                                      :black (:enabled t
+                                                 :line_length 88
+                                                 :cache_config t))))
+  	       ))))
 
 ;;; --------------------------------------------------------------------------
 ;;; Language Server Protocol
 
-(eval-when-compile (defvar lsp-enable-which-key-integration))
+(if (equal python-ide 'python-ide-eglot-lsp)
+    (eval-when-compile (defvar lsp-enable-which-key-integration)))
 
 (defun mrf/lsp-mode-setup ()
     "Custom LSP setup function."
-    (message "Set up LSP header-line and other vars")
-    (setq lsp-headerline-breadcrumb-segments '(path-up-to-project file symbols))
-    (setq lsp-clangd-binary-path "/usr/bin/clangd")'
-    (lsp-headerline-breadcrumb-mode))
+    (if (equal python-ide 'python-ide-eglot-lsp)
+        (message "Set up LSP header-line and other vars")
+        (setq lsp-headerline-breadcrumb-segments '(path-up-to-project file symbols))
+        (setq lsp-clangd-binary-path "/usr/bin/clangd")'
+        (lsp-headerline-breadcrumb-mode)))
 
-(use-package lsp-mode
-    :defer t
-    :after eglot
-    :commands (lsp lsp-deferred)
-    :hook (lsp-mode . mrf/lsp-mode-setup)
-    :init
-    (setq lsp-keymap-prefix "C-c l")  ;; Or 'C-l', 's-l'
-    :config
-    (lsp-enable-which-key-integration t))
+(if (equal python-ide 'python-ide-eglot-lsp)
+    (use-package lsp-mode
+        :defer t
+        :commands (lsp lsp-deferred)
+        :hook (lsp-mode . mrf/lsp-mode-setup)
+        :init
+        (setq lsp-keymap-prefix "C-c l")  ;; Or 'C-l', 's-l'
+        :config
+        (lsp-enable-which-key-integration t)))
 
-(use-package lsp-ui
-    :after lsp
-    :config (setq lsp-ui-sideline-enable t
-                lsp-ui-sideline-show-hover t
-                lsp-ui-sideline-delay 0.5
-                lsp-ui-sideline-ignore-duplicates t
-                lsp-ui-doc-delay 3
-                lsp-ui-doc-position 'top
-                lsp-ui-doc-alignment 'frame
-                lsp-ui-doc-header nil
-                lsp-ui-doc-show-with-cursor t
-                lsp-ui-doc-include-signature t
-                lsp-ui-doc-use-childframe t)
-    :commands lsp-ui-mode
-    :bind (:map lsp-ui-mode-map
-          ("C-c l d" . lsp-ui-doc-focus-frame))
-    :custom
-    (lsp-ui-doc-position 'bottom)
-    :hook (lsp-mode . lsp-ui-mode))
+(if (equal python-ide 'python-ide-eglot-lsp)
+    (use-package lsp-ui
+        :after lsp
+        :config (setq lsp-ui-sideline-enable t
+                    lsp-ui-sideline-show-hover t
+                    lsp-ui-sideline-delay 0.5
+                    lsp-ui-sideline-ignore-duplicates t
+                    lsp-ui-doc-delay 3
+                    lsp-ui-doc-position 'top
+                    lsp-ui-doc-alignment 'frame
+                    lsp-ui-doc-header nil
+                    lsp-ui-doc-show-with-cursor t
+                    lsp-ui-doc-include-signature t
+                    lsp-ui-doc-use-childframe t)
+        :commands lsp-ui-mode
+        :bind (:map lsp-ui-mode-map
+                  ("C-c l d" . lsp-ui-doc-focus-frame))
+        :custom
+        (lsp-ui-doc-position 'bottom)
+        :hook (lsp-mode . lsp-ui-mode)))
 
-(use-package lsp-treemacs
-    :after lsp
-    :bind (:map prog-mode-map
-  	    ("C-c t" . treemacs))
-    :config
-    (lsp-treemacs-sync-mode 1))
+(if (equal python-ide 'python-ide-eglot-lsp)
+    (use-package lsp-treemacs
+        :after lsp
+        :bind (:map prog-mode-map
+                  ("C-c t" . treemacs))
+        :config
+        (lsp-treemacs-sync-mode 1)))
 
-(if (equal completion-handler 'enable-ivy-counsel-swiper)
+(if (and (equal python-ide 'python-ide-eglot-lsp)
+         (equal completion-handler 'comphand-ivy-counsel))
     (use-package lsp-ivy
-      :after lsp ivy))
+        :after lsp ivy))
 
-;; Make sure that we set the read buffer above the default 4k
-(setq read-process-output-max (* 1024 1024))
+;;; --------------------------------------------------------------------------
+
+(if (equal python-ide 'python-ide-anaconda)
+   (use-package anaconda-mode
+       :bind (:map python-mode-map
+    	       ("C-c g o" . anaconda-mode-find-definitions-other-frame)
+    	       ("C-c g g" . anaconda-mode-find-definitions)
+  	       ("C-c C-x" . next-error))        
+       :config
+       (which-key-add-key-based-replacements "C-c g o" "find-defitions-other-window")
+       (which-key-add-key-based-replacements "C-c g g" "find-defitions")
+       (require 'pyvenv)
+       :hook
+       (python-mode-hook . anaconda-eldoc-mode)))
+
+;;; --------------------------------------------------------------------------
+
+(when (equal python-ide 'python-ide-elpy)
+    (use-package elpy
+        :after python
+        :custom
+        (elpy-rpc-python-command "python3")
+        (display-fill-column-indicator-mode 1)
+      (highlight-indentation-mode nil)
+      :bind (:map python-mode-map
+  		("C-c g a" . elpy-goto-assignment)
+  		("C-c g o" . elpy-goto-definition-other-window)
+  		("C-c g g" . elpy-goto-definition)
+  		("C-c g ?" . elpy-doc))
+      :config
+      (message "elpy loaded")
+      (use-package jedi)
+      (which-key-add-key-based-replacements "C-c g a" "goto-assignment")
+      (which-key-add-key-based-replacements "C-c g o" "find-defitions-other-window")
+      (which-key-add-key-based-replacements "C-c g g" "find-defitions")
+      (which-key-add-key-based-replacements "C-c g ?" "eldoc-definition")
+      (elpy-enable))
+    ;; Enable Flycheck
+    (use-package flycheck
+      :after elpy
+      :straight (flycheck :type git :flavor melpa
+                      :host github
+                      :repo "flycheck/flycheck")
+      :config
+      (setq elpy-modules (delq 'elpy-module-flymake elpy-modules))
+      :hook (elpy-mode . flycheck-mode)))
 
 ;;; ------------------------------------------------------------------------
   ;;; Alternate fork to handle possible performance bug(s)
@@ -1054,15 +1187,29 @@ should be taken into consideration when providing a width."
             ;;           (defun dape--save-on-start ()
             ;;             (save-some-buffers t t)))
 
+            :config
             ;; Projectile users
-            (setq dape-cwd-fn 'projectile-project-root)
+            ;; (setq dape-cwd-fn 'projectile-project-root)
             ;; :straight (dape :type git
             ;;           :host github :repo "emacs-straight/dape"
             ;;           :files ("*" (:exclude ".git")))
-            :config
             (message "DAPE Configured")
             )
         ))
+
+;;; --------------------------------------------------------------------------
+;;; Debug Adapter Protocol      
+(if (equal debug-adapter 'enable-dap-mode)
+    (use-package dap-mode
+        ;; Uncomment the config below if you want all UI panes to be hidden by default!
+        ;; :custom
+        ;; (lsp-enable-dap-auto-configure nil)
+        :commands dap-debug
+        :custom
+        (dap-auto-configure-features '(sessions locals breakpoints expressions repl controls tooltip))
+        :config
+        (dap-ui-mode 1)
+        (message "DAP mode loaded and configured.")))
 
 ;;; --------------------------------------------------------------------------
 
@@ -1135,25 +1282,6 @@ should be taken into consideration when providing a width."
          ("x" nil "exit Hydra" :color yellow)
          ("q" mrf/dape-end-debug-session "quit" :color blue)
          ("Q" mrf/dape-delete-all-debug-sessions :color red))
-
-;;; --------------------------------------------------------------------------
-;;; Debug Adapter Protocol      
-(if (equal debug-adapter 'enable-dap-mode)
-    (progn
-      (use-package dap-mode
-  	  ;; Uncomment the config below if you want all UI panes to be hidden by default!
-  	  ;; :custom
-  	  ;; (lsp-enable-dap-auto-configure nil)
-    	    :commands
-  	  dap-debug
-  	  :custom
-  	  (dap-auto-configure-features '(sessions locals breakpoints expressions repl controls tooltip))
-  	  :config
-  	  (dap-ui-mode 1)
-  	  (message "DAP mode loaded and configured.")
-  	  )
-      )
-    )
 
 ;;; --------------------------------------------------------------------------
 ;;; DAP for Python
@@ -1244,7 +1372,7 @@ should be taken into consideration when providing a width."
 ;;; --------------------------------------------------------------------------
 ;;; Swiper and IVY mode
 
-(if (equal completion-handler 'enable-ivy-counsel-swiper)
+(if (equal completion-handler 'comphand-ivy-counsel)
     (progn
       (use-package ivy
   	  :diminish I
@@ -1278,12 +1406,12 @@ should be taken into consideration when providing a width."
 
 ;;; --------------------------------------------------------------------------
 
-(if (equal completion-handler 'enable-ivy-counsel-swiper)
+(if (equal completion-handler 'comphand-ivy-counsel)
     (use-package swiper))
 
 ;;; --------------------------------------------------------------------------
 
-(if (equal completion-handler 'enable-ivy-counsel-swiper)
+(if (equal completion-handler 'comphand-ivy-counsel)
     (use-package counsel
       :straight t
       :bind (("C-M-j" . 'counsel-switch-buffer)
@@ -1296,7 +1424,7 @@ should be taken into consideration when providing a width."
 
 ;;; --------------------------------------------------------------------------
 
-(if (equal completion-handler 'enable-ivy-counsel-swiper)
+(if (equal completion-handler 'comphand-ivy-counsel)
     (use-package ivy-prescient
       :after counsel
       :custom
@@ -1382,6 +1510,7 @@ should be taken into consideration when providing a width."
       :hook
       (typescript-ts-mode . lsp-deferred)
       (js2-mode . lsp-deferred)
+      (rust-mode . lsp-deferred)
       :bind (:map typescript-mode-map
   		("C-c ." . dap-hydra/body))
       :config
@@ -1395,6 +1524,7 @@ should be taken into consideration when providing a width."
       :hook
       (typescript-ts-mode . lsp-deferred)
       (js2-mode . lsp-deferred)
+      (rust-mode . lsp-deferred)
       :bind (:map typescript-mode-map
   		("C-c ." . dape-hydra/body))
       :config
@@ -1424,7 +1554,7 @@ should be taken into consideration when providing a width."
     (c-mode)
     (unless (featurep 'realgud))
       (use-package realgud)
-    (highlight-indentation-mode -1)
+    (highlight-indentation-mode nil)
     (display-fill-column-indicator-mode t))
 
 (defun code-compile ()
@@ -1477,28 +1607,35 @@ should be taken into consideration when providing a width."
 (defun mrf/load-python-file-hook ()
     (message "Running python file hook")
     (python-mode)
+    (diff-hl-mode)
+    ;; (unless (featurep 'jedi)
+    ;; 	(use-package jedi
+    ;; 	    :config
+    ;; 	    (jedi:setup)))
+    (setq highlight-indentation-mode -1)
+    (setq display-fill-column-indicator-mode t))
 
+(defun mrf/python-mode-triggered ()
+    (message ">>> mrf/python-mode-triggered")
     (if (equal debug-adapter 'enable-dap-mode)
       (unless (featurep 'dap-mode)
   	  (dap-mode))
       (if (not (featurep 'dape))
           (use-package dape :demand t)))
-
-    (diff-hl-mode)
-    (highlight-indentation-mode -1)
-    (display-fill-column-indicator-mode t))
-
-(defun mrf/python-mode-triggered ()
-    (message "Calling mrf/python-mode-triggered")
-    (eglot-ensure)
+    ;; Activate LSP and EGLOT *if* selected as python-ide
+    (if (equal python-ide 'python-ide-eglot-lsp)
+      (unless (featurep 'lsp)
+  	  (lsp))
+      (unless (featurep 'eglot)
+  	  (eglot)))
     (set-fill-column 80))
 
 (use-package python-mode
     :defer t
-    :hook (python-mode . (lambda () (set-fill-column 80)))
-    )
+    :hook (python-mode . mrf/python-mode-triggered) )
 
 (add-to-list 'auto-mode-alist '("\\.py\\'" . mrf/load-python-file-hook))
+
 (use-package blacken
     :after python) ;Format Python file upon save.
 
@@ -1508,49 +1645,8 @@ should be taken into consideration when providing a width."
 
 ;;; --------------------------------------------------------------------------
 
-(if (equal enable-anaconda t)
-   (use-package anaconda-mode
-      :bind (:map python-mode-map
-    	      ("C-c g o" . anaconda-mode-find-definitions-other-frame)
-    	      ("C-c g g" . anaconda-mode-find-definitions)
-  	      ("C-c C-x" . next-error))
-       :config
-       (require 'pyvenv)
-       :hook
-       (python-mode-hook . anaconda-eldoc-mode)))
-
-;;; --------------------------------------------------------------------------
-
-(if (equal enable-elpy t)
-    (progn
-        (use-package elpy
-            :after python
-            :custom
-            (elpy-rpc-python-command "python3")
-            (display-fill-column-indicator-mode 1)
-            (highlight-indentation-mode 0)
-  	  :bind (:map python-mode-map
-  		    ("C-c g a" . elpy-goto-assignment)
-  		    ("C-c g o" . elpy-goto-definition-other-window)
-  		    ("C-c g g" . elpy-goto-definition)
-  		    ("C-c g ?" . elpy-doc))
-  	  :config
-  	  (message "elpy loaded")
-  	  (elpy-enable))
-        ;; Enable Flycheck
-        (use-package flycheck
-  	  :after elpy
-  	  :straight (flycheck :type git :flavor melpa
-                          :host github
-                          :repo "flycheck/flycheck")
-  	  :config
-  	  (setq elpy-modules (delq 'elpy-module-flymake elpy-modules))
-  	  :hook (elpy-mode . flycheck-mode))))
-
-;;; --------------------------------------------------------------------------
-
 (use-package py-autopep8
-   :after python-mode
+   :after (python-mode python)
    :hook ((python-mode) . py-autopep8-mode))
 
 ;;; --------------------------------------------------------------------------
@@ -1588,23 +1684,8 @@ should be taken into consideration when providing a width."
 
 (use-package pyvenv-auto
    :after python
-   :config (message "Starting pyvenv-auto")
+   :config (message ">>> Starting pyvenv-auto")
    :hook (python-mode . pyvenv-auto-run))
-
-;;; --------------------------------------------------------------------------
-
-(use-package realgud
-    :after c-mode
-    :defer t)
-
-(use-package realgud-lldb
-    :after realgud
-    :straight (realgud-lldb
-  		:type git
-  		:flavor melpa
-  		:files (:defaults ("lldb" "lldb/*.el") "realgud-lldb-pkg.el")
-  		:host github
-  		:repo "realgud/realgud-lldb"))
 
 ;;; --------------------------------------------------------------------------
 
@@ -1671,16 +1752,39 @@ should be taken into consideration when providing a width."
 
 ;;; --------------------------------------------------------------------------
 
+(when (equal python-ide 'python-ide-eglot-lsp)
+    (use-package company
+      :after lsp-mode
+      :hook (lsp-mode . company-mode)
+      :bind (:map company-active-map
+  		("<tab>" . company-complete-selection))
+  	    (:map lsp-mode-map
+  		("<tab>" . company-indent-or-complete-common))))
+
+(when (equal python-ide 'python-ide-elpy)
+    (use-package company
+      :after elpy
+      :hook (elpy-mode . company-mode)
+      :bind (:map company-active-map
+  		("<tab>" . company-complete-selection))
+              (:map elpy-mode-map
+  		("<tab>" . company-indent-or-complete-common))))
+
+(when (equal python-ide 'python-ide-anaconda)
+    (use-package company
+      :after anaconda-mode
+      :hook (anaconda-mode . company-mode)
+      :bind (:map company-active-map
+  		("<tab>" . company-complete-selection))
+  	    (:map elpy-mode-map
+  		("<tab>" . company-indent-or-complete-common))))
+
 (use-package company
-   :after lsp-mode
-   :hook (lsp-mode . company-mode)
-   :bind (:map company-active-map
-            ("<tab>" . company-complete-selection))
-   (:map lsp-mode-map
-      ("<tab>" . company-indent-or-complete-common))
-   :custom
-   (company-minimum-prefix-length 1)
-   (company-idle-delay 0.0))
+    :custom
+    (company-minimum-prefix-length 1)
+    (company-idle-delay 0.0))
+    ;; :config
+    ;; (add-to-list 'company-backends 'company-yasnippet))
 
 (add-hook 'after-init-hook 'global-company-mode)
 
@@ -1690,39 +1794,21 @@ should be taken into consideration when providing a width."
    :diminish cb
    :hook (company-mode . company-box-mode))
 
-(use-package company-jedi
-   :disabled
-   :config
-   (defun my/company-jedi-python-mode-hook ()
-      (add-to-list 'company-backends 'company-jedi))
-   (add-hook 'python-mode-hook 'my/company-jedi-python-mode-hook))
-
-(use-package company-anaconda
-   :after anaconda
-   :hook (python-mode . anaconda-mode))
-
-(eval-after-load "company"
-   '(add-to-list 'company-backends 'company-anaconda))
-
-;;; --------------------------------------------------------------------------
-
-(use-package projectile
-  :diminish Proj
-  :config (projectile-mode)
-  :bind-keymap
-  ("C-c p" . projectile-command-map)
-  :init
-  ;; NOTE: Set this to the folder where you keep your Git repos!
-  (when (file-directory-p "~/Developer")
-    (setq projectile-project-search-path '("~/Developer")))
-  (setq projectile-switch-project-action #'projectile-dired))
-
-(if (equal completion-handler 'enable-ivy-counsel-swiper)
-    (use-package counsel-projectile
-      :after projectile
+(when (equal python-ide 'python-ide-elpy)
+    (use-package company-jedi
       :config
-      (setq projectile-completion-system 'ivy)
-      (counsel-projectile-mode)))
+      (jedi:setup)
+      (defun my/company-jedi-python-mode-hook ()
+  	  (add-to-list 'company-backends 'company-jedi))
+      (add-hook 'python-mode-hook 'my/company-jedi-python-mode-hook)))
+
+(when (equal python-ide 'python-ide-anaconda)
+    (progn
+      (use-package company-anaconda
+  	  :after anaconda
+  	  :hook (python-mode . anaconda-mode))
+      (eval-after-load "company"
+  	  '(add-to-list 'company-backends 'company-anaconda))))
 
 ;;; --------------------------------------------------------------------------
 
@@ -1905,31 +1991,34 @@ should be taken into consideration when providing a width."
 (mrf/org-theme-override-values)
 
 (use-package org
-   :defer t
-   :commands (org-capture org-agenda)
-   :hook (org-mode . mrf/org-mode-setup)
+    :defer t
+    :commands (org-capture org-agenda)
+    :hook (org-mode . mrf/org-mode-setup)
     :bind (:map org-mode-map
-  	("C-c e" . org-edit-src-code))
-   :config
-   ;; Save Org buffers after refiling!
-   (advice-add 'org-refile :after 'org-save-all-org-buffers)
-   (setq org-tag-alist
+  	    ("C-c e" . org-edit-src-code))
+    :config
+    (message ">>> Loading orgmode")
+    ;; Save Org buffers after refiling!
+    (advice-add 'org-refile :after 'org-save-all-org-buffers)
+    (setq org-tag-alist
       '((:startgroup)
-      ; Put mutually exclusive tags here
-          (:endgroup)
-          ("@errand" . ?E)
-          ("@home" . ?H)
-          ("@work" . ?W)
-          ("agenda" . ?a)
-          ("planning" . ?p)
-          ("publish" . ?P)
-          ("batch" . ?b)
-          ("note" . ?n)
-          ("idea" . ?i)))
-   (mrf/org-setup-agenda)
-   ;; Configure custom agenda views
-   (mrf/org-setup-capture-templates)
-   (define-key global-map (kbd "C-c j")
+  				      ; Put mutually exclusive tags here
+             (:endgroup)
+             ("@errand" . ?E)
+             ("@home" . ?H)
+             ("@work" . ?W)
+             ("agenda" . ?a)
+             ("planning" . ?p)
+             ("publish" . ?P)
+             ("batch" . ?b)
+             ("note" . ?n)
+             ("idea" . ?i)))
+    ;; Configure custom agenda views
+    (mrf/org-setup-agenda)
+    (mrf/org-setup-capture-templates)
+    ;; If not already, enable yasnippet
+    (yas-global-mode t)
+    (define-key global-map (kbd "C-c j")
       (lambda () (interactive) (org-capture nil "jj")))
     (mrf/org-font-setup))
 
@@ -1941,9 +2030,9 @@ should be taken into consideration when providing a width."
 
 (use-package org-bullets
    :after org
-  :hook (org-mode . org-bullets-mode)
-  :custom
-  (org-bullets-bullet-list '("◉" "○" "●" "○" "●" "○" "●")))
+    :hook (org-mode . org-bullets-mode)
+    :custom
+    (org-bullets-bullet-list '("◉" "○" "●" "○" "●" "○" "●")))
 
 ;;; --------------------------------------------------------------------------
 
@@ -2127,7 +2216,7 @@ capture was not aborted."
 
 ;;; --------------------------------------------------------------------------
 
-(if (equal completion-handler 'enable-vertico)
+(if (equal completion-handler 'comphand-vertico)
     (progn
       (use-package vertico
   	  :demand t   ; Otherwise won't get loaded immediately
@@ -2168,7 +2257,7 @@ capture was not aborted."
 
 ;;; --------------------------------------------------------------------------
 
-(if (equal completion-handler 'enable-vertico)
+(if (equal completion-handler 'comphand-vertico)
     (use-package marginalia
         :custom
         (marginalia-max-relative-age 0)
@@ -2178,7 +2267,7 @@ capture was not aborted."
 
 ;;; --------------------------------------------------------------------------
 
-(if (equal completion-handler 'enable-vertico)
+(if (equal completion-handler 'comphand-vertico)
     (use-package orderless
       :custom
       (completion-styles '(orderless basic))
@@ -2187,7 +2276,7 @@ capture was not aborted."
 ;;; --------------------------------------------------------------------------
 ;; Example configuration for Consult
 
-(if (equal completion-handler 'enable-vertico)
+(if (equal completion-handler 'comphand-vertico)
     (use-package consult
       :straight t
       ;; Replace bindings. Lazily loaded due by `use-package'.
@@ -2350,42 +2439,42 @@ capture was not aborted."
 ;;; --------------------------------------------------------------------------
 
 (use-package all-the-icons
-   :if (display-graphic-p))
+    :if (display-graphic-p))
 
 (defun mrf/setup-dashboard-buffer ()
-  "Set up the dashboard buffer and optionally make it the first."
-  (setq dashboard-items '((recents . 15)
-                             (bookmarks . 10)
-                             (projects . 10))
+    "Set up the dashboard buffer and optionally make it the first."
+    (setq dashboard-items '((recents . 15)
+                               (bookmarks . 10)
+                               (projects . 10))
       dashboard-icon-type 'all-the-icons
       dashboard-display-icons-p t
       dashboard-center-content t
       dashboard-set-heading-icons t
-      dashboard-set-file-icons t
-      dashboard-projects-backend 'projectile)
+      dashboard-set-file-icons t)
+    ;; dashboard-projects-backend 'projectile)
 
-  (global-set-key (kbd "C-c d") 'dashboard-open)
+    (global-set-key (kbd "C-c d") 'dashboard-open)
 
-  (if (equal display-dashboard-at-start t)
+    (if (equal display-dashboard-at-start t)
       (progn
-          (setq initial-buffer-choice
-              (lambda ()
-                  (get-buffer-create "*dashboard*")))
-          (dashboard-open))
+            (setq initial-buffer-choice
+  	      (lambda ()
+                    (get-buffer-create "*dashboard*")))
+            (dashboard-open))
       (get-buffer-create "*dashboard*")))
 
 (defun mrf/dashboard-banner ()
-   "Setup defaults for the dashboard banner buffer."
-   (setq dashboard-footer-messages '("Greetings Program!"))
-   (setq dashboard-banner-logo-title "Welcome to Emacs!")
-   (setq dashboard-startup-banner 'logo))
+    "Setup defaults for the dashboard banner buffer."
+    (setq dashboard-footer-messages '("Greetings Program!"))
+    (setq dashboard-banner-logo-title "Welcome to Emacs!")
+    (setq dashboard-startup-banner 'logo))
 
 (use-package dashboard
-   :after (dired)
-   :init
-   (mrf/dashboard-banner)
-   :hook ((after-init     . mrf/setup-dashboard-buffer)
-          (dashboard-mode . mrf/dashboard-banner)))
+    :after (dired)
+    :init
+    (mrf/dashboard-banner)
+    :hook ((after-init     . mrf/setup-dashboard-buffer)
+              (dashboard-mode . mrf/dashboard-banner)))
 
 ;;; --------------------------------------------------------------------------
 ;; A cleaner and simpler undo package.
@@ -2425,7 +2514,7 @@ capture was not aborted."
 ;;; --------------------------------------------------------------------------
 ;; helpful package
 
-(if (equal completion-handler 'enable-ivy-counsel-swiper)
+(if (equal completion-handler 'comphand-ivy-counsel)
     (use-package helpful
       :commands (helpful-callable helpful-variable helpful-command helpful-key)
       :custom
@@ -2543,17 +2632,17 @@ capture was not aborted."
 ;;; --------------------------------------------------------------------------
 
 (use-package pulsar
-   :config
-   (pulsar-global-mode)
-   (let ((map global-map))
+    :config
+    (pulsar-global-mode)
+    (let ((map global-map))
       (define-key map (kbd "C-c h p") #'pulsar-pulse-line)
       (define-key map (kbd "C-c h h") #'pulsar-highlight-line))
-   :custom
-   (pulsar-pulse t)
-   (pulsar-delay 0.10)
-   (pulsar-iterations 10)
-   (pulsar-face 'pulsar-magenta)
-   (pulsar-highlight-face 'pulsar-yellow))
+    :custom
+    (pulsar-pulse t)
+    (pulsar-delay 0.10)
+    (pulsar-iterations 10)
+    (pulsar-face 'pulsar-magenta)
+    (pulsar-highlight-face 'pulsar-yellow))
 
 ;;; --------------------------------------------------------------------------
 
