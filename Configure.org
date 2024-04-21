@@ -29,7 +29,7 @@ This ORG file will configure the *init.el* file based upon all of the *emacs-lis
 
 * Early Setup
 
-** Lispy Header
+**** Lispy Header
 This is the standard format of a =lisp= header that should appear for all =lisp= scripts. It also indicates that the ~init.el~ file is generated from this ~Configure.org~ file.
 
 #+begin_src emacs-lisp
@@ -61,7 +61,6 @@ This is the standard format of a =lisp= header that should appear for all =lisp=
 =Straight= is an alternative package manager that installs packages through Git checkouts instead of downloading tarballs from one of the package archives. Doing so allows installing forked packages, altering local package checkouts, and locking packages to exact versions for reproducable setups.
 
 #+begin_src emacs-lisp
-
   ;;; --------------------------------------------------------------------------
 
   (defvar bootstrap-version)
@@ -188,6 +187,7 @@ Other variables are also defined here that define other emacs behaviors and defa
 *** Feature selection choices
 
 #+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
 
   (defcustom completion-handler 'comphand-vertico
       "Select the default minibuffer completion handler.
@@ -497,7 +497,7 @@ This function simply loads the theme from the theme-list indexed by the ~theme-s
       (interactive)
       (if step
           (setq theme-cycle-step step)
-        (setq theme-cycle-step 1))
+  	(setq theme-cycle-step 1))
       (when loaded-theme
           (disable-theme (intern loaded-theme)))
       (setq loaded-theme (nth theme-selector theme-list))
@@ -506,12 +506,12 @@ This function simply loads the theme from the theme-list indexed by the ~theme-s
       (load-theme (intern loaded-theme) t)
       (if (equal (fboundp 'mrf/org-font-setup) t)
           (mrf/org-font-setup))
-      )
+      (set-face-foreground 'line-number "SkyBlue4"))
 
   (defun mrf/print-custom-theme-name ()
-     "Print the current loaded theme from the `theme-list' on the modeline."
-     (interactive)
-     (message (format "Custom theme is %S" loaded-theme)))
+      "Print the current loaded theme from the `theme-list' on the modeline."
+      (interactive)
+      (message (format "Custom theme is %S" loaded-theme)))
 
   ;; Quick Helper Functions
   (defun next-theme ()
@@ -542,6 +542,7 @@ This function simply loads the theme from the theme-list indexed by the ~theme-s
 This is just a test area to see what colors look like in this =org= mode.
 
 #+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
 
   ;; Normally not used but it's here so it's easy to change the block colors.
   (defun mrf/customize-org-block-colors ()
@@ -1061,11 +1062,11 @@ Selec a theme (or themes) to load. The last one specified is the one that is use
   ;;; --------------------------------------------------------------------------
 
   (defun mrf/customize-modus-theme ()
-     (message "Applying modus customization")
-     (setq modus-themes-common-palette-overrides
-        '((bg-mode-line-active bg-blue-intense)
-            (fg-mode-line-active fg-main)
-            (border-mode-line-active blue-intense))))
+      (message "Applying modus customization")
+      (setq modus-themes-common-palette-overrides
+  	'((bg-mode-line-active bg-blue-intense)
+               (fg-mode-line-active fg-main)
+               (border-mode-line-active blue-intense))))
 
   (add-hook 'after-init-hook 'mrf/customize-modus-theme)
 
@@ -1102,8 +1103,8 @@ This includes the theme to use in both graphical and non-graphical.
 
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
+  ;; (add-hook 'emacs-startup-hook #'(mrf/load-theme-from-selector))
   (mrf/load-theme-from-selector)
-
   ;; For terminal mode we choose Material theme
   (unless (display-graphic-p)
      (load-theme 'material t))
@@ -1593,6 +1594,7 @@ Provides a common protocol for debugging different systems. This is configured f
 This is meant to be evaluated and run once. Calling this function will clone the vscode-js-debug framework. This is a DAP-based JavaScript debugger. It debugs Node.js, Chrome, Edge, WebView2, VS Code extensions, and more. It has been the default JavaScript debugger in Visual Studio Code since 1.46, and is gradually rolling out in Visual Studio proper.
 
 #+begin_src emacs-lisp :tangle no 
+  ;;; --------------------------------------------------------------------------
 
   (mrf/install-vscode-js-debug)
   
@@ -1991,8 +1993,6 @@ Tree-sitter is a parser generator tool and an incremental parsing library. It ca
      (tree-sitter-hl-mode t)
      (ts-fold-mode t))
 
-  (use-package tree-sitter-langs)
-
   (use-package tree-sitter
      :init
      (message ">>> Loading tree-sitter")
@@ -2006,6 +2006,8 @@ Tree-sitter is a parser generator tool and an incremental parsing library. It ca
      (c-mode . lsp-deferred)
      (c++-mode . lsp-deferred)
      (js2-mode . lsp-deferred))
+
+  (use-package tree-sitter-langs)
 
   (use-package ts-fold
      :straight (ts-fold :type git
@@ -2374,27 +2376,25 @@ RGBDS is a compiler that has been around quite a long time (since 1997). It supp
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
 
-  (use-package z80-mode
-      :if enable-gb-dev
-      :straight (z80-mode
-                  :type git
-                  :host github
-                  :repo "SuperDisk/z80-mode"))
+  (when enable-gb-dev
+      (use-package z80-mode
+  	:straight (z80-mode
+                        :type git
+                        :host github
+                        :repo "SuperDisk/z80-mode"))
 
-  (use-package mwim
-      :if enable-gb-dev
-      :straight (mwim
-                  :type git
-                  :flavor melpa
-                  :host github
-                  :repo "alezost/mwim.el"))
+      (use-package mwim
+  	:straight (mwim
+                        :type git
+                        :flavor melpa
+                        :host github
+                        :repo "alezost/mwim.el"))
 
-  (use-package rgbds-mode
-      :if enable-gb-dev
-      :after mwim
-      :straight (rgbds-mode
-                  :type git :host github
-                  :repo "japanoise/rgbds-mode"))
+      (use-package rgbds-mode
+  	:after mwim
+  	:straight (rgbds-mode
+                        :type git :host github
+                        :repo "japanoise/rgbds-mode")))
 
 #+end_src
 
@@ -2456,6 +2456,7 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
 
   (when (equal python-ide 'python-ide-elpy)
       (use-package company-jedi
+  	:after python
   	:config
   	(jedi:setup)
   	(defun my/company-jedi-python-mode-hook ()
@@ -2537,24 +2538,23 @@ The =mrf/org-font-setup= function configures various text faces to tweak the siz
 
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
-  
+
   (defun mrf/org-theme-override-values ()
-     (defface org-block-begin-line
-        '((t (:underline "#1D2C39" :foreground "SlateGray" :background "#1D2C39")))
-        "Face used for the line delimiting the begin of source blocks.")
+      (defface org-block-begin-line
+  	'((t (:underline "#1D2C39" :foreground "SlateGray" :background "#1D2C39")))
+  	"Face used for the line delimiting the begin of source blocks.")
 
-     (defface org-block
-        '((t (:background "#242635" :extend t)))
-        "Face used for the source block background.")
+      (defface org-block
+  	'((t (:background "#242635" :extend t)))
+  	"Face used for the source block background.")
 
-     (defface org-block-end-line
-        '((t (:overline "#1D2C39" :foreground "SlateGray" :background "#1D2C39")))
-         "Face used for the line delimiting the end of source blocks.")
+      (defface org-block-end-line
+  	'((t (:overline "#1D2C39" :foreground "SlateGray" :background "#1D2C39")))
+  	"Face used for the line delimiting the end of source blocks.")
       
-     (defface org-modern-horizontal-rule
-        '((t (:strike-through "green" :weight bold)))
-         "Face used for the Horizontal like (-----)")
-      )
+      (defface org-modern-horizontal-rule
+  	'((t (:strike-through "green" :weight bold)))
+  	"Face used for the Horizontal like (-----)"))
 
 #+end_src
 
@@ -3042,6 +3042,7 @@ While there is standard markdown support built into =org-mode=, this additional 
 
 * IRC Client
 #+begin_src emacs-lisp :tangle no
+  ;;; --------------------------------------------------------------------------
 
   (add-hook 'rcirc-mode-hook #'rcirc-track-minor-mode)
   (add-hook 'rcirc-mode-hook #'rcirc-omit-mode)
@@ -3382,7 +3383,6 @@ A great package that allows moving up and down the undo-redo tree.
 
 ** Undo-Tree
 #+begin_src emacs-lisp
-
   ;;; --------------------------------------------------------------------------
   ;; Full-featured undo-tree handling. Look to Vundo for something a little
   ;; simpler.
@@ -3646,7 +3646,7 @@ Here are some helpful functions.
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
 
-  (use-package diff-hl)
+  (use-package diff-hl :defer t)
   
 #+end_src
 
@@ -3987,7 +3987,11 @@ These functions are used to configure the main frame font size. Based upon a mon
 
 #+end_src
 
+**** Lispy Footer
+The standard =lisp= footer that should appear at the end of every =lisp= source file.
+
 #+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
 
   ;;; init.el ends here.
   

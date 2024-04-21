@@ -44,7 +44,7 @@
 
 (setq use-package-compute-statistics t
     use-package-verbose t
-    use-package-always-ensure t
+    use-package-always-ensure nil
     use-package-always-demand nil
     use-package-always-defer nil)
 
@@ -120,6 +120,8 @@
     window to the dimensions of a golden-rectangle "
     :type 'boolean
     :group 'mrf-custom)
+
+;;; --------------------------------------------------------------------------
 
 (defcustom completion-handler 'comphand-vertico
     "Select the default minibuffer completion handler.
@@ -402,12 +404,12 @@ should be taken into consideration when providing a width."
     (load-theme (intern loaded-theme) t)
     (if (equal (fboundp 'mrf/org-font-setup) t)
         (mrf/org-font-setup))
-    )
+    (set-face-foreground 'line-number "SkyBlue4"))
 
 (defun mrf/print-custom-theme-name ()
-   "Print the current loaded theme from the `theme-list' on the modeline."
-   (interactive)
-   (message (format "Custom theme is %S" loaded-theme)))
+    "Print the current loaded theme from the `theme-list' on the modeline."
+    (interactive)
+    (message (format "Custom theme is %S" loaded-theme)))
 
 ;; Quick Helper Functions
 (defun next-theme ()
@@ -432,6 +434,8 @@ should be taken into consideration when providing a width."
 (global-set-key (kbd "C-c C--") 'previous-theme)
 ;; Print current theme
 (global-set-key (kbd "C-c C-?") 'which-theme)
+
+;;; --------------------------------------------------------------------------
 
 ;; Normally not used but it's here so it's easy to change the block colors.
 (defun mrf/customize-org-block-colors ()
@@ -804,11 +808,11 @@ should be taken into consideration when providing a width."
 ;;; --------------------------------------------------------------------------
 
 (defun mrf/customize-modus-theme ()
-   (message "Applying modus customization")
-   (setq modus-themes-common-palette-overrides
+    (message "Applying modus customization")
+    (setq modus-themes-common-palette-overrides
       '((bg-mode-line-active bg-blue-intense)
-          (fg-mode-line-active fg-main)
-          (border-mode-line-active blue-intense))))
+             (fg-mode-line-active fg-main)
+             (border-mode-line-active blue-intense))))
 
 (add-hook 'after-init-hook 'mrf/customize-modus-theme)
 
@@ -833,8 +837,8 @@ should be taken into consideration when providing a width."
     ("C-= ?" . mrf/print-custom-theme-name))
 
 ;;; --------------------------------------------------------------------------
+;; (add-hook 'emacs-startup-hook #'(mrf/load-theme-from-selector))
 (mrf/load-theme-from-selector)
-
 ;; For terminal mode we choose Material theme
 (unless (display-graphic-p)
    (load-theme 'material t))
@@ -1478,8 +1482,6 @@ Thanks @wyuenho on GitHub"
    (tree-sitter-hl-mode t)
    (ts-fold-mode t))
 
-(use-package tree-sitter-langs)
-
 (use-package tree-sitter
    :init
    (message ">>> Loading tree-sitter")
@@ -1493,6 +1495,8 @@ Thanks @wyuenho on GitHub"
    (c-mode . lsp-deferred)
    (c++-mode . lsp-deferred)
    (js2-mode . lsp-deferred))
+
+(use-package tree-sitter-langs)
 
 (use-package ts-fold
    :straight (ts-fold :type git
@@ -1728,27 +1732,25 @@ Thanks @wyuenho on GitHub"
 
 ;;; --------------------------------------------------------------------------
 
-(use-package z80-mode
-    :if enable-gb-dev
-    :straight (z80-mode
-                :type git
-                :host github
-                :repo "SuperDisk/z80-mode"))
+(when enable-gb-dev
+    (use-package z80-mode
+      :straight (z80-mode
+                      :type git
+                      :host github
+                      :repo "SuperDisk/z80-mode"))
 
-(use-package mwim
-    :if enable-gb-dev
-    :straight (mwim
-                :type git
-                :flavor melpa
-                :host github
-                :repo "alezost/mwim.el"))
+    (use-package mwim
+      :straight (mwim
+                      :type git
+                      :flavor melpa
+                      :host github
+                      :repo "alezost/mwim.el"))
 
-(use-package rgbds-mode
-    :if enable-gb-dev
-    :after mwim
-    :straight (rgbds-mode
-                :type git :host github
-                :repo "japanoise/rgbds-mode"))
+    (use-package rgbds-mode
+      :after mwim
+      :straight (rgbds-mode
+                      :type git :host github
+                      :repo "japanoise/rgbds-mode")))
 
 ;;; --------------------------------------------------------------------------
 
@@ -1796,6 +1798,7 @@ Thanks @wyuenho on GitHub"
 
 (when (equal python-ide 'python-ide-elpy)
     (use-package company-jedi
+      :after python
       :config
       (jedi:setup)
       (defun my/company-jedi-python-mode-hook ()
@@ -1829,22 +1832,21 @@ Thanks @wyuenho on GitHub"
 ;;; --------------------------------------------------------------------------
 
 (defun mrf/org-theme-override-values ()
-   (defface org-block-begin-line
+    (defface org-block-begin-line
       '((t (:underline "#1D2C39" :foreground "SlateGray" :background "#1D2C39")))
       "Face used for the line delimiting the begin of source blocks.")
 
-   (defface org-block
+    (defface org-block
       '((t (:background "#242635" :extend t)))
       "Face used for the source block background.")
 
-   (defface org-block-end-line
+    (defface org-block-end-line
       '((t (:overline "#1D2C39" :foreground "SlateGray" :background "#1D2C39")))
-       "Face used for the line delimiting the end of source blocks.")
+      "Face used for the line delimiting the end of source blocks.")
 
-   (defface org-modern-horizontal-rule
+    (defface org-modern-horizontal-rule
       '((t (:strike-through "green" :weight bold)))
-       "Face used for the Horizontal like (-----)")
-    )
+      "Face used for the Horizontal like (-----)"))
 
 ;;; --------------------------------------------------------------------------
 
@@ -2627,7 +2629,7 @@ capture was not aborted."
 
 ;;; --------------------------------------------------------------------------
 
-(use-package diff-hl)
+(use-package diff-hl :defer t)
 
 ;;; --------------------------------------------------------------------------
 
@@ -2842,5 +2844,7 @@ capture was not aborted."
 
 (when (display-graphic-p)
    (add-hook 'after-init-hook 'use-medium-display-font))
+
+;;; --------------------------------------------------------------------------
 
 ;;; init.el ends here.
