@@ -402,7 +402,7 @@ should be taken into consideration when providing a width."
     (message (concat ">>> Loading theme "
                  (format "%d: %S" theme-selector loaded-theme)))
     (load-theme (intern loaded-theme) t)
-    (if (equal (fboundp 'mrf/org-font-setup) t)
+    (when (equal (fboundp 'mrf/org-font-setup) t)
         (mrf/org-font-setup))
     (set-face-foreground 'line-number "SkyBlue4"))
 
@@ -1005,7 +1005,7 @@ Thanks @wyuenho on GitHub"
     (let ((root (projectile-project-root dir)))
         (and root (cons 'transient root))))
 
-(if (equal python-ide 'python-ide-eglot-lsp)
+(when (equal python-ide 'python-ide-eglot-lsp)
     (use-package eglot
         :defer t
         :init
@@ -1047,24 +1047,24 @@ Thanks @wyuenho on GitHub"
                                       :autopep8 (:enabled :json-false)
                                       :black (:enabled t
                                                  :line_length 88
-                                                 :cache_config t))))
-  	       ))))
+                                                 :cache_config t))))))
+      ))
 
 ;;; --------------------------------------------------------------------------
 ;;; Language Server Protocol
 
-(if (equal python-ide 'python-ide-eglot-lsp)
+(when (equal python-ide 'python-ide-eglot-lsp)
     (eval-when-compile (defvar lsp-enable-which-key-integration)))
 
 (defun mrf/lsp-mode-setup ()
     "Custom LSP setup function."
-    (if (equal python-ide 'python-ide-eglot-lsp)
+    (when (equal python-ide 'python-ide-eglot-lsp)
         (message "Set up LSP header-line and other vars")
         (setq lsp-headerline-breadcrumb-segments '(path-up-to-project file symbols))
         (setq lsp-clangd-binary-path "/usr/bin/clangd")'
         (lsp-headerline-breadcrumb-mode)))
 
-(if (equal python-ide 'python-ide-eglot-lsp)
+(when (equal python-ide 'python-ide-eglot-lsp)
     (use-package lsp-mode
         :defer t
         :commands (lsp lsp-deferred)
@@ -1074,7 +1074,7 @@ Thanks @wyuenho on GitHub"
         :config
         (lsp-enable-which-key-integration t)))
 
-(if (equal python-ide 'python-ide-eglot-lsp)
+(when (equal python-ide 'python-ide-eglot-lsp)
     (use-package lsp-ui
         :after lsp
         :config (setq lsp-ui-sideline-enable t
@@ -1095,7 +1095,7 @@ Thanks @wyuenho on GitHub"
         (lsp-ui-doc-position 'bottom)
         :hook (lsp-mode . lsp-ui-mode)))
 
-(if (equal python-ide 'python-ide-eglot-lsp)
+(when (equal python-ide 'python-ide-eglot-lsp)
     (use-package lsp-treemacs
         :after lsp
         :bind (:map prog-mode-map
@@ -1103,14 +1103,14 @@ Thanks @wyuenho on GitHub"
         :config
         (lsp-treemacs-sync-mode 1)))
 
-(if (and (equal python-ide 'python-ide-eglot-lsp)
+(when (and (equal python-ide 'python-ide-eglot-lsp)
          (equal completion-handler 'comphand-ivy-counsel))
     (use-package lsp-ivy
         :after lsp ivy))
 
 ;;; --------------------------------------------------------------------------
 
-(if (equal python-ide 'python-ide-anaconda)
+(when (equal python-ide 'python-ide-anaconda)
    (use-package anaconda-mode
        :bind (:map python-mode-map
     	       ("C-c g o" . anaconda-mode-find-definitions-other-frame)
@@ -1160,50 +1160,47 @@ Thanks @wyuenho on GitHub"
 (use-package jsonrpc
     :straight (jsonrpc :type git :host github :repo "emacs-straight/jsonrpc" :files ("*" (:exclude ".git"))))
 
-  (if (equal debug-adapter 'enable-dape)
-      (progn
-        (use-package dape
-            :after jsonrpc
-            :defer t
-            ;; :defer t
-            ;; To use window configuration like gud (gdb-mi)
-            ;; :init
-            ;; (setq dape-buffer-window-arrangement 'gud)
-            :custom
-            (dape-buffer-window-arrangement 'right)  ;; Info buffers to the right
-            ;; To not display info and/or buffers on startup
-            ;; (remove-hook 'dape-on-start-hooks 'dape-info)
-            (remove-hook 'dape-on-start-hooks 'dape-repl)
+(when (equal debug-adapter 'enable-dape)
+    (use-package dape
+        :after jsonrpc
+        :defer t
+        ;; :defer t
+        ;; To use window configuration like gud (gdb-mi)
+        ;; :init
+        ;; (setq dape-buffer-window-arrangement 'gud)
+        :custom
+        (dape-buffer-window-arrangement 'right)  ;; Info buffers to the right
+        ;; To not display info and/or buffers on startup
+        ;; (remove-hook 'dape-on-start-hooks 'dape-info)
+        (remove-hook 'dape-on-start-hooks 'dape-repl)
 
-            ;; To display info and/or repl buffers on stopped
-            ;; (add-hook 'dape-on-stopped-hooks 'dape-info)
-            ;; (add-hook 'dape-on-stopped-hooks 'dape-repl)
+        ;; To display info and/or repl buffers on stopped
+        ;; (add-hook 'dape-on-stopped-hooks 'dape-info)
+        ;; (add-hook 'dape-on-stopped-hooks 'dape-repl)
 
-            ;; By default dape uses gdb keybinding prefix
-            ;; If you do not want to use any prefix, set it to nil.
-            ;; (setq dape-key-prefix "\C-x\C-a")
+        ;; By default dape uses gdb keybinding prefix
+        ;; If you do not want to use any prefix, set it to nil.
+        ;; (setq dape-key-prefix "\C-x\C-a")
 
-            ;; Kill compile buffer on build success
-            ;; (add-hook 'dape-compile-compile-hooks 'kill-buffer)
+        ;; Kill compile buffer on build success
+        ;; (add-hook 'dape-compile-compile-hooks 'kill-buffer)
 
-            ;; Save buffers on startup, useful for interpreted languages
-            ;; (add-hook 'dape-on-start-hooks
-            ;;           (defun dape--save-on-start ()
-            ;;             (save-some-buffers t t)))
+        ;; Save buffers on startup, useful for interpreted languages
+        ;; (add-hook 'dape-on-start-hooks
+        ;;           (defun dape--save-on-start ()
+        ;;             (save-some-buffers t t)))
 
-            :config
-            ;; Projectile users
-            ;; (setq dape-cwd-fn 'projectile-project-root)
-            ;; :straight (dape :type git
-            ;;           :host github :repo "emacs-straight/dape"
-            ;;           :files ("*" (:exclude ".git")))
-            (message "DAPE Configured")
-            )
-        ))
+        :config
+        ;; Projectile users
+        ;; (setq dape-cwd-fn 'projectile-project-root)
+        ;; :straight (dape :type git
+        ;;           :host github :repo "emacs-straight/dape"
+        ;;           :files ("*" (:exclude ".git")))
+        (message "DAPE Configured")))
 
 ;;; --------------------------------------------------------------------------
 ;;; Debug Adapter Protocol      
-(if (equal debug-adapter 'enable-dap-mode)
+(when (equal debug-adapter 'enable-dap-mode)
     (use-package dap-mode
         ;; Uncomment the config below if you want all UI panes to be hidden by default!
         ;; :custom
@@ -1290,32 +1287,28 @@ Thanks @wyuenho on GitHub"
 ;;; --------------------------------------------------------------------------
 ;;; DAP for Python
 
-(if (equal debug-adapter 'enable-dap-mode)
-   (progn
-      (use-package dap-python
-       :straight (dap-python :type git :host github :repo "emacs-lsp/dap-mode")
-       :after (dap-mode)
-       :config
-       (setq dap-python-executable "python3") ;; Otherwise it looks for 'python' else error.
-       (setq dap-python-debugger 'debugpy)
-       (dap-register-debug-template "Python :: Run file from project directory"
-          (list :type "python"
-             :args ""
-             :cwd nil
-             :module nil
-             :program nil
-             :request "launch"))
-       (dap-register-debug-template "Python :: Run file (buffer)"
-          (list :type "python"
-             :args ""
-             :cwd nil
-             :module nil
-             :program nil
-             :request "launch"
-             :name "Python :: Run file (buffer)"))
-       )
-      )
-   )
+(when (equal debug-adapter 'enable-dap-mode)
+    (use-package dap-python
+      :straight (dap-python :type git :host github :repo "emacs-lsp/dap-mode")
+      :after (dap-mode)
+      :config
+      (setq dap-python-executable "python3") ;; Otherwise it looks for 'python' else error.
+      (setq dap-python-debugger 'debugpy)
+      (dap-register-debug-template "Python :: Run file from project directory"
+            (list :type "python"
+  	      :args ""
+  	      :cwd nil
+  	      :module nil
+  	      :program nil
+  	      :request "launch"))
+      (dap-register-debug-template "Python :: Run file (buffer)"
+            (list :type "python"
+  	      :args ""
+  	      :cwd nil
+  	      :module nil
+  	      :program nil
+  	      :request "launch"
+  	      :name "Python :: Run file (buffer)"))))
 
 ;;; --------------------------------------------------------------------------
 
@@ -1376,46 +1369,46 @@ Thanks @wyuenho on GitHub"
 ;;; --------------------------------------------------------------------------
 ;;; Swiper and IVY mode
 
-(if (equal completion-handler 'comphand-ivy-counsel)
-    (progn
-      (use-package ivy
-  	  :diminish I
-  	  :bind (("C-s" . swiper)
-  		    :map ivy-minibuffer-map
+(when (equal completion-handler 'comphand-ivy-counsel)
+    (use-package ivy
+      :diminish I
+      :bind (("C-s" . swiper)
+  		:map ivy-minibuffer-map
           ;;; ("TAB" . ivy-alt-done)
-  		    ("C-l" . ivy-alt-done)
-  		    ("C-j" . ivy-next-line)
-  		    ("C-k" . ivy-previous-line)
-  		    :map ivy-switch-buffer-map
-  		    ("C-k" . ivy-previous-line)
-  		    ("C-l" . ivy-done)
-  		    ("C-d" . ivy-switch-buffer-kill)
-  		    :map ivy-reverse-i-search-map
-  		    ("C-k" . ivy-previous-line)
-  		    ("C-d" . ivy-reverse-i-search-kill))
-  	  :custom (ivy-use-virtual-buffers t)
-  	  :config
-  	  (ivy-mode 1))
+  		("C-l" . ivy-alt-done)
+  		("C-j" . ivy-next-line)
+  		("C-k" . ivy-previous-line)
+  		:map ivy-switch-buffer-map
+  		("C-k" . ivy-previous-line)
+  		("C-l" . ivy-done)
+  		("C-d" . ivy-switch-buffer-kill)
+  		:map ivy-reverse-i-search-map
+  		("C-k" . ivy-previous-line)
+  		("C-d" . ivy-reverse-i-search-kill))
+      :custom (ivy-use-virtual-buffers t)
+      :config
+      (ivy-mode 1))
 
-      (use-package ivy-rich
-  	  :after ivy
-  	  :init
-  	  (ivy-rich-mode 1)
-  	  :config
-  	  (setcdr (assq t ivy-format-functions-alist) #'ivy-format-function-line))
+    (use-package ivy-rich
+      :after ivy
+      :init
+      (ivy-rich-mode 1)
+      :config
+      (setcdr (assq t ivy-format-functions-alist) #'ivy-format-function-line))
 
-      (use-package ivy-yasnippet
-  	  :straight (ivy-yasnippet :type git :flavor melpa :host github :repo "mkcms/ivy-yasnippet"))
-      ))
+    (use-package ivy-yasnippet
+      :straight (ivy-yasnippet :type git
+  		    :flavor melpa :host github
+  		    :repo "mkcms/ivy-yasnippet")))
 
 ;;; --------------------------------------------------------------------------
 
-(if (equal completion-handler 'comphand-ivy-counsel)
+(when (equal completion-handler 'comphand-ivy-counsel)
     (use-package swiper))
 
 ;;; --------------------------------------------------------------------------
 
-(if (equal completion-handler 'comphand-ivy-counsel)
+(when (equal completion-handler 'comphand-ivy-counsel)
     (use-package counsel
       :straight t
       :bind (("C-M-j" . 'counsel-switch-buffer)
@@ -1428,7 +1421,7 @@ Thanks @wyuenho on GitHub"
 
 ;;; --------------------------------------------------------------------------
 
-(if (equal completion-handler 'comphand-ivy-counsel)
+(when (equal completion-handler 'comphand-ivy-counsel)
     (use-package ivy-prescient
       :after counsel
       :custom
@@ -1440,8 +1433,8 @@ Thanks @wyuenho on GitHub"
 ;;; --------------------------------------------------------------------------
 
 ;;;; Code Completion
-(if (equal enable-corfu t)
-   (use-package corfu
+(when enable-corfu
+    (use-package corfu
       ;; Optional customizations
       :custom
       (corfu-cycle t)                 ; Allows cycling through candidates
@@ -1454,27 +1447,26 @@ Thanks @wyuenho on GitHub"
       (corfu-on-exact-match nil)      ; Don't auto expand tempel snippets
       ;; Optionally use TAB for cycling, default is `corfu-complete'.
       :bind (:map corfu-map
-               ("M-SPC"      . corfu-insert-separator)
-               ("TAB"        . corfu-next)
-               ([tab]        . corfu-next)
-               ("S-TAB"      . corfu-previous)
-               ([backtab]    . corfu-previous)
-               ("S-<return>" . corfu-insert)
-               ("RET"        . nil))
+  		("M-SPC"      . corfu-insert-separator)
+  		("TAB"        . corfu-next)
+  		([tab]        . corfu-next)
+  		("S-TAB"      . corfu-previous)
+  		([backtab]    . corfu-previous)
+  		("S-<return>" . corfu-insert)
+  		("RET"        . nil))
       :init
       (global-corfu-mode)
       (corfu-history-mode)
       (corfu-popupinfo-mode) ; Popup completion info
       :config
       (add-hook 'eshell-mode-hook
-       (lambda () (setq-local corfu-quit-at-boundary t
-                  corfu-quit-no-match t
-                  corfu-auto nil)
-            (corfu-mode))))
-
-   (use-package corfu-prescient
+  	  (lambda () (setq-local corfu-quit-at-boundary t
+                      corfu-quit-no-match t
+                      corfu-auto nil)
+  	      (corfu-mode))))
+    (use-package corfu-prescient
       :after corfu)
-   )
+    )
 
 ;;; --------------------------------------------------------------------------
 
@@ -1507,7 +1499,7 @@ Thanks @wyuenho on GitHub"
 
 ;;; --------------------------------------------------------------------------
 
-(if (equal debug-adapter 'enable-dap-mode)
+(when (equal debug-adapter 'enable-dap-mode)
     (use-package typescript-ts-mode
       ;; :after (dap-mode)
       :mode "\\.ts\\'"
@@ -1521,7 +1513,7 @@ Thanks @wyuenho on GitHub"
       (setq typescript-indent-level 4)
       (dap-node-setup)))
 
-(if (equal debug-adapter 'enable-dape)
+(when (equal debug-adapter 'enable-dape)
     (use-package typescript-ts-mode
       :after (dape-mode)
       :mode ("\\.ts\\'")
@@ -1625,7 +1617,7 @@ Thanks @wyuenho on GitHub"
       (unless (featurep 'dap-mode)
   	  (dap-mode))
       (if (not (featurep 'dape))
-          (use-package dape :demand t)))
+            (use-package dape :demand t)))
     ;; Activate LSP and EGLOT *if* selected as python-ide
     (if (equal python-ide 'python-ide-eglot-lsp)
       (unless (featurep 'lsp)
@@ -1693,7 +1685,7 @@ Thanks @wyuenho on GitHub"
 
 ;;; --------------------------------------------------------------------------
 
-(if (package-installed-p 'realgud)
+(when (package-installed-p 'realgud)
     (use-package cc-mode
       :bind (:map c-mode-map
   		("C-c , j" . realgud:cmd-jump)
@@ -2218,48 +2210,46 @@ capture was not aborted."
 
 ;;; --------------------------------------------------------------------------
 
-(if (equal completion-handler 'comphand-vertico)
-    (progn
-      (use-package vertico
-  	  :demand t   ; Otherwise won't get loaded immediately
-  	  :straight (vertico :files (:defaults "extensions/*") ; Special recipe to load extensions conveniently
-  			:includes (vertico-indexed
-  				      vertico-flat
-  				      vertico-grid
-  				      vertico-mouse
-  				      vertico-quick
-  				      vertico-buffer
-  				      vertico-repeat
-  				      vertico-reverse
-  				      vertico-directory
-  				      vertico-multiform
-  				      vertico-unobtrusive
-  				      ))
-  	  :config
-  	  (vertico-mode)
-  	  (recentf-mode t)
-  	  (vertico-multiform-mode)
-  	  (vertico-count 13)
-  	  (vertico-cycle nil)
-  	   ; Clean up file path when typing
-  	  :hook ((rfn-eshadow-update-overlay . vertico-directory-tidy)
-  		     ; Make sure vertico state is saved
-  		    (minibuffer-setup . vertico-repeat-save)))
+(when (equal completion-handler 'comphand-vertico)
+    (use-package vertico
+      :demand t   ; Otherwise won't get loaded immediately
+      :straight (vertico :files (:defaults "extensions/*") ; Special recipe to load extensions conveniently
+  		    :includes (vertico-indexed
+  				  vertico-flat
+  				  vertico-grid
+  				  vertico-mouse
+  				  vertico-quick
+  				  vertico-buffer
+  				  vertico-repeat
+  				  vertico-reverse
+  				  vertico-directory
+  				  vertico-multiform
+  				  vertico-unobtrusive
+  				  ))
+      :config
+      (vertico-mode)
+      (recentf-mode t)
+      (vertico-multiform-mode)
+      (vertico-count 13)
+      (vertico-cycle nil)
+  				      ; Clean up file path when typing
+      :hook ((rfn-eshadow-update-overlay . vertico-directory-tidy)
+  				      ; Make sure vertico state is saved
+  		(minibuffer-setup . vertico-repeat-save)))
 
-      (use-package vertico-prescient
-  	  :after vertico)
+    (use-package vertico-prescient
+      :after vertico)
 
-      (use-package vertico-posframe
-  	  :straight t
-  	  :custom
-  	  (vertico-posframe-parameters
-  	      '((left-fringe . 8)
-  		   (right-fringe . 8))))
-      ))
+    (use-package vertico-posframe
+      :straight t
+      :custom
+      (vertico-posframe-parameters
+  	  '((left-fringe . 8)
+  	       (right-fringe . 8)))))
 
 ;;; --------------------------------------------------------------------------
 
-(if (equal completion-handler 'comphand-vertico)
+(when (equal completion-handler 'comphand-vertico)
     (use-package marginalia
         :custom
         (marginalia-max-relative-age 0)
@@ -2269,7 +2259,7 @@ capture was not aborted."
 
 ;;; --------------------------------------------------------------------------
 
-(if (equal completion-handler 'comphand-vertico)
+(when (equal completion-handler 'comphand-vertico)
     (use-package orderless
       :custom
       (completion-styles '(orderless basic))
@@ -2278,7 +2268,7 @@ capture was not aborted."
 ;;; --------------------------------------------------------------------------
 ;; Example configuration for Consult
 
-(if (equal completion-handler 'comphand-vertico)
+(when (equal completion-handler 'comphand-vertico)
     (use-package consult
       :straight t
       ;; Replace bindings. Lazily loaded due by `use-package'.
@@ -2596,8 +2586,8 @@ capture was not aborted."
 
 ;;; --------------------------------------------------------------------------
 
-(if (equal enable-neotree t)
-   (use-package neotree
+(when enable-neotree
+    (use-package neotree
       :config
       (global-set-key [f8] 'neotree-toggle)
       (setq neo-theme (if (display-graphic-p) 'icons 'arrow))))
@@ -2615,15 +2605,15 @@ capture was not aborted."
 ;;; --------------------------------------------------------------------------
 ;; Enable tabs for each buffer
 
-(if (equal enable-centaur-tabs t)
-   (use-package centaur-tabs
+(when enable-centaur-tabs
+    (use-package centaur-tabs
       :custom
       ;; Set the style to rounded with icons (setq centaur-tabs-style "bar")
       (centaur-tabs-style "bar")
       (centaur-tabs-set-icons t)
       (centaur-tabs-set-modified-marker t)
       :bind (("C-c <" . centaur-tabs-backward)
-             ("C-c >" . centaur-tabs-forward))
+  		("C-c >" . centaur-tabs-forward))
       :config ;; Enable centaur-tabs
       (centaur-tabs-mode t)))
 

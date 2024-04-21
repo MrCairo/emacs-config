@@ -504,7 +504,7 @@ This function simply loads the theme from the theme-list indexed by the ~theme-s
       (message (concat ">>> Loading theme "
                    (format "%d: %S" theme-selector loaded-theme)))
       (load-theme (intern loaded-theme) t)
-      (if (equal (fboundp 'mrf/org-font-setup) t)
+      (when (equal (fboundp 'mrf/org-font-setup) t)
           (mrf/org-font-setup))
       (set-face-foreground 'line-number "SkyBlue4"))
 
@@ -1325,7 +1325,7 @@ The following are configured for Python development and provide an IDE type expe
       (let ((root (projectile-project-root dir)))
           (and root (cons 'transient root))))
 
-  (if (equal python-ide 'python-ide-eglot-lsp)
+  (when (equal python-ide 'python-ide-eglot-lsp)
       (use-package eglot
           :defer t
           :init
@@ -1367,8 +1367,8 @@ The following are configured for Python development and provide an IDE type expe
                                         :autopep8 (:enabled :json-false)
                                         :black (:enabled t
                                                    :line_length 88
-                                                   :cache_config t))))
-  		 ))))
+                                                   :cache_config t))))))
+  	))
 
 #+end_src
 
@@ -1378,18 +1378,18 @@ The following are configured for Python development and provide an IDE type expe
   ;;; --------------------------------------------------------------------------
   ;;; Language Server Protocol
 
-  (if (equal python-ide 'python-ide-eglot-lsp)
+  (when (equal python-ide 'python-ide-eglot-lsp)
       (eval-when-compile (defvar lsp-enable-which-key-integration)))
 
   (defun mrf/lsp-mode-setup ()
       "Custom LSP setup function."
-      (if (equal python-ide 'python-ide-eglot-lsp)
+      (when (equal python-ide 'python-ide-eglot-lsp)
           (message "Set up LSP header-line and other vars")
           (setq lsp-headerline-breadcrumb-segments '(path-up-to-project file symbols))
           (setq lsp-clangd-binary-path "/usr/bin/clangd")'
           (lsp-headerline-breadcrumb-mode)))
 
-  (if (equal python-ide 'python-ide-eglot-lsp)
+  (when (equal python-ide 'python-ide-eglot-lsp)
       (use-package lsp-mode
           :defer t
           :commands (lsp lsp-deferred)
@@ -1399,7 +1399,7 @@ The following are configured for Python development and provide an IDE type expe
           :config
           (lsp-enable-which-key-integration t)))
 
-  (if (equal python-ide 'python-ide-eglot-lsp)
+  (when (equal python-ide 'python-ide-eglot-lsp)
       (use-package lsp-ui
           :after lsp
           :config (setq lsp-ui-sideline-enable t
@@ -1420,7 +1420,7 @@ The following are configured for Python development and provide an IDE type expe
           (lsp-ui-doc-position 'bottom)
           :hook (lsp-mode . lsp-ui-mode)))
 
-  (if (equal python-ide 'python-ide-eglot-lsp)
+  (when (equal python-ide 'python-ide-eglot-lsp)
       (use-package lsp-treemacs
           :after lsp
           :bind (:map prog-mode-map
@@ -1428,7 +1428,7 @@ The following are configured for Python development and provide an IDE type expe
           :config
           (lsp-treemacs-sync-mode 1)))
 
-  (if (and (equal python-ide 'python-ide-eglot-lsp)
+  (when (and (equal python-ide 'python-ide-eglot-lsp)
            (equal completion-handler 'comphand-ivy-counsel))
       (use-package lsp-ivy
           :after lsp ivy))
@@ -1442,7 +1442,7 @@ Anaconda-mode provides Code navigation, documentation lookup and completion for 
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
 
-  (if (equal python-ide 'python-ide-anaconda)
+  (when (equal python-ide 'python-ide-anaconda)
      (use-package anaconda-mode
          :bind (:map python-mode-map
     		 ("C-c g o" . anaconda-mode-find-definitions-other-frame)
@@ -1504,47 +1504,44 @@ Elpy is an Emacs package to bring powerful Python editing to Emacs.  It combines
   (use-package jsonrpc
       :straight (jsonrpc :type git :host github :repo "emacs-straight/jsonrpc" :files ("*" (:exclude ".git"))))
 
-    (if (equal debug-adapter 'enable-dape)
-        (progn
-          (use-package dape
-              :after jsonrpc
-              :defer t
-              ;; :defer t
-              ;; To use window configuration like gud (gdb-mi)
-              ;; :init
-              ;; (setq dape-buffer-window-arrangement 'gud)
-              :custom
-              (dape-buffer-window-arrangement 'right)  ;; Info buffers to the right
-              ;; To not display info and/or buffers on startup
-              ;; (remove-hook 'dape-on-start-hooks 'dape-info)
-              (remove-hook 'dape-on-start-hooks 'dape-repl)
+  (when (equal debug-adapter 'enable-dape)
+      (use-package dape
+          :after jsonrpc
+          :defer t
+          ;; :defer t
+          ;; To use window configuration like gud (gdb-mi)
+          ;; :init
+          ;; (setq dape-buffer-window-arrangement 'gud)
+          :custom
+          (dape-buffer-window-arrangement 'right)  ;; Info buffers to the right
+          ;; To not display info and/or buffers on startup
+          ;; (remove-hook 'dape-on-start-hooks 'dape-info)
+          (remove-hook 'dape-on-start-hooks 'dape-repl)
 
-              ;; To display info and/or repl buffers on stopped
-              ;; (add-hook 'dape-on-stopped-hooks 'dape-info)
-              ;; (add-hook 'dape-on-stopped-hooks 'dape-repl)
+          ;; To display info and/or repl buffers on stopped
+          ;; (add-hook 'dape-on-stopped-hooks 'dape-info)
+          ;; (add-hook 'dape-on-stopped-hooks 'dape-repl)
 
-              ;; By default dape uses gdb keybinding prefix
-              ;; If you do not want to use any prefix, set it to nil.
-              ;; (setq dape-key-prefix "\C-x\C-a")
+          ;; By default dape uses gdb keybinding prefix
+          ;; If you do not want to use any prefix, set it to nil.
+          ;; (setq dape-key-prefix "\C-x\C-a")
 
-              ;; Kill compile buffer on build success
-              ;; (add-hook 'dape-compile-compile-hooks 'kill-buffer)
+          ;; Kill compile buffer on build success
+          ;; (add-hook 'dape-compile-compile-hooks 'kill-buffer)
 
-              ;; Save buffers on startup, useful for interpreted languages
-              ;; (add-hook 'dape-on-start-hooks
-              ;;           (defun dape--save-on-start ()
-              ;;             (save-some-buffers t t)))
+          ;; Save buffers on startup, useful for interpreted languages
+          ;; (add-hook 'dape-on-start-hooks
+          ;;           (defun dape--save-on-start ()
+          ;;             (save-some-buffers t t)))
 
-              :config
-              ;; Projectile users
-              ;; (setq dape-cwd-fn 'projectile-project-root)
-              ;; :straight (dape :type git
-              ;;           :host github :repo "emacs-straight/dape"
-              ;;           :files ("*" (:exclude ".git")))
-              (message "DAPE Configured")
-              )
-          ))
-    
+          :config
+          ;; Projectile users
+          ;; (setq dape-cwd-fn 'projectile-project-root)
+          ;; :straight (dape :type git
+          ;;           :host github :repo "emacs-straight/dape"
+          ;;           :files ("*" (:exclude ".git")))
+          (message "DAPE Configured")))
+
 #+end_src
 
 ** Debug Adapter Protocol (DAP)
@@ -1554,7 +1551,7 @@ Provides a common protocol for debugging different systems. This is configured f
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
   ;;; Debug Adapter Protocol      
-  (if (equal debug-adapter 'enable-dap-mode)
+  (when (equal debug-adapter 'enable-dap-mode)
       (use-package dap-mode
           ;; Uncomment the config below if you want all UI panes to be hidden by default!
           ;; :custom
@@ -1666,7 +1663,7 @@ This is meant to be evaluated and run once. Calling this function will clone the
 ** DAP for C/C++
 #+begin_src emacs-lisp :tangle no
   ;;; --------------------------------------------------------------------------
-  
+
   (setq dap-lldb-debug-program
       "/Users/strider/Developer/plain_unix/llvm-project/build/bin/lldb-dap")
 
@@ -1679,23 +1676,21 @@ This is meant to be evaluated and run once. Calling this function will clone the
           (dap--put-if-absent :program (funcall dap-lldb-debugged-program-function))
           (dap--put-if-absent :name "LLDB Debug")))
 
-  (if (equal debug-adapter 'enable-dap-mode)
-      (progn
-          (use-package dap-cpptools
-              :after dap-mode
-              :straight (dap-lldb :type git :host github :repo "emacs-lsp/dap-mode"))
+  (when (equal debug-adapter 'enable-dap-mode)
+      (use-package dap-cpptools
+          :after dap-mode
+          :straight (dap-lldb :type git :host github :repo "emacs-lsp/dap-mode"))
 
-          (use-package dap-lldb
-              :straight (dap-lldb :type git :host github :repo "emacs-lsp/dap-mode")
-              :after dap-mode
-              :config
-              (dap-register-debug-provider "lldb-dap" 'mrf/populate-lldb-start-file-args)
-              (dap-register-debug-template "LLDB DAP :: Run from project directory"
-                  (list :type "lldb-dap"
-                      :name "LLDB using DAP"
-                      :program "a.out"
-                      :request "launch")))
-          ))
+      (use-package dap-lldb
+          :straight (dap-lldb :type git :host github :repo "emacs-lsp/dap-mode")
+          :after dap-mode
+          :config
+          (dap-register-debug-provider "lldb-dap" 'mrf/populate-lldb-start-file-args)
+          (dap-register-debug-template "LLDB DAP :: Run from project directory"
+              (list :type "lldb-dap"
+                  :name "LLDB using DAP"
+                  :program "a.out"
+                  :request "launch"))))
 #+end_src
 
 ** DAP for Python
@@ -1704,33 +1699,29 @@ This is meant to be evaluated and run once. Calling this function will clone the
   ;;; --------------------------------------------------------------------------
   ;;; DAP for Python
 
-  (if (equal debug-adapter 'enable-dap-mode)
-     (progn
-        (use-package dap-python
-         :straight (dap-python :type git :host github :repo "emacs-lsp/dap-mode")
-         :after (dap-mode)
-         :config
-         (setq dap-python-executable "python3") ;; Otherwise it looks for 'python' else error.
-         (setq dap-python-debugger 'debugpy)
-         (dap-register-debug-template "Python :: Run file from project directory"
-            (list :type "python"
-               :args ""
-               :cwd nil
-               :module nil
-               :program nil
-               :request "launch"))
-         (dap-register-debug-template "Python :: Run file (buffer)"
-            (list :type "python"
-               :args ""
-               :cwd nil
-               :module nil
-               :program nil
-               :request "launch"
-               :name "Python :: Run file (buffer)"))
-         )
-        )
-     )
-     
+  (when (equal debug-adapter 'enable-dap-mode)
+      (use-package dap-python
+  	:straight (dap-python :type git :host github :repo "emacs-lsp/dap-mode")
+  	:after (dap-mode)
+  	:config
+  	(setq dap-python-executable "python3") ;; Otherwise it looks for 'python' else error.
+  	(setq dap-python-debugger 'debugpy)
+  	(dap-register-debug-template "Python :: Run file from project directory"
+              (list :type "python"
+  		:args ""
+  		:cwd nil
+  		:module nil
+  		:program nil
+  		:request "launch"))
+  	(dap-register-debug-template "Python :: Run file (buffer)"
+              (list :type "python"
+  		:args ""
+  		:cwd nil
+  		:module nil
+  		:program nil
+  		:request "launch"
+  		:name "Python :: Run file (buffer)"))))
+
 #+end_src
 
 ** DAP Template for NodeJS
@@ -1739,43 +1730,40 @@ This is meant to be evaluated and run once. Calling this function will clone the
   ;;; DAP for NodeJS
 
   (defun my-setup-dap-node ()
-     "Require dap-node feature and run dap-node-setup if VSCode module isn't already installed"
-     (require 'dap-node)
-     (unless (file-exists-p dap-node-debug-path) (dap-node-setup)))
+      "Require dap-node feature and run dap-node-setup if VSCode module isn't already installed"
+      (require 'dap-node)
+      (unless (file-exists-p dap-node-debug-path) (dap-node-setup)))
 
-  (if (equal debug-adapter 'enable-dap-mode)
-     (progn
-        (use-package dap-node
-           :defer t
-           :straight (dap-node :type git
+  (when (equal debug-adapter 'enable-dap-mode)
+      (use-package dap-node
+          :defer t
+          :straight (dap-node :type git
                         :flavor melpa
                         :files (:defaults "icons" "dap-mode-pkg.el")
                         :host github
                         :repo "emacs-lsp/dap-mode")
-           :after (dap-mode)
-           :config
-           (require 'dap-firefox)
-           (dap-register-debug-template
+          :after (dap-mode)
+          :config
+          (require 'dap-firefox)
+          (dap-register-debug-template
               "Launch index.ts"
               (list :type "node"
-                 :request "launch"
-                 :program "${workspaceFolder}/index.ts"
-                 :dap-compilation "npx tsc index.ts --outdir dist --sourceMap true"
-                 :outFiles (list "${workspaceFolder}/dist/**/*.js")
-                 :name "Launch index.ts"))
-           ;; (dap-register-debug-template
-           ;;    "Launch index.ts"
-           ;;    (list :type "node"
-           ;;    :request "launch"
-           ;;    :program "${workspaceFolder}/index.ts"
-           ;;    :dap-compilation "npx tsc index.ts --outdir dist --sourceMap true"
-           ;;    :outFiles (list "${workspaceFolder}/dist/**/*.js")
-           ;;    :name "Launch index.ts"))
-           )
-        (add-hook 'typescript-mode-hook 'my-setup-dap-node)
-        (add-hook 'js2-mode-hook 'my-setup-dap-node)
-        )
-     )
+  		:request "launch"
+  		:program "${workspaceFolder}/index.ts"
+  		:dap-compilation "npx tsc index.ts --outdir dist --sourceMap true"
+  		:outFiles (list "${workspaceFolder}/dist/**/*.js")
+  		:name "Launch index.ts"))
+          ;; (dap-register-debug-template
+          ;;    "Launch index.ts"
+          ;;    (list :type "node"
+          ;;    :request "launch"
+          ;;    :program "${workspaceFolder}/index.ts"
+          ;;    :dap-compilation "npx tsc index.ts --outdir dist --sourceMap true"
+          ;;    :outFiles (list "${workspaceFolder}/dist/**/*.js")
+          ;;    :name "Launch index.ts"))
+          )
+      (add-hook 'typescript-mode-hook 'my-setup-dap-node)
+      (add-hook 'js2-mode-hook 'my-setup-dap-node))
 #+end_src
 
 ** DAP Hydra
@@ -1850,37 +1838,37 @@ Ivy is an excellent completion framework for Emacs.  It provides a minimal yet p
   ;;; --------------------------------------------------------------------------
   ;;; Swiper and IVY mode
 
-  (if (equal completion-handler 'comphand-ivy-counsel)
-      (progn
-  	(use-package ivy
-  	    :diminish I
-  	    :bind (("C-s" . swiper)
-  		      :map ivy-minibuffer-map
+  (when (equal completion-handler 'comphand-ivy-counsel)
+      (use-package ivy
+  	:diminish I
+  	:bind (("C-s" . swiper)
+  		  :map ivy-minibuffer-map
             ;;; ("TAB" . ivy-alt-done)
-  		      ("C-l" . ivy-alt-done)
-  		      ("C-j" . ivy-next-line)
-  		      ("C-k" . ivy-previous-line)
-  		      :map ivy-switch-buffer-map
-  		      ("C-k" . ivy-previous-line)
-  		      ("C-l" . ivy-done)
-  		      ("C-d" . ivy-switch-buffer-kill)
-  		      :map ivy-reverse-i-search-map
-  		      ("C-k" . ivy-previous-line)
-  		      ("C-d" . ivy-reverse-i-search-kill))
-  	    :custom (ivy-use-virtual-buffers t)
-  	    :config
-  	    (ivy-mode 1))
+  		  ("C-l" . ivy-alt-done)
+  		  ("C-j" . ivy-next-line)
+  		  ("C-k" . ivy-previous-line)
+  		  :map ivy-switch-buffer-map
+  		  ("C-k" . ivy-previous-line)
+  		  ("C-l" . ivy-done)
+  		  ("C-d" . ivy-switch-buffer-kill)
+  		  :map ivy-reverse-i-search-map
+  		  ("C-k" . ivy-previous-line)
+  		  ("C-d" . ivy-reverse-i-search-kill))
+  	:custom (ivy-use-virtual-buffers t)
+  	:config
+  	(ivy-mode 1))
 
-  	(use-package ivy-rich
-  	    :after ivy
-  	    :init
-  	    (ivy-rich-mode 1)
-  	    :config
-  	    (setcdr (assq t ivy-format-functions-alist) #'ivy-format-function-line))
+      (use-package ivy-rich
+  	:after ivy
+  	:init
+  	(ivy-rich-mode 1)
+  	:config
+  	(setcdr (assq t ivy-format-functions-alist) #'ivy-format-function-line))
 
-  	(use-package ivy-yasnippet
-  	    :straight (ivy-yasnippet :type git :flavor melpa :host github :repo "mkcms/ivy-yasnippet"))
-  	))
+      (use-package ivy-yasnippet
+  	:straight (ivy-yasnippet :type git
+  		      :flavor melpa :host github
+  		      :repo "mkcms/ivy-yasnippet")))
 
 #+end_src
 
@@ -1890,7 +1878,7 @@ Swiper is an alternative to isearch that uses Ivy to show an overview of all mat
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
 
-  (if (equal completion-handler 'comphand-ivy-counsel)
+  (when (equal completion-handler 'comphand-ivy-counsel)
       (use-package swiper))
 
 #+end_src
@@ -1903,7 +1891,7 @@ Counsel takes this further, providing versions of common Emacs commands that are
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
 
-  (if (equal completion-handler 'comphand-ivy-counsel)
+  (when (equal completion-handler 'comphand-ivy-counsel)
       (use-package counsel
   	:straight t
   	:bind (("C-M-j" . 'counsel-switch-buffer)
@@ -1922,7 +1910,7 @@ Counsel takes this further, providing versions of common Emacs commands that are
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
 
-  (if (equal completion-handler 'comphand-ivy-counsel)
+  (when (equal completion-handler 'comphand-ivy-counsel)
       (use-package ivy-prescient
   	:after counsel
   	:custom
@@ -1940,41 +1928,41 @@ Corfu enhances in-buffer completion with a small completion popup. The current c
   ;;; --------------------------------------------------------------------------
 
   ;;;; Code Completion
-  (if (equal enable-corfu t)
-     (use-package corfu
-        ;; Optional customizations
-        :custom
-        (corfu-cycle t)                 ; Allows cycling through candidates
-        (corfu-auto t)                  ; Enable auto completion
-        (corfu-auto-prefix 2)
-        (corfu-auto-delay 0.8)
-        (corfu-popupinfo-delay '(0.5 . 0.2))
-        (corfu-preview-current 'insert) ; insert previewed candidate
-        (corfu-preselect 'prompt)
-        (corfu-on-exact-match nil)      ; Don't auto expand tempel snippets
-        ;; Optionally use TAB for cycling, default is `corfu-complete'.
-        :bind (:map corfu-map
-                 ("M-SPC"      . corfu-insert-separator)
-                 ("TAB"        . corfu-next)
-                 ([tab]        . corfu-next)
-                 ("S-TAB"      . corfu-previous)
-                 ([backtab]    . corfu-previous)
-                 ("S-<return>" . corfu-insert)
-                 ("RET"        . nil))
-        :init
-        (global-corfu-mode)
-        (corfu-history-mode)
-        (corfu-popupinfo-mode) ; Popup completion info
-        :config
-        (add-hook 'eshell-mode-hook
-         (lambda () (setq-local corfu-quit-at-boundary t
-                    corfu-quit-no-match t
-                    corfu-auto nil)
-              (corfu-mode))))
+  (when enable-corfu
+      (use-package corfu
+  	;; Optional customizations
+  	:custom
+  	(corfu-cycle t)                 ; Allows cycling through candidates
+  	(corfu-auto t)                  ; Enable auto completion
+  	(corfu-auto-prefix 2)
+  	(corfu-auto-delay 0.8)
+  	(corfu-popupinfo-delay '(0.5 . 0.2))
+  	(corfu-preview-current 'insert) ; insert previewed candidate
+  	(corfu-preselect 'prompt)
+  	(corfu-on-exact-match nil)      ; Don't auto expand tempel snippets
+  	;; Optionally use TAB for cycling, default is `corfu-complete'.
+  	:bind (:map corfu-map
+  		  ("M-SPC"      . corfu-insert-separator)
+  		  ("TAB"        . corfu-next)
+  		  ([tab]        . corfu-next)
+  		  ("S-TAB"      . corfu-previous)
+  		  ([backtab]    . corfu-previous)
+  		  ("S-<return>" . corfu-insert)
+  		  ("RET"        . nil))
+  	:init
+  	(global-corfu-mode)
+  	(corfu-history-mode)
+  	(corfu-popupinfo-mode) ; Popup completion info
+  	:config
+  	(add-hook 'eshell-mode-hook
+  	    (lambda () (setq-local corfu-quit-at-boundary t
+                        corfu-quit-no-match t
+                        corfu-auto nil)
+  		(corfu-mode))))
+      (use-package corfu-prescient
+  	:after corfu)
+      )
 
-     (use-package corfu-prescient
-        :after corfu)
-     )
 #+end_src
 
 
@@ -2026,7 +2014,7 @@ This is a basic configuration for the TypeScript language so that =.ts= files ac
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
 
-  (if (equal debug-adapter 'enable-dap-mode)
+  (when (equal debug-adapter 'enable-dap-mode)
       (use-package typescript-ts-mode
   	;; :after (dap-mode)
   	:mode "\\.ts\\'"
@@ -2040,7 +2028,7 @@ This is a basic configuration for the TypeScript language so that =.ts= files ac
   	(setq typescript-indent-level 4)
   	(dap-node-setup)))
 
-  (if (equal debug-adapter 'enable-dape)
+  (when (equal debug-adapter 'enable-dape)
       (use-package typescript-ts-mode
   	:after (dape-mode)
   	:mode ("\\.ts\\'")
@@ -2062,22 +2050,24 @@ This is a basic configuration for the TypeScript language so that =.ts= files ac
   ;;; --------------------------------------------------------------------------
 
   (defun mrf/load-js-file-hook ()
-     (message "Running JS file hook")
-     (js2-mode)
-     (if (equal debug-adapter 'enable-dap-mode)
-        (progn
-         (dap-mode)
-         (dap-firefox-setup)))
-     (if (equal debug-adapter 'enable-dape)
-        (dape))
-     (highlight-indentation-mode nil)
-     (dap-firefox-setup))
+      (message "Running JS file hook")
+      (js2-mode)
+      
+      (when (equal debug-adapter 'enable-dap-mode)
+  	(dap-mode)
+  	(dap-firefox-setup))
+      
+      (when (equal debug-adapter 'enable-dape)
+  	(dape))
+
+      (highlight-indentation-mode nil)
+      (dap-firefox-setup))
 
   (use-package nodejs-repl)
 
   (defun mrf/nvm-which ()
-     (let ((output (shell-command-to-string "source ~/.nvm/nvm.sh; nvm which")))
-        (cadr (split-string output "[\n]+" t))))
+      (let ((output (shell-command-to-string "source ~/.nvm/nvm.sh; nvm which")))
+  	(cadr (split-string output "[\n]+" t))))
 
   (setq nodejs-repl-command #'mrf/nvm-which)
 
@@ -2214,8 +2204,8 @@ This is the standard python mode setup.
       (if (equal debug-adapter 'enable-dap-mode)
   	(unless (featurep 'dap-mode)
   	    (dap-mode))
-        (if (not (featurep 'dape))
-            (use-package dape :demand t)))
+  	(if (not (featurep 'dape))
+              (use-package dape :demand t)))
       ;; Activate LSP and EGLOT *if* selected as python-ide
       (if (equal python-ide 'python-ide-eglot-lsp)
   	(unless (featurep 'lsp)
@@ -2330,7 +2320,7 @@ Since Realgud is options (in our configuratrion), we add it's keybindings condit
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
 
-  (if (package-installed-p 'realgud)
+  (when (package-installed-p 'realgud)
       (use-package cc-mode
   	:bind (:map c-mode-map
   		  ("C-c , j" . realgud:cmd-jump)
@@ -2492,7 +2482,7 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
       (setq projectile-project-search-path '("~/Developer")))
     (setq projectile-switch-project-action #'projectile-dired))
 
-  (if (equal completion-handler 'comphand-ivy-counsel)
+  (when (equal completion-handler 'comphand-ivy-counsel)
       (use-package counsel-projectile
   	:after projectile
   	:config
@@ -3059,44 +3049,42 @@ The following packages are some additional quality of life features.
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
 
-  (if (equal completion-handler 'comphand-vertico)
-      (progn
-  	(use-package vertico
-  	    :demand t   ; Otherwise won't get loaded immediately
-  	    :straight (vertico :files (:defaults "extensions/*") ; Special recipe to load extensions conveniently
-  			  :includes (vertico-indexed
-  					vertico-flat
-  					vertico-grid
-  					vertico-mouse
-  					vertico-quick
-  					vertico-buffer
-  					vertico-repeat
-  					vertico-reverse
-  					vertico-directory
-  					vertico-multiform
-  					vertico-unobtrusive
-  					))
-  	    :config
-  	    (vertico-mode)
-  	    (recentf-mode t)
-  	    (vertico-multiform-mode)
-  	    (vertico-count 13)
-  	    (vertico-cycle nil)
-  	     ; Clean up file path when typing
-  	    :hook ((rfn-eshadow-update-overlay . vertico-directory-tidy)
-  		       ; Make sure vertico state is saved
-  		      (minibuffer-setup . vertico-repeat-save)))
+  (when (equal completion-handler 'comphand-vertico)
+      (use-package vertico
+  	:demand t   ; Otherwise won't get loaded immediately
+  	:straight (vertico :files (:defaults "extensions/*") ; Special recipe to load extensions conveniently
+  		      :includes (vertico-indexed
+  				    vertico-flat
+  				    vertico-grid
+  				    vertico-mouse
+  				    vertico-quick
+  				    vertico-buffer
+  				    vertico-repeat
+  				    vertico-reverse
+  				    vertico-directory
+  				    vertico-multiform
+  				    vertico-unobtrusive
+  				    ))
+  	:config
+  	(vertico-mode)
+  	(recentf-mode t)
+  	(vertico-multiform-mode)
+  	(vertico-count 13)
+  	(vertico-cycle nil)
+  					; Clean up file path when typing
+  	:hook ((rfn-eshadow-update-overlay . vertico-directory-tidy)
+  					; Make sure vertico state is saved
+  		  (minibuffer-setup . vertico-repeat-save)))
 
-  	(use-package vertico-prescient
-  	    :after vertico)
+      (use-package vertico-prescient
+  	:after vertico)
 
-  	(use-package vertico-posframe
-  	    :straight t
-  	    :custom
-  	    (vertico-posframe-parameters
-  		'((left-fringe . 8)
-  		     (right-fringe . 8))))
-  	))
+      (use-package vertico-posframe
+  	:straight t
+  	:custom
+  	(vertico-posframe-parameters
+  	    '((left-fringe . 8)
+  		 (right-fringe . 8)))))
 #+end_src
 
 ** Marginalia
@@ -3106,7 +3094,7 @@ Marginalia are marks or annotations placed at the margin of the page of a book  
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
   
-  (if (equal completion-handler 'comphand-vertico)
+  (when (equal completion-handler 'comphand-vertico)
       (use-package marginalia
           :custom
           (marginalia-max-relative-age 0)
@@ -3122,7 +3110,7 @@ This package provides an orderless completion style that divides the pattern int
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
   
-  (if (equal completion-handler 'comphand-vertico)
+  (when (equal completion-handler 'comphand-vertico)
       (use-package orderless
   	:custom
   	(completion-styles '(orderless basic))
@@ -3137,7 +3125,7 @@ Consult provides search and navigation commands based on the Emacs completion fu
   ;;; --------------------------------------------------------------------------
   ;; Example configuration for Consult
   
-  (if (equal completion-handler 'comphand-vertico)
+  (when (equal completion-handler 'comphand-vertico)
       (use-package consult
   	:straight t
   	;; Replace bindings. Lazily loaded due by `use-package'.
@@ -3571,11 +3559,12 @@ A tree plugin like NerdTree for Vim
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
 
-  (if (equal enable-neotree t)
-     (use-package neotree
-        :config
-        (global-set-key [f8] 'neotree-toggle)
-        (setq neo-theme (if (display-graphic-p) 'icons 'arrow))))
+  (when enable-neotree
+      (use-package neotree
+  	:config
+  	(global-set-key [f8] 'neotree-toggle)
+  	(setq neo-theme (if (display-graphic-p) 'icons 'arrow))))
+  
 #+end_src
 
 ** Better Modeline
@@ -3626,18 +3615,18 @@ Here are some helpful functions.
   ;;; --------------------------------------------------------------------------
   ;; Enable tabs for each buffer
 
-  (if (equal enable-centaur-tabs t)
-     (use-package centaur-tabs
-        :custom
-        ;; Set the style to rounded with icons (setq centaur-tabs-style "bar")
-        (centaur-tabs-style "bar")
-        (centaur-tabs-set-icons t)
-        (centaur-tabs-set-modified-marker t)
-        :bind (("C-c <" . centaur-tabs-backward)
-               ("C-c >" . centaur-tabs-forward))
-        :config ;; Enable centaur-tabs
-        (centaur-tabs-mode t)))
-  
+  (when enable-centaur-tabs
+      (use-package centaur-tabs
+  	:custom
+  	;; Set the style to rounded with icons (setq centaur-tabs-style "bar")
+  	(centaur-tabs-style "bar")
+  	(centaur-tabs-set-icons t)
+  	(centaur-tabs-set-modified-marker t)
+  	:bind (("C-c <" . centaur-tabs-backward)
+  		  ("C-c >" . centaur-tabs-forward))
+  	:config ;; Enable centaur-tabs
+  	(centaur-tabs-mode t)))
+
 #+end_src
 
 ** Diff HL
