@@ -1,6 +1,8 @@
 *.elc
 elpa/**
 site-lisp/**/*
+eln-cache/
+straight/
 Configure.el
 ac-comphist.dat
 auto-save-list/
