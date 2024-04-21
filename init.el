@@ -42,7 +42,7 @@
 
 (straight-use-package 'use-package)
 
-(setq use-package-compute-statistics t
+(setq use-package-compute-statistics nil
     use-package-verbose t
     use-package-always-ensure nil
     use-package-always-demand nil
@@ -59,12 +59,12 @@
 ;;; Define my customization groups
 
 (defgroup mrf-custom nil
-  "Customization toggles for Mitch's Emacs installation."
+  "Customization toggles for my personal Emacs installation."
   :group 'Local
   )
 
 (defgroup mrf-custom-selection nil
-  "Customization from a selection of features."
+  "Customization from a selection of specific features."
   :group 'mrf-custom
   )
 
@@ -385,7 +385,6 @@ should be taken into consideration when providing a width."
 ;; This is used to trigger the cycling of the theme-selector
 ;; It is called when a theme is disabled. The theme is disabled from the
 ;; `mrf/load-theme-from-selector' function.
-
 (add-hook 'disable-theme-functions #'mrf/cycle-theme-selector)
 
 ;;; --------------------------------------------------------------------------
