@@ -6,7 +6,7 @@
 
 * Welcome!
 
-This ORG file will configure the *init.el* file based upon all of the *emacs-lisp* source blocks. The emacs-lisp source blocks are defined in an organized order. While these blocks cn generally be moved around, there are some order dependencies. So it's generally best that this order be preserved to prevent any runtime issues. This =org= file is largely taken from the System Crafter's sessions on configuring Emacs.
+This ORG file will configure the *init.el* file based upon all of the *emacs-lisp* source blocks. The emacs-lisp source blocks are defined in an organized order. While these blocks cn generally be moved around, there are some order dependencies. So it's generally best that this order be preserved to prevent any compile-time issues.
 
 
 * README:
@@ -84,7 +84,7 @@ This is the standard format of a =lisp= header that should appear for all =lisp=
 
   (straight-use-package 'use-package)
 
-  (setq use-package-compute-statistics t
+  (setq use-package-compute-statistics nil
       use-package-verbose t
       use-package-always-ensure nil
       use-package-always-demand nil
@@ -102,69 +102,105 @@ This is the standard format of a =lisp= header that should appear for all =lisp=
 
 * Custom Variables and Groups
 
-Set various variables to =t= to turn on a specific feature or =0= to disable it. Changing any of these values will require a restart of ~emacs~ since these values are inspected only during startup.
+Set various variables to =t= to turn on a specific feature or =nil= to disable it. Changing any of these values will require a restart of ~emacs~ since these values are inspected only during startup.
 
 *Note:* There are no thorough dependency check done if any of these values is enabled or disabled. There has been some effort, for example, to enable a keymap if ~dap~ or ~dape~ is enabled. But if something enabled requires some not obvious package to be installed, this isn't checked.
 
 Other variables are also defined here that define other emacs behaviors and defaults.
 
-*** Custom groups
+*** Customization groups
 
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
   ;;; Define my customization groups
 
   (defgroup mrf-custom nil
-    "Customization toggles for Mitch's Emacs installation."
-    :group 'Local
-    )
+      "Customization toggles for my personal Emacs installation."
+      :group 'Local)
 
-  (defgroup mrf-custom-selection nil
-    "Customization from a selection of features."
-    :group 'mrf-custom
-    )
+  (defgroup mrf-custom-toggles nil
+      "A set of toggles that enable or disable  specific packages."
+      :group 'mrf-custom)
+
+  (defgroup mrf-custom-choices nil
+      "Customization from a selection of specific features."
+      :group 'mrf-custom)
 
   (defgroup mrf-custom-fonts nil
-     "Customization of fonts and sizes."
-    :group 'mrf-custom
-    )
+      "Customization of fonts and sizes."
+      :group 'mrf-custom)
 
   (defgroup mrf-custom-theming nil
-     "Custom theming values."
-     :group 'mrf-custom
-     )
+      "Custom theming values."
+      :group 'mrf-custom)
 
 #+end_src
 
-*** Custom Enable Flags
+*** File Locations and Variables
 
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
-  ;;; Feature Switches
+
+  (defcustom display-dashboard-at-start t
+      "If set to t, the `dashboard' package will be displayed first.
+    Otherwise, the `dashboard' will be available but in the buffer
+     ,*dashboard*."
+      :type 'boolean
+      :group 'mrf-custom)
+
+  (defcustom custom-docs-dir "~/Documents/Emacs-Related"
+      "A directory used to store documents and customized data."
+      :type 'string
+      :group 'mrf-custom)
+
+  (defcustom working-files-directory
+      (concat custom-docs-dir
+          (concat "/emacs-working-files_" (concat emacs-version "/")))
+      "The directory where to store Emacs working files."
+      :type 'string
+      :group 'mrf-custom)
+
+  (defcustom custom-org-fill-column 150
+      "The fill column width for Org mode text.
+  Note that the text is also centered on the screen so that
+  should be taken into consideration when providing a width."
+      :type 'natnum
+      :group 'mrf-custom)
+
+#+end_src
+
+
+*** Custom Package Toggles
+
+Thes values toggle the availability of specific packages. Only boolean type values are part of this group.
+
+#+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
+  ;;; Feature Toggles
 
   (defcustom enable-gb-dev nil
       "If set to t, the z80-mode and other GameBoy related packages
       will be enabled."
       :type 'boolean
-      :group 'mrf-custom)
+      :group 'mrf-custom-toggles)
 
   (defcustom enable-ts nil
       "Set to t to enable TypeScript handling."
       :type 'boolean
-      :group 'mrf-custom)
+      :group 'mrf-custom-toggles)
 
   (defcustom enable-corfu nil
       "Setting to t enables Corfu instead of Ivy.
       Corfu is an alternative to the command completion package, IVY which also will
       include Swiper and Company.  If this value is set to nil then Ivy is used."
       :type 'boolean
-      :group 'mrf-custom)
+      :group 'mrf-custom-toggles)
 
   (defcustom enable-vundo t
       "Set to t to enable `vundo' which is an alternative to Emacs undo.
       Setting this value to nil will activate the alternate `undo-tree' package."
       :type 'boolean
-      :group 'mrf-custom)
+      :group 'mrf-custom-toggles)
 
   (defcustom enable-centaur-tabs nil
       "Set to t to enable `centaur-tabs' which uses tabs to represent open buffer."
@@ -174,7 +210,7 @@ Other variables are also defined here that define other emacs behaviors and defa
   (defcustom enable-neotree nil
       "Set to t to enable the `neotree' package."
       :type 'boolean
-      :group 'mrf-custom)
+      :group 'mrf-custom-toggles)
 
   (defcustom enable-golden-ratio nil
       "Set to t to enable `golden-ratio-mode' which resizes the active buffer
@@ -184,7 +220,8 @@ Other variables are also defined here that define other emacs behaviors and defa
 
 #+end_src
 
-*** Feature selection choices
+*** Feature selections
+These are features that basically have multiple-choice options instead of being a typical binary t or nil. 
 
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
@@ -203,7 +240,7 @@ Other variables are also defined here that define other emacs behaviors and defa
   alternative to isearch that uses Ivy to show an overview of all matches."
       :type '(choice (const :tag "Use the Vertico completion system." comphand-vertico)
                  (const :tag "Use Ivy, Counsel, Swiper completion systems" comphand-ivy-counsel))
-      :group 'mrf-custom-selection)
+      :group 'mrf-custom-selections)
 
   (defcustom debug-adapter 'enable-dap-mode
       "Select the debug adapter to use for debugging applications.  dap-mode is an
@@ -217,7 +254,7 @@ Other variables are also defined here that define other emacs behaviors and defa
   dap-mode."
       :type '(choice (const :tag "Debug Adapter Protocol (DAP)" enable-dap-mode)
                  (const :tag "Debug Adapter Protocol for Emacs (DAPE)" enable-dape))
-      :group 'mrf-custom-selection)
+      :group 'mrf-custom-selections)
 
   (defcustom python-ide 'python-ide-elpy
       "Select which IDE will be used for Python development.
@@ -238,11 +275,13 @@ Other variables are also defined here that define other emacs behaviors and defa
       :type '(choice (const :tag "Elpy: Emacs Lisp Python Environment" python-ide-elpy)
                  (const :tag "Elgot/Language Server Protocol" python-ide-elgot-lsp)
   		   (const :tag "Python Anaconda-mode for Emacs" python-ide-anaconda))
-      :group 'mrf-custom-selection)
+      :group 'mrf-custom-selections)
 
 #+end_src
 
-*** Theme Specific Customized Variables
+*** Theme Specific Values
+This is a curated selection of themes that I personally like. Most of them are dark mode but there are a few light versions. New themes can be added here or done via the =customize= interface. If a new theme is added to this list, it's important to ensure that the theme is actually included (see [[Color Theming][Color Theming]] section)
+
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
   ;;; Theming related
@@ -325,39 +364,8 @@ Other variables are also defined here that define other emacs behaviors and defa
 
 #+end_src
 
-*** Other customized variables
-#+begin_src emacs-lisp
-  ;;; --------------------------------------------------------------------------
-  
-  (defcustom display-dashboard-at-start t
-      "If set to t, the `dashboard' package will be displayed first.
-    Otherwise, the `dashboard' will be available but in the buffer
-    ,*dashboard*."
-      :type 'boolean
-      :group 'mrf-custom)
+** Global Defaults
 
-  (defcustom custom-docs-dir "~/Documents/Emacs-Related"
-      "A directory used to store documents and customized data."
-      :type 'string
-      :group 'mrf-custom)
-
-  (defcustom working-files-directory
-      (concat custom-docs-dir
-          (concat "/emacs-working-files_" (concat emacs-version "/")))
-      "The directory where to store Emacs working files."
-      :type 'string
-      :group 'mrf-custom)
-
-  (defcustom custom-org-fill-column 150
-      "The fill column width for Org mode text.
-  Note that the text is also centered on the screen so that
-  should be taken into consideration when providing a width."
-      :type 'natnum
-      :group 'mrf-custom)
-
-#+end_src
-
-** Other switches and globals
 #+begin_src emacs-lisp
 
   ;;; --------------------------------------------------------------------------
@@ -458,7 +466,8 @@ This bit of code contains a list of themes that I like personally and then allow
 
 #+end_src
 
-The function 
+
+This is the main function that allows cycling (up or down) through the list of themes defined in the ~theme-list~.
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
 
@@ -482,10 +491,10 @@ The function
   ;; This is used to trigger the cycling of the theme-selector
   ;; It is called when a theme is disabled. The theme is disabled from the
   ;; `mrf/load-theme-from-selector' function.
-
   (add-hook 'disable-theme-functions #'mrf/cycle-theme-selector)
 
 #+end_src
+
 
 This function simply loads the theme from the theme-list indexed by the ~theme-selector~ variable. Note the advice for ~load-theme~ that deactivates the current theme before activating the new theme. This is done to reset all the colors, a clean slate, before the new theme is activated.
 
@@ -539,6 +548,7 @@ This function simply loads the theme from the theme-list indexed by the ~theme-s
 
 #+end_src
 
+
 This is just a test area to see what colors look like in this =org= mode.
 
 #+begin_src emacs-lisp
@@ -588,7 +598,7 @@ Because in macOS, Emacs could be started outside of a shell (like an application
 #+end_src
 
 ** Include ~lisp~ directory
-This directory is expected to be in the ~emacs-config-direcory~ dir. This can be used to store custom or other lisp files that can'tbe found by =require.el= or =use-package=.
+This directory is expected to be in the ~emacs-config-direcory~ dir. This can be used to store custom lisp (or non-elpa/melpa) files that can'tbe found by =require.el= or =straight-use-package=.
 
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------

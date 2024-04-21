@@ -42,7 +42,7 @@
 
 (straight-use-package 'use-package)
 
-(setq use-package-compute-statistics t
+(setq use-package-compute-statistics nil
     use-package-verbose t
     use-package-always-ensure nil
     use-package-always-demand nil
@@ -59,51 +59,79 @@
 ;;; Define my customization groups
 
 (defgroup mrf-custom nil
-  "Customization toggles for Mitch's Emacs installation."
-  :group 'Local
-  )
+    "Customization toggles for my personal Emacs installation."
+    :group 'Local)
 
-(defgroup mrf-custom-selection nil
-  "Customization from a selection of features."
-  :group 'mrf-custom
-  )
+(defgroup mrf-custom-toggles nil
+    "A set of toggles that enable or disable  specific packages."
+    :group 'mrf-custom)
+
+(defgroup mrf-custom-choices nil
+    "Customization from a selection of specific features."
+    :group 'mrf-custom)
 
 (defgroup mrf-custom-fonts nil
-   "Customization of fonts and sizes."
-  :group 'mrf-custom
-  )
+    "Customization of fonts and sizes."
+    :group 'mrf-custom)
 
 (defgroup mrf-custom-theming nil
-   "Custom theming values."
-   :group 'mrf-custom
-   )
+    "Custom theming values."
+    :group 'mrf-custom)
 
 ;;; --------------------------------------------------------------------------
-;;; Feature Switches
+
+(defcustom display-dashboard-at-start t
+    "If set to t, the `dashboard' package will be displayed first.
+  Otherwise, the `dashboard' will be available but in the buffer
+   *dashboard*."
+    :type 'boolean
+    :group 'mrf-custom)
+
+(defcustom custom-docs-dir "~/Documents/Emacs-Related"
+    "A directory used to store documents and customized data."
+    :type 'string
+    :group 'mrf-custom)
+
+(defcustom working-files-directory
+    (concat custom-docs-dir
+        (concat "/emacs-working-files_" (concat emacs-version "/")))
+    "The directory where to store Emacs working files."
+    :type 'string
+    :group 'mrf-custom)
+
+(defcustom custom-org-fill-column 150
+    "The fill column width for Org mode text.
+Note that the text is also centered on the screen so that
+should be taken into consideration when providing a width."
+    :type 'natnum
+    :group 'mrf-custom)
+
+;;; --------------------------------------------------------------------------
+;;; Feature Toggles
 
 (defcustom enable-gb-dev nil
     "If set to t, the z80-mode and other GameBoy related packages
     will be enabled."
     :type 'boolean
-    :group 'mrf-custom)
+    :group 'mrf-custom-toggles)
 
 (defcustom enable-ts nil
     "Set to t to enable TypeScript handling."
     :type 'boolean
-    :group 'mrf-custom)
+    :group 'mrf-custom-toggles)
 
 (defcustom enable-corfu nil
     "Setting to t enables Corfu instead of Ivy.
     Corfu is an alternative to the command completion package, IVY which also will
     include Swiper and Company.  If this value is set to nil then Ivy is used."
     :type 'boolean
-    :group 'mrf-custom)
+    :group 'mrf-custom-toggles)
 
 (defcustom enable-vundo t
     "Set to t to enable `vundo' which is an alternative to Emacs undo.
     Setting this value to nil will activate the alternate `undo-tree' package."
     :type 'boolean
-    :group 'mrf-custom)
+    :group 'mrf-custom-toggles)
 
 (defcustom enable-centaur-tabs nil
     "Set to t to enable `centaur-tabs' which uses tabs to represent open buffer."
@@ -113,7 +141,7 @@
 (defcustom enable-neotree nil
     "Set to t to enable the `neotree' package."
     :type 'boolean
-    :group 'mrf-custom)
+    :group 'mrf-custom-toggles)
 
 (defcustom enable-golden-ratio nil
     "Set to t to enable `golden-ratio-mode' which resizes the active buffer
@@ -137,7 +165,7 @@ commands that are customised to make the best use of Ivy.  Swiper is an
 alternative to isearch that uses Ivy to show an overview of all matches."
     :type '(choice (const :tag "Use the Vertico completion system." comphand-vertico)
                (const :tag "Use Ivy, Counsel, Swiper completion systems" comphand-ivy-counsel))
-    :group 'mrf-custom-selection)
+    :group 'mrf-custom-selections)
 
 (defcustom debug-adapter 'enable-dap-mode
     "Select the debug adapter to use for debugging applications.  dap-mode is an
@@ -151,7 +179,7 @@ with DAPE. DAPE supports most popular languages, however, not as many as
 dap-mode."
     :type '(choice (const :tag "Debug Adapter Protocol (DAP)" enable-dap-mode)
                (const :tag "Debug Adapter Protocol for Emacs (DAPE)" enable-dape))
-    :group 'mrf-custom-selection)
+    :group 'mrf-custom-selections)
 
 (defcustom python-ide 'python-ide-elpy
     "Select which IDE will be used for Python development.
@@ -172,7 +200,7 @@ configurable but has a host of great feaures that just work."
     :type '(choice (const :tag "Elpy: Emacs Lisp Python Environment" python-ide-elpy)
                (const :tag "Elgot/Language Server Protocol" python-ide-elgot-lsp)
   		 (const :tag "Python Anaconda-mode for Emacs" python-ide-anaconda))
-    :group 'mrf-custom-selection)
+    :group 'mrf-custom-selections)
 
 ;;; --------------------------------------------------------------------------
 ;;; Theming related
@@ -252,34 +280,6 @@ If additional themes are added, they must be previously installed."
     "The small font size in pixels."
     :type 'natnum
     :group 'mrf-custom-fonts)
-
-;;; --------------------------------------------------------------------------
-
-(defcustom display-dashboard-at-start t
-    "If set to t, the `dashboard' package will be displayed first.
-  Otherwise, the `dashboard' will be available but in the buffer
-  *dashboard*."
-    :type 'boolean
-    :group 'mrf-custom)
-
-(defcustom custom-docs-dir "~/Documents/Emacs-Related"
-    "A directory used to store documents and customized data."
-    :type 'string
-    :group 'mrf-custom)
-
-(defcustom working-files-directory
-    (concat custom-docs-dir
-        (concat "/emacs-working-files_" (concat emacs-version "/")))
-    "The directory where to store Emacs working files."
-    :type 'string
-    :group 'mrf-custom)
-
-(defcustom custom-org-fill-column 150
-    "The fill column width for Org mode text.
-Note that the text is also centered on the screen so that
-should be taken into consideration when providing a width."
-    :type 'natnum
-    :group 'mrf-custom)
 
 ;;; --------------------------------------------------------------------------
 
@@ -385,7 +385,6 @@ should be taken into consideration when providing a width."
 ;; This is used to trigger the cycling of the theme-selector
 ;; It is called when a theme is disabled. The theme is disabled from the
 ;; `mrf/load-theme-from-selector' function.
-
 (add-hook 'disable-theme-functions #'mrf/cycle-theme-selector)
 
 ;;; --------------------------------------------------------------------------
