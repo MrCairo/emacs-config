@@ -42,7 +42,7 @@
 
 (straight-use-package 'use-package)
 
-(setq use-package-compute-statistics nil
+(setq use-package-compute-statistics t
     use-package-verbose t
     use-package-always-ensure nil
     use-package-always-demand nil
@@ -165,7 +165,7 @@ commands that are customised to make the best use of Ivy.  Swiper is an
 alternative to isearch that uses Ivy to show an overview of all matches."
     :type '(choice (const :tag "Use the Vertico completion system." comphand-vertico)
                (const :tag "Use Ivy, Counsel, Swiper completion systems" comphand-ivy-counsel))
-    :group 'mrf-custom-selections)
+    :group 'mrf-custom-choices)
 
 (defcustom debug-adapter 'enable-dap-mode
     "Select the debug adapter to use for debugging applications.  dap-mode is an
@@ -179,7 +179,7 @@ with DAPE. DAPE supports most popular languages, however, not as many as
 dap-mode."
     :type '(choice (const :tag "Debug Adapter Protocol (DAP)" enable-dap-mode)
                (const :tag "Debug Adapter Protocol for Emacs (DAPE)" enable-dape))
-    :group 'mrf-custom-selections)
+    :group 'mrf-custom-choices)
 
 (defcustom python-ide 'python-ide-elpy
     "Select which IDE will be used for Python development.
@@ -189,7 +189,7 @@ combines and configures a number of other packages, both written in Emacs
 Lisp as well as Python. Elpy is fully documented at
 https://elpy.readthedocs.io/en/latest/index.html.
 
-Elgot/LSP Eglot is the Emacs client for the Language Server Protocol
+Eglot/LSP Eglot is the Emacs client for the Language Server Protocol
 (LSP). Eglot provides infrastructure and a set of commands for enriching the
 source code editing capabilities of Emacs via LSP. Eglot itself is
 completely language-agnostic, but it can support any programming language
@@ -198,9 +198,9 @@ for which there is a language server and an Emacs major mode.
 Anaconda-mode is another IDE for Python very much like Elpy. It is not as
 configurable but has a host of great feaures that just work."
     :type '(choice (const :tag "Elpy: Emacs Lisp Python Environment" python-ide-elpy)
-               (const :tag "Elgot/Language Server Protocol" python-ide-elgot-lsp)
+               (const :tag "Eglot/Language Server Protocol" python-ide-eglot-lsp)
   		 (const :tag "Python Anaconda-mode for Emacs" python-ide-anaconda))
-    :group 'mrf-custom-selections)
+    :group 'mrf-custom-choices)
 
 ;;; --------------------------------------------------------------------------
 ;;; Theming related
@@ -602,14 +602,15 @@ If additional themes are added, they must be previously installed."
     :straight (diminish :type git :flavor melpa :host github :repo "myrjola/diminish.el"))
 
 (defun mrf/set-diminish ()
-   (diminish 'projectile-mode "PrM")
-   (diminish 'anaconda-mode)
-   (diminish 'tree-sitter-mode "ts")
-   (diminish 'ts-fold-mode)
-   (diminish 'counsel-mode)
-   (diminish 'golden-ratio-mode)
-   (diminish 'company-box-mode)
-   (diminish 'company-mode))
+    (diminish 'projectile-mode "PrM")
+    (diminish 'anaconda-mode)
+    (diminish 'tree-sitter-mode "ts")
+    (diminish 'eldoc-box "DocBox")
+    (diminish 'ts-fold-mode)
+    (diminish 'counsel-mode)
+    (diminish 'golden-ratio-mode)
+    (diminish 'company-box-mode)
+    (diminish 'company-mode))
 
 ;; Need to run late in the startup process
 (add-hook 'after-init-hook 'mrf/set-diminish)
@@ -746,6 +747,13 @@ If additional themes are added, they must be previously installed."
    :config
    (which-key-mode)
    (which-key-setup-side-window-right))
+
+(use-package eldoc)
+(use-package eldoc-box
+    :after eldoc
+    :diminish DocBox
+    :config
+    (global-eldoc-mode t))
 
 ;;; --------------------------------------------------------------------------
 ;;; Automatic Package Updates
@@ -992,6 +1000,14 @@ If additional themes are added, they must be previously installed."
     :defer t
  :if (display-graphic-p))
 
+;;; ------------------------------------------------------------------------
+;;; Alternate fork to handle possible performance bug(s)
+(use-package jsonrpc
+    :straight (jsonrpc :type git
+    	      :host github
+    	      :repo "emacs-straight/jsonrpc"
+    	      :files ("*" (:exclude ".git"))))
+
 ;;; --------------------------------------------------------------------------
 ;;; Emacs Polyglot is the Emacs LSP client that stays out of your way:
 
@@ -1018,16 +1034,12 @@ Thanks @wyuenho on GitHub"
         (python-mode . eglot-ensure)
         (prog-mode . eglot-ensure)
         (rust-mode-hook . eglot-ensure)
-        :bind (:map python-mode-map
-                  ("C-c g r" . lsp-find-references)
-                  ("C-c g o" . xref-find-definitions-other-window)
-                  ("C-c g g" . xref-find-definitions)
-                  ("C-c g ?" . eldoc-doc-buffer))
         :config
       (which-key-add-key-based-replacements "C-c g r" "find-symbol-reference")
       (which-key-add-key-based-replacements "C-c g o" "find-defitions-other-window")
       (which-key-add-key-based-replacements "C-c g g" "find-defitions")
       (which-key-add-key-based-replacements "C-c g ?" "eldoc-definition")
+      (add-hook 'eglot-managed-mode-hook #'eldoc-box-hover-at-point-mode t)
         (add-to-list 'eglot-server-programs '((c-mode c++-mode) "clangd"))
         (add-to-list 'eglot-server-programs '(python-mode . ("pylsp")))
         (add-to-list 'eglot-server-programs
@@ -1111,6 +1123,7 @@ Thanks @wyuenho on GitHub"
 
 (when (equal python-ide 'python-ide-anaconda)
    (use-package anaconda-mode
+       :after python
        :bind (:map python-mode-map
     	       ("C-c g o" . anaconda-mode-find-definitions-other-frame)
     	       ("C-c g g" . anaconda-mode-find-definitions)
@@ -1131,11 +1144,6 @@ Thanks @wyuenho on GitHub"
         (elpy-rpc-python-command "python3")
         (display-fill-column-indicator-mode 1)
       (highlight-indentation-mode nil)
-      :bind (:map python-mode-map
-  		("C-c g a" . elpy-goto-assignment)
-  		("C-c g o" . elpy-goto-definition-other-window)
-  		("C-c g g" . elpy-goto-definition)
-  		("C-c g ?" . elpy-doc))
       :config
       (message "elpy loaded")
       (use-package jedi)
@@ -1153,11 +1161,6 @@ Thanks @wyuenho on GitHub"
       :config
       (setq elpy-modules (delq 'elpy-module-flymake elpy-modules))
       :hook (elpy-mode . flycheck-mode)))
-
-;;; ------------------------------------------------------------------------
-  ;;; Alternate fork to handle possible performance bug(s)
-(use-package jsonrpc
-    :straight (jsonrpc :type git :host github :repo "emacs-straight/jsonrpc" :files ("*" (:exclude ".git"))))
 
 (when (equal debug-adapter 'enable-dape)
     (use-package dape
@@ -1612,17 +1615,30 @@ Thanks @wyuenho on GitHub"
 
 (defun mrf/python-mode-triggered ()
     (message ">>> mrf/python-mode-triggered")
+    (eldoc-box-hover-at-point-mode t)
     (if (equal debug-adapter 'enable-dap-mode)
       (unless (featurep 'dap-mode)
   	  (dap-mode))
       (if (not (featurep 'dape))
             (use-package dape :demand t)))
     ;; Activate LSP and EGLOT *if* selected as python-ide
-    (if (equal python-ide 'python-ide-eglot-lsp)
+    (when (equal python-ide 'python-ide-eglot-lsp)
       (unless (featurep 'lsp)
   	  (lsp))
       (unless (featurep 'eglot)
-  	  (eglot)))
+  	  (eglot))
+      (bind-keys :map python-mode-map
+            ("C-c g r" . lsp-find-references)
+            ("C-c g o" . xref-find-definitions-other-window)
+            ("C-c g g" . xref-find-definitions)
+            ("C-c g ?" . eldoc-doc-buffer)))
+    (when (equal python-ide 'python-ide-elpy)
+      (elpy-enable)
+      (bind-keys :map python-mode-map
+  	  ("C-c g a" . elpy-goto-assignment)
+  	  ("C-c g o" . elpy-goto-definition-other-window)
+  	  ("C-c g g" . elpy-goto-definition)
+  	  ("C-c g ?" . elpy-doc)))
     (set-fill-column 80))
 
 (use-package python-mode
