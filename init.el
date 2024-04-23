@@ -181,7 +181,7 @@ dap-mode."
                (const :tag "Debug Adapter Protocol for Emacs (DAPE)" enable-dape))
     :group 'mrf-custom-selections)
 
-(defcustom python-ide 'python-ide-elpy
+(defcustom custom-ide 'custom-ide-elpy
     "Select which IDE will be used for Python development.
 
 Elpy is an Emacs package to bring powerful Python editing to Emacs. It
@@ -197,10 +197,10 @@ for which there is a language server and an Emacs major mode.
 
 Anaconda-mode is another IDE for Python very much like Elpy. It is not as
 configurable but has a host of great feaures that just work."
-    :type '(choice (const :tag "Elpy: Emacs Lisp Python Environment" python-ide-elpy)
-               (const :tag "Elgot/Language Server Protocol" python-ide-elgot-lsp)
-  		 (const :tag "Python Anaconda-mode for Emacs" python-ide-anaconda))
-    :group 'mrf-custom-selections)
+    :type '(choice (const :tag "Elpy: Emacs Lisp Python Environment" custom-ide-elpy)
+               (const :tag "Eglot/Language Server Protocol" custom-ide-eglot-lsp)
+  		 (const :tag "Python Anaconda-mode for Emacs" custom-ide-anaconda))
+    :group 'mrf-custom-choices)
 
 ;;; --------------------------------------------------------------------------
 ;;; Theming related
@@ -210,6 +210,7 @@ configurable but has a host of great feaures that just work."
                            "ef-maris-light"
                            "ef-maris-dark"
                            "ef-kassio"
+  			 "ef-bio"
                            "sanityinc-tomorrow-bright"
                            "ef-melissa-dark"
                            "darktooth-dark"
@@ -219,6 +220,11 @@ configurable but has a host of great feaures that just work."
 If additional themes are added, they must be previously installed."
     :group 'mrf-custom-theming
     :type '(repeat string))
+
+(defcustom default-terminal-theme "sanityinc-tomorrow-bright"
+    "The default theme used for a terminal invocation of Emacs."
+    :group 'mrf-custom-theming
+    :type 'string)
 
 (defcustom theme-selector 0
     "The index into the list of custom themes."
@@ -747,6 +753,18 @@ If additional themes are added, they must be previously installed."
    (which-key-mode)
    (which-key-setup-side-window-right))
 
+(use-package eldoc
+    :config
+    (add-hook 'emacs-lisp-mode-hook 'eldoc-mode)
+    (add-hook 'lisp-interaction-mode-hook 'eldoc-mode)
+    (add-hook 'ielm-mode-hook 'eldoc-mode))
+
+(use-package eldoc-box
+    :after eldoc
+    :diminish DocBox
+    :config
+    (global-eldoc-mode t))
+
 ;;; --------------------------------------------------------------------------
 ;;; Automatic Package Updates
 
@@ -799,7 +817,7 @@ If additional themes are added, they must be previously installed."
 (use-package modus-themes)
 (use-package material-theme)
 (use-package color-theme-modern)
-(use-package color-theme-sanityinc-tomorrow )
+(use-package color-theme-sanityinc-tomorrow :ensure t)
 (use-package darktooth-theme :ensure t)
 (use-package zenburn-theme
     :defer t)
@@ -837,10 +855,14 @@ If additional themes are added, they must be previously installed."
 
 ;;; --------------------------------------------------------------------------
 ;; (add-hook 'emacs-startup-hook #'(mrf/load-theme-from-selector))
-(mrf/load-theme-from-selector)
+;; (mrf/load-theme-from-selector)
 ;; For terminal mode we choose Material theme
-(unless (display-graphic-p)
-   (load-theme 'material t))
+(if (not (display-graphic-p))
+    (progn
+      (defun load-terminal-theme ()
+  	  (load-theme (intern default-terminal-theme) t))
+      (add-hook 'after-init-hook 'load-terminal-theme))
+  (mrf/load-theme-from-selector))
 
 ;;; --------------------------------------------------------------------------
 ;;; Window Number
@@ -1002,68 +1024,65 @@ If additional themes are added, they must be previously installed."
     "Find the project `DIR' function for Projectile.
 Thanks @wyuenho on GitHub"
     (let ((root (projectile-project-root dir)))
-        (and root (cons 'transient root))))
+	(and root (cons 'transient root))))
 
-(when (equal python-ide 'python-ide-eglot-lsp)
+(when (equal custom-ide 'custom-ide-eglot-lsp)
     (use-package eglot
-        :defer t
-        :init
-        (setq company-backends
-            (cons 'company-capf
-                (remove 'company-capf company-backends)))
-        :hook
-        (lisp-mode . eglot-ensure)
-        (c-mode . eglot-ensure)
-        (c++-mode . eglot-ensure)
-        (python-mode . eglot-ensure)
-        (prog-mode . eglot-ensure)
-        (rust-mode-hook . eglot-ensure)
-        :bind (:map python-mode-map
-                  ("C-c g r" . lsp-find-references)
-                  ("C-c g o" . xref-find-definitions-other-window)
-                  ("C-c g g" . xref-find-definitions)
-                  ("C-c g ?" . eldoc-doc-buffer))
-        :config
+	:defer t
+	:after company
+	:init
+	(setq company-backends
+	    (cons 'company-capf
+		(remove 'company-capf company-backends)))
+	:hook
+	(lisp-mode . eglot-ensure)
+	(c-mode . eglot-ensure)
+	(c++-mode . eglot-ensure)
+	(python-mode . eglot-ensure)
+	(prog-mode . eglot-ensure)
+	(rust-mode-hook . eglot-ensure)
+	:config
       (which-key-add-key-based-replacements "C-c g r" "find-symbol-reference")
       (which-key-add-key-based-replacements "C-c g o" "find-defitions-other-window")
       (which-key-add-key-based-replacements "C-c g g" "find-defitions")
       (which-key-add-key-based-replacements "C-c g ?" "eldoc-definition")
-        (add-to-list 'eglot-server-programs '((c-mode c++-mode) "clangd"))
-        (add-to-list 'eglot-server-programs '(python-mode . ("pylsp")))
-        (add-to-list 'eglot-server-programs
-            '((rust-ts-mode rust-mode) .
-                 ("rust-analyzer" :initializationOptions (:check (:command "clippy")))))
-        (setq-default eglot-workspace-configuration
-            '((:pylsp . (:configurationSources ["flake8"]
-                            :plugins (:pycodestyle (:enabled :json-false)
-                                      :mccabe (:enabled :json-false)
-                                      :pyflakes (:enabled :json-false)
-                                      :flake8 (:enabled :json-false
-                                                  :maxLineLength 88)
-                                      :pydocstyle (:enabled t
-                                                      :convention "numpy")
-                                      :yapf (:enabled :json-false)
-                                      :autopep8 (:enabled :json-false)
-                                      :black (:enabled t
-                                                 :line_length 88
-                                                 :cache_config t))))))
+      ;; (add-hook 'eglot-managed-mode-hook #'eldoc-box-hover-at-point-mode t)
+	(add-to-list 'eglot-server-programs '((c-mode c++-mode) "clangd"))
+	(add-to-list 'eglot-server-programs '(python-mode . ("pylsp")))
+	(add-to-list 'eglot-server-programs
+	    '((rust-ts-mode rust-mode) .
+		 ("rust-analyzer" :initializationOptions (:check (:command "clippy")))))
+	(setq-default eglot-workspace-configuration
+	    '((:pylsp . (:configurationSources ["flake8"]
+			    :plugins (:pycodestyle (:enabled :json-false)
+				      :mccabe (:enabled :json-false)
+				      :pyflakes (:enabled :json-false)
+				      :flake8 (:enabled :json-false
+						  :maxLineLength 88)
+				      :pydocstyle (:enabled t
+						      :convention "numpy")
+				      :yapf (:enabled :json-false)
+				      :autopep8 (:enabled :json-false)
+				      :black (:enabled t
+						 :line_length 88
+						 :cache_config t))))))
       ))
 
 ;;; --------------------------------------------------------------------------
 ;;; Language Server Protocol
 
-(when (equal python-ide 'python-ide-eglot-lsp)
+(when (equal custom-ide 'custom-ide-eglot-lsp)
     (eval-when-compile (defvar lsp-enable-which-key-integration)))
 
 (defun mrf/lsp-mode-setup ()
     "Custom LSP setup function."
-    (when (equal python-ide 'python-ide-eglot-lsp)
+    (when (equal custom-ide 'custom-ide-eglot-lsp)
         (message "Set up LSP header-line and other vars")
         (setq lsp-headerline-breadcrumb-segments '(path-up-to-project file symbols))
         (setq lsp-clangd-binary-path "/usr/bin/clangd")'
         (lsp-headerline-breadcrumb-mode)))
 
-(when (equal python-ide 'python-ide-eglot-lsp)
+(when (equal custom-ide 'custom-ide-eglot-lsp)
     (use-package lsp-mode
         :defer t
         :commands (lsp lsp-deferred)
@@ -1073,7 +1092,7 @@ Thanks @wyuenho on GitHub"
         :config
         (lsp-enable-which-key-integration t)))
 
-(when (equal python-ide 'python-ide-eglot-lsp)
+(when (equal custom-ide 'custom-ide-eglot-lsp)
     (use-package lsp-ui
         :after lsp
         :config (setq lsp-ui-sideline-enable t
@@ -1094,7 +1113,7 @@ Thanks @wyuenho on GitHub"
         (lsp-ui-doc-position 'bottom)
         :hook (lsp-mode . lsp-ui-mode)))
 
-(when (equal python-ide 'python-ide-eglot-lsp)
+(when (equal custom-ide 'custom-ide-eglot-lsp)
     (use-package lsp-treemacs
         :after lsp
         :bind (:map prog-mode-map
@@ -1102,14 +1121,14 @@ Thanks @wyuenho on GitHub"
         :config
         (lsp-treemacs-sync-mode 1)))
 
-(when (and (equal python-ide 'python-ide-eglot-lsp)
+(when (and (equal custom-ide 'custom-ide-eglot-lsp)
          (equal completion-handler 'comphand-ivy-counsel))
     (use-package lsp-ivy
         :after lsp ivy))
 
 ;;; --------------------------------------------------------------------------
 
-(when (equal python-ide 'python-ide-anaconda)
+(when (equal custom-ide 'custom-ide-anaconda)
    (use-package anaconda-mode
        :bind (:map python-mode-map
     	       ("C-c g o" . anaconda-mode-find-definitions-other-frame)
@@ -1124,7 +1143,7 @@ Thanks @wyuenho on GitHub"
 
 ;;; --------------------------------------------------------------------------
 
-(when (equal python-ide 'python-ide-elpy)
+(when (equal custom-ide 'custom-ide-elpy)
     (use-package elpy
         :after python
         :custom
@@ -1612,17 +1631,30 @@ Thanks @wyuenho on GitHub"
 
 (defun mrf/python-mode-triggered ()
     (message ">>> mrf/python-mode-triggered")
+    ;; (eldoc-box-hover-at-point-mode t) ;; Using Mitch Key for this
     (if (equal debug-adapter 'enable-dap-mode)
       (unless (featurep 'dap-mode)
   	  (dap-mode))
       (if (not (featurep 'dape))
             (use-package dape :demand t)))
-    ;; Activate LSP and EGLOT *if* selected as python-ide
-    (if (equal python-ide 'python-ide-eglot-lsp)
+    ;; Activate LSP and EGLOT *if* selected as custom-ide
+    (when (equal custom-ide 'custom-ide-eglot-lsp)
       (unless (featurep 'lsp)
-  	  (lsp))
+  	  (lsp-mode))
       (unless (featurep 'eglot)
-  	  (eglot)))
+  	  (eglot))
+      (bind-keys :map python-mode-map
+            ("C-c g r" . lsp-find-references)
+            ("C-c g o" . xref-find-definitions-other-window)
+            ("C-c g g" . xref-find-definitions)
+            ("C-c g ?" . eldoc-doc-buffer)))
+    (when (equal custom-ide 'custom-ide-elpy)
+      (elpy-enable)
+      (bind-keys :map python-mode-map
+  	  ("C-c g a" . elpy-goto-assignment)
+  	  ("C-c g o" . elpy-goto-definition-other-window)
+  	  ("C-c g g" . elpy-goto-definition)
+  	  ("C-c g ?" . elpy-doc)))
     (set-fill-column 80))
 
 (use-package python-mode
@@ -1681,6 +1713,15 @@ Thanks @wyuenho on GitHub"
    :after python
    :config (message ">>> Starting pyvenv-auto")
    :hook (python-mode . pyvenv-auto-run))
+
+(use-package pydoc
+    :straight (pydoc :type git :flavor melpa
+  		  :host github :repo "statmobile/pydoc")
+    :after python
+    :custom
+    (pydoc-python-command "python3")
+    (pydoc-pip-version-command "pip3 --version")
+    )
 
 ;;; --------------------------------------------------------------------------
 
@@ -1745,7 +1786,7 @@ Thanks @wyuenho on GitHub"
 
 ;;; --------------------------------------------------------------------------
 
-(when (equal python-ide 'python-ide-eglot-lsp)
+(when (equal custom-ide 'custom-ide-eglot-lsp)
     (use-package company
       :after lsp-mode
       :hook (lsp-mode . company-mode)
@@ -1754,7 +1795,7 @@ Thanks @wyuenho on GitHub"
   	    (:map lsp-mode-map
   		("<tab>" . company-indent-or-complete-common))))
 
-(when (equal python-ide 'python-ide-elpy)
+(when (equal custom-ide 'custom-ide-elpy)
     (use-package company
       :after elpy
       :hook (elpy-mode . company-mode)
@@ -1763,7 +1804,7 @@ Thanks @wyuenho on GitHub"
               (:map elpy-mode-map
   		("<tab>" . company-indent-or-complete-common))))
 
-(when (equal python-ide 'python-ide-anaconda)
+(when (equal custom-ide 'custom-ide-anaconda)
     (use-package company
       :after anaconda-mode
       :hook (anaconda-mode . company-mode)
@@ -1787,7 +1828,7 @@ Thanks @wyuenho on GitHub"
    :diminish cb
    :hook (company-mode . company-box-mode))
 
-(when (equal python-ide 'python-ide-elpy)
+(when (equal custom-ide 'custom-ide-elpy)
     (use-package company-jedi
       :after python
       :config
@@ -1796,7 +1837,7 @@ Thanks @wyuenho on GitHub"
   	  (add-to-list 'company-backends 'company-jedi))
       (add-hook 'python-mode-hook 'my/company-jedi-python-mode-hook)))
 
-(when (equal python-ide 'python-ide-anaconda)
+(when (equal custom-ide 'custom-ide-anaconda)
     (progn
       (use-package company-anaconda
   	  :after anaconda
@@ -2697,14 +2738,49 @@ capture was not aborted."
 
 ;;; --------------------------------------------------------------------------
 
-(setq-default initial-scratch-message
-  (concat ";; Hello, World and Happy hacking! "
-      user-login-name "\n;; Press C-c RET (C-c C-m) to open the Mitch Menu\n\n"))
+(use-package popup)
+
+(defun mmm-menu ()
+    (interactive)
+    (let ((mmm-menu-choice (popup-cascade-menu '
+  			     ("open-dashboard" "open-ielm"
+  				 ("Themes" "next-theme" "previous-theme" "which-theme")
+  				 ("Shells" "vterm" "vterm-other-window" "eshell")
+  				 "set-fill-column" "set-org-fill-column"
+  				 "eldoc-help" "pydoc-help"))))
+      (cond
+  	  ((equal mmm-menu-choice "open-dashboard")
+  	      (dashboard-open))
+  	  ((equal mmm-menu-choice "open-ielm")
+  	      (ielm))
+  	  ((equal mmm-menu-choice "next-theme")
+  	      (next-theme))
+  	  ((equal mmm-menu-choice "previous-theme")
+  	      (previous-theme))
+  	  ((equal mmm-menu-choice "which-theme")
+  	      (which-theme))
+  	  ((equal mmm-menu-choice "vterm")
+  	      (vterm))
+  	  ((equal mmm-menu-choice "vterm-other-window")
+  	      (vterm-other-window))
+  	  ((equal mmm-menu-choice "eshell")
+  	      (eshell))
+  	  ((equal mmm-menu-choice "set-fill-column")
+  	      (call-interactively 'mrf/set-fill-column-interactively))
+  	  ((equal mmm-menu-choice "set-org-fill-column")
+  	      (call-interactively 'mrf/set-org-fill-column-interactively))
+  	  ((equal mmm-menu-choice "eldoc-help")
+  	      (eldoc-box-help-at-point))
+  	  ((equal mmm-menu-choice "pydoc-help")
+  	      (pydoc-at-point)))
+      ))
 
 ;;; --------------------------------------------------------------------------
 
 (defvar mmm-keys-minor-mode-map
     (let ((map (make-sparse-keymap)))
+      (define-key map (kbd "C-c C-<return>") 'mmm-menu)
+      (define-key map (kbd "C-c RET RET") 'mmm-menu)
       (define-key map (kbd "C-c RET d") 'dashboard-open)
       (define-key map (kbd "C-c RET f") 'mrf/set-fill-column-interactively)
       (define-key map (kbd "C-c RET F") 'mrf/set-org-fill-column-interactively)
@@ -2715,6 +2791,9 @@ capture was not aborted."
       (define-key map (kbd "C-c RET C-=") 'next-theme)
       (define-key map (kbd "C-c RET C--") 'previous-theme)
       (define-key map (kbd "C-c RET C-?") 'which-theme)
+      (define-key map (kbd "C-c RET ?") 'eldoc-box-help-at-point)
+      (if (featurep 'python)
+  	  (define-key map (kbd "C-c RET C-.") 'pydoc-at-point))
       map)
     "mmm-keys-minor-mode keymap.")
 
@@ -2728,6 +2807,12 @@ capture was not aborted."
 (which-key-add-key-based-replacements "C-c RET f" "set-fill-column")
 (which-key-add-key-based-replacements "C-c RET" "Mitch's Menu")
 (diminish 'mmm-keys-minor-mode "m3k")
+
+;;; --------------------------------------------------------------------------
+
+(setq-default initial-scratch-message
+  (concat ";; Hello, World and Happy hacking! "
+      user-login-name "\n;; Press C-c RET (C-c C-m) to open the Mitch Menu\n\n"))
 
 ;;; --------------------------------------------------------------------------
 ;; Ignore Line Numbers for the following modes:
