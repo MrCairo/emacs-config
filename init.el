@@ -42,7 +42,7 @@
 
 (straight-use-package 'use-package)
 
-(setq use-package-compute-statistics nil
+(setq use-package-compute-statistics t
     use-package-verbose t
     use-package-always-ensure nil
     use-package-always-demand nil
@@ -290,32 +290,28 @@ If additional themes are added, they must be previously installed."
 ;;; --------------------------------------------------------------------------
 
 (setq-default
-   ;; enable smooth scrolling.
-   pixel-scroll-precision-mode t
-   ;; try to guess target directory
-   dired-dwim-target t
-   ;; truncate lines even in partial-width windows
-   truncate-partial-width-windows 1
-   ;; disable auto save
-   auto-save-default nil
-   ;; disable backup (No ~ tilde files)
-   backup-inhibited t
-   ;; Refresh buffer if file has changed
-   global-auto-revert-mode 1
-   global-auto-revert-non-file-buffers t
-   ;; Reasonable buffer length
-   history-length 25
-   ;; Hide the startup message
-   inhibit-startup-message t
-   ;; emacs lisp tab size
-   lisp-indent-offset '4
-   ;; Set up the visible bell
-   visible-bell t
-   ;; long lines of text do not wrap
-   truncate-lines 1
-   ;; Default line limit for fills
-   fill-column 80
-   )
+    window-resize-pixelwise t ;; enable smooth resizing
+    window-resize-pixelwise t
+    frame-resize-pixelwise t
+    dired-dwim-target t       ;; try to guess target directory
+    truncate-partial-width-windows 1 ;; truncate lines in partial-width windows
+    auto-save-default nil     ;; disable auto save
+    backup-inhibited t        ;; disable backup (No ~ tilde files)
+    global-auto-revert-mode 1 ;; Refresh buffer if file has changed
+    global-auto-revert-non-file-buffers t
+    history-length 25         ;; Reasonable buffer length
+    inhibit-startup-message t ;; Hide the startup message
+    inhibit-startup-screent t
+    lisp-indent-offset '4     ;; emacs lisp tab size
+    visible-bell t            ;; Set up the visible bell
+    truncate-lines 1          ;; long lines of text do not wrap
+    fill-column 80            ;; Default line limit for fills
+    ;; Triggers project for directories with any of the following files:
+    project-vc-extra-root-markers '(".dir-locals.el"
+  				  "requirements.txt"
+  				  "Gemfile"
+  				  "package.json")
+    )
 
 ;; (global-display-line-numbers-mode 1) ;; Line numbers appear everywhere
 (save-place-mode 1)                  ;; Remember where we were last editing a file.
@@ -325,9 +321,43 @@ If additional themes are added, they must be previously installed."
 (global-prettify-symbols-mode 1)     ;; Display pretty symbols (i.e. λ = lambda)
 (add-hook 'prog-mode-hook 'display-line-numbers-mode)
 
+;; Allow access from emacsclient
+(add-hook 'after-init-hook
+    (lambda ()
+        (require 'server)
+        (unless (server-running-p)
+            (server-start))))
+
+(when (fboundp 'pixel-scroll-precision-mode)
+    (pixel-scroll-precision-mode))
+
 (use-package page-break-lines
-  :config
-  (global-page-break-lines-mode))
+    :config
+    (global-page-break-lines-mode))
+
+(use-package default-text-scale
+    :hook (after-init . default-text-scale-mode))
+
+(use-package nix-ts-mode
+    :mode "\\.nix\\'")
+
+;;; --------------------------------------------------------------------------
+
+(use-package anzu
+    :custom
+    (anzu-mode-lighter "")                    
+    (anzu-deactivate-region t)                
+    (anzu-search-threshold 1000)              
+    (anzu-replace-threshold 50)               
+    (anzu-replace-to-string-separator " => ")
+    :config
+    (global-anzu-mode +1)
+    (set-face-attribute 'anzu-mode-line nil
+        :foreground "yellow" :weight 'bold)
+    (define-key isearch-mode-map
+      [remap isearch-query-replace]  #'anzu-isearch-query-replace)
+    (define-key isearch-mode-map
+      [remap isearch-query-replace-regexp] #'anzu-isearch-query-replace-regexp))
 
 ;;; --------------------------------------------------------------------------
 ;;; Set a variable that represents the actual emacs configuration directory.
@@ -966,11 +996,6 @@ If additional themes are added, they must be previously installed."
         ("C-x t B"   . treemacs-bookmark)
         ("C-x t C-t" . treemacs-find-file)
         ("C-x t M-t" . treemacs-find-tag)))
-
-;;; --------------------------------------------------------------------------
-
-(use-package treemacs-projectile
-  :after (treemacs projectile))
 
 ;;; --------------------------------------------------------------------------
 

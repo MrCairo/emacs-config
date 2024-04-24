@@ -84,7 +84,7 @@ This is the standard format of a =lisp= header that should appear for all =lisp=
 
   (straight-use-package 'use-package)
 
-  (setq use-package-compute-statistics nil
+  (setq use-package-compute-statistics t
       use-package-verbose t
       use-package-always-ensure nil
       use-package-always-demand nil
@@ -168,7 +168,6 @@ Other variables are also defined here that define other emacs behaviors and defa
       :group 'mrf-custom)
 
 #+end_src
-
 
 *** Custom Package Toggles
 
@@ -375,34 +374,30 @@ This is a curated selection of themes that I personally like. Most of them are d
 #+begin_src emacs-lisp
 
   ;;; --------------------------------------------------------------------------
-  
+
   (setq-default
-     ;; enable smooth scrolling.
-     pixel-scroll-precision-mode t
-     ;; try to guess target directory
-     dired-dwim-target t
-     ;; truncate lines even in partial-width windows
-     truncate-partial-width-windows 1
-     ;; disable auto save
-     auto-save-default nil
-     ;; disable backup (No ~ tilde files)
-     backup-inhibited t
-     ;; Refresh buffer if file has changed
-     global-auto-revert-mode 1
-     global-auto-revert-non-file-buffers t
-     ;; Reasonable buffer length
-     history-length 25
-     ;; Hide the startup message
-     inhibit-startup-message t
-     ;; emacs lisp tab size
-     lisp-indent-offset '4
-     ;; Set up the visible bell
-     visible-bell t
-     ;; long lines of text do not wrap
-     truncate-lines 1
-     ;; Default line limit for fills
-     fill-column 80
-     )
+      window-resize-pixelwise t ;; enable smooth resizing
+      window-resize-pixelwise t
+      frame-resize-pixelwise t
+      dired-dwim-target t       ;; try to guess target directory
+      truncate-partial-width-windows 1 ;; truncate lines in partial-width windows
+      auto-save-default nil     ;; disable auto save
+      backup-inhibited t        ;; disable backup (No ~ tilde files)
+      global-auto-revert-mode 1 ;; Refresh buffer if file has changed
+      global-auto-revert-non-file-buffers t
+      history-length 25         ;; Reasonable buffer length
+      inhibit-startup-message t ;; Hide the startup message
+      inhibit-startup-screent t
+      lisp-indent-offset '4     ;; emacs lisp tab size
+      visible-bell t            ;; Set up the visible bell
+      truncate-lines 1          ;; long lines of text do not wrap
+      fill-column 80            ;; Default line limit for fills
+      ;; Triggers project for directories with any of the following files:
+      project-vc-extra-root-markers '(".dir-locals.el"
+  				    "requirements.txt"
+  				    "Gemfile"
+  				    "package.json")
+      )
 
   ;; (global-display-line-numbers-mode 1) ;; Line numbers appear everywhere
   (save-place-mode 1)                  ;; Remember where we were last editing a file.
@@ -412,9 +407,50 @@ This is a curated selection of themes that I personally like. Most of them are d
   (global-prettify-symbols-mode 1)     ;; Display pretty symbols (i.e. λ = lambda)
   (add-hook 'prog-mode-hook 'display-line-numbers-mode)
 
+  ;; Allow access from emacsclient
+  (add-hook 'after-init-hook
+      (lambda ()
+          (require 'server)
+          (unless (server-running-p)
+              (server-start))))
+
+  (when (fboundp 'pixel-scroll-precision-mode)
+      (pixel-scroll-precision-mode))
+
   (use-package page-break-lines
-    :config
-    (global-page-break-lines-mode))
+      :config
+      (global-page-break-lines-mode))
+
+  (use-package default-text-scale
+      :hook (after-init . default-text-scale-mode))
+
+  (use-package nix-ts-mode
+      :mode "\\.nix\\'")
+
+#+end_src
+
+*** Anzu
+
+anzu.el is an Emacs port of anzu.vim. anzu.el provides a minor mode which displays current match and total matches information in the mode-line in various search modes.
+
+#+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
+
+  (use-package anzu
+      :custom
+      (anzu-mode-lighter "")                    
+      (anzu-deactivate-region t)                
+      (anzu-search-threshold 1000)              
+      (anzu-replace-threshold 50)               
+      (anzu-replace-to-string-separator " => ")
+      :config
+      (global-anzu-mode +1)
+      (set-face-attribute 'anzu-mode-line nil
+          :foreground "yellow" :weight 'bold)
+      (define-key isearch-mode-map
+  	[remap isearch-query-replace]  #'anzu-isearch-query-replace)
+      (define-key isearch-mode-map
+  	[remap isearch-query-replace-regexp] #'anzu-isearch-query-replace-regexp))
 
 #+end_src
 
@@ -472,8 +508,10 @@ This bit of code contains a list of themes that I like personally and then allow
 
 #+end_src
 
+*** Cycle Theme Function
 
-This is the main function that allows cycling (up or down) through the list of themes defined in the ~theme-list~.
+This is the main function that allows cycling (up or down) through the list of themes defined in the ~theme-list~.  This function is normally called by the ~disable-theme-functions~ hook. Before calling this function, set the variable ~theme-cycle-step~ to either a 1 or -1 depending upon which direction in the ~theme-list~ array to select the next element from. The resulting index will cycle to the end or the beginning of the list if the computed index goes beyond element 0 or the length of ~theme-list~. The parameter =theme= is passed to this function when a theme becomes disabled (via the ~disable-theme~ function) and represents the theme that has become disabled.
+
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
 
@@ -501,6 +539,7 @@ This is the main function that allows cycling (up or down) through the list of t
 
 #+end_src
 
+*** Load Theme Function
 
 This function simply loads the theme from the theme-list indexed by the ~theme-selector~ variable. Note the advice for ~load-theme~ that deactivates the current theme before activating the new theme. This is done to reset all the colors, a clean slate, before the new theme is activated.
 
@@ -512,7 +551,7 @@ This function simply loads the theme from the theme-list indexed by the ~theme-s
       (interactive)
       (if step
           (setq theme-cycle-step step)
-  	(setq theme-cycle-step 1))
+        (setq theme-cycle-step 1))
       (when loaded-theme
           (disable-theme (intern loaded-theme)))
       (setq loaded-theme (nth theme-selector theme-list))
@@ -1003,7 +1042,6 @@ This package displays ElDoc documentations in a childframe. The childframe is se
       
 #+end_src
 
-
 ** Automatic Package Updates
 
 The auto-package-update package helps us keep our Emacs packages up to date!  It will prompt you after a certain number of days either at startup or at a specific time of day to remind you to update your packages.
@@ -1269,11 +1307,12 @@ Window numbers for Emacs: Navigate your windows and frames using numbers. This i
 #+end_src
 
 *** Treemacs Projectile
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   ;;; --------------------------------------------------------------------------
 
   (use-package treemacs-projectile
     :after (treemacs projectile))
+  
 #+end_src
 
 *** Treemacs magit
@@ -2584,6 +2623,7 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
   	(counsel-projectile-mode)))
 
 #+end_src
+
 
 
 * Magit
