@@ -93,8 +93,8 @@
     :group 'mrf-custom)
 
 (defcustom working-files-directory
-    (concat custom-docs-dir
-        (concat "/emacs-working-files_" (concat emacs-version "/")))
+    (expand-file-name
+      (concat "emacs-working-files_" emacs-version) custom-docs-dir)
     "The directory where to store Emacs working files."
     :type 'string
     :group 'mrf-custom)
@@ -167,7 +167,7 @@ alternative to isearch that uses Ivy to show an overview of all matches."
                (const :tag "Use Ivy, Counsel, Swiper completion systems" comphand-ivy-counsel))
     :group 'mrf-custom-selections)
 
-(defcustom debug-adapter 'enable-dap-mode
+(defcustom debug-adapter 'enable-dape
     "Select the debug adapter to use for debugging applications.  dap-mode is an
 Emacs client/library for Debug Adapter Protocol is a wire protocol for
 communication between client and Debug Server. It’s similar to the LSP but
@@ -181,7 +181,7 @@ dap-mode."
                (const :tag "Debug Adapter Protocol for Emacs (DAPE)" enable-dape))
     :group 'mrf-custom-selections)
 
-(defcustom custom-ide 'custom-ide-elpy
+(defcustom custom-ide 'custom-ide-eglot-lsp
     "Select which IDE will be used for Python development.
 
 Elpy is an Emacs package to bring powerful Python editing to Emacs. It
@@ -338,9 +338,6 @@ If additional themes are added, they must be previously installed."
 (use-package default-text-scale
     :hook (after-init . default-text-scale-mode))
 
-(use-package nix-ts-mode
-    :mode "\\.nix\\'")
-
 ;;; --------------------------------------------------------------------------
 
 (use-package anzu
@@ -377,7 +374,7 @@ If additional themes are added, they must be previously installed."
 (message (concat ">>> Setting emacs-working-files directory to: " user-emacs-directory))
 
 ;;; Put any emacs cusomized variables in a special file
-(setq custom-file (concat  working-files-directory "customized-vars.el"))
+(setq custom-file (expand-file-name "customized-vars.el" working-files-directory))
 (load custom-file 'noerror 'nomessage)
 
 ;;; --------------------------------------------------------------------------
@@ -821,7 +818,7 @@ If additional themes are added, they must be previously installed."
     (setq yas-global-mode t)
     (setq yas-minor-mode t)
     (define-key yas-minor-mode-map (kbd "<tab>") nil)
-    (add-to-list #'yas-snippet-dirs (concat custom-docs-dir "/Snippets"))
+    (add-to-list #'yas-snippet-dirs (expand-file-name "Snippets" custom-docs-dir))
     (yas-reload-all)
     (setq yas-prompt-functions '(yas-ido-prompt))
     (defun help/yas-after-exit-snippet-hook-fn ()
@@ -837,20 +834,15 @@ If additional themes are added, they must be previously installed."
 
 ;;; --------------------------------------------------------------------------
 
-(let ((docs-dir (concat custom-docs-dir "/Themes/")))
-   (add-to-list 'custom-theme-load-path docs-dir))
+(add-to-list 'custom-theme-load-path (expand-file-name "Themes" custom-docs-dir))
 
-;;  (add-to-list 'custom-theme-load-path (concat custom-docs-dir "/Themes/"))
-;;  (add-to-list 'custom-theme-load-path (concat emacs-config-directory "/lisp/"))
-
-(use-package ef-themes)
-(use-package modus-themes)
-(use-package material-theme)
-(use-package color-theme-modern)
+(use-package ef-themes :ensure t)
+(use-package modus-themes :ensure t)
+(use-package material-theme :ensure t)
+(use-package color-theme-modern :ensure t)
 (use-package color-theme-sanityinc-tomorrow :ensure t)
 (use-package darktooth-theme :ensure t)
-(use-package zenburn-theme
-    :defer t)
+(use-package zenburn-theme :ensure t)
 
 ;;; --------------------------------------------------------------------------
 
@@ -1644,9 +1636,7 @@ Thanks @wyuenho on GitHub"
 ;;; --------------------------------------------------------------------------
 
 (defun mrf/load-python-file-hook ()
-    (message "Running python file hook")
     (python-mode)
-    (diff-hl-mode)
     ;; (unless (featurep 'jedi)
     ;; 	(use-package jedi
     ;; 	    :config
@@ -1944,23 +1934,23 @@ Thanks @wyuenho on GitHub"
 ;; -----------------------------------------------------------------
 
 (defun mrf/org-mode-setup ()
-   (org-indent-mode)
-   (variable-pitch-mode 1)
-   (visual-line-mode 1)
-   (setq org-ellipsis " ▾")
-   (setq org-agenda-start-with-log-mode t)
-   (setq org-log-done 'time)
-   (setq org-log-into-drawer t)
-   ;; (use-package org-habit)
-   ;; (add-to-list 'org-modules 'org-habit)
-   ;; (setq org-habit-graph-column 60)
-   (setq org-todo-keywords
+    (org-indent-mode)
+    (variable-pitch-mode 1)
+    (visual-line-mode 1)
+    (setq org-ellipsis " ▾")
+    (setq org-agenda-start-with-log-mode t)
+    (setq org-log-done 'time)
+    (setq org-log-into-drawer t)
+    ;; (use-package org-habit)
+    ;; (add-to-list 'org-modules 'org-habit)
+    ;; (setq org-habit-graph-column 60)
+    (setq org-todo-keywords
       '((sequence "TODO(t)" "NEXT(n)" "|" "DONE(d!)")
-        (sequence "BACKLOG(b)" "PLAN(p)" "READY(r)" "ACTIVE(a)"
-           "REVIEW(v)" "WAIT(w@/!)" "HOLD(h)" "|" "COMPLETED(c)" "CANC(k@)")))
-   (setq org-refile-targets
+             (sequence "BACKLOG(b)" "PLAN(p)" "READY(r)" "ACTIVE(a)"
+  	       "REVIEW(v)" "WAIT(w@/!)" "HOLD(h)" "|" "COMPLETED(c)" "CANC(k@)")))
+    (setq org-refile-targets
       '(("Archive.org" :maxlevel . 1)
-        ("Tasks.org" :maxlevel . 1))))
+             ("Tasks.org" :maxlevel . 1))))
 
 ;;; --------------------------------------------------------------------------
 
@@ -2133,7 +2123,7 @@ Thanks @wyuenho on GitHub"
    :init
    (setq org-roam-v2-ack t)
    :custom
-   (org-roam-directory (concat custom-docs-dir "/RoamNotes"))
+   (org-roam-directory (expand-file-name "RoamNotes" custom-docs-dir))
    (org-roam-completion-everywhere t)
    :bind (("C-c n l" . org-roam-buffer-toggle)
           ("C-c n f" . org-roam-node-find)
@@ -2467,26 +2457,26 @@ capture was not aborted."
 
 (if enable-golden-ratio
     (use-package golden-ratio
-        :custom
-        (golden-ratio-auto-scale t)
-        (golden-ratio-adjust-factor .4)
-        (golden-ratio-wide-adjust-factor .4)
-        (golden-ratio-max-width 100)
-        (golden-ratio-exclude-modes '(treemacs-mode
-                                      undo-tree-visdualizer-mode
-                                      inferior-python-mode
-  				    vundo-mode
-  	    	                      which-key-mode
-                                      c-mode
-                                      cc-mode
-                                      dashboard-mode
-                                      python-mode
-                                      markdown-mode))
-        (golden-ratio-exclude-buffer-regexp '("dap*"
-  					    "*dape*"
-                                              "*python*"))
-        :config
-        (golden-ratio-mode 1)))
+	:custom
+	(golden-ratio-auto-scale t)
+	(golden-ratio-adjust-factor .4)
+	(golden-ratio-wide-adjust-factor .4)
+	(golden-ratio-max-width 100)
+	(golden-ratio-exclude-modes '(treemacs-mode
+				      undo-tree-visdualizer-mode
+				      inferior-python-mode
+				      vundo-mode
+				      which-key-mode
+				      c-mode
+				      cc-mode
+				      dashboard-mode
+				      python-mode
+				      markdown-mode))
+	(golden-ratio-exclude-buffer-regexp '("dap*"
+					    "*dape*"
+					      "*python*"))
+	:config
+	(golden-ratio-mode 1)))
 
 ;;; --------------------------------------------------------------------------
 
@@ -2620,34 +2610,38 @@ capture was not aborted."
 ;;; --------------------------------------------------------------------------
 
 (defun efs/configure-eshell ()
-  ;; Save command history when commands are entered
-  (add-hook 'eshell-pre-command-hook 'eshell-save-some-history)
+    ;; Save command history when commands are entered
+    (add-hook 'eshell-pre-command-hook 'eshell-save-some-history)
 
-  ;; Truncate buffer for performance
-  (add-to-list 'eshell-output-filter-functions 'eshell-truncate-buffer)
+    ;; Truncate buffer for performance
+    (add-to-list 'eshell-output-filter-functions 'eshell-truncate-buffer)
 
-  ;; Bind some useful keys for evil-mode
-  (evil-define-key '(normal insert visual) eshell-mode-map (kbd "C-r") 'counsel-esh-history)
-  (evil-define-key '(normal insert visual) eshell-mode-map (kbd "<home>") 'eshell-bol)
-  (evil-normalize-keymaps)
+    ;; Bind some useful keys for evil-mode
+    ;; (bind-keys :map eshell-mode-map
+    ;; 	("C-r" . eshell-hist-mode)
+    ;; 	("<home>" . eshell-bol))
 
-  (setq eshell-history-size         10000
+    ;; (evil-define-key '(normal insert visual) eshell-mode-map (kbd "C-r") 'counsel-esh-history)
+    ;; (evil-define-key '(normal insert visual) eshell-mode-map (kbd "<home>") 'eshell-bol)
+    ;; (evil-normalize-keymaps)
+
+    (setq eshell-history-size         10000
         eshell-buffer-maximum-lines 10000
         eshell-hist-ignoredups t
         eshell-scroll-to-bottom-on-input t))
 
 (use-package eshell-git-prompt
-   :after eshell)
+    :after eshell)
 
 (use-package eshell
-  :defer t
-  :hook (eshell-first-time-mode . efs/configure-eshell)
-  :config
-  (with-eval-after-load 'esh-opt
-    (setq eshell-destroy-buffer-when-process-dies t)
-    (setq eshell-visual-commands '("htop" "zsh" "vim")))
+    :defer t
+    :hook (eshell-first-time-mode . efs/configure-eshell)
+    :config
+    (with-eval-after-load 'esh-opt
+      (setq eshell-destroy-buffer-when-process-dies t)
+      (setq eshell-visual-commands '("htop" "zsh" "vim")))
 
-  (eshell-git-prompt-use-theme 'powerline))
+    (eshell-git-prompt-use-theme 'powerline))
 
 ;;; --------------------------------------------------------------------------
 
@@ -2684,16 +2678,15 @@ capture was not aborted."
 
 ;;; --------------------------------------------------------------------------
 
-(use-package diff-hl :defer t)
+(use-package diff-hl
+    :config
+    (global-diff-hl-mode))
 
 ;;; --------------------------------------------------------------------------
 
 (use-package pulsar
     :config
     (pulsar-global-mode)
-    (let ((map global-map))
-      (define-key map (kbd "C-c h p") #'pulsar-pulse-line)
-      (define-key map (kbd "C-c h h") #'pulsar-highlight-line))
     :custom
     (pulsar-pulse t)
     (pulsar-delay 0.10)
@@ -2804,21 +2797,23 @@ capture was not aborted."
 
 (defvar mmm-keys-minor-mode-map
     (let ((map (make-sparse-keymap)))
-      (define-key map (kbd "C-c C-<return>") 'mmm-menu)
-      (define-key map (kbd "C-c RET RET") 'mmm-menu)
-      (define-key map (kbd "C-c RET d") 'dashboard-open)
-      (define-key map (kbd "C-c RET f") 'mrf/set-fill-column-interactively)
-      (define-key map (kbd "C-c RET F") 'mrf/set-org-fill-column-interactively)
-      (define-key map (kbd "C-c RET i") 'ielm)
-      (define-key map (kbd "C-c RET v") 'vterm-other-window)
-      (define-key map (kbd "C-c RET S") 'smartparens-strict-mode)
-      (define-key map (kbd "C-c RET |") 'global-display-fill-column-indicator-mode)
-      (define-key map (kbd "C-c RET C-=") 'next-theme)
-      (define-key map (kbd "C-c RET C--") 'previous-theme)
-      (define-key map (kbd "C-c RET C-?") 'which-theme)
-      (define-key map (kbd "C-c RET ?") 'eldoc-box-help-at-point)
+      (bind-keys :map map
+  	  ("M-RET p" . pulsar-pulse-line)
+  	  ("M-RET P" . pulsar-highlight-line)
+  	  ("M-RET RET" . mmm-menu)
+  	  ("M-RET d" . dashboard-open)
+  	  ("M-RET f" . mrf/set-fill-column-interactively)
+  	  ("M-RET F" . mrf/set-org-fill-column-interactively)
+  	  ("M-RET i" . ielm)
+  	  ("M-RET v" . vterm-other-window)
+  	  ("M-RET S" . smartparens-strict-mode)
+  	  ("M-RET |" . global-display-fill-column-indicator-mode)
+  	  ("M-RET C-=" . next-theme)
+  	  ("M-RET C--" . previous-theme)
+  	  ("M-RET C-?" . which-theme)
+  	  ("M-RET ?" . eldoc-box-help-at-point))
       (if (featurep 'python)
-  	  (define-key map (kbd "C-c RET C-.") 'pydoc-at-point))
+  	  (define-key map (kbd "M-RET C-.") 'pydoc-at-point))
       map)
     "mmm-keys-minor-mode keymap.")
 
@@ -2829,15 +2824,19 @@ capture was not aborted."
 
 (mmm-keys-minor-mode 1)
 
-(which-key-add-key-based-replacements "C-c RET f" "set-fill-column")
-(which-key-add-key-based-replacements "C-c RET" "Mitch's Menu")
+(which-key-add-key-based-replacements "M-RET f" "set-fill-column")
+(which-key-add-key-based-replacements "M-RET" "Mitch's Menu")
 (diminish 'mmm-keys-minor-mode "m3k")
 
 ;;; --------------------------------------------------------------------------
 
 (setq-default initial-scratch-message
-  (concat ";; Hello, World and Happy hacking! "
-      user-login-name "\n;; Press C-c RET (C-c C-m) to open the Mitch Menu\n\n"))
+    (format ";; Hello, World and Happy hacking %s!\n%s\n\n"
+      user-login-name
+      ";; Press M-RET (Meta-RET) to open the Mitch's Menu"))
+
+  ;; (concat ";; Hello, World and Happy hacking "
+  ;;     user-login-name "!\n;; Press M-RET (C-c C-m) to open the Mitch Menu\n\n"))
 
 ;;; --------------------------------------------------------------------------
 ;; Ignore Line Numbers for the following modes:
