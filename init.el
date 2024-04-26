@@ -165,7 +165,7 @@ commands that are customised to make the best use of Ivy.  Swiper is an
 alternative to isearch that uses Ivy to show an overview of all matches."
     :type '(choice (const :tag "Use the Vertico completion system." comphand-vertico)
                (const :tag "Use Ivy, Counsel, Swiper completion systems" comphand-ivy-counsel))
-    :group 'mrf-custom-selections)
+    :group 'mrf-custom-choices)
 
 (defcustom debug-adapter 'enable-dape
     "Select the debug adapter to use for debugging applications.  dap-mode is an
@@ -179,7 +179,7 @@ with DAPE. DAPE supports most popular languages, however, not as many as
 dap-mode."
     :type '(choice (const :tag "Debug Adapter Protocol (DAP)" enable-dap-mode)
                (const :tag "Debug Adapter Protocol for Emacs (DAPE)" enable-dape))
-    :group 'mrf-custom-selections)
+    :group 'mrf-custom-choices)
 
 (defcustom custom-ide 'custom-ide-eglot-lsp
     "Select which IDE will be used for Python development.
@@ -199,6 +199,7 @@ Anaconda-mode is another IDE for Python very much like Elpy. It is not as
 configurable but has a host of great feaures that just work."
     :type '(choice (const :tag "Elpy: Emacs Lisp Python Environment" custom-ide-elpy)
                (const :tag "Eglot/Language Server Protocol" custom-ide-eglot-lsp)
+  	     (const :tag "LSP Bridge (standalone)" custom-ide-lsp-bridge)
   		 (const :tag "Python Anaconda-mode for Emacs" custom-ide-anaconda))
     :group 'mrf-custom-choices)
 
@@ -288,6 +289,27 @@ If additional themes are added, they must be previously installed."
     :group 'mrf-custom-fonts)
 
 ;;; --------------------------------------------------------------------------
+;;; Set a variable that represents the actual emacs configuration directory.
+;;; This is being done so that the user-emacs-directory which normally points
+;;; to the .emacs.d directory can be re-assigned so that customized files don't
+;;; pollute the configuration directory. This is where things like YASnippet
+;;; snippets are saved and also additional color themese are stored.
+
+(defvar emacs-config-directory user-emacs-directory)
+
+;;; Different emacs configuration installs with have their own configuration
+;;; directory.
+(make-directory working-files-directory t)  ;; Continues to work even if dir exists
+
+;;; Point the user-emacs-directory to the new working directory
+(setq user-emacs-directory working-files-directory)
+(message (concat ">>> Setting emacs-working-files directory to: " user-emacs-directory))
+
+;;; Put any emacs cusomized variables in a special file
+(setq custom-file (expand-file-name "customized-vars.el" working-files-directory))
+(load custom-file 'noerror 'nomessage)
+
+;;; --------------------------------------------------------------------------
 
 (setq-default
     window-resize-pixelwise t ;; enable smooth resizing
@@ -355,27 +377,6 @@ If additional themes are added, they must be previously installed."
       [remap isearch-query-replace]  #'anzu-isearch-query-replace)
     (define-key isearch-mode-map
       [remap isearch-query-replace-regexp] #'anzu-isearch-query-replace-regexp))
-
-;;; --------------------------------------------------------------------------
-;;; Set a variable that represents the actual emacs configuration directory.
-;;; This is being done so that the user-emacs-directory which normally points
-;;; to the .emacs.d directory can be re-assigned so that customized files don't
-;;; pollute the configuration directory. This is where things like YASnippet
-;;; snippets are saved and also additional color themese are stored.
-
-(defvar emacs-config-directory user-emacs-directory)
-
-;;; Different emacs configuration installs with have their own configuration
-;;; directory.
-(make-directory working-files-directory t)  ;; Continues to work even if dir exists
-
-;;; Point the user-emacs-directory to the new working directory
-(setq user-emacs-directory working-files-directory)
-(message (concat ">>> Setting emacs-working-files directory to: " user-emacs-directory))
-
-;;; Put any emacs cusomized variables in a special file
-(setq custom-file (expand-file-name "customized-vars.el" working-files-directory))
-(load custom-file 'noerror 'nomessage)
 
 ;;; --------------------------------------------------------------------------
 
@@ -1041,48 +1042,48 @@ If additional themes are added, they must be previously installed."
     "Find the project `DIR' function for Projectile.
 Thanks @wyuenho on GitHub"
     (let ((root (projectile-project-root dir)))
-	(and root (cons 'transient root))))
+      (and root (cons 'transient root))))
 
 (when (equal custom-ide 'custom-ide-eglot-lsp)
     (use-package eglot
-	:defer t
-	:after company
-	:init
-	(setq company-backends
-	    (cons 'company-capf
-		(remove 'company-capf company-backends)))
-	:hook
-	(lisp-mode . eglot-ensure)
-	(c-mode . eglot-ensure)
-	(c++-mode . eglot-ensure)
-	(python-mode . eglot-ensure)
-	(prog-mode . eglot-ensure)
-	(rust-mode-hook . eglot-ensure)
-	:config
+      :defer t
+  	:after company
+  	:init
+  	(setq company-backends
+  	    (cons 'company-capf
+  		(remove 'company-capf company-backends)))
+  	:hook
+  	(lisp-mode . eglot-ensure)
+  	(c-mode . eglot-ensure)
+  	(c++-mode . eglot-ensure)
+  	(python-mode . eglot-ensure)
+  	(prog-mode . eglot-ensure)
+  	(rust-mode-hook . eglot-ensure)
+  	:config
       (which-key-add-key-based-replacements "C-c g r" "find-symbol-reference")
       (which-key-add-key-based-replacements "C-c g o" "find-defitions-other-window")
       (which-key-add-key-based-replacements "C-c g g" "find-defitions")
       (which-key-add-key-based-replacements "C-c g ?" "eldoc-definition")
       ;; (add-hook 'eglot-managed-mode-hook #'eldoc-box-hover-at-point-mode t)
-	(add-to-list 'eglot-server-programs '((c-mode c++-mode) "clangd"))
-	(add-to-list 'eglot-server-programs '(python-mode . ("pylsp")))
-	(add-to-list 'eglot-server-programs
-	    '((rust-ts-mode rust-mode) .
-		 ("rust-analyzer" :initializationOptions (:check (:command "clippy")))))
-	(setq-default eglot-workspace-configuration
-	    '((:pylsp . (:configurationSources ["flake8"]
-			    :plugins (:pycodestyle (:enabled :json-false)
-				      :mccabe (:enabled :json-false)
-				      :pyflakes (:enabled :json-false)
-				      :flake8 (:enabled :json-false
-						  :maxLineLength 88)
-				      :pydocstyle (:enabled t
-						      :convention "numpy")
-				      :yapf (:enabled :json-false)
-				      :autopep8 (:enabled :json-false)
-				      :black (:enabled t
-						 :line_length 88
-						 :cache_config t))))))
+  	(add-to-list 'eglot-server-programs '((c-mode c++-mode) "clangd"))
+  	(add-to-list 'eglot-server-programs '(python-mode . ("pylsp")))
+  	(add-to-list 'eglot-server-programs
+  	    '((rust-ts-mode rust-mode) .
+  		 ("rust-analyzer" :initializationOptions (:check (:command "clippy")))))
+  	(setq-default eglot-workspace-configuration
+  	    '((:pylsp . (:configurationSources ["flake8"]
+  			    :plugins (:pycodestyle (:enabled :json-false)
+  				      :mccabe (:enabled :json-false)
+  				      :pyflakes (:enabled :json-false)
+  				      :flake8 (:enabled :json-false
+  						  :maxLineLength 88)
+  				      :pydocstyle (:enabled t
+  						      :convention "numpy")
+  				      :yapf (:enabled :json-false)
+  				      :autopep8 (:enabled :json-false)
+  				      :black (:enabled t
+  						 :line_length 88
+  						 :cache_config t))))))
       ))
 
 ;;; --------------------------------------------------------------------------
@@ -1142,6 +1143,17 @@ Thanks @wyuenho on GitHub"
          (equal completion-handler 'comphand-ivy-counsel))
     (use-package lsp-ivy
         :after lsp ivy))
+
+;;; --------------------------------------------------------------------------
+
+(when (equal custom-ide 'custom-ide-lsp-bridge)
+    (use-package markdown-mode)
+    (use-package lsp-bridge
+      :straight '(lsp-bridge :type git :host github :repo "manateelazycat/lsp-bridge"
+  		     :files (:defaults "*.el" "*.py" "acm" "core" "langserver" "multiserver" "resources")
+  		     :build (:not compile))
+      :config
+      (global-lsp-bridge-mode)))
 
 ;;; --------------------------------------------------------------------------
 
@@ -1638,9 +1650,9 @@ Thanks @wyuenho on GitHub"
 (defun mrf/load-python-file-hook ()
     (python-mode)
     ;; (unless (featurep 'jedi)
-    ;; 	(use-package jedi
-    ;; 	    :config
-    ;; 	    (jedi:setup)))
+    ;;  (use-package jedi
+    ;;      :config
+    ;;      (jedi:setup)))
     (setq highlight-indentation-mode -1)
     (setq display-fill-column-indicator-mode t))
 
@@ -1648,28 +1660,39 @@ Thanks @wyuenho on GitHub"
     (message ">>> mrf/python-mode-triggered")
     ;; (eldoc-box-hover-at-point-mode t) ;; Using Mitch Key for this
     (if (equal debug-adapter 'enable-dap-mode)
-      (unless (featurep 'dap-mode)
-  	  (dap-mode))
-      (if (not (featurep 'dape))
+        (unless (featurep 'dap-mode)
+            (dap-mode))
+        (if (not (featurep 'dape))
             (use-package dape :demand t)))
-    ;; Activate LSP and EGLOT *if* selected as custom-ide
-    (when (equal custom-ide 'custom-ide-eglot-lsp)
-      (unless (featurep 'lsp)
-  	  (lsp-mode))
-      (unless (featurep 'eglot)
-  	  (eglot))
-      (bind-keys :map python-mode-map
-            ("C-c g r" . lsp-find-references)
-            ("C-c g o" . xref-find-definitions-other-window)
-            ("C-c g g" . xref-find-definitions)
-            ("C-c g ?" . eldoc-doc-buffer)))
-    (when (equal custom-ide 'custom-ide-elpy)
-      (elpy-enable)
-      (bind-keys :map python-mode-map
-  	  ("C-c g a" . elpy-goto-assignment)
-  	  ("C-c g o" . elpy-goto-definition-other-window)
-  	  ("C-c g g" . elpy-goto-definition)
-  	  ("C-c g ?" . elpy-doc)))
+
+    (cond
+        ((equal custom-ide 'custom-ide-eglot-lsp)
+  	  (message (format ">>> setting python-mode-map for %s" custom-ide))
+            (unless (featurep 'lsp)
+                (lsp-mode))
+            (unless (featurep 'eglot)
+                (eglot))
+            (bind-keys :map python-mode-map
+                ("C-c g r" . lsp-find-references)
+                ("C-c g o" . xref-find-definitions-other-window)
+                ("C-c g g" . xref-find-definitions)
+                ("C-c g ?" . eldoc-doc-buffer)))
+        ;; Activate LSP and EGLOT *if* selected as custom-ide
+        ((equal custom-ide 'custom-ide-elpy)
+  	  (message (format ">>> setting python-mode-map for %s" custom-ide))
+            (elpy-enable)
+            (bind-keys :map python-mode-map
+                ("C-c g a" . elpy-goto-assignment)
+                ("C-c g o" . elpy-goto-definition-other-window)
+                ("C-c g g" . elpy-goto-definition)
+                ("C-c g ?" . elpy-doc)))
+        ((equal custom-ide 'custom-ide-lsp-bridge)
+  	  (message (format ">>> setting python-mode-map for %s" custom-ide))
+            (bind-keys :map python-mode-map
+                ("C-c g a" . lsp-bridge-find-reference)
+                ("C-c g o" . lsp-bridge-find-def-other-window)
+                ("C-c g g" . lsp-bridge-find-def)
+                ("C-c g ?" . lsp-bridge-popup-documentation))))
     (set-fill-column 80))
 
 (use-package python-mode
