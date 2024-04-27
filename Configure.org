@@ -141,33 +141,33 @@ Other variables are also defined here that define other emacs behaviors and defa
 *** File Locations and Variables
 
 #+begin_src emacs-lisp
-    ;;; --------------------------------------------------------------------------
+  ;;; --------------------------------------------------------------------------
 
-    (defcustom display-dashboard-at-start t
-        "If set to t, the `dashboard' package will be displayed first.
-      Otherwise, the `dashboard' will be available but in the buffer
-       ,*dashboard*."
-        :type 'boolean
-        :group 'mrf-custom)
+  (defcustom display-dashboard-at-start t
+      "If set to t, the `dashboard' package will be displayed first.
+    Otherwise, the `dashboard' will be available but in the buffer
+     ,*dashboard*."
+      :type 'boolean
+      :group 'mrf-custom)
 
-    (defcustom custom-docs-dir "~/Documents/Emacs-Related"
-        "A directory used to store documents and customized data."
-        :type 'string
-        :group 'mrf-custom)
+  (defcustom custom-docs-dir "~/Documents/Emacs-Related"
+      "A directory used to store documents and customized data."
+      :type 'string
+      :group 'mrf-custom)
 
-    (defcustom working-files-directory
-        (expand-file-name
+  (defcustom working-files-directory
+      (expand-file-name
   	  (concat "emacs-working-files_" emacs-version) custom-docs-dir)
-        "The directory where to store Emacs working files."
-        :type 'string
-        :group 'mrf-custom)
+      "The directory where to store Emacs working files."
+      :type 'string
+      :group 'mrf-custom)
 
-    (defcustom custom-org-fill-column 150
-        "The fill column width for Org mode text.
-    Note that the text is also centered on the screen so that
-    should be taken into consideration when providing a width."
-        :type 'natnum
-        :group 'mrf-custom)
+  (defcustom custom-org-fill-column 150
+      "The fill column width for Org mode text.
+  Note that the text is also centered on the screen so that should
+  be taken into consideration when providing a width."
+      :type 'natnum
+      :group 'mrf-custom)
 
 #+end_src
 
@@ -370,6 +370,13 @@ This is a curated selection of themes that I personally like. Most of them are d
       :type 'natnum
       :group 'mrf-custom-fonts)
 
+  (defcustom custom-default-font-size 170
+      "A place to store the most current (face-attribute 'default :height).  This
+  is specifically for the mono-spaced and default font. The variable type-face
+  font size is computed + 20 of this value."
+      :type 'natnum
+      :group 'mrf-custom-fonts)
+
 #+end_src
 
 ** Emacs Config Directory
@@ -504,6 +511,7 @@ This bit of code contains a list of themes that I like personally and then allow
   ;;
   (setq-default loaded-theme (nth theme-selector theme-list))
   (add-to-list 'savehist-additional-variables 'loaded-theme)
+  (add-to-list 'savehist-additional-variables 'custom-default-font-size)
   (add-to-list 'savehist-additional-variables 'theme-selector)
 
 #+end_src
@@ -675,10 +683,10 @@ It's nice to know that Emacs is somewhat working. To help this along, we set the
   (setq-default mrf/x-large-font-size 220)
   (setq-default mrf/x-large-variable-font-size 240)
 
-  (setq-default mrf/default-font-size mrf/medium-font-size)
-  (setq-default mrf/default-variable-font-size mrf/medium-variable-font-size)
+  ;; (setq-default custom-default-font-size mrf/medium-font-size)
+  (setq-default mrf/default-variable-font-size (+ custom-default-font-size 20))
   ;; (setq-default mrf/set-frame-maximized t)  ;; or f
-  
+
   ;; Make frame transparency overridable
   ;; (setq-default mrf/frame-transparency '(90 . 90))
 
@@ -765,7 +773,7 @@ It's nice to know that Emacs is somewhat working. To help this along, we set the
                         ;; :font "Fira Code Retina"
                         ;; :font "Menlo"
                         :family default-font-family
-                        :height mrf/default-font-size
+                        :height custom-default-font-size
                         :weight 'medium)
 
     ;; Set the fixed pitch face
@@ -773,22 +781,57 @@ It's nice to know that Emacs is somewhat working. To help this along, we set the
                         ;; :font "Lantinghei TC Demibold"
                         :family mono-spaced-font-family
                         ;; :font "Fira Code Retina"
-                        :height mrf/default-font-size
+                        :height custom-default-font-size
                         :weight 'medium)
 
     ;; Set the variable pitch face
     (set-face-attribute 'variable-pitch nil
                         :family variable-pitch-font-family
-                        :height mrf/default-variable-font-size
+                        :height (+ custom-default-font-size 20)
                         :weight 'medium))
 
-  (mrf/update-face-attribute)
+  ;; (mrf/update-face-attribute)
   ;; (add-hook 'window-setup-hook #'mrf/frame-recenter)
   ;; (add-hook 'after-init-hook #'mrf/frame-recenter)
+  
+  ;; This is done so that the Emacs window is sized early in the init phase along with the default font size.
+  ;; Startup works without this but it's nice to see the window expand early...
   (when (display-graphic-p)
      (mrf/update-face-attribute)
      (unless (daemonp)
         (mrf/frame-recenter)))
+
+#+end_src
+
+*** Theme font change hook
+
+The functions in the list =after-setting-font-hook= are called whenever the frame's font changes. In order to save this value, we capture it and store it in the =custom-default-font-size= custom variable. This variable is saved whenver Emacs exists. Then, when Emacs is started again, the default and fixed-pitch font height values are set to =custom-default-font-size=. The variable pitch font is computed as ~(+ custom-default-font-size 20)~
+
+#+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
+
+  (defun mrf/default-font-height-change ()
+      (setq-default custom-default-font-size (face-attribute 'default :height))
+      (mrf/update-face-attribute)
+      (mrf/frame-recenter))
+  
+  (add-hook 'after-setting-font-hook 'mrf/default-font-height-change)
+
+#+end_src
+
+*** Theme font change hook
+
+The functions in the list =after-setting-font-hook= are called whenever the frame's font changes. In order to save this value, we capture it and store it in the =custom-default-font-size= custom variable. This variable is saved whenver Emacs exists. Then, when Emacs is started again, the default and fixed-pitch font height values are set to =custom-default-font-size=. The variable pitch font is computed as ~(+ custom-default-font-size 20)~
+
+#+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
+
+  (defun mrf/default-font-height-change ()
+      (setq-default custom-default-font-size (face-attribute 'default :height))
+      (mrf/update-face-attribute)
+      (mrf/frame-recenter))
+  
+  (add-hook 'after-setting-font-hook 'mrf/default-font-height-change)
 
 #+end_src
 
@@ -1397,49 +1440,49 @@ The following are configured for Python development and provide an IDE type expe
       "Find the project `DIR' function for Projectile.
   Thanks @wyuenho on GitHub"
       (let ((root (projectile-project-root dir)))
-  	(and root (cons 'transient root))))
+          (and root (cons 'transient root))))
 
   (when (equal custom-ide 'custom-ide-eglot-lsp)
       (use-package eglot
-  	:defer t
-  	  :after company
-  	  :init
-  	  (setq company-backends
-  	      (cons 'company-capf
-  		  (remove 'company-capf company-backends)))
-  	  :hook
-  	  (lisp-mode . eglot-ensure)
-  	  (c-mode . eglot-ensure)
-  	  (c++-mode . eglot-ensure)
-  	  (python-mode . eglot-ensure)
-  	  (prog-mode . eglot-ensure)
-  	  (rust-mode-hook . eglot-ensure)
-  	  :config
-  	(which-key-add-key-based-replacements "C-c g r" "find-symbol-reference")
-  	(which-key-add-key-based-replacements "C-c g o" "find-defitions-other-window")
-  	(which-key-add-key-based-replacements "C-c g g" "find-defitions")
-  	(which-key-add-key-based-replacements "C-c g ?" "eldoc-definition")
-  	;; (add-hook 'eglot-managed-mode-hook #'eldoc-box-hover-at-point-mode t)
-  	  (add-to-list 'eglot-server-programs '((c-mode c++-mode) "clangd"))
-  	  (add-to-list 'eglot-server-programs '(python-mode . ("pylsp")))
-  	  (add-to-list 'eglot-server-programs
-  	      '((rust-ts-mode rust-mode) .
-  		   ("rust-analyzer" :initializationOptions (:check (:command "clippy")))))
-  	  (setq-default eglot-workspace-configuration
-  	      '((:pylsp . (:configurationSources ["flake8"]
-  			      :plugins (:pycodestyle (:enabled :json-false)
-  					:mccabe (:enabled :json-false)
-  					:pyflakes (:enabled :json-false)
-  					:flake8 (:enabled :json-false
-  						    :maxLineLength 88)
-  					:pydocstyle (:enabled t
-  							:convention "numpy")
-  					:yapf (:enabled :json-false)
-  					:autopep8 (:enabled :json-false)
-  					:black (:enabled t
-  						   :line_length 88
-  						   :cache_config t))))))
-  	))
+          :defer t
+          :after company
+          :init
+          (setq company-backends
+              (cons 'company-capf
+                  (remove 'company-capf company-backends)))
+          :hook
+          (lisp-mode . eglot-ensure)
+          (c-mode . eglot-ensure)
+          (c++-mode . eglot-ensure)
+          (python-mode . eglot-ensure)
+          (prog-mode . eglot-ensure)
+          (rust-mode-hook . eglot-ensure)
+          :config
+          (which-key-add-key-based-replacements "C-c g r" "find-symbol-reference")
+          (which-key-add-key-based-replacements "C-c g o" "find-defitions-other-window")
+          (which-key-add-key-based-replacements "C-c g g" "find-defitions")
+          (which-key-add-key-based-replacements "C-c g ?" "eldoc-definition")
+          ;; (add-hook 'eglot-managed-mode-hook #'eldoc-box-hover-at-point-mode t)
+          (add-to-list 'eglot-server-programs '((c-mode c++-mode) "clangd"))
+          (add-to-list 'eglot-server-programs '(python-mode . ("pylsp")))
+          (add-to-list 'eglot-server-programs
+              '((rust-ts-mode rust-mode) .
+                   ("rust-analyzer" :initializationOptions (:check (:command "clippy")))))
+          (setq-default eglot-workspace-configuration
+              '((:pylsp . (:configurationSources ["flake8"]
+                              :plugins (:pycodestyle (:enabled :json-false)
+                                           :mccabe (:enabled :json-false)
+                                           :pyflakes (:enabled :json-false)
+                                           :flake8 (:enabled :json-false
+                                                       :maxLineLength 88)
+                                           :pydocstyle (:enabled t
+                                                           :convention "numpy")
+                                           :yapf (:enabled :json-false)
+                                           :autopep8 (:enabled :json-false)
+                                           :black (:enabled t
+                                                      :line_length 88
+                                                      :cache_config t))))))
+          ))
 
 #+end_src
 
@@ -1532,6 +1575,8 @@ Advantages of lsp-bridge:
   	:straight '(lsp-bridge :type git :host github :repo "manateelazycat/lsp-bridge"
   		       :files (:defaults "*.el" "*.py" "acm" "core" "langserver" "multiserver" "resources")
   		       :build (:not compile))
+  	:custom
+  	(lsp-bridge-python-lsp-server "pylsp")
   	:config
   	(global-lsp-bridge-mode)))
 
@@ -2284,6 +2329,48 @@ In addition to that, it is important that =autopep8=, which is a script, can rea
 : file-missing "Doing vfork" "No such file or directory" :
 message
 
+** Specialized python-mode Keymaps
+The following are keymaps that are used by by the custom-ide and for python-mode
+
+#+begin_src emacs-lisp
+
+  (defun mrf/set-custom-ide-python-keymaps ()
+      (message "<<< Set python-mode keymaps based upon IDE.")
+      (cond
+          ((equal custom-ide 'custom-ide-eglot-lsp)
+              (unless (featurep 'lsp)
+                  (lsp-deferred))
+              (unless (featurep 'eglot)
+                  (eglot))
+              (bind-keys :map python-mode-map
+                  ("C-c g r" . lsp-find-references)
+                  ("C-c g o" . xref-find-definitions-other-window)
+                  ("C-c g g" . xref-find-definitions)
+                  ("C-c g ?" . eldoc-doc-buffer))
+              (message (format ">>> set python-mode-map for %s" custom-ide)))
+          ;; Activate LSP and EGLOT *if* selected as custom-ide
+          ((equal custom-ide 'custom-ide-elpy)
+              (elpy-enable)
+              (bind-keys :map python-mode-map
+                  ("C-c g a" . elpy-goto-assignment)
+                  ("C-c g o" . elpy-goto-definition-other-window)
+                  ("C-c g g" . elpy-goto-definition)
+                  ("C-c g ?" . elpy-doc))
+              (message (format ">>> setting python-mode-map for %s" custom-ide)))
+          ((equal custom-ide 'custom-ide-lsp-bridge)
+              (bind-keys :map python-mode-map
+                  ("C-c g a" . lsp-bridge-find-reference)
+                  ("C-c g o" . lsp-bridge-find-def-other-window)
+                  ("C-c g g" . lsp-bridge-find-def)
+                  ("C-c g i" . lsp-bridge-find-impl)
+                  ("C-c g r" . lsp-bridge-rename)
+                  ("C-c g ?" . lsp-bridge-popup-documentation))
+  	    (message (format ">>> set python-mode-map for %s" custom-ide)))
+  	))
+
+
+#+end_src
+
 ** Standard setup
 This is the standard python mode setup.
 
@@ -2307,35 +2394,7 @@ This is the standard python mode setup.
               (dap-mode))
           (if (not (featurep 'dape))
               (use-package dape :demand t)))
-
-      (cond
-          ((equal custom-ide 'custom-ide-eglot-lsp)
-  	    (message (format ">>> setting python-mode-map for %s" custom-ide))
-              (unless (featurep 'lsp)
-                  (lsp-mode))
-              (unless (featurep 'eglot)
-                  (eglot))
-              (bind-keys :map python-mode-map
-                  ("C-c g r" . lsp-find-references)
-                  ("C-c g o" . xref-find-definitions-other-window)
-                  ("C-c g g" . xref-find-definitions)
-                  ("C-c g ?" . eldoc-doc-buffer)))
-          ;; Activate LSP and EGLOT *if* selected as custom-ide
-          ((equal custom-ide 'custom-ide-elpy)
-  	    (message (format ">>> setting python-mode-map for %s" custom-ide))
-              (elpy-enable)
-              (bind-keys :map python-mode-map
-                  ("C-c g a" . elpy-goto-assignment)
-                  ("C-c g o" . elpy-goto-definition-other-window)
-                  ("C-c g g" . elpy-goto-definition)
-                  ("C-c g ?" . elpy-doc)))
-          ((equal custom-ide 'custom-ide-lsp-bridge)
-  	    (message (format ">>> setting python-mode-map for %s" custom-ide))
-              (bind-keys :map python-mode-map
-                  ("C-c g a" . lsp-bridge-find-reference)
-                  ("C-c g o" . lsp-bridge-find-def-other-window)
-                  ("C-c g g" . lsp-bridge-find-def)
-                  ("C-c g ?" . lsp-bridge-popup-documentation))))
+      (mrf/set-custom-ide-python-keymaps)
       (set-fill-column 80))
 
   (use-package python-mode
@@ -2564,14 +2623,16 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
   	      (:map elpy-mode-map
   		  ("<tab>" . company-indent-or-complete-common))))
 
-  (use-package company
-      :custom
-      (company-minimum-prefix-length 1)
-      (company-idle-delay 0.0))
-      ;; :config
-      ;; (add-to-list 'company-backends 'company-yasnippet))
-
-  (add-hook 'after-init-hook 'global-company-mode)
+  ;; Don't use company at all if lsp-bridge is active.
+  ;; lsp-bridge already provides similar functionality.
+  (unless (equal custom-ide 'custom-ide-lsp-bridge)
+      (use-package company
+  	:custom
+  	(company-minimum-prefix-length 1)
+  	(company-idle-delay 0.0)
+  	:hook (after-init . global-company-mode)))
+          ;; :config
+          ;; (add-to-list 'company-backends 'company-yasnippet))
 
 #+end_src
 
@@ -2579,27 +2640,27 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
 
-  (use-package company-box
-     :diminish cb
-     :hook (company-mode . company-box-mode))
+  (when (featurep 'company)
+      (use-package company-box
+  	:diminish cb
+  	:hook (company-mode . company-box-mode))
 
-  (when (equal custom-ide 'custom-ide-elpy)
-      (use-package company-jedi
-  	:after python
-  	:config
-  	(jedi:setup)
-  	(defun my/company-jedi-python-mode-hook ()
-  	    (add-to-list 'company-backends 'company-jedi))
-  	(add-hook 'python-mode-hook 'my/company-jedi-python-mode-hook)))
+      (when (equal custom-ide 'custom-ide-elpy)
+  	(use-package company-jedi
+  	    :after python
+  	    :config
+  	    (jedi:setup)
+  	    (defun my/company-jedi-python-mode-hook ()
+  		(add-to-list 'company-backends 'company-jedi))
+  	    (add-hook 'python-mode-hook 'my/company-jedi-python-mode-hook)))
 
-  (when (equal custom-ide 'custom-ide-anaconda)
-      (progn
+      (when (equal custom-ide 'custom-ide-anaconda)
   	(use-package company-anaconda
   	    :after anaconda
   	    :hook (python-mode . anaconda-mode))
   	(eval-after-load "company"
   	    '(add-to-list 'company-backends 'company-anaconda))))
-
+  
 #+end_src
 
 
@@ -2689,6 +2750,9 @@ The =mrf/org-font-setup= function configures various text faces to tweak the siz
 #+end_src
 
 ** Font setup
+
+This function sets up the fonts faces that are used within org-mode.
+
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
 
@@ -2702,16 +2766,16 @@ The =mrf/org-font-setup= function configures various text faces to tweak the siz
                 (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))))
       ;; (setq org-src-fontify-natively t)
 
-      ;; Set faces for heading levels
-      (dolist (face '((org-level-1 . 1.2)
-                         (org-level-2 . 1.1)
-                         (org-level-3 . 1.05)
-                         (org-level-4 . 1.0)
+            ;; Set faces for heading levels
+      (dolist (face '((org-level-1 . 1.5)
+                         (org-level-2 . 1.25)
+                         (org-level-3 . 1.1)
+                         (org-level-4 . 1.1)
                          (org-level-5 . 1.1)
                          (org-level-6 . 1.1)
                          (org-level-7 . 1.1)
                          (org-level-8 . 1.1)))
-  	(set-face-attribute (car face) nil :font "Cantarell" :weight 'regular :height (cdr face)))
+  	(set-face-attribute (car face) nil :font "SF Pro" :weight 'regular :height (cdr face)))
 
       ;; Ensure that anything that should be fixed-pitch in Org files appears that way
       (set-face-attribute 'org-block nil    :foreground 'unspecified :inherit 'fixed-pitch)
@@ -2863,6 +2927,7 @@ This section contains the basic configuration for =org-mode= plus the configurat
   	      ("C-c e" . org-edit-src-code))
       :config
       (message ">>> Loading orgmode")
+      (setq org-hide-emphasis-markers t)
       ;; Save Org buffers after refiling!
       (advice-add 'org-refile :after 'org-save-all-org-buffers)
       (setq org-tag-alist
@@ -2887,9 +2952,52 @@ This section contains the basic configuration for =org-mode= plus the configurat
   	(lambda () (interactive) (org-capture nil "jj")))
       (mrf/org-font-setup))
 
+#+end_src
+
+** Org Modern
+#+begin_src emacs-lisp
+
+  ;;; --------------------------------------------------------------------------
+
   (use-package org-modern
       :after org
       :hook (org-mode . org-modern-mode))
+
+  ;; Add frame borders and window dividers
+  (modify-all-frames-parameters
+      '((right-divider-width . 40)
+  	 (internal-border-width . 40)))
+  (dolist (face '(window-divider
+                     window-divider-first-pixel
+                     window-divider-last-pixel))
+      (face-spec-reset-face face)
+      (set-face-foreground face (face-attribute 'default :background)))
+  (set-face-background 'fringe (face-attribute 'default :background))
+
+  (setq
+      ;; Edit settings
+      org-auto-align-tags nil
+      org-tags-column 0
+      org-catch-invisible-edits 'show-and-error
+      org-special-ctrl-a/e t
+      org-insert-heading-respect-content t
+
+      ;; Org styling, hide markup etc.
+      org-hide-emphasis-markers t
+      org-pretty-entities t
+      org-ellipsis "…"
+
+      ;; Agenda styling
+      org-agenda-tags-column 0
+      org-agenda-block-separator ?─
+      org-agenda-time-grid
+      '((daily today require-timed)
+  	 (800 1000 1200 1400 1600 1800 2000)
+  	 " ┄┄┄┄┄ " "┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄")
+      org-agenda-current-time-string
+      "◀── now ─────────────────────────────────────────────────")
+
+  (global-org-modern-mode)
 
 #+end_src
 
@@ -3167,6 +3275,7 @@ While there is standard markdown support built into =org-mode=, this additional 
 
   (with-eval-after-load 'org
       (require 'ox-gfm nil t))
+  
 #+end_src
 
 
@@ -3594,6 +3703,7 @@ Run a terminal with =M-x term!=
 
     ;; Match the default Bash shell prompt.  Update this if you have a custom prompt
     (setq term-prompt-regexp "^[^#$%>\n]*[#$%>] *"))
+  
 #+end_src
 
 *** Better term-mode colors
@@ -3711,10 +3821,8 @@ A tree plugin like NerdTree for Vim
   
 #+end_src
 
-** Better Modeline
-Using [[https://github.com/seagle0128/doom-modeline][doom-modeline]] is a very attractive and rich (yet still minimal) mode line configuration for Emacs.  The default configuration is quite good but you can check out the [[https://github.com/seagle0128/doom-modeline#customize][configuration options]] for more things you can enable or disable.
-
-*NOTE:* The first time you load your configuration on a new machine, you'll need to run `M-x all-the-icons-install-fonts` so that mode line icons display correctly.
+** Icons
+Some icons to be used in grpahical mode.
 
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
@@ -4093,37 +4201,34 @@ This little function toggles between a larger font size and the default font siz
   (defvar mrf/font-size-slot 1)
 
   (defun mrf/update-font-size ()
-     (message "adjusting font size")
-     (cond ((equal mrf/font-size-slot 3)
-            (progn
-                 (message "X-Large Font")
-                 (setq mrf/default-font-size mrf/x-large-font-size
-                  mrf/default-variable-font-size mrf/x-large-variable-font-size
-                  mrf/font-size-slot 2)
-                 (mrf/update-face-attribute)))
-           ((equal mrf/font-size-slot 2)
-              (progn
-                 (message "Large Font")
-                 (setq mrf/default-font-size mrf/large-font-size
-                  mrf/default-variable-font-size mrf/large-variable-font-size
-                  mrf/font-size-slot 1)
-                 (mrf/update-face-attribute)))       
-           ((equal mrf/font-size-slot 1)
-              (progn
-                 (message "Medium Font")
-                 (setq mrf/default-font-size mrf/medium-font-size
-                  mrf/default-variable-font-size mrf/medium-variable-font-size
-                  mrf/font-size-slot 0)
-                 (mrf/update-face-attribute)))
-           ((equal mrf/font-size-slot 0)
-              (progn
-                 (message "Small Font")
-                 (setq mrf/default-font-size mrf/small-font-size
-                  mrf/default-variable-font-size mrf/small-variable-font-size
-                  mrf/font-size-slot 3)
-                 (mrf/update-face-attribute)))
-        )
-     )
+      (message "adjusting font size")
+      (cond
+          ((equal mrf/font-size-slot 3)
+              (message "X-Large Font")
+              (setq custom-default-font-size mrf/x-large-font-size
+                    mrf/default-variable-font-size (+ custom-default-font-size 20)
+                    mrf/font-size-slot 2)
+              (mrf/update-face-attribute))
+          ((equal mrf/font-size-slot 2)
+              (message "Large Font")
+              (setq custom-default-font-size mrf/large-font-size
+                    mrf/default-variable-font-size (+ custom-default-font-size 20)
+                    mrf/font-size-slot 1)
+              (mrf/update-face-attribute))
+          ((equal mrf/font-size-slot 1)
+              (message "Medium Font")
+              (setq custom-default-font-size mrf/medium-font-size
+                    mrf/default-variable-font-size (+ custom-default-font-size 20)
+                    mrf/font-size-slot 0)
+              (mrf/update-face-attribute))
+          ((equal mrf/font-size-slot 0)
+              (message "Small Font")
+              (setq custom-default-font-size mrf/small-font-size
+                    mrf/default-variable-font-size (+ custom-default-font-size 20)
+                    mrf/font-size-slot 3)
+              (mrf/update-face-attribute))
+          )
+      )
 
 #+end_src
 
@@ -4179,7 +4284,12 @@ These functions are used to configure the main frame font size. Based upon a mon
      )
 
   (when (display-graphic-p)
-     (add-hook 'after-init-hook 'use-medium-display-font))
+     (add-hook 'after-init-hook
+         (lambda ()
+  	   (progn
+  	       (mrf/update-face-attribute)
+  	       (mrf/frame-recenter)))
+  	   ))
 
 #+end_src
 
