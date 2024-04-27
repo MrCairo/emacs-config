@@ -12,6 +12,8 @@ This ORG file will configure the *init.el* file based upon all of the *emacs-lis
 * README:
 -----
 
+- This config requires Emacs 29+
+  
 - While this configuration includes support for several languages - and I mean support for syntax highlighting and, to some extent, debugging - this configuration caters to be a Python develpment environment.
   
 - The C/C++ debugger for these type of programs are done via LSP/LLDB and [[RealGUD][RealGUD]]. The chosen =debug-adapter= custom variable doesn't apply. The reason for this is that the DAP/LSP/LLDB interaction doesn't work properly on my =Apple Silicon= mac. Until GDB supports =ARM= instruction sets then this (=RealGUD=) will remain as the only best way to support a more integrated debugging experience.
@@ -239,7 +241,7 @@ These are features that basically have multiple-choice options instead of being 
   alternative to isearch that uses Ivy to show an overview of all matches."
       :type '(choice (const :tag "Use the Vertico completion system." comphand-vertico)
                  (const :tag "Use Ivy, Counsel, Swiper completion systems" comphand-ivy-counsel))
-      :group 'mrf-custom-selections)
+      :group 'mrf-custom-choices)
 
   (defcustom debug-adapter 'enable-dape
       "Select the debug adapter to use for debugging applications.  dap-mode is an
@@ -253,7 +255,7 @@ These are features that basically have multiple-choice options instead of being 
   dap-mode."
       :type '(choice (const :tag "Debug Adapter Protocol (DAP)" enable-dap-mode)
                  (const :tag "Debug Adapter Protocol for Emacs (DAPE)" enable-dape))
-      :group 'mrf-custom-selections)
+      :group 'mrf-custom-choices)
 
   (defcustom custom-ide 'custom-ide-eglot-lsp
       "Select which IDE will be used for Python development.
@@ -273,6 +275,7 @@ These are features that basically have multiple-choice options instead of being 
   configurable but has a host of great feaures that just work."
       :type '(choice (const :tag "Elpy: Emacs Lisp Python Environment" custom-ide-elpy)
                  (const :tag "Eglot/Language Server Protocol" custom-ide-eglot-lsp)
+  	       (const :tag "LSP Bridge (standalone)" custom-ide-lsp-bridge)
   		   (const :tag "Python Anaconda-mode for Emacs" custom-ide-anaconda))
       :group 'mrf-custom-choices)
 
@@ -376,6 +379,34 @@ This is a curated selection of themes that I personally like. Most of them are d
 
 #+end_src
 
+** Emacs Config Directory
+
+By default, the =user-emacs-directory= points to the .emacs.d* directory from which the =init.el= is used when Emacs starts. What this means is that any package that writes to this directory will be writing files to this initialization directory. Since we want to keep this directory clean, we set this directory to something external. A new variable, =emacs-config-directory= is set to now point to the starting Emacs condfiguration directory.
+
+#+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
+  ;;; Set a variable that represents the actual emacs configuration directory.
+  ;;; This is being done so that the user-emacs-directory which normally points
+  ;;; to the .emacs.d directory can be re-assigned so that customized files don't
+  ;;; pollute the configuration directory. This is where things like YASnippet
+  ;;; snippets are saved and also additional color themese are stored.
+
+  (defvar emacs-config-directory user-emacs-directory)
+
+  ;;; Different emacs configuration installs with have their own configuration
+  ;;; directory.
+  (make-directory working-files-directory t)  ;; Continues to work even if dir exists
+
+  ;;; Point the user-emacs-directory to the new working directory
+  (setq user-emacs-directory working-files-directory)
+  (message (concat ">>> Setting emacs-working-files directory to: " user-emacs-directory))
+
+  ;;; Put any emacs cusomized variables in a special file
+  (setq custom-file (expand-file-name "customized-vars.el" working-files-directory))
+  (load custom-file 'noerror 'nomessage)
+
+#+end_src
+
 ** Global Defaults
 
 #+begin_src emacs-lisp
@@ -455,34 +486,6 @@ anzu.el is an Emacs port of anzu.vim. anzu.el provides a minor mode which displa
   	[remap isearch-query-replace]  #'anzu-isearch-query-replace)
       (define-key isearch-mode-map
   	[remap isearch-query-replace-regexp] #'anzu-isearch-query-replace-regexp))
-
-#+end_src
-
-** Emacs Config Directory
-
-By default, the =user-emacs-directory= points to the .emacs.d* directory from which the =init.el= is used when Emacs starts. What this means is that any package that writes to this directory will be writing files to this initialization directory. Since we want to keep this directory clean, we set this directory to something external. A new variable, =emacs-config-directory= is set to now point to the starting Emacs condfiguration directory.
-
-#+begin_src emacs-lisp
-  ;;; --------------------------------------------------------------------------
-  ;;; Set a variable that represents the actual emacs configuration directory.
-  ;;; This is being done so that the user-emacs-directory which normally points
-  ;;; to the .emacs.d directory can be re-assigned so that customized files don't
-  ;;; pollute the configuration directory. This is where things like YASnippet
-  ;;; snippets are saved and also additional color themese are stored.
-
-  (defvar emacs-config-directory user-emacs-directory)
-
-  ;;; Different emacs configuration installs with have their own configuration
-  ;;; directory.
-  (make-directory working-files-directory t)  ;; Continues to work even if dir exists
-
-  ;;; Point the user-emacs-directory to the new working directory
-  (setq user-emacs-directory working-files-directory)
-  (message (concat ">>> Setting emacs-working-files directory to: " user-emacs-directory))
-
-  ;;; Put any emacs cusomized variables in a special file
-  (setq custom-file (expand-file-name "customized-vars.el" working-files-directory))
-  (load custom-file 'noerror 'nomessage)
 
 #+end_src
 
@@ -1483,7 +1486,7 @@ The following are configured for Python development and provide an IDE type expe
 
 #+end_src
 
-** Language Server Protocol
+** Language Server Protocol (lsp-mode)
 
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
@@ -1547,6 +1550,8 @@ The following are configured for Python development and provide an IDE type expe
 #+end_src
 
 ** LSP Bridge
+***  *Note:* This is a stand-alone package. This doesn't require eglot/lsp-mode/elpy, etc.
+
 The goal of lsp-bridge is use multi-thread technology to implement the fastest LSP client in the Emacs ecosystem.
 
 Advantages of lsp-bridge:
@@ -1561,7 +1566,7 @@ Advantages of lsp-bridge:
   
 + Flexible Customization: Customizing LSP server options is as simple as using a JSON file, allowing different projects to have different JSON configurations with just a few lines of rules
 
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
 
   (when (equal custom-ide 'custom-ide-lsp-bridge)
@@ -1576,7 +1581,6 @@ Advantages of lsp-bridge:
   	(global-lsp-bridge-mode)))
 
 #+end_src
-
 
 ** Anaconda-mode
 
@@ -2376,9 +2380,9 @@ This is the standard python mode setup.
   (defun mrf/load-python-file-hook ()
       (python-mode)
       ;; (unless (featurep 'jedi)
-      ;; 	(use-package jedi
-      ;; 	    :config
-      ;; 	    (jedi:setup)))
+      ;;  (use-package jedi
+      ;;      :config
+      ;;      (jedi:setup)))
       (setq highlight-indentation-mode -1)
       (setq display-fill-column-indicator-mode t))
 
@@ -2386,9 +2390,9 @@ This is the standard python mode setup.
       (message ">>> mrf/python-mode-triggered")
       ;; (eldoc-box-hover-at-point-mode t) ;; Using Mitch Key for this
       (if (equal debug-adapter 'enable-dap-mode)
-  	(unless (featurep 'dap-mode)
-  	    (dap-mode))
-  	(if (not (featurep 'dape))
+          (unless (featurep 'dap-mode)
+              (dap-mode))
+          (if (not (featurep 'dape))
               (use-package dape :demand t)))
       (mrf/set-custom-ide-python-keymaps)
       (set-fill-column 80))

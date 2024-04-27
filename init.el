@@ -165,7 +165,7 @@ commands that are customised to make the best use of Ivy.  Swiper is an
 alternative to isearch that uses Ivy to show an overview of all matches."
     :type '(choice (const :tag "Use the Vertico completion system." comphand-vertico)
                (const :tag "Use Ivy, Counsel, Swiper completion systems" comphand-ivy-counsel))
-    :group 'mrf-custom-selections)
+    :group 'mrf-custom-choices)
 
 (defcustom debug-adapter 'enable-dape
     "Select the debug adapter to use for debugging applications.  dap-mode is an
@@ -179,7 +179,7 @@ with DAPE. DAPE supports most popular languages, however, not as many as
 dap-mode."
     :type '(choice (const :tag "Debug Adapter Protocol (DAP)" enable-dap-mode)
                (const :tag "Debug Adapter Protocol for Emacs (DAPE)" enable-dape))
-    :group 'mrf-custom-selections)
+    :group 'mrf-custom-choices)
 
 (defcustom custom-ide 'custom-ide-eglot-lsp
     "Select which IDE will be used for Python development.
@@ -199,6 +199,7 @@ Anaconda-mode is another IDE for Python very much like Elpy. It is not as
 configurable but has a host of great feaures that just work."
     :type '(choice (const :tag "Elpy: Emacs Lisp Python Environment" custom-ide-elpy)
                (const :tag "Eglot/Language Server Protocol" custom-ide-eglot-lsp)
+  	     (const :tag "LSP Bridge (standalone)" custom-ide-lsp-bridge)
   		 (const :tag "Python Anaconda-mode for Emacs" custom-ide-anaconda))
     :group 'mrf-custom-choices)
 
@@ -295,6 +296,27 @@ font size is computed + 20 of this value."
     :group 'mrf-custom-fonts)
 
 ;;; --------------------------------------------------------------------------
+;;; Set a variable that represents the actual emacs configuration directory.
+;;; This is being done so that the user-emacs-directory which normally points
+;;; to the .emacs.d directory can be re-assigned so that customized files don't
+;;; pollute the configuration directory. This is where things like YASnippet
+;;; snippets are saved and also additional color themese are stored.
+
+(defvar emacs-config-directory user-emacs-directory)
+
+;;; Different emacs configuration installs with have their own configuration
+;;; directory.
+(make-directory working-files-directory t)  ;; Continues to work even if dir exists
+
+;;; Point the user-emacs-directory to the new working directory
+(setq user-emacs-directory working-files-directory)
+(message (concat ">>> Setting emacs-working-files directory to: " user-emacs-directory))
+
+;;; Put any emacs cusomized variables in a special file
+(setq custom-file (expand-file-name "customized-vars.el" working-files-directory))
+(load custom-file 'noerror 'nomessage)
+
+;;; --------------------------------------------------------------------------
 
 (setq-default
     window-resize-pixelwise t ;; enable smooth resizing
@@ -362,27 +384,6 @@ font size is computed + 20 of this value."
       [remap isearch-query-replace]  #'anzu-isearch-query-replace)
     (define-key isearch-mode-map
       [remap isearch-query-replace-regexp] #'anzu-isearch-query-replace-regexp))
-
-;;; --------------------------------------------------------------------------
-;;; Set a variable that represents the actual emacs configuration directory.
-;;; This is being done so that the user-emacs-directory which normally points
-;;; to the .emacs.d directory can be re-assigned so that customized files don't
-;;; pollute the configuration directory. This is where things like YASnippet
-;;; snippets are saved and also additional color themese are stored.
-
-(defvar emacs-config-directory user-emacs-directory)
-
-;;; Different emacs configuration installs with have their own configuration
-;;; directory.
-(make-directory working-files-directory t)  ;; Continues to work even if dir exists
-
-;;; Point the user-emacs-directory to the new working directory
-(setq user-emacs-directory working-files-directory)
-(message (concat ">>> Setting emacs-working-files directory to: " user-emacs-directory))
-
-;;; Put any emacs cusomized variables in a special file
-(setq custom-file (expand-file-name "customized-vars.el" working-files-directory))
-(load custom-file 'noerror 'nomessage)
 
 ;;; --------------------------------------------------------------------------
 
@@ -1174,6 +1175,19 @@ Thanks @wyuenho on GitHub"
 
 ;;; --------------------------------------------------------------------------
 
+(when (equal custom-ide 'custom-ide-lsp-bridge)
+    (use-package markdown-mode)
+    (use-package lsp-bridge
+      :straight '(lsp-bridge :type git :host github :repo "manateelazycat/lsp-bridge"
+  		     :files (:defaults "*.el" "*.py" "acm" "core" "langserver" "multiserver" "resources")
+  		     :build (:not compile))
+      :custom
+      (lsp-bridge-python-lsp-server "pylsp")
+      :config
+      (global-lsp-bridge-mode)))
+
+;;; --------------------------------------------------------------------------
+
 (when (equal custom-ide 'custom-ide-anaconda)
    (use-package anaconda-mode
        :bind (:map python-mode-map
@@ -1701,9 +1715,9 @@ Thanks @wyuenho on GitHub"
 (defun mrf/load-python-file-hook ()
     (python-mode)
     ;; (unless (featurep 'jedi)
-    ;; 	(use-package jedi
-    ;; 	    :config
-    ;; 	    (jedi:setup)))
+    ;;  (use-package jedi
+    ;;      :config
+    ;;      (jedi:setup)))
     (setq highlight-indentation-mode -1)
     (setq display-fill-column-indicator-mode t))
 
@@ -1711,9 +1725,9 @@ Thanks @wyuenho on GitHub"
     (message ">>> mrf/python-mode-triggered")
     ;; (eldoc-box-hover-at-point-mode t) ;; Using Mitch Key for this
     (if (equal debug-adapter 'enable-dap-mode)
-      (unless (featurep 'dap-mode)
-  	  (dap-mode))
-      (if (not (featurep 'dape))
+        (unless (featurep 'dap-mode)
+            (dap-mode))
+        (if (not (featurep 'dape))
             (use-package dape :demand t)))
     (mrf/set-custom-ide-python-keymaps)
     (set-fill-column 80))
