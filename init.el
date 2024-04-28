@@ -149,6 +149,11 @@ be taken into consideration when providing a width."
     :type 'boolean
     :group 'mrf-custom)
 
+(defcustom enable-org-fill-column-centering nil
+    "Set to t to center the visual-fill column of the Org display."
+    :type 'boolean
+    :group 'mrf-custom)
+
 ;;; --------------------------------------------------------------------------
 
 (defcustom completion-handler 'comphand-vertico
@@ -211,7 +216,7 @@ configurable but has a host of great feaures that just work."
                            "ef-maris-light"
                            "ef-maris-dark"
                            "ef-kassio"
-  			 "ef-bio"
+                         "ef-bio"
                            "sanityinc-tomorrow-bright"
                            "ef-melissa-dark"
                            "darktooth-dark"
@@ -1163,7 +1168,7 @@ font size is computed + 20 of this value."
 
 (defun mrf/org-mode-visual-fill ()
     (setq visual-fill-column-width custom-org-fill-column
-        visual-fill-column-center-text t)
+        visual-fill-column-center-text enable-org-fill-column-centering)
     (visual-fill-column-mode 1))
 
 (use-package visual-fill-column
@@ -1874,6 +1879,7 @@ Thanks @wyuenho on GitHub"
 
 (when (equal completion-handler 'comphand-ivy-counsel)
     (use-package ivy
+        :defer t
         :diminish I
         :bind (("C-s" . swiper)
                   :map ivy-minibuffer-map
@@ -1888,7 +1894,9 @@ Thanks @wyuenho on GitHub"
                   :map ivy-reverse-i-search-map
                   ("C-k" . ivy-previous-line)
                   ("C-d" . ivy-reverse-i-search-kill))
-        :custom (ivy-use-virtual-buffers t)
+        :custom
+        (enable-recursive-minibuffers t)
+        (ivy-use-virtual-buffers t)
         :config
         (ivy-mode 1))
 
@@ -1900,8 +1908,8 @@ Thanks @wyuenho on GitHub"
         (setcdr (assq t ivy-format-functions-alist) #'ivy-format-function-line))
 
     (use-package ivy-yasnippet
-      :after (:any yasnippet ivy)
-      :defer t
+        :after (:any yasnippet ivy)
+        :defer t
         :straight (ivy-yasnippet :type git
                       :flavor melpa :host github
                       :repo "mkcms/ivy-yasnippet")))
@@ -1915,8 +1923,11 @@ Thanks @wyuenho on GitHub"
 
 (when (equal completion-handler 'comphand-ivy-counsel)
     (use-package counsel
-        :defer t
-        :bind (("C-M-j" . 'counsel-switch-buffer)
+        :after ivy
+        :bind (   ("C-M-j" . 'counsel-switch-buffer)
+                  ("M-x" . 'counsel-M-x)
+                  ("C-x C-f" . 'counsel-find-file)
+                  ("C-c C-r" . 'ivy-resume)
                   :map minibuffer-local-map
                   ("C-r" . 'counsel-minibuffer-history))
         :custom
@@ -1928,12 +1939,10 @@ Thanks @wyuenho on GitHub"
 
 (when (equal completion-handler 'comphand-ivy-counsel)
     (use-package ivy-prescient
-        :after counsel
-        :hook (after-init . (lambda ()
-                                (message "Enabling ivy-prescient")
-                                (setq-default prescient-persist-mode t)
-                                (setq-default ivy-prescient-mode t)))
+        :after ivy
         :custom
+        (prescient-persist-mode t)
+        (ivy-prescient-mode t)
         (ivy-prescient-enable-filtering t)))
 
 ;;; --------------------------------------------------------------------------

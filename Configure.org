@@ -219,6 +219,11 @@ Thes values toggle the availability of specific packages. Only boolean type valu
       :type 'boolean
       :group 'mrf-custom)
 
+  (defcustom enable-org-fill-column-centering nil
+      "Set to t to center the visual-fill column of the Org display."
+      :type 'boolean
+      :group 'mrf-custom)
+
 #+end_src
 
 *** Feature selections
@@ -293,7 +298,7 @@ This is a curated selection of themes that I personally like. Most of them are d
                              "ef-maris-light"
                              "ef-maris-dark"
                              "ef-kassio"
-  			   "ef-bio"
+                           "ef-bio"
                              "sanityinc-tomorrow-bright"
                              "ef-melissa-dark"
                              "darktooth-dark"
@@ -1287,7 +1292,7 @@ This function sets up the fonts faces that are used within org-mode.
                              (org-level-7 . 1.1)
                              (org-level-8 . 1.1)))
               (set-face-attribute (car face) nil :font "SF Pro" :weight 'regular :height (cdr face)))
-  	
+        
           ;; Ensure that anything that should be fixed-pitch in Org files appears that way
           (set-face-attribute 'org-block nil    :foreground 'unspecified :inherit 'fixed-pitch)
           (set-face-attribute 'org-table nil    :inherit 'fixed-pitch)
@@ -1475,36 +1480,36 @@ This section contains the basic configuration for =org-mode= plus the configurat
       :config
       ;; Add frame borders and window dividers
       (modify-all-frames-parameters
-  	'((right-divider-width . 40)
+        '((right-divider-width . 40)
                (internal-border-width . 40)))
       (dolist (face '(window-divider
                          window-divider-first-pixel
                          window-divider-last-pixel))
-  	(face-spec-reset-face face)
-  	(set-face-foreground face (face-attribute 'default :background)))
+        (face-spec-reset-face face)
+        (set-face-foreground face (face-attribute 'default :background)))
       (set-face-background 'fringe (face-attribute 'default :background))
       (setq
-  	;; Edit settings
-  	org-auto-align-tags nil
-  	org-tags-column 0
-  	org-catch-invisible-edits 'show-and-error
-  	org-special-ctrl-a/e t
-  	org-insert-heading-respect-content t
+        ;; Edit settings
+        org-auto-align-tags nil
+        org-tags-column 0
+        org-catch-invisible-edits 'show-and-error
+        org-special-ctrl-a/e t
+        org-insert-heading-respect-content t
 
-  	;; Org styling, hide markup etc.
-  	org-hide-emphasis-markers t
-  	org-pretty-entities t
-  	org-ellipsis "…"
+        ;; Org styling, hide markup etc.
+        org-hide-emphasis-markers t
+        org-pretty-entities t
+        org-ellipsis "…"
 
-  	;; Agenda styling
-  	org-agenda-tags-column 0
-  	org-agenda-block-separator ?─
-  	org-agenda-time-grid
-  	'((daily today require-timed)
+        ;; Agenda styling
+        org-agenda-tags-column 0
+        org-agenda-block-separator ?─
+        org-agenda-time-grid
+        '((daily today require-timed)
                (800 1000 1200 1400 1600 1800 2000)
                " ┄┄┄┄┄ " "┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄")
-  	org-agenda-current-time-string
-  	"◀── now ─────────────────────────────────────────────────")
+        org-agenda-current-time-string
+        "◀── now ─────────────────────────────────────────────────")
       (global-org-modern-mode))
 
 #+end_src
@@ -1531,7 +1536,7 @@ We use [[https://github.com/joostkremers/visual-fill-column][visual-fill-column]
 
   (defun mrf/org-mode-visual-fill ()
       (setq visual-fill-column-width custom-org-fill-column
-          visual-fill-column-center-text t)
+          visual-fill-column-center-text enable-org-fill-column-centering)
       (visual-fill-column-mode 1))
 
   (use-package visual-fill-column
@@ -2437,6 +2442,7 @@ This is meant to be evaluated and run once. Calling this function will clone the
   ;;; --------------------------------------------------------------------------
   ;;; DAP for NodeJS
 
+  
   (defun my-setup-dap-node ()
       "Require dap-node feature and run dap-node-setup if VSCode module isn't already installed"
       (require 'dap-node)
@@ -2548,6 +2554,7 @@ Ivy is an excellent completion framework for Emacs.  It provides a minimal yet p
 
   (when (equal completion-handler 'comphand-ivy-counsel)
       (use-package ivy
+          :defer t
           :diminish I
           :bind (("C-s" . swiper)
                     :map ivy-minibuffer-map
@@ -2562,7 +2569,9 @@ Ivy is an excellent completion framework for Emacs.  It provides a minimal yet p
                     :map ivy-reverse-i-search-map
                     ("C-k" . ivy-previous-line)
                     ("C-d" . ivy-reverse-i-search-kill))
-          :custom (ivy-use-virtual-buffers t)
+          :custom
+          (enable-recursive-minibuffers t)
+          (ivy-use-virtual-buffers t)
           :config
           (ivy-mode 1))
 
@@ -2574,8 +2583,8 @@ Ivy is an excellent completion framework for Emacs.  It provides a minimal yet p
           (setcdr (assq t ivy-format-functions-alist) #'ivy-format-function-line))
 
       (use-package ivy-yasnippet
-  	:after (:any yasnippet ivy)
-  	:defer t
+          :after (:any yasnippet ivy)
+          :defer t
           :straight (ivy-yasnippet :type git
                         :flavor melpa :host github
                         :repo "mkcms/ivy-yasnippet")))
@@ -2603,15 +2612,18 @@ Counsel takes this further, providing versions of common Emacs commands that are
 
   (when (equal completion-handler 'comphand-ivy-counsel)
       (use-package counsel
-          :defer t
-          :bind (("C-M-j" . 'counsel-switch-buffer)
+          :after ivy
+          :bind (   ("C-M-j" . 'counsel-switch-buffer)
+                    ("M-x" . 'counsel-M-x)
+                    ("C-x C-f" . 'counsel-find-file)
+                    ("C-c C-r" . 'ivy-resume)
                     :map minibuffer-local-map
                     ("C-r" . 'counsel-minibuffer-history))
           :custom
           (counsel-linux-app-format-function #'counsel-linux-app-format-function-name-only)
           :config
           (counsel-mode 1)))
-
+  
 #+end_src
 
 *** Ivy Prescient
@@ -2622,12 +2634,10 @@ Counsel takes this further, providing versions of common Emacs commands that are
 
   (when (equal completion-handler 'comphand-ivy-counsel)
       (use-package ivy-prescient
-          :after counsel
-          :hook (after-init . (lambda ()
-                                  (message "Enabling ivy-prescient")
-                                  (setq-default prescient-persist-mode t)
-                                  (setq-default ivy-prescient-mode t)))
+          :after ivy
           :custom
+          (prescient-persist-mode t)
+          (ivy-prescient-mode t)
           (ivy-prescient-enable-filtering t)))
 
 #+end_src
@@ -2961,7 +2971,7 @@ This is the standard python mode setup.
               (use-package dape :demand t)))
       (mrf/set-custom-ide-python-keymaps)
       (unless (featurep 'yasnippet)
-  	(yas-global-mode t))
+        (yas-global-mode t))
       (set-fill-column 80))
 
   (use-package python-mode
