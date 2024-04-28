@@ -2760,7 +2760,7 @@ This function sets up the fonts faces that are used within org-mode.
 
   (defun mrf/org-font-setup ()
       "Setup org mode fonts."
-      (if (featurep 'org)
+      (when (featurep 'org)
           (require 'org-faces)
 
           (font-lock-add-keywords
@@ -2779,7 +2779,7 @@ This function sets up the fonts faces that are used within org-mode.
                              (org-level-7 . 1.1)
                              (org-level-8 . 1.1)))
               (set-face-attribute (car face) nil :font "SF Pro" :weight 'regular :height (cdr face)))
-
+  	
           ;; Ensure that anything that should be fixed-pitch in Org files appears that way
           (set-face-attribute 'org-block nil    :foreground 'unspecified :inherit 'fixed-pitch)
           (set-face-attribute 'org-table nil    :inherit 'fixed-pitch)

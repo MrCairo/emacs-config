@@ -1963,7 +1963,7 @@ Thanks @wyuenho on GitHub"
 
 (defun mrf/org-font-setup ()
     "Setup org mode fonts."
-    (if (featurep 'org)
+    (when (featurep 'org)
         (require 'org-faces)
 
         (font-lock-add-keywords
