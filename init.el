@@ -53,7 +53,7 @@
 ;; Load org early on in the init process
 ;; (use-package org :straight t)
 ;; Make sure that we set the read buffer above the default 4k
-(setq read-process-output-max (* 1024 1024))
+(setq read-process-output-max (* 10240 1024))
 
 ;;; --------------------------------------------------------------------------
 ;;; Define my customization groups
@@ -840,11 +840,9 @@ font size is computed + 20 of this value."
 ;; YASnippets
 
 (use-package yasnippet
-    :defer t
     :bind (:map yas-minor-mode-map
               ("<C-'>" . yas-expand))
     :config
-    (message ">>> YASnippet Configured")
     (setq yas-global-mode t)
     (setq yas-minor-mode t)
     (define-key yas-minor-mode-map (kbd "<tab>") nil)
@@ -853,7 +851,8 @@ font size is computed + 20 of this value."
     (setq yas-prompt-functions '(yas-ido-prompt))
     (defun help/yas-after-exit-snippet-hook-fn ()
         (prettify-symbols-mode))
-    (add-hook 'yas-after-exit-snippet-hook #'help/yas-after-exit-snippet-hook-fn))
+    (add-hook 'yas-after-exit-snippet-hook #'help/yas-after-exit-snippet-hook-fn)
+    (message ">>> YASnippet Configured"))
 
 ;;; --------------------------------------------------------------------------
 
@@ -1555,7 +1554,7 @@ Thanks @wyuenho on GitHub"
 (use-package tree-sitter
     :init
     (message ">>> Loading tree-sitter")
-    ;; :after (lsp-mode)
+    :after prog-mode
     :config
     ;; Activate tree-sitter globally (minor mode registered on every buffer)
     (global-tree-sitter-mode)
@@ -1566,7 +1565,8 @@ Thanks @wyuenho on GitHub"
     (c++-mode . lsp-deferred)
     (js2-mode . lsp-deferred))
 
-(use-package tree-sitter-langs)
+(use-package tree-sitter-langs
+    :after tree-sitter)
 
 (use-package ts-fold
     :straight (ts-fold :type git
@@ -1730,6 +1730,8 @@ Thanks @wyuenho on GitHub"
         (if (not (featurep 'dape))
             (use-package dape :demand t)))
     (mrf/set-custom-ide-python-keymaps)
+    (unless (featurep 'yasnippet)
+      (yas-global-mode t))
     (set-fill-column 80))
 
 (use-package python-mode
@@ -1961,37 +1963,38 @@ Thanks @wyuenho on GitHub"
 
 (defun mrf/org-font-setup ()
     "Setup org mode fonts."
-    (require 'org-faces)
+    (if (featurep 'org)
+        (require 'org-faces)
 
-    (font-lock-add-keywords
-        'org-mode
-        '(("^ *\\([-]\\) "
-              (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))))
-    ;; (setq org-src-fontify-natively t)
+        (font-lock-add-keywords
+            'org-mode
+            '(("^ *\\([-]\\) "
+                  (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))))
+        ;; (setq org-src-fontify-natively t)
 
-    ;; Set faces for heading levels
-    (dolist (face '((org-level-1 . 1.5)
-                       (org-level-2 . 1.25)
-                       (org-level-3 . 1.1)
-                       (org-level-4 . 1.1)
-                       (org-level-5 . 1.1)
-                       (org-level-6 . 1.1)
-                       (org-level-7 . 1.1)
-                       (org-level-8 . 1.1)))
-        (set-face-attribute (car face) nil :font "SF Pro" :weight 'regular :height (cdr face)))
+        ;; Set faces for heading levels
+        (dolist (face '((org-level-1 . 1.5)
+                           (org-level-2 . 1.25)
+                           (org-level-3 . 1.1)
+                           (org-level-4 . 1.1)
+                           (org-level-5 . 1.1)
+                           (org-level-6 . 1.1)
+                           (org-level-7 . 1.1)
+                           (org-level-8 . 1.1)))
+            (set-face-attribute (car face) nil :font "SF Pro" :weight 'regular :height (cdr face)))
 
-    ;; Ensure that anything that should be fixed-pitch in Org files appears that way
-    (set-face-attribute 'org-block nil    :foreground 'unspecified :inherit 'fixed-pitch)
-    (set-face-attribute 'org-table nil    :inherit 'fixed-pitch)
-    (set-face-attribute 'org-formula nil  :inherit 'fixed-pitch)
-    (set-face-attribute 'org-code nil     :inherit '(shadow fixed-pitch))
-    (set-face-attribute 'org-table nil    :inherit '(shadow fixed-pitch))
-    (set-face-attribute 'org-verbatim nil :inherit '(shadow fixed-pitch))
-    (set-face-attribute 'org-special-keyword nil :inherit '(font-lock-comment-face fixed-pitch))
-    (set-face-attribute 'org-meta-line nil :inherit '(font-lock-comment-face fixed-pitch))
-    (set-face-attribute 'org-checkbox nil  :inherit 'fixed-pitch)
-    (set-face-attribute 'line-number nil :inherit 'fixed-pitch)
-    (set-face-attribute 'line-number-current-line nil :inherit 'fixed-pitch))
+        ;; Ensure that anything that should be fixed-pitch in Org files appears that way
+        (set-face-attribute 'org-block nil    :foreground 'unspecified :inherit 'fixed-pitch)
+        (set-face-attribute 'org-table nil    :inherit 'fixed-pitch)
+        (set-face-attribute 'org-formula nil  :inherit 'fixed-pitch)
+        (set-face-attribute 'org-code nil     :inherit '(shadow fixed-pitch))
+        (set-face-attribute 'org-table nil    :inherit '(shadow fixed-pitch))
+        (set-face-attribute 'org-verbatim nil :inherit '(shadow fixed-pitch))
+        (set-face-attribute 'org-special-keyword nil :inherit '(font-lock-comment-face fixed-pitch))
+        (set-face-attribute 'org-meta-line nil :inherit '(font-lock-comment-face fixed-pitch))
+        (set-face-attribute 'org-checkbox nil  :inherit 'fixed-pitch)
+        (set-face-attribute 'line-number nil :inherit 'fixed-pitch)
+        (set-face-attribute 'line-number-current-line nil :inherit 'fixed-pitch)))
 
 ;; -----------------------------------------------------------------
 
@@ -2128,7 +2131,6 @@ Thanks @wyuenho on GitHub"
     ;; Configure custom agenda views
     (mrf/org-setup-agenda)
     (mrf/org-setup-capture-templates)
-    ;; If not already, enable yasnippet
     (yas-global-mode t)
     (define-key global-map (kbd "C-c j")
         (lambda () (interactive) (org-capture nil "jj")))
@@ -2138,43 +2140,41 @@ Thanks @wyuenho on GitHub"
 
 (use-package org-modern
     :after org
-    :hook (org-mode . org-modern-mode))
+    :hook (org-mode . org-modern-mode)
+    :config
+    ;; Add frame borders and window dividers
+    (modify-all-frames-parameters
+      '((right-divider-width . 40)
+             (internal-border-width . 40)))
+    (dolist (face '(window-divider
+                       window-divider-first-pixel
+                       window-divider-last-pixel))
+      (face-spec-reset-face face)
+      (set-face-foreground face (face-attribute 'default :background)))
+    (set-face-background 'fringe (face-attribute 'default :background))
+    (setq
+      ;; Edit settings
+      org-auto-align-tags nil
+      org-tags-column 0
+      org-catch-invisible-edits 'show-and-error
+      org-special-ctrl-a/e t
+      org-insert-heading-respect-content t
 
-;; Add frame borders and window dividers
-(modify-all-frames-parameters
-    '((right-divider-width . 40)
-         (internal-border-width . 40)))
-(dolist (face '(window-divider
-                   window-divider-first-pixel
-                   window-divider-last-pixel))
-    (face-spec-reset-face face)
-    (set-face-foreground face (face-attribute 'default :background)))
-(set-face-background 'fringe (face-attribute 'default :background))
+      ;; Org styling, hide markup etc.
+      org-hide-emphasis-markers t
+      org-pretty-entities t
+      org-ellipsis "…"
 
-(setq
-    ;; Edit settings
-    org-auto-align-tags nil
-    org-tags-column 0
-    org-catch-invisible-edits 'show-and-error
-    org-special-ctrl-a/e t
-    org-insert-heading-respect-content t
-
-    ;; Org styling, hide markup etc.
-    org-hide-emphasis-markers t
-    org-pretty-entities t
-    org-ellipsis "…"
-
-    ;; Agenda styling
-    org-agenda-tags-column 0
-    org-agenda-block-separator ?─
-    org-agenda-time-grid
-    '((daily today require-timed)
-         (800 1000 1200 1400 1600 1800 2000)
-         " ┄┄┄┄┄ " "┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄")
-    org-agenda-current-time-string
-    "◀── now ─────────────────────────────────────────────────")
-
-(global-org-modern-mode)
+      ;; Agenda styling
+      org-agenda-tags-column 0
+      org-agenda-block-separator ?─
+      org-agenda-time-grid
+      '((daily today require-timed)
+             (800 1000 1200 1400 1600 1800 2000)
+             " ┄┄┄┄┄ " "┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄")
+      org-agenda-current-time-string
+      "◀── now ─────────────────────────────────────────────────")
+    (global-org-modern-mode))
 
 ;;; --------------------------------------------------------------------------
 
@@ -2223,6 +2223,7 @@ Thanks @wyuenho on GitHub"
     ;; :demand t  ;; Ensure org-roam is loaded by default
     :init
     (setq org-roam-v2-ack t)
+    :after org
     :custom
     (org-roam-directory (expand-file-name "RoamNotes" custom-docs-dir))
     (org-roam-completion-everywhere t)
@@ -2357,6 +2358,7 @@ capture was not aborted."
 ;; in the org file.
 (use-package org-auto-tangle
     :defer t
+    :after org
     :hook (org-mode . org-auto-tangle-mode))
 
 ;;; --------------------------------------------------------------------------
