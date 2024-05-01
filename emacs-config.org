@@ -115,7 +115,7 @@ Package related early initialization
 **** Lispy Header
 This is the standard format of a =lisp= header that should appear for all =lisp= scripts. It also indicates that the ~init.el~ file is generated from this ~Configure.org~ file.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle "init.el"
   ;;; init.el --- My customized emacs init file -- lexical-binding: t --
   ;;;
   ;;; Commentary:
@@ -143,7 +143,7 @@ This is the standard format of a =lisp= header that should appear for all =lisp=
 
 =Straight= is an alternative package manager that installs packages through Git checkouts instead of downloading tarballs from one of the package archives. Doing so allows installing forked packages, altering local package checkouts, and locking packages to exact versions for reproducable setups.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle "init.el"
   ;;; --------------------------------------------------------------------------
 
   (defvar bootstrap-version)
@@ -185,7 +185,7 @@ This is the standard format of a =lisp= header that should appear for all =lisp=
 ** Customization groups
 These are the groups used by this Emacs config for customization. It's important that these groups as well as the customizable file location variables be in the main ~init.el~ since there are startup values that require them *before* we can require other intialization files.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle "init.el"
   ;;; --------------------------------------------------------------------------
   ;;; Define my customization groups
 
@@ -213,7 +213,7 @@ These are the groups used by this Emacs config for customization. It's important
 
 ** File Locations and Variables
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle "init.el"
   ;;; --------------------------------------------------------------------------
 
   (defcustom display-dashboard-at-start t
@@ -247,7 +247,7 @@ These are the groups used by this Emacs config for customization. It's important
 ** Use Shell Path
 Because in macOS, Emacs could be started outside of a shell (like an application on the Dock), this code is used to migrate the <current user's shell path to Emacs ~exec-path~.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle "init.el"
   ;;; --------------------------------------------------------------------------
 
   ;; Use shell path
@@ -277,7 +277,7 @@ Because in macOS, Emacs could be started outside of a shell (like an application
 
 By default, the =user-emacs-directory= points to the .emacs.d* directory from which the =init.el= is used when Emacs starts. What this means is that any package that writes to this directory will be writing files to this initialization directory. Since we want to keep this directory clean, we set this directory to something external. A new variable, =emacs-config-directory= is set to now point to the starting Emacs condfiguration directory.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle "init.el"
   ;;; --------------------------------------------------------------------------
   ;;; Set a variable that represents the actual emacs configuration directory.
   ;;; This is being done so that the user-emacs-directory which normally points
@@ -306,7 +306,7 @@ By default, the =user-emacs-directory= points to the .emacs.d* directory from wh
 This directory is expected to be in the ~emacs-config-direcory~ dir. This can be used to store custom lisp (or non-elpa/melpa) files that can'tbe found by =require.el= or =straight-use-package=.
 
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle "init.el"
   ;;; --------------------------------------------------------------------------
 
   (add-to-list 'load-path (expand-file-name "lisp" emacs-config-directory))
@@ -472,7 +472,7 @@ This is a curated selection of themes that I personally like. Most of them are d
                              "ef-maris-light"
                              "ef-maris-dark"
                              "ef-kassio"
-                           "ef-bio"
+                             "ef-bio"
                              "sanityinc-tomorrow-bright"
                              "ef-melissa-dark"
                              "darktooth-dark"
@@ -579,8 +579,8 @@ This is a curated selection of themes that I personally like. Most of them are d
       frame-resize-pixelwise t
       dired-dwim-target t       ;; try to guess target directory
       truncate-partial-width-windows 1 ;; truncate lines in partial-width windows
-      auto-save-default nil     ;; disable auto save
       backup-inhibited t        ;; disable backup (No ~ tilde files)
+      auto-save-default nil     ;; disable auto save
       global-auto-revert-mode 1 ;; Refresh buffer if file has changed
       global-auto-revert-non-file-buffers t
       history-length 25         ;; Reasonable buffer length
