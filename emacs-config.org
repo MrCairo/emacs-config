@@ -663,6 +663,19 @@ This is a curated selection of themes that I personally like. Most of them are d
       :config
       (which-key-mode)
       (which-key-setup-side-window-right))
+#+end_src
+
+** Multiple-cursors
+Multiple cursors for Emacs. This is some pretty crazy functionality, so yes, there are kinks. Don't be afraid though.
+
+
+#+begin_src emacs-lisp :tangle "emacs-config-modules/config-global.el" :mkdirp yes
+
+  (use-package multiple-cursors
+      :bind (("C-S-c C-S-c" . mc/edit-lines)
+  		("C->" . mc/mark-next-like-this)
+  		("C-<" . mc/mark-previous-like-this)
+  	      ("C-c C-<" . mc/mark-all-like-this)))
 
 #+end_src
 
@@ -1408,13 +1421,13 @@ This package provides a global minor mode to increase the spacing/padding of Ema
       :hook (after-init . spacious-padding-mode)
       :custom
       (spacious-padding-widths
-          '( :internal-border-width 10
-               :header-line-width 10
-               :mode-line-width 5
-               :fringe-width 5
-               :tab-width 4
-               :right-divider-width 5
-               :scroll-bar-width 4)))
+  	'( :internal-border-width 15
+  	     :header-line-width 4
+  	     :mode-line-width 6
+  	     :tab-width 4
+  	     :right-divider-width 30
+  	     :scroll-bar-width 8
+  	     :fringe-width 8)))
 
   ;; Read the doc string of `spacious-padding-subtle-mode-line' as it
   ;; is very flexible and provides several examples.
@@ -2173,7 +2186,7 @@ Window numbers for Emacs: Navigate your windows and frames using numbers. This i
 
   (use-package treemacs-projectile
       :disabled
-      :after (treemacs projectile))
+      :after treemacs projectile)
 
 #+end_src
 
@@ -2182,7 +2195,7 @@ Window numbers for Emacs: Navigate your windows and frames using numbers. This i
   ;;; --------------------------------------------------------------------------
 
   (use-package treemacs-magit
-      :after (treemacs magit)
+      :after treemacs magit
       )
 #+end_src
 
@@ -2211,7 +2224,7 @@ Window numbers for Emacs: Navigate your windows and frames using numbers. This i
       :straight (treemacs-persp :type git :flavor melpa
                     :files ("src/extra/treemacs-persp.el" "treemacs-persp-pkg.el")
                     :host github :repo "Alexander-Miller/treemacs")
-      :after (treemacs persp-mode) ;;or perspective vs. persp-mode
+      :after (:any treemacs persp-mode) ;;or perspective vs. persp-mode
       :config (treemacs-set-scope-type 'Perspectives))
 #+end_src
 
@@ -2220,7 +2233,7 @@ Window numbers for Emacs: Navigate your windows and frames using numbers. This i
   ;;; --------------------------------------------------------------------------
 
   (use-package treemacs-tab-bar ;;treemacs-tab-bar if you use tab-bar-mode
-      :after (treemacs)
+      :after treemacs
       :config (treemacs-set-scope-type 'Tabs))
 #+end_src
 
@@ -2369,7 +2382,7 @@ The following are configured for Python development and provide an IDE type expe
   (when (and (equal custom-ide 'custom-ide-eglot-lsp)
             (equal completion-handler 'comphand-ivy-counsel))
       (use-package lsp-ivy
-          :after lsp ivy))
+          :after (:all lsp ivy)))
 
 #+end_src
 
@@ -2694,7 +2707,7 @@ This is meant to be evaluated and run once. Calling this function will clone the
   (when (equal debug-adapter 'enable-dap-mode)
       (use-package dap-python
           :straight (dap-python :type git :host github :repo "emacs-lsp/dap-mode")
-          :after (dap-mode)
+          :after dap-mode
           :config
           (setq dap-python-executable "python3") ;; Otherwise it looks for 'python' else error.
           (setq dap-python-debugger 'debugpy)
@@ -2736,7 +2749,7 @@ This is meant to be evaluated and run once. Calling this function will clone the
                         :files (:defaults "icons" "dap-mode-pkg.el")
                         :host github
                         :repo "emacs-lsp/dap-mode")
-          :after (dap-mode)
+          :after dap-mode
           :config
           (require 'dap-firefox)
           (dap-register-debug-template
@@ -3320,6 +3333,7 @@ Tree-sitter is a parser generator tool and an incremental parsing library. It ca
       (typescript-mode . lsp-deferred)
       (c-mode . lsp-deferred)
       (c++-mode . lsp-deferred)
+      (rust-mode . lsp-deferred)
       (js2-mode . lsp-deferred))
 
   (use-package tree-sitter-langs
@@ -3387,7 +3401,7 @@ This is a basic configuration for the TypeScript language so that =.ts= files ac
 
   (when (equal debug-adapter 'enable-dape)
       (use-package typescript-ts-mode
-          :after (dape-mode)
+          :after dape-mode
           :mode ("\\.ts\\'")
           :hook
           (typescript-ts-mode . lsp-deferred)
@@ -3453,40 +3467,6 @@ This is a basic configuration for the TypeScript language so that =.ts= files ac
 
   (provide config-lang-js)
   ;;; config-js-langs.el ends here.
-  
-#+end_src
-
-
-* Misc. Languages
-Lesser used or lesser known languages.
-
-** Lisp
-
-Lisp support is handled by SLIME which is the “Superior Lisp Interaction Mode for Emacs”. SLIME extends Emacs with support for interactive programming in Common Lisp. The features are centered around slime-mode, an Emacs minor-mode that complements the standard lisp-mode. While lisp-mode supports editing Lisp source files, slime-mode adds support for interacting with a running Common Lisp process for compilation, debugging, documentation lookup, and so on. Extensive documentation can be found [[https://slime.common-lisp.dev/doc/html/][at this link]].
-
-#+begin_src emacs-lisp :tangle "emacs-config-modules/config-lang-other.el" :mkdirp yes
-
-  (use-package slime
-      :mode ("\\.lisp\\'" . slime-mode)
-      :config
-      (setq inferior-lisp-program "/opt/homebrew/bin/sbcl"))
-
-#+end_src
-
-** Additional Languages
-#+begin_src emacs-lisp :tangle "emacs-config-modules/config-lang-other.el" :mkdirp yes
-  ;;; --------------------------------------------------------------------------
-
-  ;; (use-package graphql-mode)
-  (use-package js2-mode :defer t)
-  (use-package rust-mode :defer t)
-  (use-package swift-mode :defer t)
-#+end_src
-
-#+begin_src emacs-lisp :tangle "emacs-config-modules/config-lang-other.el" :mkdirp yes
-
-  (provide 'config-lang-other)
-  ;;; config-lang-other.el ends here.
   
 #+end_src
 
@@ -3679,7 +3659,8 @@ autopep8 automatically formats Python code to conform to the `PEP 8` style guide
   ;;; --------------------------------------------------------------------------
 
   (use-package py-autopep8
-      :after (python-mode python)
+      :defer
+      :after (:any python-mode python)
       :hook ((python-mode) . py-autopep8-mode))
 
 #+end_src
@@ -3742,6 +3723,7 @@ We use Pyvenv-auto is a package that automatically changes to the Python virtual
 #+begin_src emacs-lisp :tangle "emacs-config-modules/config-lang-python.el" :mkdirp yes
 
   (use-package pydoc
+      :defer t
       :straight (pydoc :type git :flavor melpa
                     :host github :repo "statmobile/pydoc")
       :after python
@@ -3756,6 +3738,85 @@ We use Pyvenv-auto is a package that automatically changes to the Python virtual
 
   (provide 'config-lang-python)
   ;;; config-lang-python.el ends here.
+  
+#+end_src
+
+
+* Misc. Languages
+Lesser used or lesser known languages.
+
+** Lisp
+
+Lisp support is handled by SLIME which is the “Superior Lisp Interaction Mode for Emacs”. SLIME extends Emacs with support for interactive programming in Common Lisp. The features are centered around slime-mode, an Emacs minor-mode that complements the standard lisp-mode. While lisp-mode supports editing Lisp source files, slime-mode adds support for interacting with a running Common Lisp process for compilation, debugging, documentation lookup, and so on. Extensive documentation can be found [[https://slime.common-lisp.dev/doc/html/][at this link]].
+
+#+begin_src emacs-lisp :tangle "emacs-config-modules/config-lang-other.el" :mkdirp yes
+
+  (use-package slime
+      :mode ("\\.lisp\\'" . slime-mode)
+      :config
+      (setq inferior-lisp-program "/opt/homebrew/bin/sbcl"))
+
+#+end_src
+
+** Swift / Swift Playground
+
+#+begin_src emacs-lisp :tangle "emacs-config-modules/config-lang-other.el" :mkdirp yes
+  (use-package swift-mode
+      :defer t)
+
+  (use-package swift-helpful
+      :straight (swift-helpful :type git
+  		  :flavor melpa
+  		  :files ("*.el" "swift-info/*.info"
+  			     ("images" "swift-info/images/*.png") "swift-helpful-pkg.el")
+  		  :host github
+  		  :repo "danielmartin/swift-helpful")
+      :defer t)
+
+  (use-package swift-playground-mode :ensure t :defer t :init
+      (autoload 'swift-playground-global-mode "swift-playground-mode" nil t)
+      (add-hook 'swift-mode-hook #'swift-playground-global-mode))
+
+#+end_src
+
+** Additional Languages
+#+begin_src emacs-lisp :tangle "emacs-config-modules/config-lang-other.el" :mkdirp yes
+  ;;; --------------------------------------------------------------------------
+
+  ;; (use-package graphql-mode)
+  (use-package js2-mode :defer t)
+  (use-package rust-mode
+      :defer t
+      :init (setq rust-mode-treesitter-derive t)
+      :hook (rust-mode . (lambda ()
+  			   (setq indent-tabs-mode nil)
+  			   (prettify-symbols-mode)))
+      :config
+      (setq rust-format-on-save t))
+
+#+end_src
+
+** Go-lang
+#+begin_src emacs-lisp :tangle "emacs-config-modules/config-lang-other.el" :mkdirp yes
+
+  (use-package go-mode
+      :defer t
+      :mode ("\\.go\\'" . go-mode)
+      :hook (go-mode . lsp-deferred))
+
+  (use-package go-eldoc
+      :after go-mode
+      :hook (go-mode . go-eldoc-setup)
+      :config
+      (set-face-attribute 'eldoc-highlight-function-argument nil
+          :underline t :foreground "green"
+          :weight 'bold))
+#+end_src
+
+#+begin_src emacs-lisp :tangle "emacs-config-modules/config-lang-other.el" :mkdirp yes
+
+  (provide 'config-lang-other)
+  ;;; config-lang-other.el ends here.
   
 #+end_src
 
@@ -4153,7 +4214,7 @@ Dashboard is an extensible Emacs startup screen showing you what’s most import
       (setq dashboard-startup-banner 'logo))
 
   (use-package dashboard
-      :after (dired)
+      :after dired
       :init
       (mrf/dashboard-banner)
       :hook ((after-init     . mrf/setup-dashboard-buffer)

@@ -169,7 +169,7 @@
 (when (equal debug-adapter 'enable-dap-mode)
     (use-package dap-python
         :straight (dap-python :type git :host github :repo "emacs-lsp/dap-mode")
-        :after (dap-mode)
+        :after dap-mode
         :config
         (setq dap-python-executable "python3") ;; Otherwise it looks for 'python' else error.
         (setq dap-python-debugger 'debugpy)
@@ -207,7 +207,7 @@
                       :files (:defaults "icons" "dap-mode-pkg.el")
                       :host github
                       :repo "emacs-lsp/dap-mode")
-        :after (dap-mode)
+        :after dap-mode
         :config
         (require 'dap-firefox)
         (dap-register-debug-template
