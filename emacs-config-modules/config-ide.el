@@ -102,7 +102,7 @@ Thanks @wyuenho on GitHub"
 (when (and (equal custom-ide 'custom-ide-eglot-lsp)
           (equal completion-handler 'comphand-ivy-counsel))
     (use-package lsp-ivy
-        :after lsp ivy))
+        :after (:all lsp ivy)))
 
 ;;; --------------------------------------------------------------------------
 

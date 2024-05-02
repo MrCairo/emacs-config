@@ -83,7 +83,8 @@
 ;;; --------------------------------------------------------------------------
 
 (use-package py-autopep8
-    :after (python-mode python)
+    :defer
+    :after (:any python-mode python)
     :hook ((python-mode) . py-autopep8-mode))
 
 ;;; --------------------------------------------------------------------------
@@ -125,6 +126,7 @@
     :hook (python-mode . pyvenv-auto-run))
 
 (use-package pydoc
+    :defer t
     :straight (pydoc :type git :flavor melpa
                   :host github :repo "statmobile/pydoc")
     :after python

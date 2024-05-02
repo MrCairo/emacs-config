@@ -105,12 +105,12 @@
 
 (use-package treemacs-projectile
     :disabled
-    :after (treemacs projectile))
+    :after treemacs projectile)
 
 ;;; --------------------------------------------------------------------------
 
 (use-package treemacs-magit
-    :after (treemacs magit)
+    :after treemacs magit
     )
 
 ;;; --------------------------------------------------------------------------
@@ -133,13 +133,13 @@
     :straight (treemacs-persp :type git :flavor melpa
                   :files ("src/extra/treemacs-persp.el" "treemacs-persp-pkg.el")
                   :host github :repo "Alexander-Miller/treemacs")
-    :after (treemacs persp-mode) ;;or perspective vs. persp-mode
+    :after (:any treemacs persp-mode) ;;or perspective vs. persp-mode
     :config (treemacs-set-scope-type 'Perspectives))
 
 ;;; --------------------------------------------------------------------------
 
 (use-package treemacs-tab-bar ;;treemacs-tab-bar if you use tab-bar-mode
-    :after (treemacs)
+    :after treemacs
     :config (treemacs-set-scope-type 'Tabs))
 
 ;;; --------------------------------------------------------------------------

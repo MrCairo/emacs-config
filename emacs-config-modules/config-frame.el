@@ -232,13 +232,13 @@
     :hook (after-init . spacious-padding-mode)
     :custom
     (spacious-padding-widths
-        '( :internal-border-width 10
-             :header-line-width 10
-             :mode-line-width 5
-             :fringe-width 5
-             :tab-width 4
-             :right-divider-width 5
-             :scroll-bar-width 4)))
+	'( :internal-border-width 15
+	     :header-line-width 4
+	     :mode-line-width 6
+	     :tab-width 4
+	     :right-divider-width 30
+	     :scroll-bar-width 8
+	     :fringe-width 8)))
 
 ;; Read the doc string of `spacious-padding-subtle-mode-line' as it
 ;; is very flexible and provides several examples.

@@ -29,6 +29,7 @@
     (typescript-mode . lsp-deferred)
     (c-mode . lsp-deferred)
     (c++-mode . lsp-deferred)
+    (rust-mode . lsp-deferred)
     (js2-mode . lsp-deferred))
 
 (use-package tree-sitter-langs

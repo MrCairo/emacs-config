@@ -32,7 +32,7 @@
     (setq dashboard-startup-banner 'logo))
 
 (use-package dashboard
-    :after (dired)
+    :after dired
     :init
     (mrf/dashboard-banner)
     :hook ((after-init     . mrf/setup-dashboard-buffer)

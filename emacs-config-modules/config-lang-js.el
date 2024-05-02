@@ -16,7 +16,7 @@
 
 (when (equal debug-adapter 'enable-dape)
     (use-package typescript-ts-mode
-        :after (dape-mode)
+        :after dape-mode
         :mode ("\\.ts\\'")
         :hook
         (typescript-ts-mode . lsp-deferred)
