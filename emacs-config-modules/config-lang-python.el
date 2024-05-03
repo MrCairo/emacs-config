@@ -1,3 +1,5 @@
+;;; --------------------------------------------------------------------------
+
 (defun mrf/set-custom-ide-python-keymaps ()
     (message "<<< Set python-mode keymaps based upon IDE.")
     (cond
@@ -124,6 +126,8 @@
     :after python
     :config (message ">>> Starting pyvenv-auto")
     :hook (python-mode . pyvenv-auto-run))
+
+;;; --------------------------------------------------------------------------
 
 (use-package pydoc
     :defer t

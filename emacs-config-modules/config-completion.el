@@ -36,6 +36,8 @@
 	(add-to-list 'ivy-highlight-functions-alist
 	    '(orderless-ivy-re-builder . orderless-ivy-highlight))))
 
+;;; --------------------------------------------------------------------------
+
 (when (equal completion-handler 'comphand-ivy-counsel)
     (use-package ivy-rich
 	:after ivy

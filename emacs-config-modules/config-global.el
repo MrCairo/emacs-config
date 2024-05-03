@@ -79,6 +79,8 @@
     (which-key-mode)
     (which-key-setup-side-window-right))
 
+;;; --------------------------------------------------------------------------
+
 (use-package multiple-cursors
     :bind (("C-S-c C-S-c" . mc/edit-lines)
 		("C->" . mc/mark-next-like-this)
@@ -203,6 +205,8 @@
 ;;; --------------------------------------------------------------------------
 
 (use-package hydra)
+
+;;; --------------------------------------------------------------------------
 
 (use-package eldoc
     :config

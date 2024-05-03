@@ -559,7 +559,7 @@ This is a curated selection of themes that I personally like. Most of them are d
 #+end_src
 
 
-#+begin_src emacs-lisp  :tangle "emacs-config-modules/config-custom.el" :mkdirp yes
+#+begin_src emacs-lisp :tangle "emacs-config-modules/config-custom.el" :mkdirp yes
 
   (provide 'config-custom)
   ;;; config-custom.el ends here.
@@ -670,6 +670,7 @@ Multiple cursors for Emacs. This is some pretty crazy functionality, so yes, the
 
 
 #+begin_src emacs-lisp :tangle "emacs-config-modules/config-global.el" :mkdirp yes
+  ;;; --------------------------------------------------------------------------
 
   (use-package multiple-cursors
       :bind (("C-S-c C-S-c" . mc/edit-lines)
@@ -832,7 +833,8 @@ The Hydra is vanquished once Hercules, any binding that isn't the Hydra's head, 
 This package displays ElDoc documentations in a childframe. The childframe is selectable and scrollable with mouse, even though the cursor is hidden.
 
 #+begin_src emacs-lisp :tangle "emacs-config-modules/config-global.el" :mkdirp yes
-
+  ;;; --------------------------------------------------------------------------
+  
   (use-package eldoc
       :config
       (add-hook 'emacs-lisp-mode-hook 'eldoc-mode)
@@ -1124,7 +1126,7 @@ This includes the theme to use in both graphical and non-graphical.
 
 #+end_src
 
-#+begin_src emacs-lisp  :tangle "emacs-config-modules/config-theming.el" :mkdirp yes
+#+begin_src emacs-lisp :tangle "emacs-config-modules/config-theming.el" :mkdirp yes
 
   (provide 'config-theming)
   ;;; config-theming.el ends here.
@@ -1723,7 +1725,6 @@ This section contains the basic configuration for =org-mode= plus the configurat
 ** Org Modern
 
 #+begin_src emacs-lisp :tangle "emacs-config-modules/config-org.el" :mkdirp yes
-
   ;;; --------------------------------------------------------------------------
 
   (use-package org-modern
@@ -1783,7 +1784,7 @@ This section contains the basic configuration for =org-mode= plus the configurat
 ** Visual Fill
 We use [[https://github.com/joostkremers/visual-fill-column][visual-fill-column]] to center =org-mode= buffers for a more pleasing writing experience as it centers the contents of the buffer horizontally to seem more like you are editing a document.  This is really a matter of personal preference so you can remove the block below if you don't like the behavior.
 
-#+begin_src emacs-lisp  :tangle "emacs-config-modules/config-org.el" :mkdirp yes
+#+begin_src emacs-lisp :tangle "emacs-config-modules/config-org.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
 
   (defun mrf/org-mode-visual-fill ()
@@ -1858,7 +1859,7 @@ While there is standard markdown support built into =org-mode=, this additional 
 #+end_src
 
 
-#+begin_src emacs-lisp  :tangle "emacs-config-modules/config-org.el" :mkdirp yes
+#+begin_src emacs-lisp :tangle "emacs-config-modules/config-org.el" :mkdirp yes
 
   (provide 'config-org)
   ;;; config-org.el ends here.
@@ -1875,7 +1876,7 @@ Org Roam is an extension to Org Mode which solves a couple of the biggest proble
 
 Org Roam solves these problems by making it easy to create topic-focused Org Files and link them together so that you can treat the information as nodes in a network rather than as hierarchical documents. You can think of it like a personal wiki!
 
-#+begin_src emacs-lisp  :tangle "emacs-config-modules/config-org-roam.el" :mkdirp yes
+#+begin_src emacs-lisp :tangle "emacs-config-modules/config-org-roam.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
   ;; (use-package emacsql)
   ;; (use-package emacsql-sqlite)
@@ -1959,7 +1960,7 @@ One added benefit is that we can override the set of capture templates that get 
 
 This means that we can automatically create a new note with our project capture template if the note doesn’t already exist!
 
-#+begin_src emacs-lisp  :tangle "emacs-config-modules/config-org-roam.el" :mkdirp yes
+#+begin_src emacs-lisp :tangle "emacs-config-modules/config-org-roam.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
 
   (defun my/org-roam-project-finalize-hook ()
@@ -1995,7 +1996,7 @@ This means that we can automatically create a new note with our project capture 
 If you want to quickly capture new notes and tasks with a single keybinding into a place that you can review later, we can use org-roam-capture- to capture to a single-specific file like Inbox.org!
 
 Even though this file won’t have the timestamped filename, it will still be treated as a node in your Org Roam notes.
-#+begin_src emacs-lisp  :tangle "emacs-config-modules/config-org-roam.el" :mkdirp yes
+#+begin_src emacs-lisp :tangle "emacs-config-modules/config-org-roam.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
 
   (defun my/org-roam-capture-inbox ()
@@ -2010,7 +2011,7 @@ If you’ve set up project note files like we mentioned earlier, you can set up 
 
 Much like the example before, we can either select a project that exists or automatically create a project note when it doesn’t exist yet.
 
-#+begin_src emacs-lisp  :tangle "emacs-config-modules/config-org-roam.el" :mkdirp yes
+#+begin_src emacs-lisp :tangle "emacs-config-modules/config-org-roam.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
 
   (defun my/org-roam-capture-task ()
@@ -2054,7 +2055,7 @@ The following snippet sets up a hook for all Org task state changes and then cop
 
 #+end_src
 
-#+begin_src emacs-lisp  :tangle "emacs-config-modules/config-org-roam.el" :mkdirp yes
+#+begin_src emacs-lisp :tangle "emacs-config-modules/config-org-roam.el" :mkdirp yes
 
   (provide 'config-org-roam)
   ;;; config-org-roam.el ends here.
@@ -2181,7 +2182,7 @@ Window numbers for Emacs: Navigate your windows and frames using numbers. This i
 #+end_src
 
 *** Treemacs Projectile
-#+begin_src emacs-lisp  :tangle "emacs-config-modules/config-treemacs.el" :mkdirp yes
+#+begin_src emacs-lisp :tangle "emacs-config-modules/config-treemacs.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
 
   (use-package treemacs-projectile
@@ -2592,7 +2593,7 @@ Provides a common protocol for debugging different systems. This is configured f
 
 This is meant to be evaluated and run once. Calling this function will clone the vscode-js-debug framework. This is a DAP-based JavaScript debugger. It debugs Node.js, Chrome, Edge, WebView2, VS Code extensions, and more. It has been the default JavaScript debugger in Visual Studio Code since 1.46, and is gradually rolling out in Visual Studio proper.
 
-#+begin_src emacs-lisp  :tangle "emacs-config-modules/config-debug.el" :mkdirp yes
+#+begin_src emacs-lisp :tangle "emacs-config-modules/config-debug.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
 
   ;; (mrf/install-vscode-js-debug)
@@ -2604,7 +2605,7 @@ This is meant to be evaluated and run once. Calling this function will clone the
 
 ** DAPE Hydra
 
-#+begin_src emacs-lisp  :tangle "emacs-config-modules/config-debug.el" :mkdirp yes
+#+begin_src emacs-lisp :tangle "emacs-config-modules/config-debug.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
 
   (defun mrf/dape-end-debug-session ()
@@ -2663,7 +2664,7 @@ This is meant to be evaluated and run once. Calling this function will clone the
  #+end_src
 
 ** DAP for C/C++
-#+begin_src emacs-lisp  :tangle "emacs-config-modules/config-debug.el" :mkdirp yes
+#+begin_src emacs-lisp :tangle "emacs-config-modules/config-debug.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
 
   (setq dap-lldb-debug-program
@@ -2730,7 +2731,7 @@ This is meant to be evaluated and run once. Calling this function will clone the
 #+end_src
 
 ** DAP Template for NodeJS
-#+begin_src emacs-lisp  :tangle "emacs-config-modules/config-debug.el" :mkdirp yes
+#+begin_src emacs-lisp :tangle "emacs-config-modules/config-debug.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
   ;;; DAP for NodeJS
 
@@ -2837,7 +2838,6 @@ This is meant to be evaluated and run once. Calling this function will clone the
 ** RealGUD
 Since Realgud is options (in our configuratrion), we add it's keybindings conditionally. *Note* that these keybindings are still compatible with =dap-mode= keybindings.
 #+begin_src emacs-lisp :tangle "emacs-config-modules/config-debug.el" :mkdirp yes
-
   ;;; --------------------------------------------------------------------------
 
   (use-package realgud
@@ -2969,7 +2969,8 @@ Ivy-rich provides rich transformers for commands from ivy and counsel.
 Ivy-yasnippet lets you preview yasnippet snippets with ivy.
 
 #+begin_src emacs-lisp :tangle "emacs-config-modules/config-completion.el" :mkdirp yes
-
+  ;;; --------------------------------------------------------------------------
+  
   (when (equal completion-handler 'comphand-ivy-counsel)
       (use-package ivy-rich
   	:after ivy
@@ -3560,7 +3561,8 @@ message
 The following are keymaps that are used by by the custom-ide and for python-mode
 
 #+begin_src emacs-lisp :tangle "emacs-config-modules/config-lang-python.el" :mkdirp yes
-
+  ;;; --------------------------------------------------------------------------
+  
   (defun mrf/set-custom-ide-python-keymaps ()
       (message "<<< Set python-mode keymaps based upon IDE.")
       (cond
@@ -3601,7 +3603,7 @@ The following are keymaps that are used by by the custom-ide and for python-mode
 ** Standard setup
 This is the standard python mode setup.
 
-#+begin_src emacs-lisp  :tangle "emacs-config-modules/config-lang-python.el" :mkdirp yes
+#+begin_src emacs-lisp :tangle "emacs-config-modules/config-lang-python.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
 
   (defun mrf/load-python-file-hook ()
@@ -3721,7 +3723,8 @@ We use Pyvenv-auto is a package that automatically changes to the Python virtual
 ** Pydoc
 #Pydoc, the Python documentation navigation package
 #+begin_src emacs-lisp :tangle "emacs-config-modules/config-lang-python.el" :mkdirp yes
-
+  ;;; --------------------------------------------------------------------------
+  
   (use-package pydoc
       :defer t
       :straight (pydoc :type git :flavor melpa
@@ -3750,7 +3753,8 @@ Lesser used or lesser known languages.
 Lisp support is handled by SLIME which is the “Superior Lisp Interaction Mode for Emacs”. SLIME extends Emacs with support for interactive programming in Common Lisp. The features are centered around slime-mode, an Emacs minor-mode that complements the standard lisp-mode. While lisp-mode supports editing Lisp source files, slime-mode adds support for interacting with a running Common Lisp process for compilation, debugging, documentation lookup, and so on. Extensive documentation can be found [[https://slime.common-lisp.dev/doc/html/][at this link]].
 
 #+begin_src emacs-lisp :tangle "emacs-config-modules/config-lang-other.el" :mkdirp yes
-
+  ;;; --------------------------------------------------------------------------
+  
   (use-package slime
       :mode ("\\.lisp\\'" . slime-mode)
       :config
@@ -3761,6 +3765,8 @@ Lisp support is handled by SLIME which is the “Superior Lisp Interaction Mode 
 ** Swift / Swift Playground
 
 #+begin_src emacs-lisp :tangle "emacs-config-modules/config-lang-other.el" :mkdirp yes
+  ;;; --------------------------------------------------------------------------
+  
   (use-package swift-mode
       :defer t)
 
@@ -3798,7 +3804,8 @@ Lisp support is handled by SLIME which is the “Superior Lisp Interaction Mode 
 
 ** Go-lang
 #+begin_src emacs-lisp :tangle "emacs-config-modules/config-lang-other.el" :mkdirp yes
-
+  ;;; --------------------------------------------------------------------------
+  
   (use-package go-mode
       :defer t
       :mode ("\\.go\\'" . go-mode)
@@ -4060,7 +4067,7 @@ Some icons to be used in grpahical mode.
 ** Useful functions and Keybindings
 Here are some helpful functions.
 
-#+begin_src emacs-lisp  :tangle no
+#+begin_src emacs-lisp :tangle no
   ;;; --------------------------------------------------------------------------
   ;; Functions to insert the buffer file name at the current cursor position
   ;;

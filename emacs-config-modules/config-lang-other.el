@@ -1,7 +1,11 @@
+;;; --------------------------------------------------------------------------
+
 (use-package slime
     :mode ("\\.lisp\\'" . slime-mode)
     :config
     (setq inferior-lisp-program "/opt/homebrew/bin/sbcl"))
+
+;;; --------------------------------------------------------------------------
 
 (use-package swift-mode
     :defer t)
@@ -31,6 +35,8 @@
 			   (prettify-symbols-mode)))
     :config
     (setq rust-format-on-save t))
+
+;;; --------------------------------------------------------------------------
 
 (use-package go-mode
     :defer t
