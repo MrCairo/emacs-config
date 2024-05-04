@@ -1,11 +1,11 @@
 ;;; --------------------------------------------------------------------------
 
-(when (or (equal completion-handler 'comphand-vertico)
+(use-package orderless
+    :when (or (equal completion-handler 'comphand-vertico)
 	  (equal completion-handler 'comphand-ivy-counsel))
-    (use-package orderless
-        :custom
-        (completion-styles '(orderless basic))
-        (completion-category-overrides '((file (styles basic partial-completion))))))
+    :custom
+    (completion-styles '(orderless basic))
+    (completion-category-overrides '((file (styles basic partial-completion)))))
 
 ;;; --------------------------------------------------------------------------
 ;;; Swiper and IVY mode

@@ -21,6 +21,8 @@
 ;;; --------------------------------------------------------------------------
 
 (use-package solaire-mode
+    :straight (solaire-mode :type git :flavor melpa
+                  :host github :repo "hlissner/emacs-solaire-mode")
     :hook (after-init . solaire-global-mode)
     :config
     (push '(treemacs-window-background-face . solaire-default-face) solaire-mode-remap-alist)

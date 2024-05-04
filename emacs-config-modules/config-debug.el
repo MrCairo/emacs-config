@@ -3,57 +3,57 @@
 (use-package jsonrpc
     :straight (jsonrpc :type git :host github :repo "emacs-straight/jsonrpc" :files ("*" (:exclude ".git"))))
 
-(when (equal debug-adapter 'enable-dape)
-    (use-package dape
-        :after jsonrpc
-        :defer t
-        ;; :defer t
-        ;; To use window configuration like gud (gdb-mi)
-        ;; :init
-        ;; (setq dape-buffer-window-arrangement 'gud)
-        :custom
-        (dape-buffer-window-arrangement 'right)  ;; Info buffers to the right
-        ;; To not display info and/or buffers on startup
-        ;; (remove-hook 'dape-on-start-hooks 'dape-info)
-        (remove-hook 'dape-on-start-hooks 'dape-repl)
+(use-package dape
+    :when (equal debug-adapter 'enable-dape)
+    :after jsonrpc
+    :defer t
+    ;; :defer t
+    ;; To use window configuration like gud (gdb-mi)
+    ;; :init
+    ;; (setq dape-buffer-window-arrangement 'gud)
+    :custom
+    (dape-buffer-window-arrangement 'right)  ;; Info buffers to the right
+    ;; To not display info and/or buffers on startup
+    ;; (remove-hook 'dape-on-start-hooks 'dape-info)
+    (remove-hook 'dape-on-start-hooks 'dape-repl)
 
-        ;; To display info and/or repl buffers on stopped
-        ;; (add-hook 'dape-on-stopped-hooks 'dape-info)
-        ;; (add-hook 'dape-on-stopped-hooks 'dape-repl)
+    ;; To display info and/or repl buffers on stopped
+    ;; (add-hook 'dape-on-stopped-hooks 'dape-info)
+    ;; (add-hook 'dape-on-stopped-hooks 'dape-repl)
 
-        ;; By default dape uses gdb keybinding prefix
-        ;; If you do not want to use any prefix, set it to nil.
-        ;; (setq dape-key-prefix "\C-x\C-a")
+    ;; By default dape uses gdb keybinding prefix
+    ;; If you do not want to use any prefix, set it to nil.
+    ;; (setq dape-key-prefix "\C-x\C-a")
 
-        ;; Kill compile buffer on build success
-        ;; (add-hook 'dape-compile-compile-hooks 'kill-buffer)
+    ;; Kill compile buffer on build success
+    ;; (add-hook 'dape-compile-compile-hooks 'kill-buffer)
 
-        ;; Save buffers on startup, useful for interpreted languages
-        ;; (add-hook 'dape-on-start-hooks
-        ;;           (defun dape--save-on-start ()
-        ;;             (save-some-buffers t t)))
+    ;; Save buffers on startup, useful for interpreted languages
+    ;; (add-hook 'dape-on-start-hooks
+    ;;           (defun dape--save-on-start ()
+    ;;             (save-some-buffers t t)))
 
-        :config
-        ;; Projectile users
-        ;; (setq dape-cwd-fn 'projectile-project-root)
-        ;; :straight (dape :type git
-        ;;           :host github :repo "emacs-straight/dape"
-        ;;           :files ("*" (:exclude ".git")))
-        (message "DAPE Configured")))
+    :config
+    ;; Projectile users
+    ;; (setq dape-cwd-fn 'projectile-project-root)
+    ;; :straight (dape :type git
+    ;;           :host github :repo "emacs-straight/dape"
+    ;;           :files ("*" (:exclude ".git")))
+    (message "DAPE Configured"))
 
 ;;; --------------------------------------------------------------------------
 ;;; Debug Adapter Protocol      
-(when (equal debug-adapter 'enable-dap-mode)
-    (use-package dap-mode
-        ;; Uncomment the config below if you want all UI panes to be hidden by default!
-        ;; :custom
-        ;; (lsp-enable-dap-auto-configure nil)
-        :commands dap-debug
-        :custom
-        (dap-auto-configure-features '(sessions locals breakpoints expressions repl controls tooltip))
-        :config
-        (dap-ui-mode 1)
-        (message "DAP mode loaded and configured.")))
+(use-package dap-mode
+    :when (equal debug-adapter 'enable-dap-mode)
+    ;; Uncomment the config below if you want all UI panes to be hidden by default!
+    ;; :custom
+    ;; (lsp-enable-dap-auto-configure nil)
+    :commands dap-debug
+    :custom
+    (dap-auto-configure-features '(sessions locals breakpoints expressions repl controls tooltip))
+    :config
+    (dap-ui-mode 1)
+    (message "DAP mode loaded and configured."))
 
 ;;; --------------------------------------------------------------------------
 
@@ -145,49 +145,49 @@
         (dap--put-if-absent :program (funcall dap-lldb-debugged-program-function))
         (dap--put-if-absent :name "LLDB Debug")))
 
-(when (equal debug-adapter 'enable-dap-mode)
     (use-package dap-cpptools
+	:when (equal debug-adapter 'enable-dap-mode)
 	:disabled
         :after dap-mode
-        :straight (dap-lldb :type git :host github :repo "emacs-lsp/dap-mode"))
-
-    (use-package dap-lldb
-	:disabled
         :straight (dap-lldb :type git :host github :repo "emacs-lsp/dap-mode")
-        :after dap-mode
-        :config
-        (dap-register-debug-provider "lldb-dap" 'mrf/populate-lldb-start-file-args)
-        (dap-register-debug-template "LLDB DAP :: Run from project directory"
-            (list :type "lldb-dap"
-                :name "LLDB using DAP"
-                :program "a.out"
-                :request "launch"))))
+	:config
+	(use-package dap-lldb
+	    :disabled
+            :straight (dap-lldb :type git :host github :repo "emacs-lsp/dap-mode")
+            :after dap-mode
+            :config
+            (dap-register-debug-provider "lldb-dap" 'mrf/populate-lldb-start-file-args)
+            (dap-register-debug-template "LLDB DAP :: Run from project directory"
+		(list :type "lldb-dap"
+                    :name "LLDB using DAP"
+                    :program "a.out"
+                    :request "launch"))))
 
 ;;; --------------------------------------------------------------------------
 ;;; DAP for Python
 
-(when (equal debug-adapter 'enable-dap-mode)
-    (use-package dap-python
-        :straight (dap-python :type git :host github :repo "emacs-lsp/dap-mode")
-        :after dap-mode
-        :config
-        (setq dap-python-executable "python3") ;; Otherwise it looks for 'python' else error.
-        (setq dap-python-debugger 'debugpy)
-        (dap-register-debug-template "Python :: Run file from project directory"
-            (list :type "python"
-                :args ""
-                :cwd nil
-                :module nil
-                :program nil
-                :request "launch"))
-        (dap-register-debug-template "Python :: Run file (buffer)"
-            (list :type "python"
-                :args ""
-                :cwd nil
-                :module nil
-                :program nil
-                :request "launch"
-                :name "Python :: Run file (buffer)"))))
+(use-package dap-python
+    :when (equal debug-adapter 'enable-dap-mode)
+    :straight (dap-python :type git :host github :repo "emacs-lsp/dap-mode")
+    :after dap-mode
+    :config
+    (setq dap-python-executable "python3") ;; Otherwise it looks for 'python' else error.
+    (setq dap-python-debugger 'debugpy)
+    (dap-register-debug-template "Python :: Run file from project directory"
+        (list :type "python"
+            :args ""
+            :cwd nil
+            :module nil
+            :program nil
+            :request "launch"))
+    (dap-register-debug-template "Python :: Run file (buffer)"
+        (list :type "python"
+            :args ""
+            :cwd nil
+            :module nil
+            :program nil
+            :request "launch"
+            :name "Python :: Run file (buffer)")))
 
 ;;; --------------------------------------------------------------------------
 ;;; DAP for NodeJS
@@ -198,37 +198,36 @@
     (require 'dap-node)
     (unless (file-exists-p dap-node-debug-path) (dap-node-setup)))
 
-(when (equal debug-adapter 'enable-dap-mode)
-    (use-package dap-node
-	:disabled
-        :defer t
-        :straight (dap-node :type git
-                      :flavor melpa
-                      :files (:defaults "icons" "dap-mode-pkg.el")
-                      :host github
-                      :repo "emacs-lsp/dap-mode")
-        :after dap-mode
-        :config
-        (require 'dap-firefox)
-        (dap-register-debug-template
-            "Launch index.ts"
-            (list :type "node"
-                :request "launch"
-                :program "${workspaceFolder}/index.ts"
-                :dap-compilation "npx tsc index.ts --outdir dist --sourceMap true"
-                :outFiles (list "${workspaceFolder}/dist/**/*.js")
-                :name "Launch index.ts"))
-        ;; (dap-register-debug-template
-        ;;    "Launch index.ts"
-        ;;    (list :type "node"
-        ;;    :request "launch"
-        ;;    :program "${workspaceFolder}/index.ts"
-        ;;    :dap-compilation "npx tsc index.ts --outdir dist --sourceMap true"
-        ;;    :outFiles (list "${workspaceFolder}/dist/**/*.js")
-        ;;    :name "Launch index.ts"))
-        )
-    (add-hook 'typescript-mode-hook 'my-setup-dap-node)
-    (add-hook 'js2-mode-hook 'my-setup-dap-node))
+(use-package dap-node
+    :when (equal debug-adapter 'enable-dap-mode)
+    :disabled
+    :defer t
+    :hook ((typescript-mode . my-setup-dap-node)
+	      (js2-mode . my-setup-dap-node))	      
+    :straight (dap-node :type git
+		  :flavor melpa
+		  :files (:defaults "icons" "dap-mode-pkg.el")
+		  :host github
+		  :repo "emacs-lsp/dap-mode")
+    :after dap-mode
+    :config
+    (require 'dap-firefox)
+    (dap-register-debug-template
+	"Launch index.ts"
+	(list :type "node"
+            :request "launch"
+            :program "${workspaceFolder}/index.ts"
+            :dap-compilation "npx tsc index.ts --outdir dist --sourceMap true"
+            :outFiles (list "${workspaceFolder}/dist/**/*.js")
+            :name "Launch index.ts")))
+;; (dap-register-debug-template
+;;    "Launch index.ts"
+;;    (list :type "node"
+;;    :request "launch"
+;;    :program "${workspaceFolder}/index.ts"
+;;    :dap-compilation "npx tsc index.ts --outdir dist --sourceMap true"
+;;    :outFiles (list "${workspaceFolder}/dist/**/*.js")
+;;    :name "Launch index.ts"))
 
 ;;; --------------------------------------------------------------------------
 
@@ -305,42 +304,42 @@
 
 ;;; --------------------------------------------------------------------------
 
-(when (package-installed-p 'realgud)
-    (use-package cc-mode
-        :bind (:map c-mode-map
-                  ("C-c , j" . realgud:cmd-jump)
-                  ("C-c , k" . realgud:cmd-kill)
-                  ("C-c , s" . realgud:cmd-step)
-                  ("C-c , n" . realgud:cmd-next)
-                  ("C-c , q" . realgud:cmd-quit)
-                  ("C-c , F" . realgud:window-bt)
-                  ("C-c , U" . realgud:cmd-until)
-                  ("C-c , X" . realgud:cmd-clear)
-                  ("C-c , !" . realgud:cmd-shell)
-                  ("C-c , b" . realgud:cmd-break)
-                  ("C-c , f" . realgud:cmd-finish)
-                  ("C-c , D" . realgud:cmd-delete)
-                  ("C-c , +" . realgud:cmd-enable)
-                  ("C-c , R" . realgud:cmd-restart)
-                  ("C-c , -" . realgud:cmd-disable)
-                  ("C-c , B" . realgud:window-brkpt)
-                  ("C-c , c" . realgud:cmd-continue)
-                  ("C-c , e" . realgud:cmd-eval-dwim)
-                  ("C-c , Q" . realgud:cmd-terminate)
-                  ("C-c , T" . realgud:cmd-backtrace)
-                  ("C-c , h" . realgud:cmd-until-here)
-                  ("C-c , u" . realgud:cmd-older-frame)
-                  ("C-c , 4" . realgud:cmd-goto-loc-hist-4)
-                  ("C-c , 5" . realgud:cmd-goto-loc-hist-5)
-                  ("C-c , 6" . realgud:cmd-goto-loc-hist-6)
-                  ("C-c , 7" . realgud:cmd-goto-loc-hist-7)
-                  ("C-c , 8" . realgud:cmd-goto-loc-hist-8)
-                  ("C-c , 9" . realgud:cmd-goto-loc-hist-9)
-                  ("C-c , d" . realgud:cmd-newer-frame)
-                  ("C-c , RET" . realgud:cmd-repeat-last)
-                  ("C-c , E" . realgud:cmd-eval-at-point)
-                  ("C-c , I" . realgud:cmdbuf-info-describe)
-                  ("C-c , C-i" . realgud:cmd-info-breakpoints))))
+(use-package cc-mode
+    :when (package-installed-p 'realgud)
+    :bind (:map c-mode-map
+              ("C-c , j" . realgud:cmd-jump)
+              ("C-c , k" . realgud:cmd-kill)
+              ("C-c , s" . realgud:cmd-step)
+              ("C-c , n" . realgud:cmd-next)
+              ("C-c , q" . realgud:cmd-quit)
+              ("C-c , F" . realgud:window-bt)
+              ("C-c , U" . realgud:cmd-until)
+              ("C-c , X" . realgud:cmd-clear)
+              ("C-c , !" . realgud:cmd-shell)
+              ("C-c , b" . realgud:cmd-break)
+              ("C-c , f" . realgud:cmd-finish)
+              ("C-c , D" . realgud:cmd-delete)
+              ("C-c , +" . realgud:cmd-enable)
+              ("C-c , R" . realgud:cmd-restart)
+              ("C-c , -" . realgud:cmd-disable)
+              ("C-c , B" . realgud:window-brkpt)
+              ("C-c , c" . realgud:cmd-continue)
+              ("C-c , e" . realgud:cmd-eval-dwim)
+              ("C-c , Q" . realgud:cmd-terminate)
+              ("C-c , T" . realgud:cmd-backtrace)
+              ("C-c , h" . realgud:cmd-until-here)
+              ("C-c , u" . realgud:cmd-older-frame)
+              ("C-c , 4" . realgud:cmd-goto-loc-hist-4)
+              ("C-c , 5" . realgud:cmd-goto-loc-hist-5)
+              ("C-c , 6" . realgud:cmd-goto-loc-hist-6)
+              ("C-c , 7" . realgud:cmd-goto-loc-hist-7)
+              ("C-c , 8" . realgud:cmd-goto-loc-hist-8)
+              ("C-c , 9" . realgud:cmd-goto-loc-hist-9)
+              ("C-c , d" . realgud:cmd-newer-frame)
+              ("C-c , RET" . realgud:cmd-repeat-last)
+              ("C-c , E" . realgud:cmd-eval-at-point)
+              ("C-c , I" . realgud:cmdbuf-info-describe)
+              ("C-c , C-i" . realgud:cmd-info-breakpoints)))
 
 (provide 'config-debug)
 ;; config-debug.el ends here.

@@ -155,6 +155,9 @@ be taken into consideration when providing a width."
 (add-to-list 'load-path (expand-file-name "lisp" emacs-config-directory))
 (add-to-list 'load-path (expand-file-name "emacs-config-modules" emacs-config-directory))
 
+;; (use-package config-custom
+;;     :straight (config-custom :local-repo "/Users/strider/.emacs.d/emacs-config-modules"))
+
 (require 'config-custom)
 (require 'config-global)
 (require 'config-frame)

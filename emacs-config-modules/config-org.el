@@ -21,16 +21,13 @@
 
 (defun mrf/org-font-setup ()
     "Setup org mode fonts."
-    (when (featurep 'org)
-        (require 'org-faces)
-
+    (use-package org-faces
+	:when (featurep 'org)
+	:config
         (font-lock-add-keywords
             'org-mode
             '(("^ *\\([-]\\) "
                   (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))))
-        ;; (setq org-src-fontify-natively t)
-
-        ;; Set faces for heading levels
         (dolist (face '((org-level-1 . 1.75)
                            (org-level-2 . 1.5)
                            (org-level-3 . 1.25)
@@ -40,7 +37,7 @@
                            (org-level-7 . 1.1)
                            (org-level-8 . 1.1)))
             (set-face-attribute (car face) nil :font "ETBembo" :weight 'regular :height (cdr face)))
-      
+	
         ;; Ensure that anything that should be fixed-pitch in Org files appears that way
         (set-face-attribute 'org-block nil    :foreground 'unspecified :inherit 'fixed-pitch)
         (set-face-attribute 'org-table nil    :inherit 'fixed-pitch)
