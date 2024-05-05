@@ -33,13 +33,11 @@
     ;; (add-hook 'dape-on-start-hooks
     ;;           (defun dape--save-on-start ()
     ;;             (save-some-buffers t t)))
-
+    ;; :bind (:map prog-mode-map ("C-c ." . dape-hydra/body))
     :config
-    ;; Projectile users
-    ;; (setq dape-cwd-fn 'projectile-project-root)
-    ;; :straight (dape :type git
-    ;;           :host github :repo "emacs-straight/dape"
-    ;;           :files ("*" (:exclude ".git")))
+    (define-dape-hydra)
+    (bind-keys :map prog-mode-map
+	("C-c ." . dape-hydra/body))
     (message "DAPE Configured"))
 
 ;;; --------------------------------------------------------------------------
@@ -55,6 +53,8 @@
     (dap-auto-configure-features '(sessions locals breakpoints expressions repl controls tooltip))
     :config
     (define-dap-hydra)
+    (bind-keys :map prog-mode-map
+	("C-c ." . dap-hydra/body))
     (dap-ui-mode 1)
     (message "DAP mode loaded and configured."))
 

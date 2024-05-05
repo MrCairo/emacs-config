@@ -55,13 +55,11 @@
 ;; - https://magit.vc/manual/forge/Token-Creation.html#Token-Creation
 ;; - https://magit.vc/manual/ghub/Getting-Started.html#Getting-Started
 
-(use-package forge :after magit)
-
-;;; --------------------------------------------------------------------------
+(use-package forge
+    :after magit)
 
 (use-package treemacs-magit
     :after treemacs magit)
-
 
 (elpaca-process-queues)
 

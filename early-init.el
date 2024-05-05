@@ -21,11 +21,11 @@
 
 (add-hook 'before-init-hook
     (lambda ()
-	;; warn when opening files bigger than 100MB
-	(setq large-file-warning-threshold 100000000)
-	;; reduce the frequency of garbage collection by making it happen on
-	;; each 50MB of allocated data (the default is on every 0.76MB)
-	(setq gc-cons-threshold 50000000)))
+      ;; warn when opening files bigger than 100MB
+      (setq large-file-warning-threshold 100000000)
+      ;; reduce the frequency of garbage collection by making it happen on
+      ;; each 50MB of allocated data (the default is on every 0.76MB)
+      (setq gc-cons-threshold 50000000)))
 
 (setq read-process-output-max (* 4 1024 1024))
 (setq process-adaptive-read-buffering nil)
@@ -44,17 +44,17 @@
 
 (setq package-archives
     '(( "gnu-elpa" . "https://elpa.gnu.org/packages/")
-	 ( "nongnu" . "https://elpa.nongnu.org/nongnu/")
-	 ( "melpa" . "https://melpa.org/packages/")
-	 ( "org" . "https://orgmode.org/elpa/")
-	 ( "melpa-stable" . "https://stable.melpa.org/packages/")))
+       ( "nongnu" . "https://elpa.nongnu.org/nongnu/")
+       ( "melpa" . "https://melpa.org/packages/")
+       ( "org" . "https://orgmode.org/elpa/")
+       ( "melpa-stable" . "https://stable.melpa.org/packages/")))
 
 ;; Highest number gets priority (what is not mentioned has priority 0)
 (setq package-archive-priorities
-    '(( "gnu-elpa" . 4)
-	 ( "melpa-stable" . 3)
-	 ( "melpa" . 2)
-	 ( "nongnu" . 1)))
+    '(( "gnu-elpa" . 2)
+       ( "melpa-stable" . 3)
+       ( "melpa" . 4)
+       ( "nongnu" . 1)))
 
 (defun mrf/display-startup-time ()
     "Calculate and display startup time."
@@ -65,3 +65,9 @@
 	gcs-done))
 
 (add-hook 'emacs-startup-hook #'mrf/display-startup-time)
+
+(setq use-package-compute-statistics t
+    use-package-verbose t
+    use-package-always-ensure t
+    use-package-always-demand nil
+    use-package-always-defer nil)

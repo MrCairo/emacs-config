@@ -197,7 +197,6 @@
 ;;; Automatic Package Updates
 
 (use-package auto-package-update
-    :defer t
     :ensure (:fetcher github :repo "rranelli/auto-package-update.el")
     :custom
     (auto-package-update-interval 7)

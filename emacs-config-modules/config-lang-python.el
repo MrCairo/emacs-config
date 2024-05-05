@@ -104,22 +104,6 @@
 
 ;;; --------------------------------------------------------------------------
 
-;; (dolist (m (list python-mode-map typescript-ts-mode-map c-mode-map c++-mode-map))
-;; (use-package dap
-;;     :when (equal debug-adapter 'enable-dap-mode)
-;;     :bind (:map prog-mode-map
-;;               ("C-c ." . dap-hydra/body)))
-
-
-;; ;; (dolist (m (list python-mode-map typescript-ts-mode-map c-mode-map c++-mode-map))
-;; (use-package dape
-;;     :when (equal debug-adapter 'enable-dape)
-;;     :bind (:map prog-mode-map
-;;               ("C-c ." . dape-hydra/body)))
-
-
-;;; --------------------------------------------------------------------------
-
 (use-package pyvenv-auto
     :after python
     :config (message ">>> Starting pyvenv-auto")
