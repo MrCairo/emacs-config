@@ -1,11 +1,12 @@
 ;;; ------------------------------------------------------------------------
   ;;; Alternate fork to handle possible performance bug(s)
 (use-package jsonrpc
-    :straight (jsonrpc :type git :host github :repo "emacs-straight/jsonrpc" :files ("*" (:exclude ".git"))))
+    :ensure (:host github
+	     :repo "emacs-straight/jsonrpc" :files ("*" (:exclude ".git"))))
 
 (use-package dape
     :when (equal debug-adapter 'enable-dape)
-    :after jsonrpc
+    :after jsonrpc hydra
     :defer t
     ;; :defer t
     ;; To use window configuration like gud (gdb-mi)
@@ -45,6 +46,7 @@
 ;;; Debug Adapter Protocol      
 (use-package dap-mode
     :when (equal debug-adapter 'enable-dap-mode)
+    :after hydra
     ;; Uncomment the config below if you want all UI panes to be hidden by default!
     ;; :custom
     ;; (lsp-enable-dap-auto-configure nil)
@@ -52,6 +54,7 @@
     :custom
     (dap-auto-configure-features '(sessions locals breakpoints expressions repl controls tooltip))
     :config
+    (define-dap-hydra)
     (dap-ui-mode 1)
     (message "DAP mode loaded and configured."))
 
@@ -89,8 +92,9 @@
     (dape-breakpoint-remove-all)
     (mrf/dape-end-debug-session))
 
-(defhydra dape-hydra (:color pink :hint nil :foreign-keys run)
-    "
+(defun define-dape-hydra ()
+    (defhydra dape-hydra (:color pink :hint nil :foreign-keys run)
+	"
   ^Stepping^          ^Switch^                 ^Breakpoints^          ^Debug^                     ^Eval
   ^^^^^^^^----------------------------------------------------------------------------------------------------------------
   _._: Next           _st_: Thread            _bb_: Toggle           _dd_: Debug                 _ee_: Eval Expression
@@ -102,34 +106,34 @@
                       _sU_: Info Update
 
 "
-    ("n" dape-next)
-    ("i" dape-step-in)
-    ("o" dape-step-out)
-    ("." dape-next)
-    ("/" dape-step-in)
-    ("," dape-step-out)
-    ("c" dape-continue)
-    ("r" dape-restart)
-    ("si" dape-info)
-    ("st" dape-select-thread)
-    ("sf" dape-select-stack)
-    ("su" dape-stack-select-up)
-    ("sU" dape-info-update)
-    ("sd" dape-stack-select-down)
-    ("sR" dape-repl)
-    ("bb" dape-breakpoint-toggle)
-    ("ba" dape--breakpoint-place)
-    ("bd" dape-breakpoint-remove-at-point)
-    ("bc" dape-breakpoint-expression)
-    ("bl" dape-breakpoint-log)
-    ("dd" dape)
-    ("dw" dape-watch-dwim)
-    ("ee" dape-evaluate-expression)
-    ("dx" mrf/dape-end-debug-session)
-    ("dX" mrf/dape-delete-all-debug-sessions)
-    ("x" nil "exit Hydra" :color yellow)
-    ("q" mrf/dape-end-debug-session "quit" :color blue)
-    ("Q" mrf/dape-delete-all-debug-sessions :color red))
+	("n" dape-next)
+	("i" dape-step-in)
+	("o" dape-step-out)
+	("." dape-next)
+	("/" dape-step-in)
+	("," dape-step-out)
+	("c" dape-continue)
+	("r" dape-restart)
+	("si" dape-info)
+	("st" dape-select-thread)
+	("sf" dape-select-stack)
+	("su" dape-stack-select-up)
+	("sU" dape-info-update)
+	("sd" dape-stack-select-down)
+	("sR" dape-repl)
+	("bb" dape-breakpoint-toggle)
+	("ba" dape--breakpoint-place)
+	("bd" dape-breakpoint-remove-at-point)
+	("bc" dape-breakpoint-expression)
+	("bl" dape-breakpoint-log)
+	("dd" dape)
+	("dw" dape-watch-dwim)
+	("ee" dape-evaluate-expression)
+	("dx" mrf/dape-end-debug-session)
+	("dX" mrf/dape-delete-all-debug-sessions)
+	("x" nil "exit Hydra" :color yellow)
+	("q" mrf/dape-end-debug-session "quit" :color blue)
+	("Q" mrf/dape-delete-all-debug-sessions :color red)))
 
 ;;; --------------------------------------------------------------------------
 
@@ -149,11 +153,11 @@
 	:when (equal debug-adapter 'enable-dap-mode)
 	:disabled
         :after dap-mode
-        :straight (dap-lldb :type git :host github :repo "emacs-lsp/dap-mode")
+        :ensure (:host github :repo "emacs-lsp/dap-mode")
 	:config
 	(use-package dap-lldb
 	    :disabled
-            :straight (dap-lldb :type git :host github :repo "emacs-lsp/dap-mode")
+            :ensure (:host github :repo "emacs-lsp/dap-mode")
             :after dap-mode
             :config
             (dap-register-debug-provider "lldb-dap" 'mrf/populate-lldb-start-file-args)
@@ -168,7 +172,7 @@
 
 (use-package dap-python
     :when (equal debug-adapter 'enable-dap-mode)
-    :straight (dap-python :type git :host github :repo "emacs-lsp/dap-mode")
+    :ensure (:host github :repo "emacs-lsp/dap-mode")
     :after dap-mode
     :config
     (setq dap-python-executable "python3") ;; Otherwise it looks for 'python' else error.
@@ -203,18 +207,16 @@
     :disabled
     :defer t
     :hook ((typescript-mode . my-setup-dap-node)
-	      (js2-mode . my-setup-dap-node))	      
-    :straight (dap-node :type git
-		  :flavor melpa
-		  :files (:defaults "icons" "dap-mode-pkg.el")
-		  :host github
-		  :repo "emacs-lsp/dap-mode")
+              (js2-mode . my-setup-dap-node))         
+    :ensure (:host github
+             :repo "emacs-lsp/dap-mode"
+             :files (:defaults "icons" "dap-mode-pkg.el"))
     :after dap-mode
     :config
     (require 'dap-firefox)
     (dap-register-debug-template
-	"Launch index.ts"
-	(list :type "node"
+        "Launch index.ts"
+        (list :type "node"
             :request "launch"
             :program "${workspaceFolder}/index.ts"
             :dap-compilation "npx tsc index.ts --outdir dist --sourceMap true"
@@ -251,8 +253,9 @@
     (dap-ui-show-many-windows)
     (dap-debug))
 
-(defhydra dap-hydra (:color pink :hint nil :foreign-keys run)
-    "
+(defun define-dap-hydra ()
+    (defhydra dap-hydra (:color pink :hint nil :foreign-keys run)
+	"
   ^Stepping^          ^Switch^                 ^Breakpoints^          ^Debug^                     ^Eval
   ^^^^^^^^----------------------------------------------------------------------------------------------------------------
   _._: Next           _ss_: Session            _bb_: Toggle           _dd_: Debug                 _ee_: Eval
@@ -265,25 +268,25 @@
                     _sS_: List sessions
                     _sR_: Session Repl
 "
-    ("n" dap-next)    ("i" dap-step-in)    ("o" dap-step-out)   ("." dap-next)
-    ("/" dap-step-in) ("," dap-step-out)   ("c" dap-continue)   ("r" dap-restart-frame)
-    
-    ("ss" dap-switch-session) ("st" dap-switch-thread)    ("sf" dap-switch-stack-frame)
-    ("su" dap-up-stack-frame) ("sd" dap-down-stack-frame) ("sl" dap-ui-locals)
-    ("sb" dap-ui-breakpoints) ("sR" dap-ui-repl)          ("sS" dap-ui-sessions)
-    
-    ("bb" dap-breakpoint-toggle)    ("ba" dap-breakpoint-add)           ("bd" dap-breakpoint-delete)
-    ("bc" dap-breakpoint-condition) ("bh" dap-breakpoint-hit-condition) ("bl" dap-breakpoint-log-message)
-    
-    ("dd" dap-debug)      ("dr" dap-debug-recent) ("ds" dap-debug-restart)
-    ("dl" dap-debug-last) ("de" dap-debug-edit-template)
-    
-    ("ee" dap-eval) ("ea" dap-ui-expressions-add) ("er" dap-eval-region) ("es" dap-eval-thing-at-point)
-    
-    ("dx" mrf/end-debug-session) ("dX" mrf/delete-all-debug-sessions)
-    
-    ("x" nil "exit Hydra" :color yellow) ("q" mrf/end-debug-session "quit" :color blue)
-    ("Q" mrf/delete-all-debug-sessions :color red))
+	("n" dap-next)    ("i" dap-step-in)    ("o" dap-step-out)   ("." dap-next)
+	("/" dap-step-in) ("," dap-step-out)   ("c" dap-continue)   ("r" dap-restart-frame)
+	
+	("ss" dap-switch-session) ("st" dap-switch-thread)    ("sf" dap-switch-stack-frame)
+	("su" dap-up-stack-frame) ("sd" dap-down-stack-frame) ("sl" dap-ui-locals)
+	("sb" dap-ui-breakpoints) ("sR" dap-ui-repl)          ("sS" dap-ui-sessions)
+	
+	("bb" dap-breakpoint-toggle)    ("ba" dap-breakpoint-add)           ("bd" dap-breakpoint-delete)
+	("bc" dap-breakpoint-condition) ("bh" dap-breakpoint-hit-condition) ("bl" dap-breakpoint-log-message)
+	
+	("dd" dap-debug)      ("dr" dap-debug-recent) ("ds" dap-debug-restart)
+	("dl" dap-debug-last) ("de" dap-debug-edit-template)
+	
+	("ee" dap-eval) ("ea" dap-ui-expressions-add) ("er" dap-eval-region) ("es" dap-eval-thing-at-point)
+	
+	("dx" mrf/end-debug-session) ("dX" mrf/delete-all-debug-sessions)
+	
+	("x" nil "exit Hydra" :color yellow) ("q" mrf/end-debug-session "quit" :color blue)
+	("Q" mrf/delete-all-debug-sessions :color red)))
 
 ;;; --------------------------------------------------------------------------
 
@@ -295,12 +298,8 @@
 (use-package realgud-lldb
     :disabled
     :after realgud
-    :straight (realgud-lldb
-                  :type git
-                  :flavor melpa
-                  :files (:defaults ("lldb" "lldb/*.el") "realgud-lldb-pkg.el")
-                  :host github
-                  :repo "realgud/realgud-lldb"))
+    :ensure (:files (:defaults ("lldb" "lldb/*.el") "realgud-lldb-pkg.el")
+             :host github :repo "realgud/realgud-lldb"))
 
 ;;; --------------------------------------------------------------------------
 

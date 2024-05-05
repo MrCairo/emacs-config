@@ -21,8 +21,7 @@
 ;;; --------------------------------------------------------------------------
 
 (use-package solaire-mode
-    :straight (solaire-mode :type git :flavor melpa
-                  :host github :repo "hlissner/emacs-solaire-mode")
+    :ensure (:host github :repo "hlissner/emacs-solaire-mode")
     :hook (after-init . solaire-global-mode)
     :config
     (push '(treemacs-window-background-face . solaire-default-face) solaire-mode-remap-alist)
@@ -31,28 +30,28 @@
 ;;; --------------------------------------------------------------------------
 ;; Golen Ratio
 
-(if enable-golden-ratio
-    (use-package golden-ratio
-        :custom
-        (golden-ratio-auto-scale t)
-        (golden-ratio-adjust-factor .4)
-        (golden-ratio-wide-adjust-factor .4)
-        (golden-ratio-max-width 100)
-        (golden-ratio-exclude-modes '(treemacs-mode
-                                         undo-tree-visdualizer-mode
-                                         inferior-python-mode
-                                         vundo-mode
-                                         which-key-mode
-                                         c-mode
-                                         cc-mode
-                                         dashboard-mode
-                                         python-mode
-                                         markdown-mode))
-        (golden-ratio-exclude-buffer-regexp '("dap*"
-                                                 "*dape*"
-                                                 "*python*"))
-        :config
-        (golden-ratio-mode 1)))
+(use-package golden-ratio
+    :when enable-golden-ratio
+    :custom
+    (golden-ratio-auto-scale t)
+    (golden-ratio-adjust-factor .4)
+    (golden-ratio-wide-adjust-factor .4)
+    (golden-ratio-max-width 100)
+    (golden-ratio-exclude-modes '(treemacs-mode
+                                     undo-tree-visdualizer-mode
+                                     inferior-python-mode
+                                     vundo-mode
+                                     which-key-mode
+                                     c-mode
+                                     cc-mode
+                                     dashboard-mode
+                                     python-mode
+                                     markdown-mode))
+    (golden-ratio-exclude-buffer-regexp '("dap*"
+                                             "*dape*"
+                                             "*python*"))
+    :config
+    (golden-ratio-mode 1))
 
 ;;; --------------------------------------------------------------------------
 
@@ -61,15 +60,14 @@
 
 ;;; --------------------------------------------------------------------------
 
-(when enable-neotree
-    (use-package neotree
-        :config
-        (global-set-key [f8] 'neotree-toggle)
-        (setq neo-theme (if (display-graphic-p) 'icons 'arrow))))
+(use-package neotree
+    :when enable-neotree
+    :config
+    (global-set-key [f8] 'neotree-toggle)
+    (setq neo-theme (if (display-graphic-p) 'icons 'arrow)))
 
 ;;; --------------------------------------------------------------------------
 
-(use-package all-the-icons)
 (use-package nerd-icons)
 
 ;; (use-package doom-modeline
@@ -80,17 +78,17 @@
 ;;; --------------------------------------------------------------------------
 ;; Enable tabs for each buffer
 
-(when enable-centaur-tabs
-    (use-package centaur-tabs
-        :custom
-        ;; Set the style to rounded with icons (setq centaur-tabs-style "bar")
-        (centaur-tabs-style "bar")
-        (centaur-tabs-set-icons t)
-        (centaur-tabs-set-modified-marker t)
-        :bind (("C-c <" . centaur-tabs-backward)
-                  ("C-c >" . centaur-tabs-forward))
-        :config ;; Enable centaur-tabs
-        (centaur-tabs-mode t)))
+(use-package centaur-tabs
+    :when enable-centaur-tabs
+    :custom
+    ;; Set the style to rounded with icons (setq centaur-tabs-style "bar")
+    (centaur-tabs-style "bar")
+    (centaur-tabs-set-icons t)
+    (centaur-tabs-set-modified-marker t)
+    :bind (("C-c <" . centaur-tabs-backward)
+              ("C-c >" . centaur-tabs-forward))
+    :config ;; Enable centaur-tabs
+    (centaur-tabs-mode t))
 
 ;;; --------------------------------------------------------------------------
 
@@ -113,7 +111,6 @@
 ;;; --------------------------------------------------------------------------
 
 (use-package popper
-    :defer t
     :bind (("C-`"   . popper-toggle)
               ("M-`"   . popper-cycle)
               ("C-M-`" . popper-toggle-type))
@@ -132,6 +129,8 @@
              compilation-mode))
     (popper-mode +1)
     (popper-echo-mode +1))
+
+(elpaca-process-queues)
 
 (provide 'config-qol)
 ;;; config-qol.el ends here.

@@ -2,14 +2,15 @@
 ;;; Window Number
 
 (use-package winum
-    :straight (winum :type git :flavor melpa :host github :repo "deb0ch/emacs-winum"))
-(winum-mode)
+    :ensure (:host github :repo "deb0ch/emacs-winum")
+    :config (winum-mode))
 
 ;;; --------------------------------------------------------------------------
 ;;; Treemacs
 
 (use-package treemacs
     :defer t
+    :after winum
     :init
     (with-eval-after-load 'winum
         (define-key winum-keymap (kbd "M-0") #'treemacs-select-window))
@@ -109,15 +110,8 @@
 
 ;;; --------------------------------------------------------------------------
 
-(use-package treemacs-magit
-    :after treemacs magit
-    )
-
-;;; --------------------------------------------------------------------------
-
 (use-package treemacs-icons-dired
-    :hook (dired-mode . treemacs-icons-dired-enable-once)
-    )
+    :hook (dired-mode . treemacs-icons-dired-enable-once))
 
 ;;; --------------------------------------------------------------------------
 
@@ -130,9 +124,8 @@
 ;;    :config (treemacs-set-scope-type 'Perspectives))
 
 (use-package treemacs-persp ;;treemacs-perspective if you use perspective.el vs. persp-mode
-    :straight (treemacs-persp :type git :flavor melpa
-                  :files ("src/extra/treemacs-persp.el" "treemacs-persp-pkg.el")
-                  :host github :repo "Alexander-Miller/treemacs")
+    :ensure (:files ("src/extra/treemacs-persp.el" "treemacs-persp-pkg.el")
+             :host github :repo "Alexander-Miller/treemacs")
     :after (:any treemacs persp-mode) ;;or perspective vs. persp-mode
     :config (treemacs-set-scope-type 'Perspectives))
 
@@ -145,8 +138,11 @@
 ;;; --------------------------------------------------------------------------
 
 (use-package treemacs-all-the-icons
-    :defer t
-    :if (display-graphic-p))
+    :ensure (:fetcher github :repo "Alexander-Miller/treemacs"
+		:files ("src/extra/treemacs-all-the-icons.el"))
+    :after treemacs)
+
+(elpaca-process-queues)
 
 (provide 'config-treemacs)
 ;;; config-treemacs.el ends here.

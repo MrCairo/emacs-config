@@ -143,7 +143,7 @@ This is the standard format of a =lisp= header that should appear for all =lisp=
 
 =Straight= is an alternative package manager that installs packages through Git checkouts instead of downloading tarballs from one of the package archives. Doing so allows installing forked packages, altering local package checkouts, and locking packages to exact versions for reproducable setups.
 
-#+begin_src emacs-lisp :tangle "init.el"
+#+begin_src emacs-lisp :tangle "init-straight.el"
   ;;; --------------------------------------------------------------------------
 
   (defvar bootstrap-version)
@@ -181,6 +181,65 @@ This is the standard format of a =lisp= header that should appear for all =lisp=
   (setq read-process-output-max (* 10240 1024))
 
   #+end_src
+
+** Elpaca Bootstrap
+
+Elpaca is an elisp package manager. It allows users to find, install, update, and remove third-party packages for Emacs. It is a replacement for the built-in Emacs package manager, package.el.
+
+Elpaca:
+
+- Installs packages asynchronously, in parallel for fast, non-blocking installations.
+- Includes a flexible UI for finding and operating on packages.
+- Downloads packages from their sources for convenient elisp development.
+- Supports thousands of elisp packages out of the box (MELPA, NonGNU/GNU ELPA, Org/org-contrib).
+- Makes it easy for users to create their own ELPAs.
+  
+#+begin_src emacs-lisp :tangle "init.el"
+
+  (defvar elpaca-installer-version 0.7)
+  (defvar elpaca-directory (expand-file-name "elpaca/" user-emacs-directory))
+  (defvar elpaca-builds-directory (expand-file-name "builds/" elpaca-directory))
+  (defvar elpaca-repos-directory (expand-file-name "repos/" elpaca-directory))
+  (defvar elpaca-order '(elpaca :repo "https://github.com/progfolio/elpaca.git"
+                            :ref nil :depth 1
+                            :files (:defaults "elpaca-test.el" (:exclude "extensions"))
+                            :build (:not elpaca--activate-package)))
+  (let* ((repo  (expand-file-name "elpaca/" elpaca-repos-directory))
+    	  (build (expand-file-name "elpaca/" elpaca-builds-directory))
+    	  (order (cdr elpaca-order))
+    	  (default-directory repo))
+      (add-to-list 'load-path (if (file-exists-p build) build repo))
+      (unless (file-exists-p repo)
+    	(make-directory repo t)
+    	(when (< emacs-major-version 28) (require 'subr-x))
+    	(condition-case-unless-debug err
+              (if-let ((buffer (pop-to-buffer-same-window "*elpaca-bootstrap*"))
+    			((zerop (apply #'call-process `("git" nil ,buffer t "clone"
+    							   ,@(when-let ((depth (plist-get order :depth)))
+    								 (list (format "--depth=%d" depth) "--no-single-branch"))
+    							   ,(plist-get order :repo) ,repo))))
+    			((zerop (call-process "git" nil buffer t "checkout"
+                                      (or (plist-get order :ref) "--"))))
+    			(emacs (concat invocation-directory invocation-name))
+    			((zerop (call-process emacs nil buffer nil "-Q" "-L" "." "--batch"
+                                      "--eval" "(byte-recompile-directory \".\" 0 'force)")))
+    			((require 'elpaca))
+    			((elpaca-generate-autoloads "elpaca" repo)))
+    		(progn (message "%s" (buffer-string)) (kill-buffer buffer))
+    		(error "%s" (with-current-buffer buffer (buffer-string))))
+    	    ((error) (warn "%s" err) (delete-directory repo 'recursive))))
+      (unless (require 'elpaca-autoloads nil t)
+    	(require 'elpaca)
+    	(elpaca-generate-autoloads "elpaca" repo)
+    	(load "./elpaca-autoloads")))
+  (add-hook 'after-init-hook #'elpaca-process-queues)
+  (elpaca `(,@elpaca-order))
+
+  (elpaca elpaca-use-package
+      (elpaca-use-package-mode)
+      (setq elpaca-use-package-by-default t))
+  (use-package emacs :ensure nil :config (setq ring-bell-function #'ignore))
+#+end_src
 
 ** Customization groups
 These are the groups used by this Emacs config for customization. It's important that these groups as well as the customizable file location variables be in the main ~init.el~ since there are startup values that require them *before* we can require other intialization files.
@@ -335,7 +394,9 @@ This directory is expected to be in the ~emacs-config-direcory~ dir. This can be
   (require 'config-term)
   (require 'config-dired)
   (require 'config-qol)
-  (require 'config-mmm)
+  (use-package config-mmm
+      :ensure (:repo "~/.emacs.d/emacs-config-modules")
+      :after which-key)
 
 #+end_src
 
@@ -634,23 +695,25 @@ This is a curated selection of themes that I personally like. Most of them are d
 #+begin_src emacs-lisp :tangle "emacs-config-modules/config-global.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
 
+    
   (use-package diminish
-      :straight (diminish :type git :flavor melpa :host github :repo "myrjola/diminish.el"))
-
-  (defun mrf/set-diminish ()
-      (diminish 'projectile-mode "PrM")
-      (diminish 'anaconda-mode)
-      (diminish 'tree-sitter-mode "ts")
-      (diminish 'ts-fold-mode)
-      (diminish 'counsel-mode)
-      (diminish 'golden-ratio-mode)
-      (diminish 'company-box-mode)
-      (diminish 'company-mode))
-
-  ;; Need to run late in the startup process
-  (add-hook 'after-init-hook 'mrf/set-diminish)
-
+      :wait t
+      :preface
+      (defun mrf/set-diminish ()
+  	(diminish 'projectile-mode "PrM")
+  	(diminish 'anaconda-mode)
+  	(diminish 'tree-sitter-mode "ts")
+  	(diminish 'ts-fold-mode)
+  	(diminish 'counsel-mode)
+  	(diminish 'golden-ratio-mode)
+  	(diminish 'company-box-mode)
+  	(diminish 'company-mode))
+      :ensure (:host github :repo "myrjola/diminish.el")
+      :hook (after-init . mrf/set-diminish))
   ;; (use-package pabbrev)
+
+  (elpaca-process-queues)
+  
 #+end_src
 
 ** Which Key
@@ -666,6 +729,7 @@ This is a curated selection of themes that I personally like. Most of them are d
       :config
       (which-key-mode)
       (which-key-setup-side-window-right))
+  
 #+end_src
 
 ** Multiple-cursors
@@ -723,12 +787,9 @@ anzu.el is an Emacs port of anzu.vim. anzu.el provides a minor mode which displa
 
   (use-package dash
       :disabled
-      :straight (dash
-                    :type git
-                    :flavor melpa
-                    :files ("dash.el" "dash.texi" "dash-pkg.el")
-                    :host github
-                    :repo "magnars/dash.el"))
+      :ensure (:files ("dash.el" "dash.texi" "dash-pkg.el")
+               :host github
+               :repo "magnars/dash.el"))
 
   (defun mrf/set-fill-column-interactively (num)
       "Asks for the fill column."
@@ -760,7 +821,7 @@ anzu.el is an Emacs port of anzu.vim. anzu.el provides a minor mode which displa
 #+end_src
 
 ** Prompt Indicator / minibuffer
-#+begin_src emacs-lisp :tangle "emacs-config-modules/config-global.el" :mkdirp yes
+#+begin_src emacs-lisp :tangle no
   ;;; --------------------------------------------------------------------------
 
   ;; Prompt indicator/Minibuffer
@@ -828,7 +889,10 @@ The Hydra is vanquished once Hercules, any binding that isn't the Hydra's head, 
 #+begin_src emacs-lisp :tangle "emacs-config-modules/config-global.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
 
-  (use-package hydra)
+  (use-package hydra
+    :wait t
+    :ensure (:repo "abo-abo/hydra" :fetcher github
+		:files (:defaults (:exclude "lv.el"))))
 
 #+end_src
 
@@ -837,8 +901,9 @@ This package displays ElDoc documentations in a childframe. The childframe is se
 
 #+begin_src emacs-lisp :tangle "emacs-config-modules/config-global.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
-  
+
   (use-package eldoc
+      :wait t
       :config
       (add-hook 'emacs-lisp-mode-hook 'eldoc-mode)
       (add-hook 'lisp-interaction-mode-hook 'eldoc-mode)
@@ -863,8 +928,7 @@ You can also use =M-x auto-package-update-now= to update right now!
   ;;; Automatic Package Updates
 
   (use-package auto-package-update
-      :defer t
-      :ensure t
+      :ensure (:fetcher github :repo "rranelli/auto-package-update.el")
       :custom
       (auto-package-update-interval 7)
       (auto-package-update-prompt-before-update t)
@@ -914,9 +978,11 @@ These are useful snippets of code that are commonly used in various languages. Y
 
 #+begin_src emacs-lisp :tangle "emacs-config-modules/config-global.el" :mkdirp yes
 
+  (elpaca-process-queues)
+  
   (provide 'config-global)
   ;;; config-global.el ends here.
-  
+
 #+end_src
 
 
@@ -1530,7 +1596,7 @@ This function sets up the fonts faces that are used within org-mode.
   (defun mrf/org-font-setup ()
       "Setup org mode fonts."
       (use-package org-faces
-  	:when (featurep 'org)
+  	:after org
   	:config
           (font-lock-add-keywords
               'org-mode
@@ -1689,7 +1755,6 @@ This section contains the basic configuration for =org-mode= plus the configurat
   (mrf/org-theme-override-values)
 
   (use-package org
-      :defer t
       :commands (org-capture org-agenda)
       :hook (org-mode . mrf/org-mode-setup)
       :bind (:map org-mode-map
@@ -2075,8 +2140,8 @@ Window numbers for Emacs: Navigate your windows and frames using numbers. This i
   ;;; Window Number
 
   (use-package winum
-      :straight (winum :type git :flavor melpa :host github :repo "deb0ch/emacs-winum"))
-  (winum-mode)
+      :ensure (:host github :repo "deb0ch/emacs-winum")
+      :config (winum-mode))
 
 #+end_src
 
@@ -2088,6 +2153,7 @@ Window numbers for Emacs: Navigate your windows and frames using numbers. This i
 
   (use-package treemacs
       :defer t
+      :after winum
       :init
       (with-eval-after-load 'winum
           (define-key winum-keymap (kbd "M-0") #'treemacs-select-window))
@@ -2196,8 +2262,7 @@ Window numbers for Emacs: Navigate your windows and frames using numbers. This i
   ;;; --------------------------------------------------------------------------
 
   (use-package treemacs-magit
-      :after treemacs magit
-      )
+      :after treemacs magit)
 #+end_src
 
 *** Treemacs dired
@@ -2205,8 +2270,8 @@ Window numbers for Emacs: Navigate your windows and frames using numbers. This i
   ;;; --------------------------------------------------------------------------
 
   (use-package treemacs-icons-dired
-      :hook (dired-mode . treemacs-icons-dired-enable-once)
-      )
+      :hook (dired-mode . treemacs-icons-dired-enable-once))
+  
 #+end_src
 
 *** Treemacs Persp
@@ -2222,11 +2287,11 @@ Window numbers for Emacs: Navigate your windows and frames using numbers. This i
   ;;    :config (treemacs-set-scope-type 'Perspectives))
 
   (use-package treemacs-persp ;;treemacs-perspective if you use perspective.el vs. persp-mode
-      :straight (treemacs-persp :type git :flavor melpa
-                    :files ("src/extra/treemacs-persp.el" "treemacs-persp-pkg.el")
-                    :host github :repo "Alexander-Miller/treemacs")
+      :ensure (:files ("src/extra/treemacs-persp.el" "treemacs-persp-pkg.el")
+               :host github :repo "Alexander-Miller/treemacs")
       :after (:any treemacs persp-mode) ;;or perspective vs. persp-mode
       :config (treemacs-set-scope-type 'Perspectives))
+  
 #+end_src
 
 *** Treemacs tab-bar
@@ -2236,6 +2301,7 @@ Window numbers for Emacs: Navigate your windows and frames using numbers. This i
   (use-package treemacs-tab-bar ;;treemacs-tab-bar if you use tab-bar-mode
       :after treemacs
       :config (treemacs-set-scope-type 'Tabs))
+  
 #+end_src
 
 *** Treemacs all-the-icons
@@ -2243,16 +2309,18 @@ Window numbers for Emacs: Navigate your windows and frames using numbers. This i
   ;;; --------------------------------------------------------------------------
 
   (use-package treemacs-all-the-icons
-      :defer t
+      :after treemacs
       :if (display-graphic-p))
 
  #+end_src
 
 #+begin_src emacs-lisp :tangle "emacs-config-modules/config-treemacs.el" :mkdirp yes
 
+  (elpaca-process-queues)
+  
   (provide 'config-treemacs)
   ;;; config-treemacs.el ends here.
-  
+
 #+end_src
 
 
@@ -2374,7 +2442,7 @@ The following are configured for Python development and provide an IDE type expe
 
   (use-package lsp-treemacs
       :when (equal custom-ide 'custom-ide-eglot-lsp)
-      :after lsp
+      :after lsp treemacs
       :bind (:map prog-mode-map
                 ("C-c t" . treemacs))
       :config
@@ -2383,7 +2451,7 @@ The following are configured for Python development and provide an IDE type expe
   (use-package lsp-ivy
       :when (and (equal custom-ide 'custom-ide-eglot-lsp)
                 (equal completion-handler 'comphand-ivy-counsel))
-      :after (:all lsp ivy))
+      :after lsp ivy)
 
 #+end_src
 
@@ -2408,17 +2476,19 @@ Advantages of lsp-bridge:
   ;;; --------------------------------------------------------------------------
 
   (use-package markdown-mode
-      :when (equal custom-ide 'custom-ide-lsp-bridge))
+      :when (equal custom-ide 'custom-ide-lsp-bridge)
+      :ensure (:fetcher github :repo "jrblevin/markdown-mode"))
 
   (use-package lsp-bridge
       :when (equal custom-ide 'custom-ide-lsp-bridge)
-      :straight '(lsp-bridge :type git :host github :repo "manateelazycat/lsp-bridge"
-                     :files (:defaults "*.el" "*.py" "acm" "core" "langserver" "multiserver" "resources")
-                     :build (:not compile))
+      :ensure (:host github :repo "manateelazycat/lsp-bridge"
+               :files (:defaults "*.el" "*.py" "acm" "core" "langserver" "multiserver" "resources")
+               :build (:not compile))
       :custom
       (lsp-bridge-python-lsp-server "pylsp")
       :config
       (global-lsp-bridge-mode))
+  
 #+end_src
 
 ** Anaconda-mode
@@ -2451,7 +2521,7 @@ Elpy is an Emacs package to bring powerful Python editing to Emacs.  It combines
 
   (use-package elpy
       :when (equal custom-ide 'custom-ide-elpy)
-      :after python
+      :after python which-key
       :custom
       (elpy-rpc-python-command "python3")
       (display-fill-column-indicator-mode 1)
@@ -2464,38 +2534,27 @@ Elpy is an Emacs package to bring powerful Python editing to Emacs.  It combines
       :config
       (message "elpy loaded")
       (use-package jedi)
-      (which-key-add-key-based-replacements "C-c g a" "goto-assignment")
+      (use-package flycheck
+	  :when (equal custom-ide 'custom-ide-elpy)
+	  :defer t
+	  :after elpy
+	  :diminish FlM
+	  :ensure (:host github :repo "flycheck/flycheck")
+	  :hook (elpy-mode . flycheck-mode))      (which-key-add-key-based-replacements "C-c g a" "goto-assignment")
       (which-key-add-key-based-replacements "C-c g o" "find-defitions-other-window")
       (which-key-add-key-based-replacements "C-c g g" "find-defitions")
       (which-key-add-key-based-replacements "C-c g ?" "eldoc-definition")
       (elpy-enable))
 
-
-#+end_src
-
-** Flycheck for Elpy
-
-#+begin_src emacs-lisp :tangle "emacs-config-modules/config-ide.el" :mkdirp yes
-  ;;; --------------------------------------------------------------------------
-
-  (use-package flycheck
-      :when (equal custom-ide 'custom-ide-elpy)
-      :after elpy
-      :diminish FlM
-      :straight (flycheck :type git :flavor melpa
-                    :host github
-                    :repo "flycheck/flycheck")
-      :config
-      (setq elpy-modules (delq 'elpy-module-flymake elpy-modules))
-      :hook (elpy-mode . flycheck-mode))
-
 #+end_src
 
 #+begin_src emacs-lisp :tangle "emacs-config-modules/config-ide.el" :mkdirp yes
 
+  (elpaca-process-queues)
+  
   (provide 'config-ide)
   ;;; config-ide.el ends here.
-  
+
 #+end_src
 
 
@@ -2506,11 +2565,12 @@ Elpy is an Emacs package to bring powerful Python editing to Emacs.  It combines
     ;;; ------------------------------------------------------------------------
     ;;; Alternate fork to handle possible performance bug(s)
   (use-package jsonrpc
-      :straight (jsonrpc :type git :host github :repo "emacs-straight/jsonrpc" :files ("*" (:exclude ".git"))))
+      :ensure (:host github
+  	     :repo "emacs-straight/jsonrpc" :files ("*" (:exclude ".git"))))
 
   (use-package dape
       :when (equal debug-adapter 'enable-dape)
-      :after jsonrpc
+      :after jsonrpc hydra
       :defer t
       ;; :defer t
       ;; To use window configuration like gud (gdb-mi)
@@ -2557,6 +2617,7 @@ Provides a common protocol for debugging different systems. This is configured f
   ;;; Debug Adapter Protocol      
   (use-package dap-mode
       :when (equal debug-adapter 'enable-dap-mode)
+      :after hydra
       ;; Uncomment the config below if you want all UI panes to be hidden by default!
       ;; :custom
       ;; (lsp-enable-dap-auto-configure nil)
@@ -2564,6 +2625,7 @@ Provides a common protocol for debugging different systems. This is configured f
       :custom
       (dap-auto-configure-features '(sessions locals breakpoints expressions repl controls tooltip))
       :config
+      (define-dap-hydra)
       (dap-ui-mode 1)
       (message "DAP mode loaded and configured."))
 
@@ -2620,8 +2682,9 @@ This is meant to be evaluated and run once. Calling this function will clone the
       (dape-breakpoint-remove-all)
       (mrf/dape-end-debug-session))
 
-  (defhydra dape-hydra (:color pink :hint nil :foreign-keys run)
-      "
+  (defun define-dape-hydra ()
+      (defhydra dape-hydra (:color pink :hint nil :foreign-keys run)
+  	"
     ^Stepping^          ^Switch^                 ^Breakpoints^          ^Debug^                     ^Eval
     ^^^^^^^^----------------------------------------------------------------------------------------------------------------
     _._: Next           _st_: Thread            _bb_: Toggle           _dd_: Debug                 _ee_: Eval Expression
@@ -2633,35 +2696,35 @@ This is meant to be evaluated and run once. Calling this function will clone the
                         _sU_: Info Update
 
   "
-      ("n" dape-next)
-      ("i" dape-step-in)
-      ("o" dape-step-out)
-      ("." dape-next)
-      ("/" dape-step-in)
-      ("," dape-step-out)
-      ("c" dape-continue)
-      ("r" dape-restart)
-      ("si" dape-info)
-      ("st" dape-select-thread)
-      ("sf" dape-select-stack)
-      ("su" dape-stack-select-up)
-      ("sU" dape-info-update)
-      ("sd" dape-stack-select-down)
-      ("sR" dape-repl)
-      ("bb" dape-breakpoint-toggle)
-      ("ba" dape--breakpoint-place)
-      ("bd" dape-breakpoint-remove-at-point)
-      ("bc" dape-breakpoint-expression)
-      ("bl" dape-breakpoint-log)
-      ("dd" dape)
-      ("dw" dape-watch-dwim)
-      ("ee" dape-evaluate-expression)
-      ("dx" mrf/dape-end-debug-session)
-      ("dX" mrf/dape-delete-all-debug-sessions)
-      ("x" nil "exit Hydra" :color yellow)
-      ("q" mrf/dape-end-debug-session "quit" :color blue)
-      ("Q" mrf/dape-delete-all-debug-sessions :color red))  
-
+  	("n" dape-next)
+  	("i" dape-step-in)
+  	("o" dape-step-out)
+  	("." dape-next)
+  	("/" dape-step-in)
+  	("," dape-step-out)
+  	("c" dape-continue)
+  	("r" dape-restart)
+  	("si" dape-info)
+  	("st" dape-select-thread)
+  	("sf" dape-select-stack)
+  	("su" dape-stack-select-up)
+  	("sU" dape-info-update)
+  	("sd" dape-stack-select-down)
+  	("sR" dape-repl)
+  	("bb" dape-breakpoint-toggle)
+  	("ba" dape--breakpoint-place)
+  	("bd" dape-breakpoint-remove-at-point)
+  	("bc" dape-breakpoint-expression)
+  	("bl" dape-breakpoint-log)
+  	("dd" dape)
+  	("dw" dape-watch-dwim)
+  	("ee" dape-evaluate-expression)
+  	("dx" mrf/dape-end-debug-session)
+  	("dX" mrf/dape-delete-all-debug-sessions)
+  	("x" nil "exit Hydra" :color yellow)
+  	("q" mrf/dape-end-debug-session "quit" :color blue)
+  	("Q" mrf/dape-delete-all-debug-sessions :color red)))
+  
  #+end_src
 
 ** DAP for C/C++
@@ -2684,11 +2747,11 @@ This is meant to be evaluated and run once. Calling this function will clone the
   	:when (equal debug-adapter 'enable-dap-mode)
   	:disabled
           :after dap-mode
-          :straight (dap-lldb :type git :host github :repo "emacs-lsp/dap-mode")
+          :ensure (:host github :repo "emacs-lsp/dap-mode")
   	:config
   	(use-package dap-lldb
   	    :disabled
-              :straight (dap-lldb :type git :host github :repo "emacs-lsp/dap-mode")
+              :ensure (:host github :repo "emacs-lsp/dap-mode")
               :after dap-mode
               :config
               (dap-register-debug-provider "lldb-dap" 'mrf/populate-lldb-start-file-args)
@@ -2708,7 +2771,7 @@ This is meant to be evaluated and run once. Calling this function will clone the
 
   (use-package dap-python
       :when (equal debug-adapter 'enable-dap-mode)
-      :straight (dap-python :type git :host github :repo "emacs-lsp/dap-mode")
+      :ensure (:host github :repo "emacs-lsp/dap-mode")
       :after dap-mode
       :config
       (setq dap-python-executable "python3") ;; Otherwise it looks for 'python' else error.
@@ -2747,18 +2810,16 @@ This is meant to be evaluated and run once. Calling this function will clone the
       :disabled
       :defer t
       :hook ((typescript-mode . my-setup-dap-node)
-  	      (js2-mode . my-setup-dap-node))	      
-      :straight (dap-node :type git
-  		  :flavor melpa
-  		  :files (:defaults "icons" "dap-mode-pkg.el")
-  		  :host github
-  		  :repo "emacs-lsp/dap-mode")
+                (js2-mode . my-setup-dap-node))         
+      :ensure (:host github
+               :repo "emacs-lsp/dap-mode"
+               :files (:defaults "icons" "dap-mode-pkg.el"))
       :after dap-mode
       :config
       (require 'dap-firefox)
       (dap-register-debug-template
-  	"Launch index.ts"
-  	(list :type "node"
+          "Launch index.ts"
+          (list :type "node"
               :request "launch"
               :program "${workspaceFolder}/index.ts"
               :dap-compilation "npx tsc index.ts --outdir dist --sourceMap true"
@@ -2799,8 +2860,9 @@ This is meant to be evaluated and run once. Calling this function will clone the
       (dap-ui-show-many-windows)
       (dap-debug))
 
-  (defhydra dap-hydra (:color pink :hint nil :foreign-keys run)
-      "
+  (defun define-dap-hydra ()
+      (defhydra dap-hydra (:color pink :hint nil :foreign-keys run)
+  	"
     ^Stepping^          ^Switch^                 ^Breakpoints^          ^Debug^                     ^Eval
     ^^^^^^^^----------------------------------------------------------------------------------------------------------------
     _._: Next           _ss_: Session            _bb_: Toggle           _dd_: Debug                 _ee_: Eval
@@ -2813,26 +2875,25 @@ This is meant to be evaluated and run once. Calling this function will clone the
                       _sS_: List sessions
                       _sR_: Session Repl
   "
-      ("n" dap-next)    ("i" dap-step-in)    ("o" dap-step-out)   ("." dap-next)
-      ("/" dap-step-in) ("," dap-step-out)   ("c" dap-continue)   ("r" dap-restart-frame)
-      
-      ("ss" dap-switch-session) ("st" dap-switch-thread)    ("sf" dap-switch-stack-frame)
-      ("su" dap-up-stack-frame) ("sd" dap-down-stack-frame) ("sl" dap-ui-locals)
-      ("sb" dap-ui-breakpoints) ("sR" dap-ui-repl)          ("sS" dap-ui-sessions)
-      
-      ("bb" dap-breakpoint-toggle)    ("ba" dap-breakpoint-add)           ("bd" dap-breakpoint-delete)
-      ("bc" dap-breakpoint-condition) ("bh" dap-breakpoint-hit-condition) ("bl" dap-breakpoint-log-message)
-      
-      ("dd" dap-debug)      ("dr" dap-debug-recent) ("ds" dap-debug-restart)
-      ("dl" dap-debug-last) ("de" dap-debug-edit-template)
-      
-      ("ee" dap-eval) ("ea" dap-ui-expressions-add) ("er" dap-eval-region) ("es" dap-eval-thing-at-point)
-      
-      ("dx" mrf/end-debug-session) ("dX" mrf/delete-all-debug-sessions)
-      
-      ("x" nil "exit Hydra" :color yellow) ("q" mrf/end-debug-session "quit" :color blue)
-      ("Q" mrf/delete-all-debug-sessions :color red))  
-
+  	("n" dap-next)    ("i" dap-step-in)    ("o" dap-step-out)   ("." dap-next)
+  	("/" dap-step-in) ("," dap-step-out)   ("c" dap-continue)   ("r" dap-restart-frame)
+  	
+  	("ss" dap-switch-session) ("st" dap-switch-thread)    ("sf" dap-switch-stack-frame)
+  	("su" dap-up-stack-frame) ("sd" dap-down-stack-frame) ("sl" dap-ui-locals)
+  	("sb" dap-ui-breakpoints) ("sR" dap-ui-repl)          ("sS" dap-ui-sessions)
+  	
+  	("bb" dap-breakpoint-toggle)    ("ba" dap-breakpoint-add)           ("bd" dap-breakpoint-delete)
+  	("bc" dap-breakpoint-condition) ("bh" dap-breakpoint-hit-condition) ("bl" dap-breakpoint-log-message)
+  	
+  	("dd" dap-debug)      ("dr" dap-debug-recent) ("ds" dap-debug-restart)
+  	("dl" dap-debug-last) ("de" dap-debug-edit-template)
+  	
+  	("ee" dap-eval) ("ea" dap-ui-expressions-add) ("er" dap-eval-region) ("es" dap-eval-thing-at-point)
+  	
+  	("dx" mrf/end-debug-session) ("dX" mrf/delete-all-debug-sessions)
+  	
+  	("x" nil "exit Hydra" :color yellow) ("q" mrf/end-debug-session "quit" :color blue)
+  	("Q" mrf/delete-all-debug-sessions :color red)))
  #+end_src
 
 ** RealGUD
@@ -2848,12 +2909,8 @@ Since Realgud is options (in our configuratrion), we add it's keybindings condit
   (use-package realgud-lldb
       :disabled
       :after realgud
-      :straight (realgud-lldb
-                    :type git
-                    :flavor melpa
-                    :files (:defaults ("lldb" "lldb/*.el") "realgud-lldb-pkg.el")
-                    :host github
-                    :repo "realgud/realgud-lldb"))
+      :ensure (:files (:defaults ("lldb" "lldb/*.el") "realgud-lldb-pkg.el")
+               :host github :repo "realgud/realgud-lldb"))
 
 #+end_src
 
@@ -2935,31 +2992,29 @@ Ivy is an excellent completion framework for Emacs.  It provides a minimal yet p
   ;;; --------------------------------------------------------------------------
   ;;; Swiper and IVY mode
 
-  (when (equal completion-handler 'comphand-ivy-counsel)
-      (use-package ivy
-          :defer t
-          :diminish I
-          :bind (("C-s" . swiper)
-                    :map ivy-minibuffer-map
+  (use-package ivy
+      :when (equal completion-handler 'comphand-ivy-counsel)
+      :bind (("C-s" . swiper)
+                :map ivy-minibuffer-map
             ;;; ("TAB" . ivy-alt-done)
-                    ("C-l" . ivy-alt-done)
-                    ("C-j" . ivy-next-line)
-                    ("C-k" . ivy-previous-line)
-                    :map ivy-switch-buffer-map
-                    ("C-k" . ivy-previous-line)
-                    ("C-l" . ivy-done)
-                    ("C-d" . ivy-switch-buffer-kill)
-                    :map ivy-reverse-i-search-map
-                    ("C-k" . ivy-previous-line)
-                    ("C-d" . ivy-reverse-i-search-kill))
-          :custom
-          (enable-recursive-minibuffers t)
-          (ivy-use-virtual-buffers t)
-          :config
-  	(ivy-mode 1)
-  	(setq ivy-re-builders-alist '((t . orderless-ivy-re-builder)))
-  	(add-to-list 'ivy-highlight-functions-alist
-  	    '(orderless-ivy-re-builder . orderless-ivy-highlight))))
+                ("C-l" . ivy-alt-done)
+                ("C-j" . ivy-next-line)
+                ("C-k" . ivy-previous-line)
+                :map ivy-switch-buffer-map
+                ("C-k" . ivy-previous-line)
+                ("C-l" . ivy-done)
+                ("C-d" . ivy-switch-buffer-kill)
+                :map ivy-reverse-i-search-map
+                ("C-k" . ivy-previous-line)
+                ("C-d" . ivy-reverse-i-search-kill))
+      :custom
+      (enable-recursive-minibuffers t)
+      (ivy-use-virtual-buffers t)
+      :config
+      (ivy-mode 1)
+      (setq ivy-re-builders-alist '((t . orderless-ivy-re-builder)))
+      (add-to-list 'ivy-highlight-functions-alist
+  	'(orderless-ivy-re-builder . orderless-ivy-highlight)))
 
 #+end_src
 
@@ -2970,21 +3025,21 @@ Ivy-yasnippet lets you preview yasnippet snippets with ivy.
 
 #+begin_src emacs-lisp :tangle "emacs-config-modules/config-completion.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
-  
-  (when (equal completion-handler 'comphand-ivy-counsel)
-      (use-package ivy-rich
-  	:after ivy
-  	:init
-  	(ivy-rich-mode 1)
-  	:config
-  	(setcdr (assq t ivy-format-functions-alist) #'ivy-format-function-line))
 
-      (use-package ivy-yasnippet
-  	:after (:any yasnippet ivy)
-  	:defer t
-  	:straight (ivy-yasnippet :type git
-                        :flavor melpa :host github
-                        :repo "mkcms/ivy-yasnippet")))
+  (use-package ivy-rich
+      :when (equal completion-handler 'comphand-ivy-counsel)
+      :after ivy
+      :init
+      (ivy-rich-mode 1)
+      :config
+      (setcdr (assq t ivy-format-functions-alist) #'ivy-format-function-line))
+
+  (use-package ivy-yasnippet
+      :when (equal completion-handler 'comphand-ivy-counsel)
+      :after (:any yasnippet ivy)
+      :defer t
+      :ensure (:host github
+                  :repo "mkcms/ivy-yasnippet"))
 
 #+end_src
 
@@ -2995,8 +3050,9 @@ Swiper is an alternative to isearch that uses Ivy to show an overview of all mat
 #+begin_src emacs-lisp :tangle "emacs-config-modules/config-completion.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
 
-  (when (equal completion-handler 'comphand-ivy-counsel)
-      (use-package swiper))
+  (use-package swiper
+      :when (equal completion-handler 'comphand-ivy-counsel)
+      :after ivy)
 
 #+end_src
 
@@ -3008,19 +3064,19 @@ Counsel takes this further, providing versions of common Emacs commands that are
 #+begin_src emacs-lisp :tangle "emacs-config-modules/config-completion.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
 
-  (when (equal completion-handler 'comphand-ivy-counsel)
-      (use-package counsel
-          :after ivy
-          :bind (   ("C-M-j" . 'counsel-switch-buffer)
-                    ("M-x" . 'counsel-M-x)
-                    ("C-x C-f" . 'counsel-find-file)
-                    ("C-c C-r" . 'ivy-resume)
-                    :map minibuffer-local-map
-                    ("C-r" . 'counsel-minibuffer-history))
-          :custom
-          (counsel-linux-app-format-function #'counsel-linux-app-format-function-name-only)
-          :config
-          (counsel-mode 1)))
+  (use-package counsel
+      :when (equal completion-handler 'comphand-ivy-counsel)
+      :after ivy
+      :bind (   ("C-M-j" . 'counsel-switch-buffer)
+                ("M-x" . 'counsel-M-x)
+                ("C-x C-f" . 'counsel-find-file)
+                ("C-c C-r" . 'ivy-resume)
+                :map minibuffer-local-map
+                ("C-r" . 'counsel-minibuffer-history))
+      :custom
+      (counsel-linux-app-format-function #'counsel-linux-app-format-function-name-only)
+      :config
+      (counsel-mode 1))
   
 #+end_src
 
@@ -3030,13 +3086,13 @@ Counsel takes this further, providing versions of common Emacs commands that are
 #+begin_src emacs-lisp :tangle "emacs-config-modules/config-completion.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
 
-  (when (equal completion-handler 'comphand-ivy-counsel)
-      (use-package ivy-prescient
-          :after ivy
-          :custom
-          (prescient-persist-mode t)
-          (ivy-prescient-mode t)
-          (ivy-prescient-enable-filtering t)))
+  (use-package ivy-prescient
+      :when (equal completion-handler 'comphand-ivy-counsel)
+      :after ivy
+      :custom
+      (prescient-persist-mode t)
+      (ivy-prescient-mode t)
+      (ivy-prescient-enable-filtering t))
 
 #+end_src
 
@@ -3048,41 +3104,39 @@ Corfu enhances in-buffer completion with a small completion popup. The current c
   ;;; --------------------------------------------------------------------------
 
   ;;;; Code Completion
-  (when enable-corfu
-      (use-package corfu
-          ;; Optional customizations
-          :custom
-          (corfu-cycle t)                 ; Allows cycling through candidates
-          (corfu-auto t)                  ; Enable auto completion
-          (corfu-auto-prefix 2)
-          (corfu-auto-delay 0.8)
-          (corfu-popupinfo-delay '(0.5 . 0.2))
-          (corfu-preview-current 'insert) ; insert previewed candidate
-          (corfu-preselect 'prompt)
-          (corfu-on-exact-match nil)      ; Don't auto expand tempel snippets
-          ;; Optionally use TAB for cycling, default is `corfu-complete'.
-          :bind (:map corfu-map
-                    ("M-SPC"      . corfu-insert-separator)
-                    ("TAB"        . corfu-next)
-                    ([tab]        . corfu-next)
-                    ("S-TAB"      . corfu-previous)
-                    ([backtab]    . corfu-previous)
-                    ("S-<return>" . corfu-insert)
-                    ("RET"        . nil))
-          :init
-          (global-corfu-mode)
-          (corfu-history-mode)
-          (corfu-popupinfo-mode) ; Popup completion info
-          :config
-          (add-hook 'eshell-mode-hook
-              (lambda () (setq-local corfu-quit-at-boundary t
-                             corfu-quit-no-match t
-                             corfu-auto nil)
-                  (corfu-mode))))
-
-      (use-package corfu-prescient
-          :after corfu)
-      )
+  (use-package corfu
+      :when enable-corfu
+      ;; Optional customizations
+      :custom
+      (corfu-cycle t)                 ; Allows cycling through candidates
+      (corfu-auto t)                  ; Enable auto completion
+      (corfu-auto-prefix 2)
+      (corfu-auto-delay 0.8)
+      (corfu-popupinfo-delay '(0.5 . 0.2))
+      (corfu-preview-current 'insert) ; insert previewed candidate
+      (corfu-preselect 'prompt)
+      (corfu-on-exact-match nil)      ; Don't auto expand tempel snippets
+      ;; Optionally use TAB for cycling, default is `corfu-complete'.
+      :bind (:map corfu-map
+                ("M-SPC"      . corfu-insert-separator)
+                ("TAB"        . corfu-next)
+                ([tab]        . corfu-next)
+                ("S-TAB"      . corfu-previous)
+                ([backtab]    . corfu-previous)
+                ("S-<return>" . corfu-insert)
+                ("RET"        . nil))
+      :init
+      (global-corfu-mode)
+      (corfu-history-mode)
+      (corfu-popupinfo-mode) ; Popup completion info
+      :config
+  	  (use-package corfu-prescient
+          :after corfu))
+      (add-hook 'eshell-mode-hook
+          (lambda () (setq-local corfu-quit-at-boundary t
+                         corfu-quit-no-match t
+                         corfu-auto nil)
+              (corfu-mode)))
 
 #+end_src
 
@@ -3093,43 +3147,30 @@ Vertico provides a performant and minimalistic vertical completion UI based on t
 #+begin_src emacs-lisp :tangle "emacs-config-modules/config-completion.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
 
-  (when (equal completion-handler 'comphand-vertico)
-      (use-package vertico
-          :demand t   ; Otherwise won't get loaded immediately
-          :straight (vertico :files (:defaults "extensions/*") ; Special recipe to load extensions conveniently
-                        :includes (vertico-indexed
-                                      vertico-flat
-                                      vertico-grid
-                                      vertico-mouse
-                                      vertico-quick
-                                      vertico-buffer
-                                      vertico-repeat
-                                      vertico-reverse
-                                      vertico-directory
-                                      vertico-multiform
-                                      vertico-unobtrusive
-                                      ))
-          :config
-          (vertico-mode)
-          (recentf-mode t)
-          (vertico-multiform-mode)
-          (vertico-count 13)
-          (vertico-cycle nil)
-                                          ; Clean up file path when typing
-          :hook ((rfn-eshadow-update-overlay . vertico-directory-tidy)
-                                          ; Make sure vertico state is saved
-                    (minibuffer-setup . vertico-repeat-save)))
-
+  (use-package vertico
+      :when (equal completion-handler 'comphand-vertico)
+      :wait t
+      :demand t   ; Otherwise won't get loaded immediately
+      :ensure (:repo "minad/vertico" :files (:defaults "extensions/vertico-*.el") :fetcher github)
+      :config
+      (vertico-mode)
+      (recentf-mode t)
+      (vertico-multiform-mode)
+      (vertico-count 13)
+      (vertico-cycle nil)
       (use-package vertico-prescient
           :after vertico)
-
       (use-package vertico-posframe
-          :straight t
+  	:after vertico
           :custom
           (vertico-posframe-parameters
               '((left-fringe . 8)
-                   (right-fringe . 8)))))
-  
+                   (right-fringe . 8))))
+      ;; Clean up file path when typing
+      :hook ((rfn-eshadow-update-overlay . vertico-directory-tidy)
+  	      ;; Make sure vertico state is saved
+                (minibuffer-setup . vertico-repeat-save)))
+
 #+end_src
 
 *** Marginalia
@@ -3139,13 +3180,13 @@ Marginalia are marks or annotations placed at the margin of the page of a book  
 #+begin_src emacs-lisp :tangle "emacs-config-modules/config-completion.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
 
-  (when (equal completion-handler 'comphand-vertico)
-      (use-package marginalia
-          :custom
-          (marginalia-max-relative-age 0)
-          (marginalia-align 'right)
-          :config
-          (marginalia-mode t)))
+  (use-package marginalia
+      :when (equal completion-handler 'comphand-vertico)
+      :custom
+      (marginalia-max-relative-age 0)
+      (marginalia-align 'right)
+      :config
+      (marginalia-mode t))
 
 #+end_src
 
@@ -3156,133 +3197,132 @@ Consult provides search and navigation commands based on the Emacs completion fu
   ;;; --------------------------------------------------------------------------
   ;; Example configuration for Consult
 
-  (when (equal completion-handler 'comphand-vertico)
-      (use-package consult
-          :straight t
-          ;; Replace bindings. Lazily loaded due by `use-package'.
-          :bind (;; C-c bindings in `mode-specific-map'
-                    ("C-c M-x" . consult-mode-command)
-                    ("C-c h" . consult-history)
-                    ("C-c k" . consult-kmacro)
-                    ("C-c m" . consult-man)
-                    ("C-c i" . consult-info)
-                    ([remap Info-search] . consult-info)
-                    ;; C-x bindings in `ctl-x-map'
-                    ("C-x M-:" . consult-complex-command)     ;; orig. repeat-complex-command
-                    ("C-x b" . consult-buffer)                ;; orig. switch-to-buffer
-                    ("C-x 4 b" . consult-buffer-other-window) ;; orig. switch-to-buffer-other-window
-                    ("C-x 5 b" . consult-buffer-other-frame)  ;; orig. switch-to-buffer-other-frame
-                    ("C-x t b" . consult-buffer-other-tab)    ;; orig. switch-to-buffer-other-tab
-                    ("C-x r b" . consult-bookmark)            ;; orig. bookmark-jump
-                    ("C-x p b" . consult-project-buffer)      ;; orig. project-switch-to-buffer
-                    ;; Custom M-# bindings for fast register access
-                    ("M-#" . consult-register-load)
-                    ("M-'" . consult-register-store)          ;; orig. abbrev-prefix-mark (unrelated)
-                    ("C-M-#" . consult-register)
-                    ;; Other custom bindings
-                    ("M-y" . consult-yank-pop)                ;; orig. yank-pop
-                    ;; M-g bindings in `goto-map'
-                    ("M-g e" . consult-compile-error)
-                    ;; ("M-g f" . consult-flymake)               ;; Alternative: consult-flycheck
-                    ("M-g g" . consult-goto-line)             ;; orig. goto-line
-                    ("M-g M-g" . consult-goto-line)           ;; orig. goto-line
-                    ("M-g o" . consult-outline)               ;; Alternative: consult-org-heading
-                    ("M-g m" . consult-mark)
-                    ("M-g k" . consult-global-mark)
-                    ("M-g i" . consult-imenu)
-                    ("M-g I" . consult-imenu-multi)
-                    ;; M-s bindings in `search-map'
-                    ("M-s d" . consult-find)                  ;; Alternative: consult-fd
-                    ("M-s c" . consult-locate)
-                    ("M-s g" . consult-grep)
-                    ("M-s G" . consult-git-grep)
-                    ("M-s r" . consult-ripgrep)
-                    ("M-s l" . consult-line)
-                    ("M-s L" . consult-line-multi)
-                    ("M-s k" . consult-keep-lines)
-                    ("M-s u" . consult-focus-lines)
-                    ;; Isearch integration
-                    ("M-s e" . consult-isearch-history)
-                    :map isearch-mode-map
-                    ("M-e" . consult-isearch-history)         ;; orig. isearch-edit-string
-                    ("M-s e" . consult-isearch-history)       ;; orig. isearch-edit-string
-                    ("M-s l" . consult-line)                  ;; needed by consult-line to detect isearch
-                    ("M-s L" . consult-line-multi)            ;; needed by consult-line to detect isearch
-                    ;; Minibuffer history
-                    :map minibuffer-local-map
-                    ("M-s" . consult-history)                 ;; orig. next-matching-history-element
-                    ("M-r" . consult-history))                ;; orig. previous-matching-history-element
+  (use-package consult
+      :when (equal completion-handler 'comphand-vertico)
+      ;; Replace bindings. Lazily loaded due by `use-package'.
+      :bind (;; C-c bindings in `mode-specific-map'
+                ("C-c M-x" . consult-mode-command)
+                ("C-c h" . consult-history)
+                ("C-c k" . consult-kmacro)
+                ("C-c m" . consult-man)
+                ("C-c i" . consult-info)
+                ([remap Info-search] . consult-info)
+                ;; C-x bindings in `ctl-x-map'
+                ("C-x M-:" . consult-complex-command)     ;; orig. repeat-complex-command
+                ("C-x b" . consult-buffer)                ;; orig. switch-to-buffer
+                ("C-x 4 b" . consult-buffer-other-window) ;; orig. switch-to-buffer-other-window
+                ("C-x 5 b" . consult-buffer-other-frame)  ;; orig. switch-to-buffer-other-frame
+                ("C-x t b" . consult-buffer-other-tab)    ;; orig. switch-to-buffer-other-tab
+                ("C-x r b" . consult-bookmark)            ;; orig. bookmark-jump
+                ("C-x p b" . consult-project-buffer)      ;; orig. project-switch-to-buffer
+                ;; Custom M-# bindings for fast register access
+                ("M-#" . consult-register-load)
+                ("M-'" . consult-register-store)          ;; orig. abbrev-prefix-mark (unrelated)
+                ("C-M-#" . consult-register)
+                ;; Other custom bindings
+                ("M-y" . consult-yank-pop)                ;; orig. yank-pop
+                ;; M-g bindings in `goto-map'
+                ("M-g e" . consult-compile-error)
+                ;; ("M-g f" . consult-flymake)               ;; Alternative: consult-flycheck
+                ("M-g g" . consult-goto-line)             ;; orig. goto-line
+                ("M-g M-g" . consult-goto-line)           ;; orig. goto-line
+                ("M-g o" . consult-outline)               ;; Alternative: consult-org-heading
+                ("M-g m" . consult-mark)
+                ("M-g k" . consult-global-mark)
+                ("M-g i" . consult-imenu)
+                ("M-g I" . consult-imenu-multi)
+                ;; M-s bindings in `search-map'
+                ("M-s d" . consult-find)                  ;; Alternative: consult-fd
+                ("M-s c" . consult-locate)
+                ("M-s g" . consult-grep)
+                ("M-s G" . consult-git-grep)
+                ("M-s r" . consult-ripgrep)
+                ("M-s l" . consult-line)
+                ("M-s L" . consult-line-multi)
+                ("M-s k" . consult-keep-lines)
+                ("M-s u" . consult-focus-lines)
+                ;; Isearch integration
+                ("M-s e" . consult-isearch-history)
+                :map isearch-mode-map
+                ("M-e" . consult-isearch-history)         ;; orig. isearch-edit-string
+                ("M-s e" . consult-isearch-history)       ;; orig. isearch-edit-string
+                ("M-s l" . consult-line)                  ;; needed by consult-line to detect isearch
+                ("M-s L" . consult-line-multi)            ;; needed by consult-line to detect isearch
+                ;; Minibuffer history
+                :map minibuffer-local-map
+                ("M-s" . consult-history)                 ;; orig. next-matching-history-element
+                ("M-r" . consult-history))                ;; orig. previous-matching-history-element
 
-          ;; Enable automatic preview at point in the *Completions* buffer. This is
-          ;; relevant when you use the default completion UI.
-          :hook (completion-list-mode . consult-preview-at-point-mode)
+      ;; Enable automatic preview at point in the *Completions* buffer. This is
+      ;; relevant when you use the default completion UI.
+      :hook (completion-list-mode . consult-preview-at-point-mode)
 
-          ;; The :init configuration is always executed (Not lazy)
-          :init
+      ;; The :init configuration is always executed (Not lazy)
+      :init
 
-          ;; Optionally configure the register formatting. This improves the register
-          ;; preview for `consult-register', `consult-register-load',
-          ;; `consult-register-store' and the Emacs built-ins.
-          (setq register-preview-delay 0.5
-              register-preview-function #'consult-register-format)
+      ;; Optionally configure the register formatting. This improves the register
+      ;; preview for `consult-register', `consult-register-load',
+      ;; `consult-register-store' and the Emacs built-ins.
+      (setq register-preview-delay 0.5
+          register-preview-function #'consult-register-format)
 
-          ;; Optionally tweak the register preview window.
-          ;; This adds thin lines, sorting and hides the mode line of the window.
-          (advice-add #'register-preview :override #'consult-register-window)
+      ;; Optionally tweak the register preview window.
+      ;; This adds thin lines, sorting and hides the mode line of the window.
+      (advice-add #'register-preview :override #'consult-register-window)
 
-          ;; Use Consult to select xref locations with preview
-          (setq xref-show-xrefs-function #'consult-xref
-              xref-show-definitions-function #'consult-xref)
+      ;; Use Consult to select xref locations with preview
+      (setq xref-show-xrefs-function #'consult-xref
+          xref-show-definitions-function #'consult-xref)
 
-          ;; Configure other variables and modes in the :config section,
-          ;; after lazily loading the package.
-          :config
+      ;; Configure other variables and modes in the :config section,
+      ;; after lazily loading the package.
+      :config
 
-          ;; Optionally configure preview. The default value
-          ;; is 'any, such that any key triggers the preview.
-          ;; (setq consult-preview-key 'any)
-          ;; (setq consult-preview-key "M-.")
-          ;; (setq consult-preview-key '("S-<down>" "S-<up>"))
-          ;; For some commands and buffer sources it is useful to configure the
-          ;; :preview-key on a per-command basis using the `consult-customize' macro.
-          (consult-customize
-              consult-theme :preview-key '(:debounce 0.2 any)
-              consult-ripgrep consult-git-grep consult-grep
-              consult-bookmark consult-recent-file consult-xref
-              consult--source-bookmark consult--source-file-register
-              consult--source-recent-file consult--source-project-recent-file
-              ;; :preview-key "M-."
-              :preview-key '(:debounce 0.4 any))
+      ;; Optionally configure preview. The default value
+      ;; is 'any, such that any key triggers the preview.
+      ;; (setq consult-preview-key 'any)
+      ;; (setq consult-preview-key "M-.")
+      ;; (setq consult-preview-key '("S-<down>" "S-<up>"))
+      ;; For some commands and buffer sources it is useful to configure the
+      ;; :preview-key on a per-command basis using the `consult-customize' macro.
+      (consult-customize
+          consult-theme :preview-key '(:debounce 0.2 any)
+          consult-ripgrep consult-git-grep consult-grep
+          consult-bookmark consult-recent-file consult-xref
+          consult--source-bookmark consult--source-file-register
+          consult--source-recent-file consult--source-project-recent-file
+          ;; :preview-key "M-."
+          :preview-key '(:debounce 0.4 any))
 
-          ;; Optionally configure the narrowing key.
-          ;; Both < and C-+ work reasonably well.
-          (setq consult-narrow-key "<") ;; "C-+"
+      ;; Optionally configure the narrowing key.
+      ;; Both < and C-+ work reasonably well.
+      (setq consult-narrow-key "<")) ;; "C-+"
 
-          ;; Optionally make narrowing help available in the minibuffer.
-          ;; You may want to use `embark-prefix-help-command' or which-key instead.
-          ;; (define-key consult-narrow-map (vconcat consult-narrow-key "?") #'consult-narrow-help)
+      ;; Optionally make narrowing help available in the minibuffer.
+      ;; You may want to use `embark-prefix-help-command' or which-key instead.
+      ;; (define-key consult-narrow-map (vconcat consult-narrow-key "?") #'consult-narrow-help)
 
-          ;; By default `consult-project-function' uses `project-root' from project.el.
-          ;; Optionally configure a different project root function.
+      ;; By default `consult-project-function' uses `project-root' from project.el.
+      ;; Optionally configure a different project root function.
     ;;;; 1. project.el (the default)
-          ;; (setq consult-project-function #'consult--default-project--function)
+      ;; (setq consult-project-function #'consult--default-project--function)
     ;;;; 2. vc.el (vc-root-dir)
-          ;; (setq consult-project-function (lambda (_) (vc-root-dir)))
+      ;; (setq consult-project-function (lambda (_) (vc-root-dir)))
     ;;;; 3. locate-dominating-file
-          ;; (setq consult-project-function (lambda (_) (locate-dominating-file "." ".git")))
+      ;; (setq consult-project-function (lambda (_) (locate-dominating-file "." ".git")))
     ;;;; 4. projectile.el (projectile-project-root)
-          ;; (autoload 'projectile-project-root "projectile")
-          ;; (setq consult-project-function (lambda (_) (projectile-project-root)))
+      ;; (autoload 'projectile-project-root "projectile")
+      ;; (setq consult-project-function (lambda (_) (projectile-project-root)))
     ;;;; 5. No project support
-          ;; (setq consult-project-function nil)
-          ))
+      ;; (setq consult-project-function nil)
 #+end_src
 
 #+begin_src emacs-lisp :tangle "emacs-config-modules/config-completion.el" :mkdirp yes
 
+  (elpaca-process-queues)
   (provide 'config-completion)
   ;;; config-completion.el ends here.
-  
+
 #+end_src
 
 
@@ -3292,18 +3332,19 @@ Consult provides search and navigation commands based on the Emacs completion fu
 This is more support for a language rather than a langage itself
 
 #+begin_src emacs-lisp :tangle "emacs-config-modules/config-lang-support.el" :mkdirp yes
-  ;;; --------------------------------------------------------------------------
+    ;;; --------------------------------------------------------------------------
 
   (use-package flycheck
-      :defer t
+      :unless (equal custom-ide 'custom-ide-elpy)
+      :diminish FlM
+      :ensure (:host github :repo "flycheck/flycheck")
       :config
+      (eval-after-load 'flycheck
+  	'(flycheck-package-setup))
       (global-flycheck-mode))
 
   (use-package flycheck-package
       :after flycheck)
-
-  (eval-after-load 'flycheck
-      '(flycheck-package-setup))
 
 #+end_src
 
@@ -3341,9 +3382,8 @@ Tree-sitter is a parser generator tool and an incremental parsing library. It ca
       :after tree-sitter)
 
   (use-package ts-fold
-      :straight (ts-fold :type git
-                    :host github
-                    :repo "emacs-tree-sitter/ts-fold")
+      :after tree-sitter
+      :ensure (:host github :repo "emacs-tree-sitter/ts-fold")
       :bind (("C-<tab>" . ts-fold-toggle)
                 ("C-c f"   . ts-fold-open-all)))
 
@@ -3353,10 +3393,10 @@ Tree-sitter is a parser generator tool and an incremental parsing library. It ca
 [[https://magit.vc/][Magit]] is the one of the best Git interface implementations .  Common Git operations are easy to execute quickly using Magit's command panel system.
 
 #+begin_src emacs-lisp :tangle "emacs-config-modules/config-lang-support.el" :mkdirp yes
-  ;;; --------------------------------------------------------------------------
+    ;;; --------------------------------------------------------------------------
 
   (use-package magit
-      :defer t
+      :after (:any python-mode c-mode c++-mode rust-mode)
       :commands (magit-status magit-get-current-branch)
       ;; :custom
       ;;  (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1)
@@ -3369,13 +3409,20 @@ Tree-sitter is a parser generator tool and an incremental parsing library. It ca
   (use-package forge
       :after magit)
 
+  (use-package treemacs-magit
+      :after treemacs magit)
+
+
+
 #+end_src
 
 #+begin_src emacs-lisp :tangle "emacs-config-modules/config-lang-support.el" :mkdirp yes
 
+  (elpaca-process-queues)
+  
   (provide 'config-lang-support)
   ;;; config-lang-support.el ends here.
-  
+
 #+end_src
 
 
@@ -3506,25 +3553,18 @@ RGBDS is a compiler that has been around quite a long time (since 1997). It supp
 #+begin_src emacs-lisp :tangle "emacs-config-modules/config-lang-c.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
 
-  (when enable-gb-dev
-      (use-package z80-mode
-          :straight (z80-mode
-                        :type git
-                        :host github
-                        :repo "SuperDisk/z80-mode"))
+  (use-package z80-mode
+      :when enable-gb-dev
+      :ensure (:host github :repo "SuperDisk/z80-mode"))
 
-      (use-package mwim
-          :straight (mwim
-                        :type git
-                        :flavor melpa
-                        :host github
-                        :repo "alezost/mwim.el"))
+  (use-package mwim
+      :when enable-gb-dev
+      :ensure (:host github :repo "alezost/mwim.el"))
 
-      (use-package rgbds-mode
-          :after mwim
-          :straight (rgbds-mode
-                        :type git :host github
-                        :repo "japanoise/rgbds-mode")))
+  (use-package rgbds-mode
+      :when enable-gb-dev
+      :after mwim
+      :ensure (:host github :repo "japanoise/rgbds-mode"))
 
 #+end_src
 
@@ -3638,12 +3678,11 @@ This is the standard python mode setup.
       (set-fill-column 80))
 
   (use-package python-mode
-      :defer t
       :diminish Py
       :config
-      :hook (python-mode . mrf/python-mode-triggered) )
-
-  (add-to-list 'auto-mode-alist '("\\.py\\'" . mrf/load-python-file-hook))
+      :hook (python-mode . mrf/python-mode-triggered)
+      :config
+      (add-to-list 'auto-mode-alist '("\\.py\\'" . mrf/load-python-file-hook)))
 
   (use-package blacken
       :after python) ;Format Python file upon save.
@@ -3661,7 +3700,6 @@ autopep8 automatically formats Python code to conform to the `PEP 8` style guide
   ;;; --------------------------------------------------------------------------
 
   (use-package py-autopep8
-      :defer
       :after (:any python-mode python)
       :hook ((python-mode) . py-autopep8-mode))
 
@@ -3691,19 +3729,18 @@ autopep8 automatically formats Python code to conform to the `PEP 8` style guide
 #+begin_src emacs-lisp :tangle "emacs-config-modules/config-lang-python.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
 
-  (when (equal debug-adapter 'enable-dap-mode)
-      ;; (dolist (m (list python-mode-map typescript-ts-mode-map c-mode-map c++-mode-map))
-      (use-package dap
-          :defer t
-          :bind (:map prog-mode-map
-                    ("C-c ." . dap-hydra/body))))
+  ;; (dolist (m (list python-mode-map typescript-ts-mode-map c-mode-map c++-mode-map))
+  (use-package dap
+      :when (equal debug-adapter 'enable-dap-mode)
+      :bind (:map prog-mode-map
+                ("C-c ." . dap-hydra/body)))
 
-  (when (equal debug-adapter 'enable-dape)
-      ;; (dolist (m (list python-mode-map typescript-ts-mode-map c-mode-map c++-mode-map))
-      (use-package dape
-          :defer t
-          :bind (:map prog-mode-map
-                    ("C-c ." . dape-hydra/body))))
+
+  ;; (dolist (m (list python-mode-map typescript-ts-mode-map c-mode-map c++-mode-map))
+  (use-package dape
+      :when (equal debug-adapter 'enable-dape)
+      :bind (:map prog-mode-map
+                ("C-c ." . dape-hydra/body)))
 
 #+end_src
 
@@ -3726,22 +3763,21 @@ We use Pyvenv-auto is a package that automatically changes to the Python virtual
   ;;; --------------------------------------------------------------------------
   
   (use-package pydoc
-      :defer t
-      :straight (pydoc :type git :flavor melpa
-                    :host github :repo "statmobile/pydoc")
+      :ensure (:host github :repo "statmobile/pydoc")
       :after python
       :custom
       (pydoc-python-command "python3")
-      (pydoc-pip-version-command "pip3 --version")
-      )
+      (pydoc-pip-version-command "pip3 --version"))
 
 #+end_src
 
 #+begin_src emacs-lisp :tangle "emacs-config-modules/config-lang-python.el" :mkdirp yes
 
+  (elpaca-process-queues)
+  
   (provide 'config-lang-python)
   ;;; config-lang-python.el ends here.
-  
+
 #+end_src
 
 
@@ -3771,12 +3807,10 @@ Lisp support is handled by SLIME which is the “Superior Lisp Interaction Mode 
       :defer t)
 
   (use-package swift-helpful
-      :straight (swift-helpful :type git
-  		  :flavor melpa
-  		  :files ("*.el" "swift-info/*.info"
-  			     ("images" "swift-info/images/*.png") "swift-helpful-pkg.el")
-  		  :host github
-  		  :repo "danielmartin/swift-helpful")
+      :ensure (:files ("*.el" "swift-info/*.info"
+                      ("images" "swift-info/images/*.png") "swift-helpful-pkg.el")
+               :host github
+               :repo "danielmartin/swift-helpful")
       :defer t)
 
   (use-package swift-playground-mode :ensure t :defer t :init
@@ -3835,42 +3869,47 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
 
 #+begin_src emacs-lisp :tangle "emacs-config-modules/config-company.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
-
   (when (equal custom-ide 'custom-ide-eglot-lsp)
       (use-package company
-          :after lsp-mode
-          :hook (lsp-mode . company-mode)
-          :bind (:map company-active-map
-                    ("<tab>" . company-complete-selection))
-          (:map lsp-mode-map
+  	:after lsp-mode
+  	:hook (after-init . global-company-mode)
+  	:custom
+  	(company-minimum-prefix-length 1)
+  	(company-idle-delay 0.0)
+  	:bind (:map company-active-map
+  		  ("<tab>" . company-complete-selection))
+  	(:map lsp-mode-map
               ("<tab>" . company-indent-or-complete-common))))
 
   (when (equal custom-ide 'custom-ide-elpy)
       (use-package company
-          :after elpy
-          :hook (elpy-mode . company-mode)
-          :bind (:map company-active-map
-                    ("<tab>" . company-complete-selection))
-          (:map elpy-mode-map
+  	:after elpy
+  	:hook (after-init . global-company-mode)
+  	:custom
+  	(company-minimum-prefix-length 1)
+  	(company-idle-delay 0.0)
+  	:bind (:map company-active-map
+  		  ("<tab>" . company-complete-selection))
+  	(:map elpy-mode-map
               ("<tab>" . company-indent-or-complete-common))))
 
   (when (equal custom-ide 'custom-ide-anaconda)
       (use-package company
-          :after anaconda-mode
-          :hook (anaconda-mode . company-mode)
-          :bind (:map company-active-map
-                    ("<tab>" . company-complete-selection))
-          (:map elpy-mode-map
+  	:after anaconda-mode
+  	:hook (after-init . global-company-mode)
+  	:custom
+  	(company-minimum-prefix-length 1)
+  	(company-idle-delay 0.0)
+  	:bind (:map company-active-map
+  		  ("<tab>" . company-complete-selection))
+  	(:map elpy-mode-map
               ("<tab>" . company-indent-or-complete-common))))
 
+  (elpaca-process-queues)
+  ;; IMPORTANT:
   ;; Don't use company at all if lsp-bridge is active.
   ;; lsp-bridge already provides similar functionality.
-  (unless (equal custom-ide 'custom-ide-lsp-bridge)
-      (use-package company
-          :custom
-          (company-minimum-prefix-length 1)
-          (company-idle-delay 0.0)
-          :hook (after-init . global-company-mode)))
+
   ;; :config
   ;; (add-to-list 'company-backends 'company-yasnippet))
 
@@ -3879,28 +3918,27 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
 ** Company Packages
 #+begin_src emacs-lisp :tangle "emacs-config-modules/config-company.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
+  (use-package company-box
+      :after company
+      :diminish cb
+      :hook (company-mode . company-box-mode))
 
-  (when (featurep 'company)
-      (use-package company-box
-          :diminish cb
-          :hook (company-mode . company-box-mode))
+  (use-package company-jedi
+      :when  (equal custom-ide 'custom-ide-elpy)
+      :after python company
+      :config
+      (jedi:setup)
+      (defun my/company-jedi-python-mode-hook ()
+          (add-to-list 'company-backends 'company-jedi))
+      (add-hook 'python-mode-hook 'my/company-jedi-python-mode-hook))
 
-      (when (equal custom-ide 'custom-ide-elpy)
-          (use-package company-jedi
-              :after python
-              :config
-              (jedi:setup)
-              (defun my/company-jedi-python-mode-hook ()
-                  (add-to-list 'company-backends 'company-jedi))
-              (add-hook 'python-mode-hook 'my/company-jedi-python-mode-hook)))
-
-      (when (equal custom-ide 'custom-ide-anaconda)
-          (use-package company-anaconda
-              :after anaconda
-              :hook (python-mode . anaconda-mode))
-          (eval-after-load "company"
-              '(add-to-list 'company-backends 'company-anaconda))))
-
+  (use-package company-anaconda
+      :when (equal custom-ide 'custom-ide-anaconda)
+      :after anaconda
+      :hook (python-mode . anaconda-mode)
+      :config
+      (eval-after-load "company"
+  	'(add-to-list 'company-backends 'company-anaconda)))
 #+end_src
 
 #+begin_src emacs-lisp :tangle "emacs-config-modules/config-company.el" :mkdirp yes
@@ -3988,8 +4026,7 @@ The following packages are some additional quality of life features.
   ;;; --------------------------------------------------------------------------
 
   (use-package solaire-mode
-      :straight (solaire-mode :type git :flavor melpa
-                    :host github :repo "hlissner/emacs-solaire-mode")
+      :ensure (:host github :repo "hlissner/emacs-solaire-mode")
       :hook (after-init . solaire-global-mode)
       :config
       (push '(treemacs-window-background-face . solaire-default-face) solaire-mode-remap-alist)
@@ -4002,28 +4039,29 @@ The following packages are some additional quality of life features.
   ;;; --------------------------------------------------------------------------
   ;; Golen Ratio
 
-  (if enable-golden-ratio
-      (use-package golden-ratio
-          :custom
-          (golden-ratio-auto-scale t)
-          (golden-ratio-adjust-factor .4)
-          (golden-ratio-wide-adjust-factor .4)
-          (golden-ratio-max-width 100)
-          (golden-ratio-exclude-modes '(treemacs-mode
-                                           undo-tree-visdualizer-mode
-                                           inferior-python-mode
-                                           vundo-mode
-                                           which-key-mode
-                                           c-mode
-                                           cc-mode
-                                           dashboard-mode
-                                           python-mode
-                                           markdown-mode))
-          (golden-ratio-exclude-buffer-regexp '("dap*"
-                                                   "*dape*"
-                                                   "*python*"))
-          :config
-          (golden-ratio-mode 1)))
+  (use-package golden-ratio
+      :when enable-golden-ratio
+      :custom
+      (golden-ratio-auto-scale t)
+      (golden-ratio-adjust-factor .4)
+      (golden-ratio-wide-adjust-factor .4)
+      (golden-ratio-max-width 100)
+      (golden-ratio-exclude-modes '(treemacs-mode
+                                       undo-tree-visdualizer-mode
+                                       inferior-python-mode
+                                       vundo-mode
+                                       which-key-mode
+                                       c-mode
+                                       cc-mode
+                                       dashboard-mode
+                                       python-mode
+                                       markdown-mode))
+      (golden-ratio-exclude-buffer-regexp '("dap*"
+                                               "*dape*"
+                                               "*python*"))
+      :config
+      (golden-ratio-mode 1))
+  
 #+end_src
 
 ** Ace Window
@@ -4043,11 +4081,11 @@ A tree plugin like NerdTree for Vim
 #+begin_src emacs-lisp :tangle "emacs-config-modules/config-qol.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
 
-  (when enable-neotree
-      (use-package neotree
-          :config
-          (global-set-key [f8] 'neotree-toggle)
-          (setq neo-theme (if (display-graphic-p) 'icons 'arrow))))
+  (use-package neotree
+      :when enable-neotree
+      :config
+      (global-set-key [f8] 'neotree-toggle)
+      (setq neo-theme (if (display-graphic-p) 'icons 'arrow)))
 
 #+end_src
 
@@ -4057,7 +4095,6 @@ Some icons to be used in grpahical mode.
 #+begin_src emacs-lisp :tangle "emacs-config-modules/config-qol.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
 
-  (use-package all-the-icons)
   (use-package nerd-icons)
 
   ;; (use-package doom-modeline
@@ -4098,17 +4135,17 @@ Here are some helpful functions.
   ;;; --------------------------------------------------------------------------
   ;; Enable tabs for each buffer
 
-  (when enable-centaur-tabs
-      (use-package centaur-tabs
-          :custom
-          ;; Set the style to rounded with icons (setq centaur-tabs-style "bar")
-          (centaur-tabs-style "bar")
-          (centaur-tabs-set-icons t)
-          (centaur-tabs-set-modified-marker t)
-          :bind (("C-c <" . centaur-tabs-backward)
-                    ("C-c >" . centaur-tabs-forward))
-          :config ;; Enable centaur-tabs
-          (centaur-tabs-mode t)))
+  (use-package centaur-tabs
+      :when enable-centaur-tabs
+      :custom
+      ;; Set the style to rounded with icons (setq centaur-tabs-style "bar")
+      (centaur-tabs-style "bar")
+      (centaur-tabs-set-icons t)
+      (centaur-tabs-set-modified-marker t)
+      :bind (("C-c <" . centaur-tabs-backward)
+                ("C-c >" . centaur-tabs-forward))
+      :config ;; Enable centaur-tabs
+      (centaur-tabs-mode t))
 
 #+end_src
 
@@ -4149,7 +4186,6 @@ Designate any buffer to “popup” status, and it will stay out of your way. Di
   ;;; --------------------------------------------------------------------------
 
   (use-package popper
-      :defer t
       :bind (("C-`"   . popper-toggle)
                 ("M-`"   . popper-cycle)
                 ("C-M-`" . popper-toggle-type))
@@ -4172,6 +4208,8 @@ Designate any buffer to “popup” status, and it will stay out of your way. Di
 
 #+begin_src emacs-lisp :tangle "emacs-config-modules/config-qol.el" :mkdirp yes
 
+  (elpaca-process-queues)
+  
   (provide 'config-qol)
   ;;; config-qol.el ends here.
 
@@ -4192,7 +4230,7 @@ Dashboard is an extensible Emacs startup screen showing you what’s most import
   ;;; --------------------------------------------------------------------------
 
   (use-package all-the-icons
-      :if (display-graphic-p))
+      :when (display-graphic-p))
 
   (defun mrf/setup-dashboard-buffer ()
       "Set up the dashboard buffer and optionally make it the first."
@@ -4224,10 +4262,11 @@ Dashboard is an extensible Emacs startup screen showing you what’s most import
 
   (use-package dashboard
       :after dired
-      :init
+      :config
       (mrf/dashboard-banner)
       :hook ((after-init     . mrf/setup-dashboard-buffer)
                 (dashboard-mode . mrf/dashboard-banner)))
+  
 #+end_src
 
 #+begin_src emacs-lisp :tangle "emacs-config-modules/config-dashboard.el" :mkdirp yes
@@ -4312,8 +4351,8 @@ Run a terminal with =M-x term!=
 #+begin_src emacs-lisp :tangle "emacs-config-modules/config-term.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
 
-  (use-package term
-      :defer t
+  (use-package term+
+      :ensure (:repo "tarao/term-plus-el" :fetcher github)
       :commands term
       :config
       (setq explicit-shell-file-name "bash") ;; Change this to zsh, etc
@@ -4321,7 +4360,7 @@ Run a terminal with =M-x term!=
 
       ;; Match the default Bash shell prompt.  Update this if you have a custom prompt
       (setq term-prompt-regexp "^[^#$%>\n]*[#$%>] *"))
-
+  
 #+end_src
 
 *** Better term-mode colors
@@ -4346,7 +4385,7 @@ Make sure that you have the [[https://github.com/akermu/emacs-libvterm/#requirem
   ;;; --------------------------------------------------------------------------
 
   (use-package vterm
-      :defer t
+      :ensure (:fetcher github :repo "akermu/emacs-libvterm")
       :commands vterm
       :config
       (setq vterm-environment ("PS1=\\u@\\h:\\w \n$"))
@@ -4414,7 +4453,6 @@ For more thoughts on Eshell, check out these articles by Pierre Neidhardt:
       :after eshell)
 
   (use-package eshell
-      :defer t
       :hook (eshell-first-time-mode . efs/configure-eshell)
       :config
       (with-eval-after-load 'esh-opt
@@ -4426,9 +4464,11 @@ For more thoughts on Eshell, check out these articles by Pierre Neidhardt:
 
 #+begin_src emacs-lisp :tangle "emacs-config-modules/config-term.el" :mkdirp yes
 
+  (elpaca-process-queues)
+  
   (provide 'config-term)
   ;;; config-term.el ends here.
-  
+
 #+end_src
 
 

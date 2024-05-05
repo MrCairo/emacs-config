@@ -42,32 +42,29 @@
 (when (fboundp 'pixel-scroll-precision-mode)
     (pixel-scroll-precision-mode))
 
-(use-package page-break-lines
-    :config
-    (global-page-break-lines-mode))
-
 (use-package default-text-scale
     :hook (after-init . default-text-scale-mode))
 
 ;;; --------------------------------------------------------------------------
 
+  
 (use-package diminish
-    :straight (diminish :type git :flavor melpa :host github :repo "myrjola/diminish.el"))
-
-(defun mrf/set-diminish ()
-    (diminish 'projectile-mode "PrM")
-    (diminish 'anaconda-mode)
-    (diminish 'tree-sitter-mode "ts")
-    (diminish 'ts-fold-mode)
-    (diminish 'counsel-mode)
-    (diminish 'golden-ratio-mode)
-    (diminish 'company-box-mode)
-    (diminish 'company-mode))
-
-;; Need to run late in the startup process
-(add-hook 'after-init-hook 'mrf/set-diminish)
-
+    :wait t
+    :preface
+    (defun mrf/set-diminish ()
+	(diminish 'projectile-mode "PrM")
+	(diminish 'anaconda-mode)
+	(diminish 'tree-sitter-mode "ts")
+	(diminish 'ts-fold-mode)
+	(diminish 'counsel-mode)
+	(diminish 'golden-ratio-mode)
+	(diminish 'company-box-mode)
+	(diminish 'company-mode))
+    :ensure (:host github :repo "myrjola/diminish.el")
+    :hook (after-init . mrf/set-diminish))
 ;; (use-package pabbrev)
+
+(elpaca-process-queues)
 
 ;;; --------------------------------------------------------------------------
 ;; Which Key Helper
@@ -119,12 +116,9 @@
 
 (use-package dash
     :disabled
-    :straight (dash
-                  :type git
-                  :flavor melpa
-                  :files ("dash.el" "dash.texi" "dash-pkg.el")
-                  :host github
-                  :repo "magnars/dash.el"))
+    :ensure (:files ("dash.el" "dash.texi" "dash-pkg.el")
+             :host github
+             :repo "magnars/dash.el"))
 
 (defun mrf/set-fill-column-interactively (num)
     "Asks for the fill column."
@@ -148,31 +142,6 @@
         mac-command-key-is-meta t
         mac-command-modifier 'meta
         mac-option-modifier 'super))
-
-;;; --------------------------------------------------------------------------
-
-;; Prompt indicator/Minibuffer
-
-(use-package emacs
-    :init
-    ;; Add prompt indicator to `completing-read-multiple'.
-    ;; We display [CRM<separator>], e.g., [CRM,] if the separator is a comma.
-    (defun crm-indicator (args)
-        (cons (format "[CRM%s] %s"
-                  (replace-regexp-in-string
-                      "\\`\\[.*?]\\*\\|\\[.*?]\\*\\'" ""
-                      crm-separator)
-                  (car args))
-            (cdr args)))
-    (advice-add #'completing-read-multiple :filter-args #'crm-indicator)
-
-    ;; Do not allow the cursor in the minibuffer prompt
-    (setq minibuffer-prompt-properties
-        '(read-only t cursor-intangible t face minibuffer-prompt))
-    (add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
-
-    ;; Enable recursive minibuffers
-    (setq enable-recursive-minibuffers t))
 
 ;;; --------------------------------------------------------------------------
 
@@ -204,11 +173,15 @@
 
 ;;; --------------------------------------------------------------------------
 
-(use-package hydra)
+(use-package hydra
+  :wait t
+  :ensure (:repo "abo-abo/hydra" :fetcher github
+		:files (:defaults (:exclude "lv.el"))))
 
 ;;; --------------------------------------------------------------------------
 
 (use-package eldoc
+    :wait t
     :config
     (add-hook 'emacs-lisp-mode-hook 'eldoc-mode)
     (add-hook 'lisp-interaction-mode-hook 'eldoc-mode)
@@ -225,7 +198,7 @@
 
 (use-package auto-package-update
     :defer t
-    :ensure t
+    :ensure (:fetcher github :repo "rranelli/auto-package-update.el")
     :custom
     (auto-package-update-interval 7)
     (auto-package-update-prompt-before-update t)
@@ -258,6 +231,8 @@
     :after yasnippet
     :config
     (message ">>> YASnippet-Snippets Configured"))
+
+(elpaca-process-queues)
 
 (provide 'config-global)
 ;;; config-global.el ends here.

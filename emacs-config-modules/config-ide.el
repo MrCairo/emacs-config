@@ -93,7 +93,7 @@ Thanks @wyuenho on GitHub"
 
 (use-package lsp-treemacs
     :when (equal custom-ide 'custom-ide-eglot-lsp)
-    :after lsp
+    :after lsp treemacs
     :bind (:map prog-mode-map
               ("C-c t" . treemacs))
     :config
@@ -102,18 +102,19 @@ Thanks @wyuenho on GitHub"
 (use-package lsp-ivy
     :when (and (equal custom-ide 'custom-ide-eglot-lsp)
               (equal completion-handler 'comphand-ivy-counsel))
-    :after (:all lsp ivy))
+    :after lsp ivy)
 
 ;;; --------------------------------------------------------------------------
 
 (use-package markdown-mode
-    :when (equal custom-ide 'custom-ide-lsp-bridge))
+    :when (equal custom-ide 'custom-ide-lsp-bridge)
+    :ensure (:fetcher github :repo "jrblevin/markdown-mode"))
 
 (use-package lsp-bridge
     :when (equal custom-ide 'custom-ide-lsp-bridge)
-    :straight '(lsp-bridge :type git :host github :repo "manateelazycat/lsp-bridge"
-                   :files (:defaults "*.el" "*.py" "acm" "core" "langserver" "multiserver" "resources")
-                   :build (:not compile))
+    :ensure (:host github :repo "manateelazycat/lsp-bridge"
+             :files (:defaults "*.el" "*.py" "acm" "core" "langserver" "multiserver" "resources")
+             :build (:not compile))
     :custom
     (lsp-bridge-python-lsp-server "pylsp")
     :config
@@ -138,7 +139,7 @@ Thanks @wyuenho on GitHub"
 
 (use-package elpy
     :when (equal custom-ide 'custom-ide-elpy)
-    :after python
+    :after python which-key
     :custom
     (elpy-rpc-python-command "python3")
     (display-fill-column-indicator-mode 1)
@@ -151,24 +152,19 @@ Thanks @wyuenho on GitHub"
     :config
     (message "elpy loaded")
     (use-package jedi)
-    (which-key-add-key-based-replacements "C-c g a" "goto-assignment")
+    (use-package flycheck
+	  :when (equal custom-ide 'custom-ide-elpy)
+	  :defer t
+	  :after elpy
+	  :diminish FlM
+	  :ensure (:host github :repo "flycheck/flycheck")
+	  :hook (elpy-mode . flycheck-mode))      (which-key-add-key-based-replacements "C-c g a" "goto-assignment")
     (which-key-add-key-based-replacements "C-c g o" "find-defitions-other-window")
     (which-key-add-key-based-replacements "C-c g g" "find-defitions")
     (which-key-add-key-based-replacements "C-c g ?" "eldoc-definition")
     (elpy-enable))
 
-;;; --------------------------------------------------------------------------
-
-(use-package flycheck
-    :when (equal custom-ide 'custom-ide-elpy)
-    :after elpy
-    :diminish FlM
-    :straight (flycheck :type git :flavor melpa
-                  :host github
-                  :repo "flycheck/flycheck")
-    :config
-    (setq elpy-modules (delq 'elpy-module-flymake elpy-modules))
-    :hook (elpy-mode . flycheck-mode))
+(elpaca-process-queues)
 
 (provide 'config-ide)
 ;;; config-ide.el ends here.

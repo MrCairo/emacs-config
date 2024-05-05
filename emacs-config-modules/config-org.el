@@ -22,7 +22,7 @@
 (defun mrf/org-font-setup ()
     "Setup org mode fonts."
     (use-package org-faces
-	:when (featurep 'org)
+	:after org
 	:config
         (font-lock-add-keywords
             'org-mode
@@ -160,7 +160,6 @@
 (mrf/org-theme-override-values)
 
 (use-package org
-    :defer t
     :commands (org-capture org-agenda)
     :hook (org-mode . mrf/org-mode-setup)
     :bind (:map org-mode-map

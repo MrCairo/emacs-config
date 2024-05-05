@@ -68,12 +68,11 @@
     (set-fill-column 80))
 
 (use-package python-mode
-    :defer t
     :diminish Py
     :config
-    :hook (python-mode . mrf/python-mode-triggered) )
-
-(add-to-list 'auto-mode-alist '("\\.py\\'" . mrf/load-python-file-hook))
+    :hook (python-mode . mrf/python-mode-triggered)
+    :config
+    (add-to-list 'auto-mode-alist '("\\.py\\'" . mrf/load-python-file-hook)))
 
 (use-package blacken
     :after python) ;Format Python file upon save.
@@ -85,7 +84,6 @@
 ;;; --------------------------------------------------------------------------
 
 (use-package py-autopep8
-    :defer
     :after (:any python-mode python)
     :hook ((python-mode) . py-autopep8-mode))
 
@@ -106,19 +104,19 @@
 
 ;;; --------------------------------------------------------------------------
 
-(when (equal debug-adapter 'enable-dap-mode)
-    ;; (dolist (m (list python-mode-map typescript-ts-mode-map c-mode-map c++-mode-map))
-    (use-package dap
-        :defer t
-        :bind (:map prog-mode-map
-                  ("C-c ." . dap-hydra/body))))
+;; (dolist (m (list python-mode-map typescript-ts-mode-map c-mode-map c++-mode-map))
+;; (use-package dap
+;;     :when (equal debug-adapter 'enable-dap-mode)
+;;     :bind (:map prog-mode-map
+;;               ("C-c ." . dap-hydra/body)))
 
-(when (equal debug-adapter 'enable-dape)
-    ;; (dolist (m (list python-mode-map typescript-ts-mode-map c-mode-map c++-mode-map))
-    (use-package dape
-        :defer t
-        :bind (:map prog-mode-map
-                  ("C-c ." . dape-hydra/body))))
+
+;; ;; (dolist (m (list python-mode-map typescript-ts-mode-map c-mode-map c++-mode-map))
+;; (use-package dape
+;;     :when (equal debug-adapter 'enable-dape)
+;;     :bind (:map prog-mode-map
+;;               ("C-c ." . dape-hydra/body)))
+
 
 ;;; --------------------------------------------------------------------------
 
@@ -130,14 +128,13 @@
 ;;; --------------------------------------------------------------------------
 
 (use-package pydoc
-    :defer t
-    :straight (pydoc :type git :flavor melpa
-                  :host github :repo "statmobile/pydoc")
+    :ensure (:host github :repo "statmobile/pydoc")
     :after python
     :custom
     (pydoc-python-command "python3")
-    (pydoc-pip-version-command "pip3 --version")
-    )
+    (pydoc-pip-version-command "pip3 --version"))
+
+(elpaca-process-queues)
 
 (provide 'config-lang-python)
 ;;; config-lang-python.el ends here.
