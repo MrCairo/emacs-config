@@ -1,7 +1,7 @@
 ;;; --------------------------------------------------------------------------
 
 (use-package all-the-icons
-    :if (display-graphic-p))
+    :when (display-graphic-p))
 
 (defun mrf/setup-dashboard-buffer ()
     "Set up the dashboard buffer and optionally make it the first."
@@ -33,7 +33,7 @@
 
 (use-package dashboard
     :after dired
-    :init
+    :config
     (mrf/dashboard-banner)
     :hook ((after-init     . mrf/setup-dashboard-buffer)
               (dashboard-mode . mrf/dashboard-banner)))

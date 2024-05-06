@@ -25,25 +25,18 @@
 
 ;;; --------------------------------------------------------------------------
 
-(when enable-gb-dev
-    (use-package z80-mode
-        :straight (z80-mode
-                      :type git
-                      :host github
-                      :repo "SuperDisk/z80-mode"))
+(use-package z80-mode
+    :when enable-gb-dev
+    :ensure (:host github :repo "SuperDisk/z80-mode"))
 
-    (use-package mwim
-        :straight (mwim
-                      :type git
-                      :flavor melpa
-                      :host github
-                      :repo "alezost/mwim.el"))
+(use-package mwim
+    :when enable-gb-dev
+    :ensure (:host github :repo "alezost/mwim.el"))
 
-    (use-package rgbds-mode
-        :after mwim
-        :straight (rgbds-mode
-                      :type git :host github
-                      :repo "japanoise/rgbds-mode")))
+(use-package rgbds-mode
+    :when enable-gb-dev
+    :after mwim
+    :ensure (:host github :repo "japanoise/rgbds-mode"))
 
 (provide 'config-lang-c)
 ;;; config-lang-c.el ends here.

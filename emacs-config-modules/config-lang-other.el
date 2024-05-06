@@ -11,12 +11,10 @@
     :defer t)
 
 (use-package swift-helpful
-    :straight (swift-helpful :type git
-		  :flavor melpa
-		  :files ("*.el" "swift-info/*.info"
-			     ("images" "swift-info/images/*.png") "swift-helpful-pkg.el")
-		  :host github
-		  :repo "danielmartin/swift-helpful")
+    :ensure (:files ("*.el" "swift-info/*.info"
+                    ("images" "swift-info/images/*.png") "swift-helpful-pkg.el")
+             :host github
+             :repo "danielmartin/swift-helpful")
     :defer t)
 
 (use-package swift-playground-mode :ensure t :defer t :init

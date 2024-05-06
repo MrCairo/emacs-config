@@ -1,7 +1,7 @@
 ;;; --------------------------------------------------------------------------
 
-(use-package term
-    :defer t
+(use-package term+
+    :ensure (:repo "tarao/term-plus-el" :fetcher github)
     :commands term
     :config
     (setq explicit-shell-file-name "bash") ;; Change this to zsh, etc
@@ -19,7 +19,7 @@
 ;;; --------------------------------------------------------------------------
 
 (use-package vterm
-    :defer t
+    :ensure (:fetcher github :repo "akermu/emacs-libvterm")
     :commands vterm
     :config
     (setq vterm-environment ("PS1=\\u@\\h:\\w \n$"))
@@ -54,7 +54,6 @@
     :after eshell)
 
 (use-package eshell
-    :defer t
     :hook (eshell-first-time-mode . efs/configure-eshell)
     :config
     (with-eval-after-load 'esh-opt
@@ -62,6 +61,8 @@
         (setq eshell-visual-commands '("htop" "zsh" "vim")))
 
     (eshell-git-prompt-use-theme 'powerline))
+
+(elpaca-process-queues)
 
 (provide 'config-term)
 ;;; config-term.el ends here.
