@@ -49,7 +49,11 @@
     use-package-always-demand nil
     use-package-always-defer nil)
 
-(use-package el-patch)
+(straight-use-package 'el-patch)
+
+(font-lock-add-keywords 'emacs-lisp-mode
+    '(("straight-use-package " 0 font-lock-keyword-face t)
+      (":straight " 0 font-lock-builtin-face t)))
 
 ;; Load org early on in the init process
 ;; (use-package org :straight t)
@@ -225,8 +229,10 @@ smaller, simpler, and smoother to use yet highly customizable.  The Ivy package
 also includes Counsel. Counsel provides completion versions of common Emacs
 commands that are customised to make the best use of Ivy.  Swiper is an
 alternative to isearch that uses Ivy to show an overview of all matches."
-    :type '(choice (const :tag "Use the Vertico completion system." comphand-vertico)
-               (const :tag "Use Ivy, Counsel, Swiper completion systems" comphand-ivy-counsel))
+    :type '(choice
+	       (const :tag "Use the Vertico completion system." comphand-vertico)
+               (const :tag "Use Ivy, Counsel, Swiper completion systems" comphand-ivy-counsel)
+	       (const :tag "Built-in Ido" comphand-built-in))
     :group 'mrf-custom-choices)
 
 (defcustom debug-adapter 'enable-dape
@@ -407,19 +413,19 @@ font size is computed + 20 of this value."
 
 ;;; --------------------------------------------------------------------------
 
-  
+
 (use-package diminish
     :preface
     (defun mrf/set-diminish ()
-      (diminish 'projectile-mode "PrM")
-      (diminish 'anaconda-mode)
-      (diminish 'tree-sitter-mode "ts")
-      (diminish 'ts-fold-mode)
-      (diminish 'counsel-mode)
-      (diminish 'golden-ratio-mode)
-      (diminish 'company-box-mode)
-      (diminish 'company-mode))
-    :straight t
+	(diminish 'projectile-mode "PrM")
+	(diminish 'anaconda-mode)
+	(diminish 'tree-sitter-mode "ts")
+	(diminish 'ts-fold-mode)
+	(diminish 'lisp-interaction-mode "Lim")
+	(diminish 'counsel-mode)
+	(diminish 'golden-ratio-mode)
+	(diminish 'company-box-mode)
+	(diminish 'company-mode))
     ;; :ensure (:host github :repo "myrjola/diminish.el")
     :hook (after-init . mrf/set-diminish))
 
@@ -471,6 +477,7 @@ font size is computed + 20 of this value."
     (global-page-break-lines-mode))
 
 (use-package rainbow-delimiters
+    :defer t
     :config
     (rainbow-delimiters-mode))
 
@@ -493,6 +500,12 @@ font size is computed + 20 of this value."
     (setq custom-org-fill-column num)
     (mrf/org-mode-visual-fill)
     (redraw-display))
+
+;;; --------------------------------------------------------------------------
+
+(use-package visual-fill-column
+    :defer t
+    :after org)
 
 ;;; --------------------------------------------------------------------------
 
@@ -545,7 +558,7 @@ font size is computed + 20 of this value."
 ;;; --------------------------------------------------------------------------
 
 (use-package eldoc
-    :straight t
+    :straight (eldoc :type git :host github :repo "emacs-straight/eldoc" :files ("*" (:exclude ".git")))
     :defer t
     ;; ;;:wait t
     ;; :ensure (:package "eldoc" :source nil :protocol https :inherit t :depth 1 :repo "https://github.com/emacs-mirror/emacs" :local-repo "eldoc" :branch "master" :files ("lisp/emacs-lisp/eldoc.el" (:exclude ".git")))
@@ -555,6 +568,8 @@ font size is computed + 20 of this value."
     (add-hook 'ielm-mode-hook 'eldoc-mode))
 
 (use-package eldoc-box
+    :defer t
+    :straight (eldoc-box :type git :flavor melpa :host github :repo "casouri/eldoc-box")
     :after eldoc
     :diminish DocBox
     :config
@@ -747,13 +762,13 @@ font size is computed + 20 of this value."
 
 (add-to-list 'custom-theme-load-path (expand-file-name "Themes" custom-docs-dir))
 
-(use-package ef-themes :ensure t)
-(use-package modus-themes :ensure t)
-(use-package material-theme :ensure t)
-(use-package color-theme-modern :ensure t)
-(use-package color-theme-sanityinc-tomorrow :ensure t)
-(use-package darktooth-theme :ensure t)
-(use-package zenburn-theme :ensure t)
+(use-package ef-themes :defer t :ensure t)
+(use-package modus-themes :defer t :ensure t)
+(use-package material-theme :defer t :ensure t)
+(use-package color-theme-modern :defer t :ensure t)
+(use-package color-theme-sanityinc-tomorrow :defer t :ensure t)
+(use-package darktooth-theme :defer t :ensure t)
+(use-package zenburn-theme :defer t :ensure t)
 
 ;;; --------------------------------------------------------------------------
 
@@ -1592,12 +1607,14 @@ capture was not aborted."
 ;;; --------------------------------------------------------------------------
 
 (use-package treemacs-all-the-icons
+    :defer t
     :after treemacs
     :if (display-graphic-p))
 
 ;;; --------------------------------------------------------------------------
 
 (use-package all-the-icons
+    :defer t
     :when (display-graphic-p))
 
 (defun mrf/setup-dashboard-buffer ()
@@ -1654,17 +1671,18 @@ Thanks @wyuenho on GitHub"
     ;; Open python files in tree-sitter mode.
     :defer t
     :after company which-key
+    :straight (eglot :type git :host github :repo "emacs-straight/eglot" :files ("*" (:exclude ".git")))
     :init
     (setq company-backends
         (cons 'company-capf
             (remove 'company-capf company-backends)))
     :hook
     (lisp-mode . eglot-ensure)
+    (python-mode . eglot-ensure)
+    (rust-mode-hook . eglot-ensure)
     ;; (c-mode . eglot-ensure)
     ;; (c++-mode . eglot-ensure)
-    (python-mode . eglot-ensure)
     ;; (prog-mode . eglot-ensure)
-    (rust-mode-hook . eglot-ensure)
     :config
     (add-to-list 'major-mode-remap-alist '(python-mode . python-ts-mode))
     (which-key-add-key-based-replacements "C-c g r" "find-symbol-reference")
@@ -2102,8 +2120,8 @@ Thanks @wyuenho on GitHub"
 
 (use-package realgud
     :disabled
-    :after c-mode
-    :defer t)
+    :defer t
+    :after c-mode)
 
 (use-package realgud-lldb
     :disabled
@@ -2160,8 +2178,8 @@ Thanks @wyuenho on GitHub"
 
 (use-package ivy-yasnippet
     :when (equal completion-handler 'comphand-ivy-counsel)
-    :after (:any yasnippet ivy)
-    :defer t)
+    :defer t
+    :after (:any yasnippet ivy))
     ;; :ensure (:host github :repo "mkcms/ivy-yasnippet"))
 
 ;;; --------------------------------------------------------------------------
@@ -2174,7 +2192,7 @@ Thanks @wyuenho on GitHub"
 
 (use-package counsel
     :when (equal completion-handler 'comphand-ivy-counsel)
-    :after ivy
+    :defer t
     :bind (   ("C-M-j" . 'counsel-switch-buffer)
               ("M-x" . 'counsel-M-x)
               ("C-x C-f" . 'counsel-find-file)
@@ -2236,28 +2254,35 @@ Thanks @wyuenho on GitHub"
 
 ;;; --------------------------------------------------------------------------
 
+(defun mrf/vertico-other ()
+    (use-package vertico-prescient
+	:straight (vertico-prescient :type git :flavor melpa
+		      :files ("vertico-prescient.el" "vertico-prescient-pkg.el")
+		      :host github :repo "radian-software/prescient.el"))
+    
+    (use-package vertico-posframe
+	:straight (vertico-posframe :type git :host github
+		      :repo "emacs-straight/vertico-posframe" :files ("*" (:exclude ".git")))
+        :custom (vertico-posframe-parameters
+		    '((left-fringe . 8)
+			 (right-fringe . 8)))))
+
 (use-package vertico
     :when (equal completion-handler 'comphand-vertico)
+    :demand t
     ;;:wait t
-    :defer t
     ;;:ensure (:repo "minad/vertico" :files (:defaults "extensions/vertico-*.el") :fetcher github)
     :config
     (vertico-mode)
     (recentf-mode t)
-    (vertico-multiform-mode)
+    (vertico-multiform-mode 1)
     (vertico-count 13)
     (vertico-cycle nil)
-    (use-package vertico-prescient
-        :after vertico)
-    (use-package vertico-posframe
-      :after vertico
-        :custom
-        (vertico-posframe-parameters
-            '((left-fringe . 8)
-                 (right-fringe . 8))))
+    (mrf/vertico-other)
+    :bind ("C-x C-f" . ido-find-file)
     ;; Clean up file path when typing
     :hook ((rfn-eshadow-update-overlay . vertico-directory-tidy)
-            ;; Make sure vertico state is saved
+              ;; Make sure vertico state is saved
               (minibuffer-setup . vertico-repeat-save)))
 
 ;;; --------------------------------------------------------------------------
@@ -2277,8 +2302,10 @@ Thanks @wyuenho on GitHub"
 (use-package consult
     :when (equal completion-handler 'comphand-vertico)
     ;; Replace bindings. Lazily loaded due by `use-package'.
-    :defer t
+    :after vertico
     :bind (;; C-c bindings in `mode-specific-map'
+	      ([remap isearch-forward] . consult-line)
+	      ([remap isearch-backward] . consult-line)
               ("C-c M-x" . consult-mode-command)
               ("C-c h" . consult-history)
               ("C-c k" . consult-kmacro)
@@ -2390,6 +2417,11 @@ Thanks @wyuenho on GitHub"
     ;; (setq consult-project-function (lambda (_) (projectile-project-root)))
   ;;;; 5. No project support
     ;; (setq consult-project-function nil)
+
+(use-package ido
+    :when (equal completion-handler 'comphand-built-in)
+    :config
+    (ido-everywhere t))
 
 ;;; --------------------------------------------------------------------------
 
@@ -2804,6 +2836,7 @@ Thanks @wyuenho on GitHub"
 ;; Golen Ratio
 
 (use-package golden-ratio
+    :defer t
     :when enable-golden-ratio
     :custom
     (golden-ratio-auto-scale t)
@@ -2813,6 +2846,7 @@ Thanks @wyuenho on GitHub"
     (golden-ratio-exclude-modes '(treemacs-mode
                                      undo-tree-visdualizer-mode
                                      inferior-python-mode
+				     use-package-statistics-mode
                                      ;;vundo-mode
                                      which-key-mode
                                      c-mode
@@ -2837,7 +2871,7 @@ Thanks @wyuenho on GitHub"
 
 ;;; --------------------------------------------------------------------------
 
-(use-package nerd-icons)
+;; (use-package nerd-icons :defer t)
 
 ;; (use-package doom-modeline
 ;;   :diabled
@@ -2870,6 +2904,7 @@ Thanks @wyuenho on GitHub"
 ;;; --------------------------------------------------------------------------
 
 (use-package pulsar
+    :defer t
     :config
     (pulsar-global-mode)
     :custom
@@ -2899,6 +2934,7 @@ Thanks @wyuenho on GitHub"
              "^\\*vterm.*\\*$"  vterm-mode  ;vterm as a popup
              help-mode
              compilation-mode))
+    :config
     (popper-mode +1)
     (popper-echo-mode +1))
 
@@ -2976,6 +3012,8 @@ Thanks @wyuenho on GitHub"
     (when gls (setq insert-directory-program gls)))
 
 (use-package all-the-icons-dired
+    :defer t
+    :after dired
     :hook (dired-mode . all-the-icons-dired-mode))
 
 (use-package dired-open
@@ -3010,45 +3048,6 @@ Thanks @wyuenho on GitHub"
 
 ;;; --------------------------------------------------------------------------
 
-(use-package popup)
-
-(defun mmm-menu ()
-    (interactive)
-    (let ((mmm-menu-choice (popup-cascade-menu '
-                               ("open-dashboard" "open-ielm"
-                                   ("Themes" "next-theme" "previous-theme" "which-theme")
-                                   ("Shells" "vterm" "vterm-other-window" "eshell")
-                                   "set-fill-column" "set-org-fill-column"
-                                   "eldoc-help" "pydoc-help"))))
-        (cond
-            ((equal mmm-menu-choice "open-dashboard")
-                (dashboard-open))
-            ((equal mmm-menu-choice "open-ielm")
-                (ielm))
-            ((equal mmm-menu-choice "next-theme")
-                (next-theme))
-            ((equal mmm-menu-choice "previous-theme")
-                (previous-theme))
-            ((equal mmm-menu-choice "which-theme")
-                (which-theme))
-            ((equal mmm-menu-choice "vterm")
-                (vterm))
-            ((equal mmm-menu-choice "vterm-other-window")
-                (vterm-other-window))
-            ((equal mmm-menu-choice "eshell")
-                (eshell))
-            ((equal mmm-menu-choice "set-fill-column")
-                (call-interactively 'mrf/set-fill-column-interactively))
-            ((equal mmm-menu-choice "set-org-fill-column")
-                (call-interactively 'mrf/set-org-fill-column-interactively))
-            ((equal mmm-menu-choice "eldoc-help")
-                (eldoc-box-help-at-point))
-            ((equal mmm-menu-choice "pydoc-help")
-                (pydoc-at-point)))
-        ))
-
-;;; --------------------------------------------------------------------------
-
 (defvar mmm-keys-minor-mode-map
     (let ((map (make-sparse-keymap)))
         (bind-keys :map map
@@ -3061,6 +3060,7 @@ Thanks @wyuenho on GitHub"
             ("M-RET i" . ielm)
             ("M-RET v" . vterm-other-window)
             ("M-RET S" . smartparens-strict-mode)
+	    ("M-RET t" . treemacs)
             ("M-RET |" . global-display-fill-column-indicator-mode)
             ("M-RET C-=" . next-theme)
             ("M-RET C--" . previous-theme)
@@ -3079,6 +3079,7 @@ Thanks @wyuenho on GitHub"
 (mmm-keys-minor-mode 1)
 (add-hook 'which-key-mode-hook
     (lambda ()
+	(which-key-add-key-based-replacements "M-RET t" "treemacs-toggle")
 	(which-key-add-key-based-replacements "M-RET f" "set-fill-column")
 	(which-key-add-key-based-replacements "M-RET F" "set-org-fill-column")
 	(which-key-add-key-based-replacements "M-RET" "Mitch's Menu")))
@@ -3087,13 +3088,14 @@ Thanks @wyuenho on GitHub"
 
 ;;; --------------------------------------------------------------------------
 
-(setq-default initial-scratch-message
-    (format ";; Hello, World and Happy hacking %s!\n%s\n\n"
-        user-login-name
-        ";; Press M-RET (Meta-RET) to open the Mitch's Menu"))
+  (setq-default initial-scratch-message
+      (format ";; Hello, World and Happy hacking %s!\n%s\n\n"
+          user-login-name
+          ";; Press M-RET (Meta-RET) to open the Mitch's Menu"))
 
-;; (concat ";; Hello, World and Happy hacking "
-;;     user-login-name "!\n;; Press M-RET (C-c C-m) to open the Mitch Menu\n\n"))
+;; (add-hook 'lisp-interaction-mode-hook 'use-package-report)
+  ;; (concat ";; Hello, World and Happy hacking "
+  ;;     user-login-name "!\n;; Press M-RET (C-c C-m) to open the Mitch Menu\n\n"))
 
 ;;; --------------------------------------------------------------------------
 

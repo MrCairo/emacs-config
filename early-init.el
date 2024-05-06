@@ -70,6 +70,6 @@
 
 (setq use-package-compute-statistics t
     use-package-verbose t
-    use-package-always-ensure t
+    use-package-always-ensure nil
     use-package-always-demand nil
     use-package-always-defer nil)
