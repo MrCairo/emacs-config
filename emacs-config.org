@@ -31,7 +31,7 @@ This ORG file will configure the * init.el * file based upon all of the * emacs-
 
 * early-init.el
 
-#+begin_src emacs-lisp :tangle "early-init.el"
+#+begin_src emacs-lisp :tangle "early-init.el" :mkdirp yes
   ;; Early initialization file for emacs
 
   ;; Since we're using straight, we DON'T want to use the
@@ -71,9 +71,9 @@ This ORG file will configure the * init.el * file based upon all of the * emacs-
   ;;; Package setup
 #+end_src
 
-Package related early initialization
+** Package related early initialization
 
-#+begin_src emacs-lisp :tangle "early-init.el"
+#+begin_src emacs-lisp :tangle "early-init.el" :mkdirp yes
         ;;; --------------------------------------------------------------------------
 
   (setq package-vc-register-as-project nil) ; Emacs 30
@@ -105,8 +105,9 @@ Package related early initialization
 
 #+end_src
 
-Configure ~use-package~ 
-#+begin_src emacs-lisp :tangle "early-init.el"
+** Configure ~use-package~
+
+#+begin_src emacs-lisp :tangle "early-init.el" :mkdirp yes
 
   (defun mrf/display-startup-time ()
       "Calculate and display startup time."
@@ -129,10 +130,10 @@ Configure ~use-package~
 
 * init.el General Setup
 
-**** Lispy Header
+** Lispy Header
 This is the standard format of a =lisp= header that should appear for all =lisp= scripts. It also indicates that the ~init.el~ file is generated from this ~Configure.org~ file.
 
-#+begin_src emacs-lisp :tangle "init.el"
+#+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
   ;;; init.el -- Generated from emacs-config.org -*- flycheck-disabled-checkers: (emacs-lisp); -*-
   ;;;
   ;;; Commentary:
@@ -168,7 +169,7 @@ Elpaca:
 - Supports thousands of elisp packages out of the box (MELPA, NonGNU/GNU ELPA, Org/org-contrib).
 - Makes it easy for users to create their own ELPAs.
 
-#+begin_src emacs-lisp :tangle "init.el"
+#+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
 
   (defvar elpaca-installer-version 0.7)
   (defvar elpaca-directory (expand-file-name "elpaca/" user-emacs-directory))
@@ -220,7 +221,7 @@ Elpaca:
 ** Customization groups
 These are the groups used by this Emacs config for customization. It's important that these groups as well as the customizable file location variables be in the main ~init.el~ since there are startup values that require them *before* we can require other intialization files.
 
-#+begin_src emacs-lisp :tangle "init.el"
+#+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
   ;;; Define my customization groups
 
@@ -248,7 +249,7 @@ These are the groups used by this Emacs config for customization. It's important
 
 ** File Locations and Variables
 
-#+begin_src emacs-lisp :tangle "init.el"
+#+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
 
   (defcustom display-dashboard-at-start t
@@ -282,7 +283,7 @@ These are the groups used by this Emacs config for customization. It's important
 ** Use Shell Path
 Because in macOS, Emacs could be started outside of a shell (like an application on the Dock), this code is used to migrate the <current user's shell path to Emacs ~exec-path~.
 
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
 
   ;; Use shell path
@@ -312,7 +313,7 @@ Because in macOS, Emacs could be started outside of a shell (like an application
 
 By default, the =user-emacs-directory= points to the .emacs.d* directory from which the =init.el= is used when Emacs starts. What this means is that any package that writes to this directory will be writing files to this initialization directory. Since we want to keep this directory clean, we set this directory to something external. A new variable, =emacs-config-directory= is set to now point to the starting Emacs condfiguration directory.
 
-#+begin_src emacs-lisp :tangle "init.el"
+#+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
   ;;; Set a variable that represents the actual emacs configuration directory.
   ;;; This is being done so that the user-emacs-directory which normally points
@@ -341,7 +342,7 @@ By default, the =user-emacs-directory= points to the .emacs.d* directory from wh
 This directory is expected to be in the ~emacs-config-direcory~ dir. This can be used to store custom lisp (or non-elpa/melpa) files that can'tbe found by =require.el= or =straight-use-package=.
 
 
-#+begin_src emacs-lisp :tangle "init.el"
+#+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
 
   (add-to-list 'load-path (expand-file-name "lisp" emacs-config-directory))
@@ -1615,7 +1616,7 @@ This function sets up the fonts faces that are used within org-mode.
 
 This section contains the basic configuration for =org-mode= plus the configuration for Org agendas and capture templates.
 
-#+begin_src  emacs-lisp :tangle "init.el" :mkdirp yes
+#+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
   ;; -----------------------------------------------------------------
 
   (defun mrf/org-mode-visual-fill ()
@@ -2084,7 +2085,7 @@ The following snippet sets up a hook for all Org task state changes and then cop
 #+end_src
 
 ** Table-of-contents
-#+begin_src emacs-lisp :tangle "init.el"
+#+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
 
   (use-package toc-org
       :after org markdown-mode
@@ -3018,7 +3019,6 @@ Ivy-yasnippet lets you preview yasnippet snippets with ivy.
 
 #+end_src
 
-
 *** Swiper
 Swiper is an alternative to isearch that uses Ivy to show an overview of all matches.
 
@@ -3301,7 +3301,7 @@ Consult provides search and navigation commands based on the Emacs completion fu
 ** Built-In
 Enable the IDO handler everywhere.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
 
   ;; This has to be evaluated at the end of the init since it's possible that the
@@ -3844,7 +3844,7 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
 #+end_src
 
 ** Company Packages
-#+begin_src emacs-lisp :tangle "emacs-config-modules/config-company.el" :mkdirp yes
+#+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
   (use-package company-box
       :after company
@@ -3902,7 +3902,7 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
 * Project.el
 This is the default built-in project system. For those not needing the full-featured ~projectile~, this package is generally enough.
 
-#+begin_src emacs-lisp :tangle "init.el"
+#+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
 
   (defun project-find-go-module (dir)
       (when-let ((root (locate-dominating-file dir "go.mod")))
@@ -4125,7 +4125,7 @@ Designate any buffer to “popup” status, and it will stay out of your way. Di
 
 
 * Terminals
-*** term-mode
+** term-mode
 
 =term-mode= is a built-in terminal emulator in Emacs.  Because it is written in Emacs Lisp, you can start using it immediately with very little configuration.  If you are on Linux or macOS, =term-mode= is a great choice to get started because it supports fairly complex terminal applications (=htop=, =vim=, etc) and works pretty reliably.  However, because it is written in Emacs Lisp, it can be slower than other options like =vterm=.  The speed will only be an issue if you regularly run console apps with a lot of output.
 
@@ -4157,7 +4157,7 @@ Run a terminal with =M-x term!=
 
 #+end_src
 
-*** Better term-mode colors
+** Better term-mode colors
 
 The =eterm-256color= package enhances the output of =term-mode= to enable handling of a wider range of color codes so that many popular terminal applications look as you would expect them to.  Keep in mind that this package requires =ncurses= to be installed on your machine so that it has access to the =tic= program.  Most Linux distributions come with this program installed already so you may not have to do anything extra to use it.
 
@@ -4168,7 +4168,7 @@ The =eterm-256color= package enhances the output of =term-mode= to enable handli
       :hook (term-mode . eterm-256color-mode))
 #+end_src
 
-*** vterm
+** vterm
 
 [[https://github.com/akermu/emacs-libvterm/][vterm]] is an improved terminal emulator package which uses a compiled native module to interact with the underlying terminal applications.  This enables it to be much faster than =term-mode= and to also provide a more complete terminal emulation experience.
 
@@ -4188,7 +4188,7 @@ Make sure that you have the [[https://github.com/akermu/emacs-libvterm/#requirem
 
 #+end_src
 
-*** shell-mode
+** shell-mode
 
 [[https://www.gnu.org/software/emacs/manual/html_node/emacs/Interactive-Shell.html#Interactive-Shell][shell-mode]] is a middle ground between =term-mode= and Eshell.  It is *not* a terminal emulator so more complex terminal programs will not run inside of it.  It does have much better integration with Emacs because all command input in this mode is handled by Emacs and then sent to the underlying shell once you press Enter.  This means that you can use =evil-mode='s editing motions on the command line, unlike in the terminal emulator modes above.
 
@@ -4199,7 +4199,7 @@ Make sure that you have the [[https://github.com/akermu/emacs-libvterm/#requirem
 - =C-c C-u= - delete the current input string backwards up to the cursor
 - =counsel-shell-history= - A searchable history of commands typed into the shell
 
-*** Eshell
+** Eshell
 
 [[https://www.gnu.org/software/emacs/manual/html_mono/eshell.html#Contributors-to-Eshell][Eshell]] is Emacs' own shell implementation written in Emacs Lisp.  It provides you with a cross-platform implementation (even on Windows!) of the common GNU utilities you would find on Linux and macOS (=ls=, =rm=, =mv=, =grep=, etc).  It also allows you to call Emacs Lisp functions directly from the shell and you can even set up aliases (like aliasing =vim= to =find-file=).  Eshell is also an Emacs Lisp REPL which allows you to evaluate full expressions at the shell.
 

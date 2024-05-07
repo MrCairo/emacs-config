@@ -116,6 +116,29 @@ be taken into consideration when providing a width."
     :group 'mrf-custom)
 
 ;;; --------------------------------------------------------------------------
+
+;; Use shell path
+
+(defun set-exec-path-from-shell-PATH ()
+   ;;; Set up Emacs' `exec-path' and PATH environment variable to match"
+   ;;; that used by the user's shell.
+   ;;; This is particularly useful under Mac OS X and macOS, where GUI
+   ;;; apps are not started from a shell."
+    (interactive)
+    (let ((path-from-shell (replace-regexp-in-string "[ \t\n]*$" ""
+                               (shell-command-to-string "$SHELL --login -c 'echo $PATH'"))))
+        (setenv "PATH" path-from-shell)
+        (setq exec-path (split-string path-from-shell path-separator))
+        (add-to-list 'exec-path "/opt/homebrew/bin")
+        (add-to-list 'exec-path "/usr/local/bin")
+        (add-to-list 'exec-path "/opt/homebrew/opt/openjdk/bin")
+        (add-to-list 'exec-path "/opt/homebrew/opt/node@20/bin/node")
+        (setq-default insert-directory-program "gls"
+            dired-use-ls-dired t
+            ;; Needed to fix an issue on Mac which causes dired to fail
+            dired-listing-switches "-al --group-directories-first")))
+
+;;; --------------------------------------------------------------------------
 ;;; Set a variable that represents the actual emacs configuration directory.
 ;;; This is being done so that the user-emacs-directory which normally points
 ;;; to the .emacs.d directory can be re-assigned so that customized files don't
@@ -2358,6 +2381,16 @@ Thanks @wyuenho on GitHub"
 
 ;;; --------------------------------------------------------------------------
 
+;; This has to be evaluated at the end of the init since it's possible that the
+;; completion-handler variable will not yet be defined at this point in the
+;; init phase using elpaca.
+(add-hook 'elpaca-after-init-hook
+    (lambda ()
+	(when (equal completion-handler 'comphand-built-in)
+	    (ido-everywhere t))))
+
+;;; --------------------------------------------------------------------------
+
 (use-package flycheck
     :unless (equal custom-ide 'custom-ide-elpy)
     :diminish FlM
@@ -2700,6 +2733,29 @@ Thanks @wyuenho on GitHub"
 
   ;; :config
   ;; (add-to-list 'company-backends 'company-yasnippet))
+
+;;; --------------------------------------------------------------------------
+(use-package company-box
+    :after company
+    :diminish cb
+    :hook (company-mode . company-box-mode))
+
+(use-package company-jedi
+    :when  (equal custom-ide 'custom-ide-elpy)
+    :after python company
+    :config
+    (jedi:setup)
+    (defun my/company-jedi-python-mode-hook ()
+        (add-to-list 'company-backends 'company-jedi))
+    (add-hook 'python-mode-hook 'my/company-jedi-python-mode-hook))
+
+(use-package company-anaconda
+    :when (equal custom-ide 'custom-ide-anaconda)
+    :after anaconda
+    :hook (python-mode . anaconda-mode)
+    :config
+    (eval-after-load "company"
+      '(add-to-list 'company-backends 'company-anaconda)))
 
 (defun project-find-go-module (dir)
     (when-let ((root (locate-dominating-file dir "go.mod")))
