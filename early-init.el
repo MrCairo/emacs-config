@@ -38,10 +38,7 @@
 
 ;;; --------------------------------------------------------------------------
 
-      ;;;; Packages
-
 (setq package-vc-register-as-project nil) ; Emacs 30
-
 (add-hook 'package-menu-mode-hook #'hl-line-mode)
 
 (setq package-archives
@@ -78,8 +75,8 @@
 
 (add-hook 'emacs-startup-hook #'mrf/display-startup-time)
 
-(setq use-package-compute-statistics t
-    use-package-verbose t
+(setq use-package-compute-statistics nil
+    use-package-verbose nil
     use-package-always-ensure nil
     use-package-always-demand nil
     use-package-always-defer nil)

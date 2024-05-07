@@ -1,4 +1,4 @@
-;;; init.el --- My customized emacs init file -- lexical-binding: t --
+;;; init.el -- Generated from emacs-config.org -*- flycheck-disabled-checkers: (emacs-lisp); -*-
 ;;;
 ;;; Commentary:
 
@@ -205,7 +205,7 @@ commands that are customised to make the best use of Ivy.  Swiper is an
 alternative to isearch that uses Ivy to show an overview of all matches."
     :type '(choice
 	       (const :tag "Use the Vertico completion system." comphand-vertico)
-               (const :tag "Use Ivy, Counsel, Swiper completion systems" comphand-ivy-counsel)
+		 (const :tag "Use Ivy, Counsel, Swiper completion systems" comphand-ivy-counsel)
 	       (const :tag "Built-in Ido" comphand-built-in))
     :group 'mrf-custom-choices)
 
@@ -220,10 +220,10 @@ implemented entirely in Emacs Lisp. There are no other external dependencies
 with DAPE. DAPE supports most popular languages, however, not as many as
 dap-mode."
     :type '(choice (const :tag "Debug Adapter Protocol (DAP)" enable-dap-mode)
-               (const :tag "Debug Adapter Protocol for Emacs (DAPE)" enable-dape))
+		 (const :tag "Debug Adapter Protocol for Emacs (DAPE)" enable-dape))
     :group 'mrf-custom-choices)
 
-(defcustom custom-ide 'custom-ide-eglot-lsp
+(defcustom custom-ide 'custom-ide-eglot
     "Select which IDE will be used for Python development.
 
 Elpy is an Emacs package to bring powerful Python editing to Emacs. It
@@ -231,7 +231,7 @@ combines and configures a number of other packages, both written in Emacs
 Lisp as well as Python. Elpy is fully documented at
 https://elpy.readthedocs.io/en/latest/index.html.
 
-Elgot/LSP Eglot is the Emacs client for the Language Server Protocol
+Eglot/LSP Eglot is the Emacs client for the Language Server Protocol
 (LSP). Eglot provides infrastructure and a set of commands for enriching the
 source code editing capabilities of Emacs via LSP. Eglot itself is
 completely language-agnostic, but it can support any programming language
@@ -240,9 +240,10 @@ for which there is a language server and an Emacs major mode.
 Anaconda-mode is another IDE for Python very much like Elpy. It is not as
 configurable but has a host of great feaures that just work."
     :type '(choice (const :tag "Elpy: Emacs Lisp Python Environment" custom-ide-elpy)
-               (const :tag "Eglot/Language Server Protocol" custom-ide-eglot-lsp)
-               (const :tag "LSP Bridge (standalone)" custom-ide-lsp-bridge)
-               (const :tag "Python Anaconda-mode for Emacs" custom-ide-anaconda))
+		 (const :tag "Emacs Polyglot (Eglot)" custom-ide-eglot)
+		 (const :tag "Language Server Protocol (LSP)" custom-ide-lsp)
+		 (const :tag "LSP Bridge (standalone)" custom-ide-lsp-bridge)
+		 (const :tag "Python Anaconda-mode for Emacs" custom-ide-anaconda))
     :group 'mrf-custom-choices)
 
 ;;; --------------------------------------------------------------------------
@@ -1059,7 +1060,7 @@ font size is computed + 20 of this value."
             (set-face-attribute (car face) nil :font "ETBembo" :weight 'regular :height (cdr face)))
 
         ;; Ensure that anything that should be fixed-pitch in Org files appears that way
-        (set-face-attribute 'org-block nil    :foreground 'unspecified :inherit 'fixed-pitch)
+        (set-face-attribute 'org-block nil    :foreground 'unspecified :inherit 'fixed-pitch :font "Hack" )
         (set-face-attribute 'org-table nil    :inherit 'fixed-pitch)
         (set-face-attribute 'org-formula nil  :inherit 'fixed-pitch)
         (set-face-attribute 'org-code nil     :inherit '(shadow fixed-pitch))
@@ -1258,6 +1259,12 @@ font size is computed + 20 of this value."
 
 ;;; --------------------------------------------------------------------------
 
+(use-package org-superstar
+    :after org
+    :hook (org-mode . org-superstar-mode))
+
+;;; --------------------------------------------------------------------------
+
 (with-eval-after-load 'org
     (org-babel-do-load-languages
         'org-babel-load-languages
@@ -1427,6 +1434,14 @@ capture was not aborted."
         (unless (equal (file-truename today-file)
                     (file-truename (buffer-file-name)))
             (org-refile nil nil (list "Tasks" today-file nil pos)))))
+
+(use-package toc-org
+    :after org markdown-mode
+    :hook
+    (org-mode . toc-org-mode)
+    (markdown-mode-hook . toc-org-mode)
+    :bind (:map markdown-mode-map
+	      ("C-c C-o" . toc-org-markdown-follow-thing-at-point)))
 
 ;;; --------------------------------------------------------------------------
 
@@ -1613,7 +1628,7 @@ Thanks @wyuenho on GitHub"
         (and root (cons 'transient root))))
 
 (use-package eglot
-    :when (equal custom-ide 'custom-ide-eglot-lsp)
+    :when (equal custom-ide 'custom-ide-eglot)
     :ensure (:repo "https://github.com/emacs-mirror/emacs" :local-repo "eglot" :branch "master"
 		:files ("lisp/progmodes/eglot.el" "doc/emacs/doclicense.texi" "doc/emacs/docstyle.texi"
 			   "doc/misc/eglot.texi" "etc/EGLOT-NEWS" (:exclude ".git")))
@@ -1626,7 +1641,7 @@ Thanks @wyuenho on GitHub"
     :hook
     (lisp-mode . eglot-ensure)
     (python-mode . eglot-ensure)
-    (rust-mode-hook . eglot-ensure)
+    (go-mode . eglot-ensure)
     ;; (c-mode . eglot-ensure)
     ;; (c++-mode . eglot-ensure)
     ;; (prog-mode . eglot-ensure)
@@ -1640,9 +1655,10 @@ Thanks @wyuenho on GitHub"
     (add-to-list 'eglot-stay-out-of 'flymake)
     ;; (add-to-list 'eglot-server-programs '((c-mode c++-mode) "clangd"))
     (add-to-list 'eglot-server-programs '(python-mode . ("pylsp")))
-    (add-to-list 'eglot-server-programs
-        '((rust-ts-mode rust-mode) .
-             ("rust-analyzer" :initializationOptions (:check (:command "clippy")))))
+    (setq-default eglot-workspace-configuration
+	'((:gopls .
+	      ((staticcheck . t)
+		  (matcher . "CaseSensitive")))))
     (setq-default eglot-workspace-configuration
         '((:pylsp . (:configurationSources ["flake8"]
 			:plugins (:pycodestyle (:enabled nil)
@@ -1652,20 +1668,19 @@ Thanks @wyuenho on GitHub"
 ;;; --------------------------------------------------------------------------
 ;;; Language Server Protocol
 
-(when (equal custom-ide 'custom-ide-eglot-lsp)
+(when (equal custom-ide 'custom-ide-lsp)
     (eval-when-compile (defvar lsp-enable-which-key-integration)))
 
 (defun mrf/lsp-mode-setup ()
     "Custom LSP setup function."
-    (when (equal custom-ide 'custom-ide-eglot-lsp)
+    (when (equal custom-ide 'custom-ide-lsp)
         (message "Set up LSP header-line and other vars")
         (setq lsp-headerline-breadcrumb-segments '(path-up-to-project file symbols))
         (setq lsp-clangd-binary-path "/usr/bin/clangd")'
         (lsp-headerline-breadcrumb-mode)))
 
-
 (use-package lsp-mode
-    :when (equal custom-ide 'custom-ide-eglot-lsp)
+    :when (equal custom-ide 'custom-ide-lsp)
     :commands (lsp lsp-deferred)
     :hook (lsp-mode . mrf/lsp-mode-setup)
     :init
@@ -1674,7 +1689,7 @@ Thanks @wyuenho on GitHub"
     (lsp-enable-which-key-integration t))
 
 (use-package lsp-ui
-    :when (equal custom-ide 'custom-ide-eglot-lsp)
+    :when (equal custom-ide 'custom-ide-lsp)
     :after lsp
     :config (setq lsp-ui-sideline-enable t
                 lsp-ui-sideline-show-hover t
@@ -1695,7 +1710,7 @@ Thanks @wyuenho on GitHub"
     :hook (lsp-mode . lsp-ui-mode))
 
 (use-package lsp-treemacs
-    :when (equal custom-ide 'custom-ide-eglot-lsp)
+    :when (equal custom-ide 'custom-ide-lsp)
     :after lsp treemacs
     :bind (:map prog-mode-map
               ("C-c t" . treemacs))
@@ -1703,7 +1718,7 @@ Thanks @wyuenho on GitHub"
     (lsp-treemacs-sync-mode 1))
 
 (use-package lsp-ivy
-    :when (and (equal custom-ide 'custom-ide-eglot-lsp)
+    :when (and (equal custom-ide 'custom-ide-lsp)
               (equal completion-handler 'comphand-ivy-counsel))
     :after lsp ivy)
 
@@ -2361,6 +2376,10 @@ Thanks @wyuenho on GitHub"
     (tree-sitter-hl-mode t)
     (ts-fold-mode t))
 
+(defun lsp-go-install-save-hooks ()
+    (add-hook 'before-save-hook #'lsp-format-buffer t t)
+    (add-hook 'before-save-hook #'lsp-organize-imports t t))
+
 (use-package tree-sitter
     :init
     (message ">>> Loading tree-sitter")
@@ -2371,9 +2390,10 @@ Thanks @wyuenho on GitHub"
     :hook
     (tree-sitter-after-on . mrf/tree-sitter-setup)
     (typescript-mode . lsp-deferred)
-    (c-mode . lsp-deferred)
-    (c++-mode . lsp-deferred)
-    (rust-mode . lsp-deferred)
+    ;; (c-mode . lsp-deferred)
+    ;; (c++-mode . lsp-deferred)
+    (go-mode . lsp-deferred)
+    (before-save . lsp-go-install-save-hooks)
     (js2-mode . lsp-deferred))
 
 (use-package tree-sitter-langs
@@ -2404,36 +2424,12 @@ Thanks @wyuenho on GitHub"
 (use-package git-commit :after transient)
 (use-package magit :after git-commit)
 
-;; (use-package magit
-;;     :after git-commit
-;;     :ensure (:fetcher github
-;; 		:repo "magit/magit"
-;; 		:files ("lisp/magit*.el"
-;; 			   "lisp/git-rebase.el"
-;; 			   "docs/magit.texi"
-;; 			   "docs/AUTHORS.md"
-;; 			   "LICENSE"
-;; 			   "Documentation/magit.texi" ; temporarily for stable
-;; 			   "Documentation/AUTHORS.md" ; temporarily for stable
-;; 			   (:exclude "lisp/magit-libgit.el"
-;; 			       "lisp/magit-libgit-pkg.el"
-;; 			       "lisp/magit-section.el"
-;; 			       "lisp/magit-section-pkg.el")))
-;;     :after (:any python-mode rust-mode lisp-mode)
-;;     :commands (magit-status magit-get-current-branch)
-;;     ;; :custom
-;;     ;;  (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1)
-;;     )
-
 ;; NOTE: Make sure to configure a GitHub token before using this package!
 ;; - https://magit.vc/manual/forge/Token-Creation.html#Token-Creation
 ;; - https://magit.vc/manual/ghub/Getting-Started.html#Getting-Started
 
-(use-package forge
-    :after magit)
-
-(use-package treemacs-magit
-    :after treemacs magit)
+(use-package forge :after magit)
+(use-package treemacs-magit :after treemacs magit)
 
 ;;; --------------------------------------------------------------------------
 
@@ -2519,13 +2515,16 @@ Thanks @wyuenho on GitHub"
 (defun mrf/set-custom-ide-python-keymaps ()
     (message "<<< Set python-mode keymaps based upon IDE.")
     (cond
-        ((equal custom-ide 'custom-ide-eglot-lsp)
-            ;; (unless (featurep 'lsp)
-            ;;     (lsp-deferred))
-            ;; (unless (featurep 'eglot)
-            ;;     (eglot))
+        ((equal custom-ide 'custom-ide-lsp)
             (bind-keys :map python-mode-map
                 ("C-c g r" . lsp-find-references)
+                ("C-c g o" . xref-find-definitions-other-window)
+                ("C-c g g" . xref-find-definitions)
+                ("C-c g ?" . eldoc-doc-buffer))
+            (message (format ">>> set python-mode-map for %s" custom-ide)))
+        ((equal custom-ide 'custom-ide-eglot)
+            (bind-keys :map python-mode-map
+                ("C-c g r" . eglot-find-implementation)
                 ("C-c g o" . xref-find-definitions-other-window)
                 ("C-c g g" . xref-find-definitions)
                 ("C-c g ?" . eldoc-doc-buffer))
@@ -2642,6 +2641,7 @@ Thanks @wyuenho on GitHub"
 
 ;; (use-package graphql-mode)
 (use-package rust-mode
+    :disabled
     :init (setq rust-mode-treesitter-derive t)
     :hook (rust-mode . (lambda ()
                          (setq indent-tabs-mode nil)
@@ -2653,7 +2653,12 @@ Thanks @wyuenho on GitHub"
 
 (use-package go-mode
     :mode ("\\.go\\'" . go-mode)
-    :hook (go-mode . lsp-deferred))
+    :config
+    (cond
+	((equal custom-ide 'custom-ide-eglot)
+	    (add-hook 'go-mode-hook 'eglot-ensure))
+	((equal custom-ide 'custom-ide-lsp)
+  	    (add-hook 'go-mode-hook 'lsp-deferred))))
 
 (use-package go-eldoc
     :after go-mode
@@ -2676,10 +2681,13 @@ Thanks @wyuenho on GitHub"
     (company-idle-delay 0.0)
     :config
     (cond
-	  ((equal custom-ide 'custom-ide-eglot-lsp)
+	  ((equal custom-ide 'custom-ide-eglot)
+	      (bind-keys :map eglot-mode-map
+		  ("<tab>" . company-indent-or-complete-common)))
+	  ((equal custom-ide 'custom-ide-lsp)
 	      (bind-keys :map lsp-mode-map
 		  ("<tab>" . company-indent-or-complete-common)))
-	  ((equal custom-ide 'custom-ide-elpy)
+	((equal custom-ide 'custom-ide-elpy)
 	      (bind-keys :map elpy-mode-map
 		  ("<tab>" . company-indent-or-complete-common)))
 	  ((equal custom-ide 'custom-ide-anaconda)
@@ -2692,6 +2700,17 @@ Thanks @wyuenho on GitHub"
 
   ;; :config
   ;; (add-to-list 'company-backends 'company-yasnippet))
+
+(defun project-find-go-module (dir)
+    (when-let ((root (locate-dominating-file dir "go.mod")))
+	(cons 'go-module root)))
+
+(use-package project
+    :ensure nil
+    :config
+    (cl-defmethod project-root ((project (head go-module)))
+	(cdr project))
+    (add-hook 'project-find-functions #'project-find-go-module))
 
 ;;; --------------------------------------------------------------------------
 ;; helpful package
@@ -2966,8 +2985,6 @@ Thanks @wyuenho on GitHub"
           ";; Press M-RET (Meta-RET) to open the Mitch's Menu"))
 
 ;; (add-hook 'lisp-interaction-mode-hook 'use-package-report)
-  ;; (concat ";; Hello, World and Happy hacking "
-  ;;     user-login-name "!\n;; Press M-RET (C-c C-m) to open the Mitch Menu\n\n"))
 
 ;;; --------------------------------------------------------------------------
 

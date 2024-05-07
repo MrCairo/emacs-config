@@ -25,7 +25,7 @@ This ORG file will configure the * init.el * file based upon all of the * emacs-
 - When starting this Configuration for the very first time, set the =use-package-always-ensure= variable to =t=. This will force all packages to be installed even if deferred. Make sure to set this value back to =nil= after everything is loaded otherwize Emacs startup time will be impacted. This can be found in the [[Bootstrap straight][Bootstrap straight]] section.
 
 - Take a look a the [[Custom enable flags][Custom Variables]] and [[Customization groups][Groups]] section to see what options exist. It's important to note that these variables need to be adhered to. Another thing to note is that the various =enable*= flags are not used as =:if= option in =use-package= statement. Instead, a lisp conditional statement is used so that the package is actually never loaded or installed. This improves overall startup performance.
-
+  
 -----
 
 
@@ -76,10 +76,7 @@ Package related early initialization
 #+begin_src emacs-lisp :tangle "early-init.el"
         ;;; --------------------------------------------------------------------------
 
-        ;;;; Packages
-
   (setq package-vc-register-as-project nil) ; Emacs 30
-
   (add-hook 'package-menu-mode-hook #'hl-line-mode)
 
   (setq package-archives
@@ -101,29 +98,32 @@ Package related early initialization
   		load-path))))
 
   ;; Add both site-lisp and its immediate subdirs to `load-path'
-  (let ((site-lisp-dir (expand-file-name "site-lisp/" user-emacs-directory)))
-      (push site-lisp-dir load-path)
-      (add-site-lisp-to-load-path site-lisp-dir))
+  (when (file-directory-p (expand-file-name "site-lisp/" user-emacs-directory))
+      (let ((site-lisp-dir (expand-file-name "site-lisp/" user-emacs-directory)))
+  	(push site-lisp-dir load-path)
+  	(add-site-lisp-to-load-path site-lisp-dir)))
 
 #+end_src
 
+Configure ~use-package~ 
 #+begin_src emacs-lisp :tangle "early-init.el"
 
   (defun mrf/display-startup-time ()
       "Calculate and display startup time."
       (message "Emacs loaded in %s with %d garbage collections."
-	  (format "%.2f seconds"
-	      (float-time
-		  (time-subtract after-init-time before-init-time)))
-	  gcs-done))
+  	  (format "%.2f seconds"
+  	      (float-time
+  		  (time-subtract after-init-time before-init-time)))
+  	  gcs-done))
 
   (add-hook 'emacs-startup-hook #'mrf/display-startup-time)
 
-  (setq use-package-compute-statistics t
-      use-package-verbose t
+  (setq use-package-compute-statistics nil
+      use-package-verbose nil
       use-package-always-ensure nil
       use-package-always-demand nil
       use-package-always-defer nil)
+  
 #+end_src
 
 
@@ -133,7 +133,7 @@ Package related early initialization
 This is the standard format of a =lisp= header that should appear for all =lisp= scripts. It also indicates that the ~init.el~ file is generated from this ~Configure.org~ file.
 
 #+begin_src emacs-lisp :tangle "init.el"
-  ;;; init.el --- My customized emacs init file -- lexical-binding: t --
+  ;;; init.el -- Generated from emacs-config.org -*- flycheck-disabled-checkers: (emacs-lisp); -*-
   ;;;
   ;;; Commentary:
 
@@ -432,9 +432,9 @@ These are features that basically have multiple-choice options instead of being 
   commands that are customised to make the best use of Ivy.  Swiper is an
   alternative to isearch that uses Ivy to show an overview of all matches."
       :type '(choice
-  	       (const :tag "Use the Vertico completion system." comphand-vertico)
-                 (const :tag "Use Ivy, Counsel, Swiper completion systems" comphand-ivy-counsel)
-  	       (const :tag "Built-in Ido" comphand-built-in))
+	       (const :tag "Use the Vertico completion system." comphand-vertico)
+		 (const :tag "Use Ivy, Counsel, Swiper completion systems" comphand-ivy-counsel)
+	       (const :tag "Built-in Ido" comphand-built-in))
       :group 'mrf-custom-choices)
 
   (defcustom debug-adapter 'enable-dape
@@ -448,10 +448,10 @@ These are features that basically have multiple-choice options instead of being 
   with DAPE. DAPE supports most popular languages, however, not as many as
   dap-mode."
       :type '(choice (const :tag "Debug Adapter Protocol (DAP)" enable-dap-mode)
-                 (const :tag "Debug Adapter Protocol for Emacs (DAPE)" enable-dape))
+		 (const :tag "Debug Adapter Protocol for Emacs (DAPE)" enable-dape))
       :group 'mrf-custom-choices)
 
-  (defcustom custom-ide 'custom-ide-eglot-lsp
+  (defcustom custom-ide 'custom-ide-eglot
       "Select which IDE will be used for Python development.
 
   Elpy is an Emacs package to bring powerful Python editing to Emacs. It
@@ -459,7 +459,7 @@ These are features that basically have multiple-choice options instead of being 
   Lisp as well as Python. Elpy is fully documented at
   https://elpy.readthedocs.io/en/latest/index.html.
 
-  Elgot/LSP Eglot is the Emacs client for the Language Server Protocol
+  Eglot/LSP Eglot is the Emacs client for the Language Server Protocol
   (LSP). Eglot provides infrastructure and a set of commands for enriching the
   source code editing capabilities of Emacs via LSP. Eglot itself is
   completely language-agnostic, but it can support any programming language
@@ -468,9 +468,10 @@ These are features that basically have multiple-choice options instead of being 
   Anaconda-mode is another IDE for Python very much like Elpy. It is not as
   configurable but has a host of great feaures that just work."
       :type '(choice (const :tag "Elpy: Emacs Lisp Python Environment" custom-ide-elpy)
-                 (const :tag "Eglot/Language Server Protocol" custom-ide-eglot-lsp)
-                 (const :tag "LSP Bridge (standalone)" custom-ide-lsp-bridge)
-                 (const :tag "Python Anaconda-mode for Emacs" custom-ide-anaconda))
+		 (const :tag "Emacs Polyglot (Eglot)" custom-ide-eglot)
+		 (const :tag "Language Server Protocol (LSP)" custom-ide-lsp)
+		 (const :tag "LSP Bridge (standalone)" custom-ide-lsp-bridge)
+		 (const :tag "Python Anaconda-mode for Emacs" custom-ide-anaconda))
       :group 'mrf-custom-choices)
 
 #+end_src
@@ -756,7 +757,6 @@ We use [[https://github.com/joostkremers/visual-fill-column][visual-fill-column]
 
 #+RESULTS:
 : #s(hash-table size 65 test eql rehash-size 1.5 rehash-threshold 0.8125 data (:use-package (26168 14297 80334 0) :use-package-secs (0 0 947 0)))
-
 
 ** Mac Specific
 #+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
@@ -1597,7 +1597,7 @@ This function sets up the fonts faces that are used within org-mode.
               (set-face-attribute (car face) nil :font "ETBembo" :weight 'regular :height (cdr face)))
 
           ;; Ensure that anything that should be fixed-pitch in Org files appears that way
-          (set-face-attribute 'org-block nil    :foreground 'unspecified :inherit 'fixed-pitch)
+          (set-face-attribute 'org-block nil    :foreground 'unspecified :inherit 'fixed-pitch :font "Hack" )
           (set-face-attribute 'org-table nil    :inherit 'fixed-pitch)
           (set-face-attribute 'org-formula nil  :inherit 'fixed-pitch)
           (set-face-attribute 'org-code nil     :inherit '(shadow fixed-pitch))
@@ -1825,7 +1825,7 @@ This section contains the basic configuration for =org-mode= plus the configurat
 ** Better Bullets
 [[https://github.com/sabof/org-bullets][org-bullets]] replaces the heading stars in =org-mode= buffers with nicer looking characters that you can control.  Another option for this is [[https://github.com/integral-dw/org-superstar-mode][org-superstar-mode]].
 
-#+begin_src emacs-lisp :tangle no #"init.el" :mkdirp yes
+#+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
 
   (use-package org-superstar
@@ -1893,7 +1893,6 @@ While there is standard markdown support built into =org-mode=, this additional 
       (require 'ox-gfm nil t))
 
 #+end_src
-
 
 ** Org-mode Roam
 Org Mode is known to be a great tool not just for writing and personal notes but also TODO lists, project planning, time tracking, and more. Once you start to become really invested in Org Mode you’ll eventually have to come up with a system for managing your Org files so that it’s easy to store and find the information you need.
@@ -2084,6 +2083,18 @@ The following snippet sets up a hook for all Org task state changes and then cop
 
 #+end_src
 
+** Table-of-contents
+#+begin_src emacs-lisp :tangle "init.el"
+
+  (use-package toc-org
+      :after org markdown-mode
+      :hook
+      (org-mode . toc-org-mode)
+      (markdown-mode-hook . toc-org-mode)
+      :bind (:map markdown-mode-map
+  	      ("C-c C-o" . toc-org-markdown-follow-thing-at-point)))
+
+#+end_src
 
 
 * Treemacs
@@ -2328,7 +2339,7 @@ The following are configured for Python development and provide an IDE type expe
 - eldoc mode
 
 ** EGlot
-  Elgot/LSP Eglot is the Emacs client for the Language Server Protocol
+  Eglot/LSP Eglot is the Emacs client for the Language Server Protocol
   (LSP). Eglot provides infrastructure and a set of commands for enriching the
   source code editing capabilities of Emacs via LSP. Eglot itself is completely
   language-agnostic, but it can support any programming language for which there
@@ -2348,7 +2359,7 @@ The following are configured for Python development and provide an IDE type expe
           (and root (cons 'transient root))))
 
   (use-package eglot
-      :when (equal custom-ide 'custom-ide-eglot-lsp)
+      :when (equal custom-ide 'custom-ide-eglot)
       :ensure (:repo "https://github.com/emacs-mirror/emacs" :local-repo "eglot" :branch "master"
   		:files ("lisp/progmodes/eglot.el" "doc/emacs/doclicense.texi" "doc/emacs/docstyle.texi"
   			   "doc/misc/eglot.texi" "etc/EGLOT-NEWS" (:exclude ".git")))
@@ -2361,7 +2372,7 @@ The following are configured for Python development and provide an IDE type expe
       :hook
       (lisp-mode . eglot-ensure)
       (python-mode . eglot-ensure)
-      (rust-mode-hook . eglot-ensure)
+      (go-mode . eglot-ensure)
       ;; (c-mode . eglot-ensure)
       ;; (c++-mode . eglot-ensure)
       ;; (prog-mode . eglot-ensure)
@@ -2375,9 +2386,10 @@ The following are configured for Python development and provide an IDE type expe
       (add-to-list 'eglot-stay-out-of 'flymake)
       ;; (add-to-list 'eglot-server-programs '((c-mode c++-mode) "clangd"))
       (add-to-list 'eglot-server-programs '(python-mode . ("pylsp")))
-      (add-to-list 'eglot-server-programs
-          '((rust-ts-mode rust-mode) .
-               ("rust-analyzer" :initializationOptions (:check (:command "clippy")))))
+      (setq-default eglot-workspace-configuration
+  	'((:gopls .
+  	      ((staticcheck . t)
+  		  (matcher . "CaseSensitive")))))
       (setq-default eglot-workspace-configuration
           '((:pylsp . (:configurationSources ["flake8"]
   			:plugins (:pycodestyle (:enabled nil)
@@ -2392,20 +2404,19 @@ The following are configured for Python development and provide an IDE type expe
   ;;; --------------------------------------------------------------------------
   ;;; Language Server Protocol
 
-  (when (equal custom-ide 'custom-ide-eglot-lsp)
+  (when (equal custom-ide 'custom-ide-lsp)
       (eval-when-compile (defvar lsp-enable-which-key-integration)))
 
   (defun mrf/lsp-mode-setup ()
       "Custom LSP setup function."
-      (when (equal custom-ide 'custom-ide-eglot-lsp)
+      (when (equal custom-ide 'custom-ide-lsp)
           (message "Set up LSP header-line and other vars")
           (setq lsp-headerline-breadcrumb-segments '(path-up-to-project file symbols))
           (setq lsp-clangd-binary-path "/usr/bin/clangd")'
           (lsp-headerline-breadcrumb-mode)))
 
-
   (use-package lsp-mode
-      :when (equal custom-ide 'custom-ide-eglot-lsp)
+      :when (equal custom-ide 'custom-ide-lsp)
       :commands (lsp lsp-deferred)
       :hook (lsp-mode . mrf/lsp-mode-setup)
       :init
@@ -2414,7 +2425,7 @@ The following are configured for Python development and provide an IDE type expe
       (lsp-enable-which-key-integration t))
 
   (use-package lsp-ui
-      :when (equal custom-ide 'custom-ide-eglot-lsp)
+      :when (equal custom-ide 'custom-ide-lsp)
       :after lsp
       :config (setq lsp-ui-sideline-enable t
                   lsp-ui-sideline-show-hover t
@@ -2435,7 +2446,7 @@ The following are configured for Python development and provide an IDE type expe
       :hook (lsp-mode . lsp-ui-mode))
 
   (use-package lsp-treemacs
-      :when (equal custom-ide 'custom-ide-eglot-lsp)
+      :when (equal custom-ide 'custom-ide-lsp)
       :after lsp treemacs
       :bind (:map prog-mode-map
                 ("C-c t" . treemacs))
@@ -2443,7 +2454,7 @@ The following are configured for Python development and provide an IDE type expe
       (lsp-treemacs-sync-mode 1))
 
   (use-package lsp-ivy
-      :when (and (equal custom-ide 'custom-ide-eglot-lsp)
+      :when (and (equal custom-ide 'custom-ide-lsp)
                 (equal completion-handler 'comphand-ivy-counsel))
       :after lsp ivy)
 
@@ -3341,6 +3352,10 @@ Tree-sitter is a parser generator tool and an incremental parsing library. It ca
       (tree-sitter-hl-mode t)
       (ts-fold-mode t))
 
+  (defun lsp-go-install-save-hooks ()
+      (add-hook 'before-save-hook #'lsp-format-buffer t t)
+      (add-hook 'before-save-hook #'lsp-organize-imports t t))
+
   (use-package tree-sitter
       :init
       (message ">>> Loading tree-sitter")
@@ -3351,9 +3366,10 @@ Tree-sitter is a parser generator tool and an incremental parsing library. It ca
       :hook
       (tree-sitter-after-on . mrf/tree-sitter-setup)
       (typescript-mode . lsp-deferred)
-      (c-mode . lsp-deferred)
-      (c++-mode . lsp-deferred)
-      (rust-mode . lsp-deferred)
+      ;; (c-mode . lsp-deferred)
+      ;; (c++-mode . lsp-deferred)
+      (go-mode . lsp-deferred)
+      (before-save . lsp-go-install-save-hooks)
       (js2-mode . lsp-deferred))
 
   (use-package tree-sitter-langs
@@ -3390,36 +3406,12 @@ Tree-sitter is a parser generator tool and an incremental parsing library. It ca
   (use-package git-commit :after transient)
   (use-package magit :after git-commit)
 
-  ;; (use-package magit
-  ;;     :after git-commit
-  ;;     :ensure (:fetcher github
-  ;; 		:repo "magit/magit"
-  ;; 		:files ("lisp/magit*.el"
-  ;; 			   "lisp/git-rebase.el"
-  ;; 			   "docs/magit.texi"
-  ;; 			   "docs/AUTHORS.md"
-  ;; 			   "LICENSE"
-  ;; 			   "Documentation/magit.texi" ; temporarily for stable
-  ;; 			   "Documentation/AUTHORS.md" ; temporarily for stable
-  ;; 			   (:exclude "lisp/magit-libgit.el"
-  ;; 			       "lisp/magit-libgit-pkg.el"
-  ;; 			       "lisp/magit-section.el"
-  ;; 			       "lisp/magit-section-pkg.el")))
-  ;;     :after (:any python-mode rust-mode lisp-mode)
-  ;;     :commands (magit-status magit-get-current-branch)
-  ;;     ;; :custom
-  ;;     ;;  (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1)
-  ;;     )
-
   ;; NOTE: Make sure to configure a GitHub token before using this package!
   ;; - https://magit.vc/manual/forge/Token-Creation.html#Token-Creation
   ;; - https://magit.vc/manual/ghub/Getting-Started.html#Getting-Started
 
-  (use-package forge
-      :after magit)
-
-  (use-package treemacs-magit
-      :after treemacs magit)
+  (use-package forge :after magit)
+  (use-package treemacs-magit :after treemacs magit)
 
 #+end_src
 
@@ -3433,12 +3425,11 @@ This is a basic configuration for the TypeScript language so that =.ts= files ac
 
   (when (equal debug-adapter 'enable-dap-mode)
       (use-package typescript-ts-mode
-          ;; :after (dap-mode)
+          :after (:any dap-mode dape-mode)
           :mode "\\.ts\\'"
           :hook
           (typescript-ts-mode . lsp-deferred)
           (js2-mode . lsp-deferred)
-          (rust-mode . lsp-deferred)
           :bind (:map typescript-mode-map
                     ("C-c ." . dap-hydra/body))
           :config
@@ -3452,7 +3443,6 @@ This is a basic configuration for the TypeScript language so that =.ts= files ac
           :hook
           (typescript-ts-mode . lsp-deferred)
           (js2-mode . lsp-deferred)
-          (rust-mode . lsp-deferred)
           :bind (:map typescript-mode-map
                     ("C-c ." . dape-hydra/body))
           :config
@@ -3589,13 +3579,16 @@ The following are keymaps that are used by by the custom-ide and for python-mode
   (defun mrf/set-custom-ide-python-keymaps ()
       (message "<<< Set python-mode keymaps based upon IDE.")
       (cond
-          ((equal custom-ide 'custom-ide-eglot-lsp)
-              ;; (unless (featurep 'lsp)
-              ;;     (lsp-deferred))
-              ;; (unless (featurep 'eglot)
-              ;;     (eglot))
+          ((equal custom-ide 'custom-ide-lsp)
               (bind-keys :map python-mode-map
                   ("C-c g r" . lsp-find-references)
+                  ("C-c g o" . xref-find-definitions-other-window)
+                  ("C-c g g" . xref-find-definitions)
+                  ("C-c g ?" . eldoc-doc-buffer))
+              (message (format ">>> set python-mode-map for %s" custom-ide)))
+          ((equal custom-ide 'custom-ide-eglot)
+              (bind-keys :map python-mode-map
+                  ("C-c g r" . eglot-find-implementation)
                   ("C-c g o" . xref-find-definitions-other-window)
                   ("C-c g g" . xref-find-definitions)
                   ("C-c g ?" . eldoc-doc-buffer))
@@ -3619,8 +3612,7 @@ The following are keymaps that are used by by the custom-ide and for python-mode
                   ("C-c g ?" . lsp-bridge-popup-documentation))
               (message (format ">>> set python-mode-map for %s" custom-ide)))
           ))
-
-
+ 
 #+end_src
 
 ** Standard setup
@@ -3776,6 +3768,7 @@ Lisp support is handled by SLIME which is the “Superior Lisp Interaction Mode 
 
   ;; (use-package graphql-mode)
   (use-package rust-mode
+      :disabled
       :init (setq rust-mode-treesitter-derive t)
       :hook (rust-mode . (lambda ()
                            (setq indent-tabs-mode nil)
@@ -3791,7 +3784,12 @@ Lisp support is handled by SLIME which is the “Superior Lisp Interaction Mode 
 
   (use-package go-mode
       :mode ("\\.go\\'" . go-mode)
-      :hook (go-mode . lsp-deferred))
+      :config
+      (cond
+  	((equal custom-ide 'custom-ide-eglot)
+  	    (add-hook 'go-mode-hook 'eglot-ensure))
+  	((equal custom-ide 'custom-ide-lsp)
+    	    (add-hook 'go-mode-hook 'lsp-deferred))))
 
   (use-package go-eldoc
       :after go-mode
@@ -3800,6 +3798,7 @@ Lisp support is handled by SLIME which is the “Superior Lisp Interaction Mode 
       (set-face-attribute 'eldoc-highlight-function-argument nil
           :underline t :foreground "green"
           :weight 'bold))
+
 #+end_src
 
 
@@ -3822,10 +3821,13 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
       (company-idle-delay 0.0)
       :config
       (cond
-  	  ((equal custom-ide 'custom-ide-eglot-lsp)
+  	  ((equal custom-ide 'custom-ide-eglot)
+  	      (bind-keys :map eglot-mode-map
+  		  ("<tab>" . company-indent-or-complete-common)))
+  	  ((equal custom-ide 'custom-ide-lsp)
   	      (bind-keys :map lsp-mode-map
   		  ("<tab>" . company-indent-or-complete-common)))
-  	  ((equal custom-ide 'custom-ide-elpy)
+  	((equal custom-ide 'custom-ide-elpy)
   	      (bind-keys :map elpy-mode-map
   		  ("<tab>" . company-indent-or-complete-common)))
   	  ((equal custom-ide 'custom-ide-anaconda)
@@ -3896,6 +3898,24 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
 
 #+end_src
 
+
+* Project.el
+This is the default built-in project system. For those not needing the full-featured ~projectile~, this package is generally enough.
+
+#+begin_src emacs-lisp :tangle "init.el"
+
+  (defun project-find-go-module (dir)
+      (when-let ((root (locate-dominating-file dir "go.mod")))
+  	(cons 'go-module root)))
+
+  (use-package project
+      :ensure nil
+      :config
+      (cl-defmethod project-root ((project (head go-module)))
+  	(cdr project))
+      (add-hook 'project-find-functions #'project-find-go-module))
+
+#+end_src
 
 
 * IRC Client
@@ -4457,8 +4477,6 @@ Some final configuratiion to be done at the end of this configuration.
           ";; Press M-RET (Meta-RET) to open the Mitch's Menu"))
 
 ;; (add-hook 'lisp-interaction-mode-hook 'use-package-report)
-  ;; (concat ";; Hello, World and Happy hacking "
-  ;;     user-login-name "!\n;; Press M-RET (C-c C-m) to open the Mitch Menu\n\n"))
 
 #+end_src
 
