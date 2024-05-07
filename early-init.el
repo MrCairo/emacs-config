@@ -63,9 +63,10 @@
 		load-path))))
 
 ;; Add both site-lisp and its immediate subdirs to `load-path'
-(let ((site-lisp-dir (expand-file-name "site-lisp/" user-emacs-directory)))
-    (push site-lisp-dir load-path)
-    (add-site-lisp-to-load-path site-lisp-dir))
+(when (file-directory-p (expand-file-name "site-lisp/" user-emacs-directory))
+    (let ((site-lisp-dir (expand-file-name "site-lisp/" user-emacs-directory)))
+	(push site-lisp-dir load-path)
+	(add-site-lisp-to-load-path site-lisp-dir)))
 
 (defun mrf/display-startup-time ()
     "Calculate and display startup time."
