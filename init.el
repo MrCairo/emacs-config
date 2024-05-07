@@ -20,49 +20,49 @@
 ;;
 
 (defvar elpaca-installer-version 0.7)
-(defvar elpaca-directory (expand-file-name "elpaca/" user-emacs-directory))
-(defvar elpaca-builds-directory (expand-file-name "builds/" elpaca-directory))
-(defvar elpaca-repos-directory (expand-file-name "repos/" elpaca-directory))
-(defvar elpaca-order '(elpaca :repo "https://github.com/progfolio/elpaca.git"
-                          :ref nil :depth 1
-                          :files (:defaults "elpaca-test.el" (:exclude "extensions"))
-                          :build (:not elpaca--activate-package)))
-(let* ((repo  (expand-file-name "elpaca/" elpaca-repos-directory))
-        (build (expand-file-name "elpaca/" elpaca-builds-directory))
-        (order (cdr elpaca-order))
-        (default-directory repo))
-    (add-to-list 'load-path (if (file-exists-p build) build repo))
-    (unless (file-exists-p repo)
-      (make-directory repo t)
-      (when (< emacs-major-version 28) (require 'subr-x))
-      (condition-case-unless-debug err
-            (if-let ((buffer (pop-to-buffer-same-window "*elpaca-bootstrap*"))
-                      ((zerop (apply #'call-process `("git" nil ,buffer t "clone"
-                                                         ,@(when-let ((depth (plist-get order :depth)))
-                                                               (list (format "--depth=%d" depth) "--no-single-branch"))
-                                                         ,(plist-get order :repo) ,repo))))
-                      ((zerop (call-process "git" nil buffer t "checkout"
-                                    (or (plist-get order :ref) "--"))))
-                      (emacs (concat invocation-directory invocation-name))
-                      ((zerop (call-process emacs nil buffer nil "-Q" "-L" "." "--batch"
-                                    "--eval" "(byte-recompile-directory \".\" 0 'force)")))
-                      ((require 'elpaca))
-                      ((elpaca-generate-autoloads "elpaca" repo)))
-              (progn (message "%s" (buffer-string)) (kill-buffer buffer))
-              (error "%s" (with-current-buffer buffer (buffer-string))))
-          ((error) (warn "%s" err) (delete-directory repo 'recursive))))
-    (unless (require 'elpaca-autoloads nil t)
-      (require 'elpaca)
-      (elpaca-generate-autoloads "elpaca" repo)
-      (load "./elpaca-autoloads")))
-(add-hook 'after-init-hook #'elpaca-process-queues)
-(elpaca `(,@elpaca-order))
+  (defvar elpaca-directory (expand-file-name "elpaca/" user-emacs-directory))
+  (defvar elpaca-builds-directory (expand-file-name "builds/" elpaca-directory))
+  (defvar elpaca-repos-directory (expand-file-name "repos/" elpaca-directory))
+  (defvar elpaca-order '(elpaca :repo "https://github.com/progfolio/elpaca.git"
+                            :ref nil :depth 1
+                            :files (:defaults "elpaca-test.el" (:exclude "extensions"))
+                            :build (:not elpaca--activate-package)))
+  (let* ((repo  (expand-file-name "elpaca/" elpaca-repos-directory))
+          (build (expand-file-name "elpaca/" elpaca-builds-directory))
+          (order (cdr elpaca-order))
+          (default-directory repo))
+      (add-to-list 'load-path (if (file-exists-p build) build repo))
+      (unless (file-exists-p repo)
+        (make-directory repo t)
+        (when (< emacs-major-version 28) (require 'subr-x))
+        (condition-case-unless-debug err
+              (if-let ((buffer (pop-to-buffer-same-window "*elpaca-bootstrap*"))
+                        ((zerop (apply #'call-process `("git" nil ,buffer t "clone"
+                                                           ,@(when-let ((depth (plist-get order :depth)))
+                                                                 (list (format "--depth=%d" depth) "--no-single-branch"))
+                                                           ,(plist-get order :repo) ,repo))))
+                        ((zerop (call-process "git" nil buffer t "checkout"
+                                      (or (plist-get order :ref) "--"))))
+                        (emacs (concat invocation-directory invocation-name))
+                        ((zerop (call-process emacs nil buffer nil "-Q" "-L" "." "--batch"
+                                      "--eval" "(byte-recompile-directory \".\" 0 'force)")))
+                        ((require 'elpaca))
+                        ((elpaca-generate-autoloads "elpaca" repo)))
+                (progn (message "%s" (buffer-string)) (kill-buffer buffer))
+                (error "%s" (with-current-buffer buffer (buffer-string))))
+            ((error) (warn "%s" err) (delete-directory repo 'recursive))))
+      (unless (require 'elpaca-autoloads nil t)
+        (require 'elpaca)
+        (elpaca-generate-autoloads "elpaca" repo)
+        (load "./elpaca-autoloads")))
+  (add-hook 'after-init-hook #'elpaca-process-queues)
+  (elpaca `(,@elpaca-order))
 
-(elpaca elpaca-use-package
-    (elpaca-use-package-mode 1)
-    (setq elpaca-use-package-by-default t))
+  (elpaca elpaca-use-package
+      (elpaca-use-package-mode 1)
+      (setq elpaca-use-package-by-default t))
 
-(use-package emacs :ensure nil :config (setq ring-bell-function #'ignore))
+;;  (use-package emacs :ensure nil :config (setq ring-bell-function #'ignore))
 
 ;;; --------------------------------------------------------------------------
 ;;; Define my customization groups
@@ -116,29 +116,6 @@ be taken into consideration when providing a width."
     :group 'mrf-custom)
 
 ;;; --------------------------------------------------------------------------
-
-;; Use shell path
-
-(defun set-exec-path-from-shell-PATH ()
-   ;;; Set up Emacs' `exec-path' and PATH environment variable to match"
-   ;;; that used by the user's shell.
-   ;;; This is particularly useful under Mac OS X and macOS, where GUI
-   ;;; apps are not started from a shell."
-    (interactive)
-    (let ((path-from-shell (replace-regexp-in-string "[ \t\n]*$" ""
-                               (shell-command-to-string "$SHELL --login -c 'echo $PATH'"))))
-        (setenv "PATH" path-from-shell)
-        (setq exec-path (split-string path-from-shell path-separator))
-        (add-to-list 'exec-path "/opt/homebrew/bin")
-        (add-to-list 'exec-path "/usr/local/bin")
-        (add-to-list 'exec-path "/opt/homebrew/opt/openjdk/bin")
-        (add-to-list 'exec-path "/opt/homebrew/opt/node@20/bin/node")
-        (setq-default insert-directory-program "gls"
-            dired-use-ls-dired t
-            ;; Needed to fix an issue on Mac which causes dired to fail
-            dired-listing-switches "-al --group-directories-first")))
-
-;;; --------------------------------------------------------------------------
 ;;; Set a variable that represents the actual emacs configuration directory.
 ;;; This is being done so that the user-emacs-directory which normally points
 ;;; to the .emacs.d directory can be re-assigned so that customized files don't
@@ -149,23 +126,20 @@ be taken into consideration when providing a width."
 
 ;;; Different emacs configuration installs with have their own configuration
 ;;; directory.
-(make-directory working-files-directory t)  ;; Continues to work even if dir exists
+(make-directory working-files-directory t)
 
 ;;; Point the user-emacs-directory to the new working directory
 (setq user-emacs-directory working-files-directory)
 (message (concat ">>> Setting emacs-working-files directory to: " user-emacs-directory))
 
 ;;; Put any emacs cusomized variables in a special file
-(setq custom-file (expand-file-name "customized-vars.el" working-files-directory))
+(setq custom-file (expand-file-name "customized-vars.el" user-emacs-directory))
 (load custom-file 'noerror 'nomessage)
 
 ;;; --------------------------------------------------------------------------
 
 (add-to-list 'load-path (expand-file-name "lisp" emacs-config-directory))
-(add-to-list 'load-path (expand-file-name "emacs-config-modules" emacs-config-directory))
-
 (add-to-list 'custom-theme-load-path (expand-file-name "Themes" custom-docs-dir))
-(add-to-list 'load-path (expand-file-name "lisp/ef-themes" emacs-config-directory))
 
 ;;; --------------------------------------------------------------------------
 ;;; Feature Toggles
@@ -450,10 +424,10 @@ font size is computed + 20 of this value."
 
 (use-package anzu
     :custom
-    (anzu-mode-lighter "")                    
-    (anzu-deactivate-region t)                
-    (anzu-search-threshold 1000)              
-    (anzu-replace-threshold 50)               
+    (anzu-mode-lighter "")
+    (anzu-deactivate-region t)
+    (anzu-search-threshold 1000)
+    (anzu-replace-threshold 50)
     (anzu-replace-to-string-separator " => ")
     :config
     (global-anzu-mode +1)
@@ -547,10 +521,11 @@ font size is computed + 20 of this value."
 
 ;;; --------------------------------------------------------------------------
 
+;; prevent (emacs) eldoc loaded before Elpaca activation warning.
+;; (Warning only displayed during first Elpaca installation)
+(elpaca-process-queues)
+
 (use-package eldoc
-    :wait t
-    :ensure (:repo "https://github.com/emacs-mirror/emacs" :local-repo "eldoc" :branch "master"
-		  :files ("lisp/emacs-lisp/eldoc.el" (:exclude ".git")))
     :config
     (add-hook 'emacs-lisp-mode-hook 'eldoc-mode)
     (add-hook 'lisp-interaction-mode-hook 'eldoc-mode)
@@ -666,14 +641,14 @@ font size is computed + 20 of this value."
     (let ((step theme-cycle-step) (result 0))
 
         (if (not step) (setq step 1)) ;; If nil, default to step of 1
-        
+
         (when step
             (setq result (+ step theme-selector))
             (when (< result 0)
                 (setq result (- (length theme-list) 1)))
             (when (> result (- (length theme-list) 1))
                 (setq result 0)))
-        
+
         (message (format ">>> Current theme %S" theme))
         (setq-default theme-selector result)))
 
@@ -1057,7 +1032,7 @@ font size is computed + 20 of this value."
     (defface org-block-end-line
         '((t (:overline "#1D2C39" :foreground "SlateGray" :background "#1D2C39")))
         "Face used for the line delimiting the end of source blocks.")
-    
+
     (defface org-modern-horizontal-rule
         '((t (:strike-through "green" :weight bold)))
         "Face used for the Horizontal like (-----)"))
@@ -1082,7 +1057,7 @@ font size is computed + 20 of this value."
                            (org-level-7 . 1.1)
                            (org-level-8 . 1.1)))
             (set-face-attribute (car face) nil :font "ETBembo" :weight 'regular :height (cdr face)))
-      
+
         ;; Ensure that anything that should be fixed-pitch in Org files appears that way
         (set-face-attribute 'org-block nil    :foreground 'unspecified :inherit 'fixed-pitch)
         (set-face-attribute 'org-table nil    :inherit 'fixed-pitch)
@@ -1283,7 +1258,7 @@ font size is computed + 20 of this value."
 
 ;;; --------------------------------------------------------------------------
 
-(with-eval-after-load 'org    
+(with-eval-after-load 'org
     (org-babel-do-load-languages
         'org-babel-load-languages
         '((emacs-lisp . t)
@@ -1590,17 +1565,23 @@ capture was not aborted."
 (use-package all-the-icons
     :when (display-graphic-p))
 
-(defun mrf/setup-dashboard-buffer ()
+(defun mrf/dashboard-banner ()
+    "Setup defaults for the dashboard banner buffer."
+    (setq
+	dashboard-center-content t
+    	dashboard-footer-messages '("Greetings Program!")
+	dashboard-banner-logo-title "Welcome to Emacs!"
+	dashboard-startup-banner 'logo))
+
+(defun mrf/setup-dashboard-after-init ()
     "Set up the dashboard buffer and optionally make it the first."
     (setq dashboard-items '((recents . 15)
                                (bookmarks . 10)
                                (projects . 10))
         dashboard-icon-type 'all-the-icons
         dashboard-display-icons-p t
-        dashboard-center-content t
         dashboard-set-heading-icons t
         dashboard-set-file-icons t)
-    ;; dashboard-projects-backend 'projectile)
 
     (global-set-key (kbd "C-c d") 'dashboard-open)
 
@@ -1608,23 +1589,16 @@ capture was not aborted."
         (progn
             (setq initial-buffer-choice
                 (lambda ()
-                    (get-buffer-create "*dashboard*")))
+                    (get-buffer-create "*Dashboard*")))
             (dashboard-open))
-        (get-buffer-create "*dashboard*")))
-
-(defun mrf/dashboard-banner ()
-    "Setup defaults for the dashboard banner buffer."
-    (setq dashboard-footer-messages '("Greetings Program!"))
-    (setq dashboard-banner-logo-title "Welcome to Emacs!")
-    (setq dashboard-startup-banner 'logo))
+	(get-buffer-create "*Dashboard*")))
 
 (use-package dashboard
-    ;; :ensure (:fetcher github	:repo "emacs-dashboard/emacs-dashboard"	:files (:defaults "banners"))
+    :ensure (:fetcher github :repo "emacs-dashboard/emacs-dashboard" :files (:defaults "banners"))
     :bind ("C-c d" . dashboard-open)
     :config
     (mrf/dashboard-banner)
-    :hook ((elpaca-after-init . mrf/setup-dashboard-buffer)
-           (dashboard-mode . mrf/dashboard-banner)))
+    (add-hook 'elpaca-after-init-hook #'mrf/setup-dashboard-after-init))
 
 ;;; --------------------------------------------------------------------------
 ;;; Emacs Polyglot is the Emacs LSP client that stays out of your way:
@@ -1640,8 +1614,11 @@ Thanks @wyuenho on GitHub"
 
 (use-package eglot
     :when (equal custom-ide 'custom-ide-eglot-lsp)
-    ;; Open python files in tree-sitter mode.
-    :after company which-key
+    :ensure (:repo "https://github.com/emacs-mirror/emacs" :local-repo "eglot" :branch "master"
+		:files ("lisp/progmodes/eglot.el" "doc/emacs/doclicense.texi" "doc/emacs/docstyle.texi"
+			   "doc/misc/eglot.texi" "etc/EGLOT-NEWS" (:exclude ".git")))
+    :after eldoc
+    ;; :after (:all company which-key eldoc jsonrpc)
     :init
     (setq company-backends
         (cons 'company-capf
@@ -1668,9 +1645,9 @@ Thanks @wyuenho on GitHub"
              ("rust-analyzer" :initializationOptions (:check (:command "clippy")))))
     (setq-default eglot-workspace-configuration
         '((:pylsp . (:configurationSources ["flake8"]
-                      :plugins (:pycodestyle (:enabled nil)
-                                   :mccabe (:enabled nil)
-                                   :flake8 (:enabled t)))))))
+			:plugins (:pycodestyle (:enabled nil)
+                                     :mccabe (:enabled nil)
+                                     :flake8 (:enabled t)))))))
 
 ;;; --------------------------------------------------------------------------
 ;;; Language Server Protocol
@@ -1751,7 +1728,7 @@ Thanks @wyuenho on GitHub"
     :bind (:map python-mode-map
               ("C-c g o" . anaconda-mode-find-definitions-other-frame)
               ("C-c g g" . anaconda-mode-find-definitions)
-              ("C-c C-x" . next-error))        
+              ("C-c C-x" . next-error))
     :config
     (which-key-add-key-based-replacements "C-c g o" "find-defitions-other-window")
     (which-key-add-key-based-replacements "C-c g g" "find-defitions")
@@ -1788,14 +1765,7 @@ Thanks @wyuenho on GitHub"
     (elpy-enable))
 
 ;;; ------------------------------------------------------------------------
-  ;;; Alternate fork to handle possible performance bug(s)
-(use-package jsonrpc
-    ;; :ensure (:repo "https://github.com/emacs-mirror/emacs"
-    ;; 		:local-repo "jsonrpc" :branch "master"
-    ;; 		:files ("lisp/jsonrpc.el" (:exclude ".git")))
-    :ensure (:host github
-       :repo "emacs-straight/jsonrpc" :files ("*" (:exclude ".git"))))
-
+(use-package jsonrpc)
 (use-package dape
     :when (equal debug-adapter 'enable-dape)
     :after jsonrpc hydra
@@ -1831,7 +1801,7 @@ Thanks @wyuenho on GitHub"
     (message "DAPE Configured"))
 
 ;;; --------------------------------------------------------------------------
-;;; Debug Adapter Protocol      
+;;; Debug Adapter Protocol
 (use-package dap-mode
     :when (equal debug-adapter 'enable-dap-mode)
     :after hydra
@@ -1857,7 +1827,7 @@ Thanks @wyuenho on GitHub"
     (interactive)
     (mkdir mrf/vscode-js-debug-dir t)
     (let ((default-directory (expand-file-name mrf/vscode-js-debug-dir)))
-        
+
         (vc-git-clone "https://github.com/microsoft/vscode-js-debug.git" "." nil)
         (message "git repository created")
         (call-process "npm" nil "*snam-install*" t "install")
@@ -1998,7 +1968,7 @@ Thanks @wyuenho on GitHub"
     :when (equal debug-adapter 'enable-dap-mode)
     :disabled
     :hook ((typescript-mode . my-setup-dap-node)
-              (js2-mode . my-setup-dap-node))         
+              (js2-mode . my-setup-dap-node))
     ;;:ensure (:host github :repo "emacs-lsp/dap-mode" :files (:defaults "icons" "dap-mode-pkg.el"))
     :after dap-mode
     :config
@@ -2059,21 +2029,21 @@ Thanks @wyuenho on GitHub"
 "
       ("n" dap-next)    ("i" dap-step-in)    ("o" dap-step-out)   ("." dap-next)
       ("/" dap-step-in) ("," dap-step-out)   ("c" dap-continue)   ("r" dap-restart-frame)
-      
+
       ("ss" dap-switch-session) ("st" dap-switch-thread)    ("sf" dap-switch-stack-frame)
       ("su" dap-up-stack-frame) ("sd" dap-down-stack-frame) ("sl" dap-ui-locals)
       ("sb" dap-ui-breakpoints) ("sR" dap-ui-repl)          ("sS" dap-ui-sessions)
-      
+
       ("bb" dap-breakpoint-toggle)    ("ba" dap-breakpoint-add)           ("bd" dap-breakpoint-delete)
       ("bc" dap-breakpoint-condition) ("bh" dap-breakpoint-hit-condition) ("bl" dap-breakpoint-log-message)
-      
+
       ("dd" dap-debug)      ("dr" dap-debug-recent) ("ds" dap-debug-restart)
       ("dl" dap-debug-last) ("de" dap-debug-edit-template)
-      
+
       ("ee" dap-eval) ("ea" dap-ui-expressions-add) ("er" dap-eval-region) ("es" dap-eval-thing-at-point)
-      
+
       ("dx" mrf/end-debug-session) ("dX" mrf/delete-all-debug-sessions)
-      
+
       ("x" nil "exit Hydra" :color yellow) ("q" mrf/end-debug-session "quit" :color blue)
       ("Q" mrf/delete-all-debug-sessions :color red)))
 
@@ -2213,7 +2183,7 @@ Thanks @wyuenho on GitHub"
     (use-package vertico-prescient
 	:ensure (:package "vertico-prescient" :fetcher github
 		    :repo "radian-software/prescient.el" :files ("vertico-prescient.el")))
-    
+
     (use-package vertico-posframe
 	:ensure (:package "vertico-posframe" :repo "https://github.com/tumashu/vertico-posframe"
 		    :local-repo "vertico-posframe" :files ("*" (:exclude ".git")))
@@ -2371,15 +2341,6 @@ Thanks @wyuenho on GitHub"
   ;;;; 5. No project support
     ;; (setq consult-project-function nil)
 
-(when (equal completion-handler 'comphand-built-in)
-    (ido-everywhere t))
-
-;; (use-package ido
-;;     :ensure (:package "ido" :source nil :protocol https :inherit t :depth 1)
-;;     :when 
-;;     :config
-;;     (ido-everywhere t))
-
 ;;; --------------------------------------------------------------------------
 
 (use-package flycheck
@@ -2427,29 +2388,42 @@ Thanks @wyuenho on GitHub"
 
 ;;; --------------------------------------------------------------------------
 
-(use-package transient :ensure nil)
-(use-package git-commit :ensure nil)
+;; (use-package transient
+;;     :wait t
+;;     :ensure (:repo "https://github.com/magit/transient" :fetcher github
+;; 		:local-repo "transient"
+;; 		:files ("*" (:exclude ".git"))))
 
-(use-package magit
-    :after git-commit
-    :ensure (:fetcher github
-		:repo "magit/magit"
-		:files ("lisp/magit*.el"
-			   "lisp/git-rebase.el"
-			   "docs/magit.texi"
-			   "docs/AUTHORS.md"
-			   "LICENSE"
-			   "Documentation/magit.texi" ; temporarily for stable
-			   "Documentation/AUTHORS.md" ; temporarily for stable
-			   (:exclude "lisp/magit-libgit.el"
-			       "lisp/magit-libgit-pkg.el"
-			       "lisp/magit-section.el"
-			       "lisp/magit-section-pkg.el")))
-    :after (:any python-mode rust-mode lisp-mode)
-    :commands (magit-status magit-get-current-branch)
-    ;; :custom
-    ;;  (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1)
-    )
+;; (use-package git-commit
+;;     :ensure (:fetcher github :repo "magit/magit"
+;; 		:files ("lisp/git-commit.el" "lisp/git-commit-pkg.el")
+;; 		:old-names (git-commit-mode))
+;;     :after transient)
+
+(use-package transient)
+(use-package git-commit :after transient)
+(use-package magit :after git-commit)
+
+;; (use-package magit
+;;     :after git-commit
+;;     :ensure (:fetcher github
+;; 		:repo "magit/magit"
+;; 		:files ("lisp/magit*.el"
+;; 			   "lisp/git-rebase.el"
+;; 			   "docs/magit.texi"
+;; 			   "docs/AUTHORS.md"
+;; 			   "LICENSE"
+;; 			   "Documentation/magit.texi" ; temporarily for stable
+;; 			   "Documentation/AUTHORS.md" ; temporarily for stable
+;; 			   (:exclude "lisp/magit-libgit.el"
+;; 			       "lisp/magit-libgit-pkg.el"
+;; 			       "lisp/magit-section.el"
+;; 			       "lisp/magit-section-pkg.el")))
+;;     :after (:any python-mode rust-mode lisp-mode)
+;;     :commands (magit-status magit-get-current-branch)
+;;     ;; :custom
+;;     ;;  (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1)
+;;     )
 
 ;; NOTE: Make sure to configure a GitHub token before using this package!
 ;; - https://magit.vc/manual/forge/Token-Creation.html#Token-Creation
@@ -2466,11 +2440,11 @@ Thanks @wyuenho on GitHub"
 (defun mrf/load-js-file-hook ()
     (message "Running JS file hook")
     (js2-mode)
-    
+
     (when (equal debug-adapter 'enable-dap-mode)
         (dap-mode)
         (dap-firefox-setup))
-    
+
     (when (equal debug-adapter 'enable-dape)
         (dape))
 
@@ -2609,14 +2583,12 @@ Thanks @wyuenho on GitHub"
     (add-hook 'before-save-hook 'mrf/before-save)
     (set-fill-column 80))
 
-(use-package python-mode
-    :diminish Py
-    :hook (python-mode . mrf/python-mode-triggered)
-    :config
-    (add-to-list 'auto-mode-alist '("\\.py\\'" . mrf/load-python-file-hook)))
+(add-to-list 'auto-mode-alist '("\\.py\\'" . mrf/load-python-file-hook))
 
-(use-package blacken
-    :after python) ;Format Python file upon save.
+(use-package python-mode
+    :hook (python-mode . mrf/python-mode-triggered))
+
+(use-package blacken :after python) ;Format Python file upon save.
 
 (if (boundp 'python-shell-completion-native-disabled-interpreters)
     (add-to-list 'python-shell-completion-native-disabled-interpreters "python3")
@@ -2625,7 +2597,7 @@ Thanks @wyuenho on GitHub"
 ;;; --------------------------------------------------------------------------
 
 (use-package py-autopep8
-    :after (:any python-mode python)
+    :after python
     :hook (python-mode . py-autopep8-mode))
 
 ;;; --------------------------------------------------------------------------
@@ -2646,7 +2618,7 @@ Thanks @wyuenho on GitHub"
 ;;; --------------------------------------------------------------------------
 
 (use-package pyvenv-auto
-    :after (:any python python-mode)
+    :after python
     :config (message ">>> Starting pyvenv-auto")
     :hook (python-mode . pyvenv-auto-run))
 
@@ -2654,7 +2626,7 @@ Thanks @wyuenho on GitHub"
 
 (use-package pydoc
     ;;:ensure (:host github :repo "statmobile/pydoc")
-    :after (:any python python-mode)
+    :after python
     :custom
     (pydoc-python-command "python3")
     (pydoc-pip-version-command "pip3 --version"))
@@ -2692,51 +2664,34 @@ Thanks @wyuenho on GitHub"
         :weight 'bold))
 
 ;;; --------------------------------------------------------------------------
-(when (equal custom-ide 'custom-ide-eglot-lsp)
-    (use-package company
-	:wait t
-	:after lsp-mode
-	:hook (elpaca-after-init . global-company-mode)
-	:custom
-	(company-minimum-prefix-length 1)
-	(company-idle-delay 0.0)
-	:bind (:map company-active-map
-                  ("<tab>" . company-complete-selection))
-	(:map lsp-mode-map
-            ("<tab>" . company-indent-or-complete-common))))
 
-(when (equal custom-ide 'custom-ide-elpy)
-    (use-package company
-	:wait t
-	:after elpy
-	:hook (elpaca-after-init . global-company-mode)
-	:custom
-	(company-minimum-prefix-length 1)
-	(company-idle-delay 0.0)
-	:bind (:map company-active-map
-                  ("<tab>" . company-complete-selection))
-	(:map elpy-mode-map
-            ("<tab>" . company-indent-or-complete-common))))
+(use-package company
+    :after (:any lsp-mode elpy anaconda-mode)
+    ;; :ensure (:wait t)
+    :hook (elpaca-after-init . global-company-mode)
+    :bind (:map company-active-map
+		("<tab>" . company-complete-selection))
+    :custom
+    (company-minimum-prefix-length 1)
+    (company-idle-delay 0.0)
+    :config
+    (cond
+	  ((equal custom-ide 'custom-ide-eglot-lsp)
+	      (bind-keys :map lsp-mode-map
+		  ("<tab>" . company-indent-or-complete-common)))
+	  ((equal custom-ide 'custom-ide-elpy)
+	      (bind-keys :map elpy-mode-map
+		  ("<tab>" . company-indent-or-complete-common)))
+	  ((equal custom-ide 'custom-ide-anaconda)
+	      (bind-keys :map anaconda-mode-map
+		  ("<tab>" . company-indent-or-complete-common)))))
 
-(when (equal custom-ide 'custom-ide-anaconda)
-    (use-package company
-	:wait t
-	:after anaconda-mode
-	:hook (elpaca-after-init . global-company-mode)
-	:custom
-	(company-minimum-prefix-length 1)
-	(company-idle-delay 0.0)
-	:bind (:map company-active-map
-                  ("<tab>" . company-complete-selection))
-	(:map elpy-mode-map
-            ("<tab>" . company-indent-or-complete-common))))
+  ;; IMPORTANT:
+  ;; Don't use company at all if lsp-bridge is active.
+  ;; lsp-bridge already provides similar functionality.
 
-;; IMPORTANT:
-;; Don't use company at all if lsp-bridge is active.
-;; lsp-bridge already provides similar functionality.
-
-;; :config
-;; (add-to-list 'company-backends 'company-yasnippet))
+  ;; :config
+  ;; (add-to-list 'company-backends 'company-yasnippet))
 
 ;;; --------------------------------------------------------------------------
 ;; helpful package
@@ -2904,7 +2859,7 @@ Thanks @wyuenho on GitHub"
     ;; (bind-keys :map eshell-mode-map
     ;;  ("C-r" . eshell-hist-mode)
     ;;  ("<home>" . eshell-bol))
-    
+
     ;; (evil-define-key '(normal insert visual) eshell-mode-map (kbd "C-r") 'counsel-esh-history)
     ;; (evil-define-key '(normal insert visual) eshell-mode-map (kbd "<home>") 'eshell-bol)
     ;; (evil-normalize-keymaps)
