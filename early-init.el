@@ -75,8 +75,8 @@
 
 (add-hook 'emacs-startup-hook #'mrf/display-startup-time)
 
-(setq use-package-compute-statistics nil
-    use-package-verbose nil
+(setq use-package-compute-statistics t
+    use-package-verbose t
     use-package-always-ensure nil
     use-package-always-demand nil
     use-package-always-defer nil)

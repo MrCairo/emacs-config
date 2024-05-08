@@ -20,47 +20,50 @@
 ;;
 
 (defvar elpaca-installer-version 0.7)
-  (defvar elpaca-directory (expand-file-name "elpaca/" user-emacs-directory))
-  (defvar elpaca-builds-directory (expand-file-name "builds/" elpaca-directory))
-  (defvar elpaca-repos-directory (expand-file-name "repos/" elpaca-directory))
-  (defvar elpaca-order '(elpaca :repo "https://github.com/progfolio/elpaca.git"
-                            :ref nil :depth 1
-                            :files (:defaults "elpaca-test.el" (:exclude "extensions"))
-                            :build (:not elpaca--activate-package)))
-  (let* ((repo  (expand-file-name "elpaca/" elpaca-repos-directory))
+(defvar elpaca-directory (expand-file-name "elpaca/" user-emacs-directory))
+(defvar elpaca-builds-directory (expand-file-name "builds/" elpaca-directory))
+(defvar elpaca-repos-directory (expand-file-name "repos/" elpaca-directory))
+(defvar elpaca-order '(elpaca :repo "https://github.com/progfolio/elpaca.git"
+                          :ref nil :depth 1
+                          :files (:defaults "elpaca-test.el" (:exclude "extensions"))
+                          :build (:not elpaca--activate-package)))
+(let* ((repo  (expand-file-name "elpaca/" elpaca-repos-directory))
           (build (expand-file-name "elpaca/" elpaca-builds-directory))
           (order (cdr elpaca-order))
           (default-directory repo))
-      (add-to-list 'load-path (if (file-exists-p build) build repo))
-      (unless (file-exists-p repo)
+    (add-to-list 'load-path (if (file-exists-p build) build repo))
+    (unless (file-exists-p repo)
         (make-directory repo t)
         (when (< emacs-major-version 28) (require 'subr-x))
         (condition-case-unless-debug err
-              (if-let ((buffer (pop-to-buffer-same-window "*elpaca-bootstrap*"))
-                        ((zerop (apply #'call-process `("git" nil ,buffer t "clone"
-                                                           ,@(when-let ((depth (plist-get order :depth)))
-                                                                 (list (format "--depth=%d" depth) "--no-single-branch"))
-                                                           ,(plist-get order :repo) ,repo))))
+            (if-let ((buffer
+			 (pop-to-buffer-same-window "*elpaca-bootstrap*"))
+                        ((zerop (apply #'call-process
+				    `("git" nil ,buffer t "clone"
+                                         ,@(when-let ((depth (plist-get order :depth)))
+                                               (list (format "--depth=%d" depth)
+						   "--no-single-branch"))
+                                         ,(plist-get order :repo) ,repo))))
                         ((zerop (call-process "git" nil buffer t "checkout"
-                                      (or (plist-get order :ref) "--"))))
+                                    (or (plist-get order :ref) "--"))))
                         (emacs (concat invocation-directory invocation-name))
                         ((zerop (call-process emacs nil buffer nil "-Q" "-L" "." "--batch"
-                                      "--eval" "(byte-recompile-directory \".\" 0 'force)")))
+                                    "--eval" "(byte-recompile-directory \".\" 0 'force)")))
                         ((require 'elpaca))
                         ((elpaca-generate-autoloads "elpaca" repo)))
                 (progn (message "%s" (buffer-string)) (kill-buffer buffer))
                 (error "%s" (with-current-buffer buffer (buffer-string))))
             ((error) (warn "%s" err) (delete-directory repo 'recursive))))
-      (unless (require 'elpaca-autoloads nil t)
+    (unless (require 'elpaca-autoloads nil t)
         (require 'elpaca)
         (elpaca-generate-autoloads "elpaca" repo)
         (load "./elpaca-autoloads")))
-  (add-hook 'after-init-hook #'elpaca-process-queues)
-  (elpaca `(,@elpaca-order))
+(add-hook 'after-init-hook #'elpaca-process-queues)
+(elpaca `(,@elpaca-order))
 
-  (elpaca elpaca-use-package
-      (elpaca-use-package-mode 1)
-      (setq elpaca-use-package-by-default t))
+(elpaca elpaca-use-package
+    (elpaca-use-package-mode 1)
+    (setq elpaca-use-package-by-default t))
 
 ;;  (use-package emacs :ensure nil :config (setq ring-bell-function #'ignore))
 
@@ -382,9 +385,9 @@ font size is computed + 20 of this value."
     fill-column 80            ;; Default line limit for fills
     ;; Triggers project for directories with any of the following files:
     project-vc-extra-root-markers '(".dir-locals.el"
-                                       "requirements.txt"
-                                       "Gemfile"
-                                       "package.json")
+					 "requirements.txt"
+					 "Gemfile"
+					 "package.json")
     )
 
 ;; (global-display-line-numbers-mode 1) ;; Line numbers appear everywhere
@@ -566,6 +569,7 @@ font size is computed + 20 of this value."
 
 (use-package auto-package-update
     ;; :ensure (:fetcher github :repo "rranelli/auto-package-update.el")
+    :defer t
     :custom
     (auto-package-update-interval 7)
     (auto-package-update-prompt-before-update t)
@@ -688,7 +692,7 @@ font size is computed + 20 of this value."
     (interactive)
     (if step
         (setq theme-cycle-step step)
-      (setq theme-cycle-step 1))
+	(setq theme-cycle-step 1))
     (when loaded-theme
         (disable-theme (intern loaded-theme)))
     (setq loaded-theme (nth theme-selector theme-list))
@@ -720,6 +724,11 @@ font size is computed + 20 of this value."
     (interactive)
     (mrf/print-custom-theme-name))
 
+(defun reload-theme--from-startup ()
+    (setq loaded-theme (nth theme-selector theme-list))
+    (message (concat ">>> Startup Loading theme "
+                 (format "%d: %S" theme-selector loaded-theme)))
+    (load-theme (intern loaded-theme) t))
 
 ;; Go to NEXT theme
 (global-set-key (kbd "C-c C-=") 'next-theme)
@@ -744,13 +753,13 @@ font size is computed + 20 of this value."
 
 (add-to-list 'custom-theme-load-path (expand-file-name "Themes" custom-docs-dir))
 
-(use-package ef-themes :ensure t)
-(use-package modus-themes  :ensure t)
-(use-package material-theme  :ensure t)
-(use-package color-theme-modern  :ensure t)
-(use-package color-theme-sanityinc-tomorrow  :ensure t)
-(use-package darktooth-theme  :ensure t)
-(use-package zenburn-theme  :ensure t)
+(use-package ef-themes)
+(use-package modus-themes)
+(use-package material-theme)
+(use-package color-theme-modern)
+(use-package color-theme-sanityinc-tomorrow)
+(use-package darktooth-theme)
+(use-package zenburn-theme :defer t)
 
 ;;; --------------------------------------------------------------------------
 
@@ -787,12 +796,13 @@ font size is computed + 20 of this value."
 ;; (add-hook 'emacs-startup-hook #'(mrf/load-theme-from-selector))
 ;; (mrf/load-theme-from-selector)
 ;; For terminal mode we choose Material theme
+
 (if (not (display-graphic-p))
     (progn
-        (defun load-terminal-theme ()
-            (load-theme (intern default-terminal-theme) t))
-        (add-hook 'elpaca-after-init-hook 'load-terminal-theme))
-    (mrf/load-theme-from-selector))
+	  (defun load-terminal-theme ()
+	      (load-theme (intern default-terminal-theme) t))
+	  (add-hook 'elpaca-after-init-hook 'load-terminal-theme))
+  (add-hook 'emacs-startup-hook 'reload-theme--from-startup))
 
 ;;; --------------------------------------------------------------------------
 
@@ -1025,16 +1035,17 @@ font size is computed + 20 of this value."
 ;;; --------------------------------------------------------------------------
 
 (use-package spacious-padding
-    :hook (elpaca-after-init . spacious-padding-mode)
     :custom
     (spacious-padding-widths
-      '( :internal-border-width 15
+      '( :internal-border-width 10
            :header-line-width 4
            :mode-line-width 6
            :tab-width 4
-           :right-divider-width 30
+           :right-divider-width 10
            :scroll-bar-width 8
-           :fringe-width 8)))
+           :fringe-width 8))
+    :config
+    (spacious-padding-mode t))
 
 ;; Read the doc string of `spacious-padding-subtle-mode-line' as it
 ;; is very flexible and provides several examples.
@@ -1050,7 +1061,7 @@ font size is computed + 20 of this value."
         "Face used for the line delimiting the begin of source blocks.")
 
     (defface org-block
-        '((t (:background "#242635" :extend t)))
+        '((t (:background "#242635" :extend t :font "JetBrains Mono")))
         "Face used for the source block background.")
 
     (defface org-block-end-line
@@ -1068,6 +1079,7 @@ font size is computed + 20 of this value."
     (use-package org-faces
       :after org
       :config
+	(message "ORG-FACES configured.")
         (font-lock-add-keywords
             'org-mode
             '(("^ *\\([-]\\) "
@@ -1098,6 +1110,7 @@ font size is computed + 20 of this value."
 ;; -----------------------------------------------------------------
 
 (defun mrf/org-mode-visual-fill ()
+    (interactive)
     (setq visual-fill-column-width custom-org-fill-column
         visual-fill-column-center-text enable-org-fill-column-centering)
     (visual-fill-column-mode 1))
@@ -1207,15 +1220,16 @@ font size is computed + 20 of this value."
 
 ;;; --------------------------------------------------------------------------
 
-(mrf/org-theme-override-values)
-
 (use-package org
+    :preface
+    (mrf/org-theme-override-values)
     :commands (org-capture org-agenda)
+    :defer t
     :hook (org-mode . mrf/org-mode-setup)
     :bind (:map org-mode-map
               ("C-c e" . org-edit-src-code))
     :config
-    (message ">>> Loading orgmode")
+    (message "ORG-MODE Configured")
     (setq org-hide-emphasis-markers nil)
     ;; Save Org buffers after refiling!
     (advice-add 'org-refile :after 'org-save-all-org-buffers)
@@ -1235,10 +1249,10 @@ font size is computed + 20 of this value."
     ;; Configure custom agenda views
     (mrf/org-setup-agenda)
     (mrf/org-setup-capture-templates)
+    (mrf/org-font-setup)
     (yas-global-mode t)
     (define-key global-map (kbd "C-c j")
-        (lambda () (interactive) (org-capture nil "jj")))
-    (mrf/org-font-setup))
+        (lambda () (interactive) (org-capture nil "jj"))))
 
 ;;; --------------------------------------------------------------------------
 
@@ -1254,8 +1268,8 @@ font size is computed + 20 of this value."
                        window-divider-first-pixel
                        window-divider-last-pixel))
       (face-spec-reset-face face)
-      (set-face-foreground face (face-attribute 'default :background)))
-    (set-face-background 'fringe (face-attribute 'default :background))
+      (set-face-foreground face (face-attribute 'default :background 'unspecified)))
+    (set-face-background 'fringe (face-attribute 'default :background 'unspecified))
     (setq
       ;; Edit settings
       org-auto-align-tags nil
@@ -1302,7 +1316,6 @@ font size is computed + 20 of this value."
 
 (with-eval-after-load 'org
     ;; This is needed as of Org 9.2
-
     (add-to-list 'org-structure-template-alist '("sh" . "src shell"))
     (add-to-list 'org-structure-template-alist '("el" . "src emacs-lisp"))
     (add-to-list 'org-structure-template-alist '("py" . "src python")))
@@ -1794,6 +1807,7 @@ Thanks @wyuenho on GitHub"
     (use-package flycheck
         :when (equal custom-ide 'custom-ide-elpy)
         :after elpy
+	:defer t
         :diminish FlM
         ;;:ensure (:host github :repo "flycheck/flycheck")
         :hook (elpy-mode . flycheck-mode))      (which-key-add-key-based-replacements "C-c g a" "goto-assignment")
@@ -1806,7 +1820,10 @@ Thanks @wyuenho on GitHub"
 (use-package jsonrpc)
 (use-package dape
     :when (equal debug-adapter 'enable-dape)
-    :after jsonrpc hydra
+    :init
+    (define-dape-hydra)
+    :defer t
+    :after (:any jsonrpc hydra python)
     ;; To use window configuration like gud (gdb-mi)
     ;; :init
     ;; (setq dape-buffer-window-arrangement 'gud)
@@ -2241,7 +2258,7 @@ Thanks @wyuenho on GitHub"
     (vertico-count 13)
     (vertico-cycle nil)
     (mrf/vertico-other)
-    :bind ("C-x C-f" . ido-find-file)
+    ;; :bind ("C-x C-f" . ido-find-file)
     ;; Clean up file path when typing
     :hook ((rfn-eshadow-update-overlay . vertico-directory-tidy)
               ;; Make sure vertico state is saved
@@ -2251,9 +2268,11 @@ Thanks @wyuenho on GitHub"
 
 (use-package marginalia
     :when (equal completion-handler 'comphand-vertico)
+    :after vertico
     :custom
     (marginalia-max-relative-age 0)
-    (marginalia-align 'right)
+    (marginalia-align 'left)
+    (marginalia-annotators '(marginalia-annotators-heavy marginalia-annotators-light nil))
     :config
     (marginalia-mode t))
 
@@ -2394,6 +2413,7 @@ Thanks @wyuenho on GitHub"
 (use-package flycheck
     :unless (equal custom-ide 'custom-ide-elpy)
     :diminish FlM
+    :defer t
     ;;:ensure (:host github :repo "flycheck/flycheck")
     :config
     (eval-after-load 'flycheck
@@ -2414,11 +2434,11 @@ Thanks @wyuenho on GitHub"
     (add-hook 'before-save-hook #'lsp-organize-imports t t))
 
 (use-package tree-sitter
-    :init
-    (message ">>> Loading tree-sitter")
+    :defer t
     :after (:any python python-mode lisp-mode)
     :config
     ;; Activate tree-sitter globally (minor mode registered on every buffer)
+    (message "TREE-SITTER Configured")
     (global-tree-sitter-mode)
     :hook
     (tree-sitter-after-on . mrf/tree-sitter-setup)
@@ -2453,16 +2473,16 @@ Thanks @wyuenho on GitHub"
 ;; 		:old-names (git-commit-mode))
 ;;     :after transient)
 
-(use-package transient)
-(use-package git-commit :after transient)
-(use-package magit :after git-commit)
+(use-package transient :defer t)
+(use-package git-commit :after transient :defer t)
+(use-package magit :after git-commit :defer t)
 
 ;; NOTE: Make sure to configure a GitHub token before using this package!
 ;; - https://magit.vc/manual/forge/Token-Creation.html#Token-Creation
 ;; - https://magit.vc/manual/ghub/Getting-Started.html#Getting-Started
 
-(use-package forge :after magit)
-(use-package treemacs-magit :after treemacs magit)
+(use-package forge :after magit :defer t)
+(use-package treemacs-magit :defer t :after treemacs magit)
 
 ;;; --------------------------------------------------------------------------
 
@@ -2480,8 +2500,7 @@ Thanks @wyuenho on GitHub"
     (highlight-indentation-mode nil)
     (dap-firefox-setup))
 
-(use-package nodejs-repl
-    )
+(use-package nodejs-repl :defer t)
 
 (defun mrf/nvm-which ()
     (let ((output (shell-command-to-string "source ~/.nvm/nvm.sh; nvm which")))
@@ -2546,7 +2565,6 @@ Thanks @wyuenho on GitHub"
 ;;; --------------------------------------------------------------------------
 
 (defun mrf/set-custom-ide-python-keymaps ()
-    (message "<<< Set python-mode keymaps based upon IDE.")
     (cond
         ((equal custom-ide 'custom-ide-lsp)
             (bind-keys :map python-mode-map
@@ -2586,10 +2604,6 @@ Thanks @wyuenho on GitHub"
 
 (defun mrf/load-python-file-hook ()
     (python-mode)
-    ;; (unless (featurep 'jedi)
-    ;;  (use-package jedi
-    ;;      :config
-    ;;      (jedi:setup)))
     (setq highlight-indentation-mode -1)
     (setq display-fill-column-indicator-mode t))
 
