@@ -19,47 +19,50 @@
 ;; (setq debug-on-error t)
 ;;
 
-;;; --------------------------------------------------------------------------
+(defvar elpaca-installer-version 0.7)
+(defvar elpaca-directory (expand-file-name "elpaca/" user-emacs-directory))
+(defvar elpaca-builds-directory (expand-file-name "builds/" elpaca-directory))
+(defvar elpaca-repos-directory (expand-file-name "repos/" elpaca-directory))
+(defvar elpaca-order '(elpaca :repo "https://github.com/progfolio/elpaca.git"
+                          :ref nil :depth 1
+                          :files (:defaults "elpaca-test.el" (:exclude "extensions"))
+                          :build (:not elpaca--activate-package)))
+(let* ((repo  (expand-file-name "elpaca/" elpaca-repos-directory))
+        (build (expand-file-name "elpaca/" elpaca-builds-directory))
+        (order (cdr elpaca-order))
+        (default-directory repo))
+    (add-to-list 'load-path (if (file-exists-p build) build repo))
+    (unless (file-exists-p repo)
+      (make-directory repo t)
+      (when (< emacs-major-version 28) (require 'subr-x))
+      (condition-case-unless-debug err
+            (if-let ((buffer (pop-to-buffer-same-window "*elpaca-bootstrap*"))
+                      ((zerop (apply #'call-process `("git" nil ,buffer t "clone"
+                                                         ,@(when-let ((depth (plist-get order :depth)))
+                                                               (list (format "--depth=%d" depth) "--no-single-branch"))
+                                                         ,(plist-get order :repo) ,repo))))
+                      ((zerop (call-process "git" nil buffer t "checkout"
+                                    (or (plist-get order :ref) "--"))))
+                      (emacs (concat invocation-directory invocation-name))
+                      ((zerop (call-process emacs nil buffer nil "-Q" "-L" "." "--batch"
+                                    "--eval" "(byte-recompile-directory \".\" 0 'force)")))
+                      ((require 'elpaca))
+                      ((elpaca-generate-autoloads "elpaca" repo)))
+              (progn (message "%s" (buffer-string)) (kill-buffer buffer))
+              (error "%s" (with-current-buffer buffer (buffer-string))))
+          ((error) (warn "%s" err) (delete-directory repo 'recursive))))
+    (unless (require 'elpaca-autoloads nil t)
+      (require 'elpaca)
+      (elpaca-generate-autoloads "elpaca" repo)
+      (load "./elpaca-autoloads")))
+(add-hook 'after-init-hook #'elpaca-process-queues)
+(elpaca `(,@elpaca-order))
 
-(defvar bootstrap-version)
-(let ((bootstrap-file
-          (expand-file-name
-              "straight/repos/straight.el/bootstrap.el"
-              (or (bound-and-true-p straight-base-dir)
-                  user-emacs-directory)))
-         (bootstrap-version 7))
-    (unless (file-exists-p bootstrap-file)
-        (with-current-buffer
-            (url-retrieve-synchronously
-                "https://raw.githubusercontent.com/radian-software/straight.el/develop/install.el"
-                'silent 'inhibit-cookies)
-            (goto-char (point-max))
-            (eval-print-last-sexp)))
-    (load bootstrap-file nil 'nomessage))
-
-(setq straight-use-package-by-default t
-      straight-cache-autoloads t
-      use-package-verbose t)
-
-(straight-use-package 'use-package)
-
-(setq use-package-compute-statistics t
-    use-package-verbose t
-    use-package-always-ensure nil
-    use-package-always-demand nil
-    use-package-always-defer nil)
-
-(straight-use-package 'el-patch)
-
-(font-lock-add-keywords 'emacs-lisp-mode
-    '(("straight-use-package " 0 font-lock-keyword-face t)
-      (":straight " 0 font-lock-builtin-face t)))
-
-;; Load org early on in the init process
-;; (use-package org :straight t)
-;; Make sure that we set the read buffer above the default 4k
-(setq read-process-output-max (* 10240 1024))
 (use-package emacs :ensure nil :config (setq ring-bell-function #'ignore))
+
+;; (elpaca elpaca-use-package
+;;     (elpaca-use-package-mode 1)
+;;     (setq elpaca-use-package-by-default t))
 
 ;;; --------------------------------------------------------------------------
 ;;; Define my customization groups
@@ -149,20 +152,21 @@ be taken into consideration when providing a width."
 (make-directory working-files-directory t)  ;; Continues to work even if dir exists
 
 ;;; Point the user-emacs-directory to the new working directory
-(setq user-emacs-directory working-files-directory)
+;; (setq user-emacs-directory working-files-directory)
 (message (concat ">>> Setting emacs-working-files directory to: " user-emacs-directory))
 
 ;;; Put any emacs cusomized variables in a special file
-(setq custom-file (expand-file-name "customized-vars.el" working-files-directory))
+(setq custom-file (expand-file-name "customized-vars.el" user-emacs-directory))
 (load custom-file 'noerror 'nomessage)
 
 ;;; --------------------------------------------------------------------------
 
 (add-to-list 'load-path (expand-file-name "lisp" emacs-config-directory))
-(add-to-list 'load-path (expand-file-name "emacs-config-modules" emacs-config-directory))
-
-(add-to-list 'custom-theme-load-path (expand-file-name "Themes" custom-docs-dir))
 (add-to-list 'load-path (expand-file-name "lisp/ef-themes" emacs-config-directory))
+
+(add-to-list 'load-path (expand-file-name "emacs-config-modules" emacs-config-directory))
+(add-to-list 'custom-theme-load-path (expand-file-name "Themes" custom-docs-dir))
+(add-to-list 'custom-theme-load-path (expand-file-name "lisp" emacs-config-directory))
 
 ;; (use-package config-custom
 ;;     :straight (config-custom :local-repo "/Users/strider/.emacs.d/emacs-config-modules"))
@@ -229,10 +233,8 @@ smaller, simpler, and smoother to use yet highly customizable.  The Ivy package
 also includes Counsel. Counsel provides completion versions of common Emacs
 commands that are customised to make the best use of Ivy.  Swiper is an
 alternative to isearch that uses Ivy to show an overview of all matches."
-    :type '(choice
-	       (const :tag "Use the Vertico completion system." comphand-vertico)
-               (const :tag "Use Ivy, Counsel, Swiper completion systems" comphand-ivy-counsel)
-	       (const :tag "Built-in Ido" comphand-built-in))
+    :type '(choice (const :tag "Use the Vertico completion system." comphand-vertico)
+               (const :tag "Use Ivy, Counsel, Swiper completion systems" comphand-ivy-counsel))
     :group 'mrf-custom-choices)
 
 (defcustom debug-adapter 'enable-dape
@@ -407,27 +409,29 @@ font size is computed + 20 of this value."
 (when (fboundp 'pixel-scroll-precision-mode)
     (pixel-scroll-precision-mode))
 
-(use-package default-text-scale
-    :defer t
-    :hook (after-init . default-text-scale-mode))
+;; (use-package default-text-scale
+;;     :hook (after-init . default-text-scale-mode))
 
 ;;; --------------------------------------------------------------------------
 
+(defun mrf/set-diminish ()
+    (interactive)
+    ;; (diminish 'projectile-mode "PrM")
+    ;; (diminish 'anaconda-mode)
+    ;; (diminish 'tree-sitter-mode "ts")
+    ;; (diminish 'ts-fold-mode)
+    ;; (diminish 'counsel-mode)
+    ;; (diminish 'golden-ratio-mode)
+    ;; (diminish 'company-box-mode)
+    ;; (diminish 'company-mode)
+    )
 
 (use-package diminish
-    :preface
-    (defun mrf/set-diminish ()
-	(diminish 'projectile-mode "PrM")
-	(diminish 'anaconda-mode)
-	(diminish 'tree-sitter-mode "ts")
-	(diminish 'ts-fold-mode)
-	(diminish 'lisp-interaction-mode "Lim")
-	(diminish 'counsel-mode)
-	(diminish 'golden-ratio-mode)
-	(diminish 'company-box-mode)
-	(diminish 'company-mode))
-    ;; :ensure (:host github :repo "myrjola/diminish.el")
+    :ensure t
+    ;;:ensure (:host github :repo "myrjola/diminish.el")
     :hook (after-init . mrf/set-diminish))
+
+(elpaca-process-queues)
 
 ;;; --------------------------------------------------------------------------
 ;; Which Key Helper
@@ -442,7 +446,6 @@ font size is computed + 20 of this value."
 ;;; --------------------------------------------------------------------------
 
 (use-package multiple-cursors
-    :defer t
     :bind (("C-S-c C-S-c" . mc/edit-lines)
               ("C->" . mc/mark-next-like-this)
               ("C-<" . mc/mark-previous-like-this)
@@ -451,7 +454,6 @@ font size is computed + 20 of this value."
 ;;; --------------------------------------------------------------------------
 
 (use-package anzu
-    :defer t
     :custom
     (anzu-mode-lighter "")                    
     (anzu-deactivate-region t)                
@@ -472,22 +474,18 @@ font size is computed + 20 of this value."
 (column-number-mode)
 
 (use-package page-break-lines
-    :defer t
     :config
     (global-page-break-lines-mode))
 
 (use-package rainbow-delimiters
-    :defer t
     :config
     (rainbow-delimiters-mode))
 
 (use-package dash
-    :disabled
-    :straight t)
-    ;; :ensure (:files ("dash.el" "dash.texi" "dash-pkg.el")
-    ;;          :host github
-    ;;          :repo "magnars/dash.el"))
-
+    :disabled)
+;;     :ensure (:files ("dash.el" "dash.texi" "dash-pkg.el")
+;;              :host github
+;;              :repo "magnars/dash.el"))
 
 (defun mrf/set-fill-column-interactively (num)
     "Asks for the fill column."
@@ -500,12 +498,6 @@ font size is computed + 20 of this value."
     (setq custom-org-fill-column num)
     (mrf/org-mode-visual-fill)
     (redraw-display))
-
-;;; --------------------------------------------------------------------------
-
-(use-package visual-fill-column
-    :defer t
-    :after org)
 
 ;;; --------------------------------------------------------------------------
 
@@ -525,7 +517,6 @@ font size is computed + 20 of this value."
 (bind-key "C-x C-j" 'dired-jump)
 
 (use-package evil-nerd-commenter
-    :defer t
     :bind ("M-/" . evilnc-comment-or-uncomment-lines))
 
 ;;
@@ -550,26 +541,21 @@ font size is computed + 20 of this value."
 ;;; --------------------------------------------------------------------------
 
 (use-package hydra
-    :defer t)
-    ;; ;;:wait t
-    ;; :ensure (:repo "abo-abo/hydra" :fetcher github
-    ;;           :files (:defaults (:exclude "lv.el"))))
+  ;;:wait t
+  ;; :ensure (:repo "abo-abo/hydra" :fetcher github
+  ;;        :files (:defaults (:exclude "lv.el")
+                         )
 
 ;;; --------------------------------------------------------------------------
 
 (use-package eldoc
-    :straight (eldoc :type git :host github :repo "emacs-straight/eldoc" :files ("*" (:exclude ".git")))
-    :defer t
-    ;; ;;:wait t
-    ;; :ensure (:package "eldoc" :source nil :protocol https :inherit t :depth 1 :repo "https://github.com/emacs-mirror/emacs" :local-repo "eldoc" :branch "master" :files ("lisp/emacs-lisp/eldoc.el" (:exclude ".git")))
+    ;;:wait t
     :config
     (add-hook 'emacs-lisp-mode-hook 'eldoc-mode)
     (add-hook 'lisp-interaction-mode-hook 'eldoc-mode)
     (add-hook 'ielm-mode-hook 'eldoc-mode))
 
 (use-package eldoc-box
-    :defer t
-    :straight (eldoc-box :type git :flavor melpa :host github :repo "casouri/eldoc-box")
     :after eldoc
     :diminish DocBox
     :config
@@ -579,7 +565,6 @@ font size is computed + 20 of this value."
 ;;; Automatic Package Updates
 
 (use-package auto-package-update
-    :defer t
     ;; :ensure (:fetcher github :repo "rranelli/auto-package-update.el")
     :custom
     (auto-package-update-interval 7)
@@ -593,7 +578,6 @@ font size is computed + 20 of this value."
 ;; YASnippets
 
 (use-package yasnippet
-    :defer t
     :bind (:map yas-minor-mode-map
               ("<C-'>" . yas-expand))
     :config
@@ -615,45 +599,7 @@ font size is computed + 20 of this value."
     :config
     (message ">>> YASnippet-Snippets Configured"))
 
-;;; --------------------------------------------------------------------------
-;; A cleaner and simpler undo package.
-
-(use-package vundo
-    ;;:ensure ( :host github :repo "casouri/vundo")
-    :defer t
-    :bind
-     ("C-x u" . vundo)
-     ("C-x r u" . vundo)
-    :config
-    (message "<<< Vundo configured")
-    (set-face-attribute 'vundo-default nil :family "Symbola")
-    (setq vundo-glyph-alist vundo-unicode-symbols))
-
-;;; --------------------------------------------------------------------------
-;; Full-featured undo-tree handling. Look to Vundo for something a little
-;; simpler.
-
-(defun mrf/undo-tree-hook ()
-    (set-frame-width (selected-frame) 20))
-
-(use-package undo-tree
-    :defer t
-    :unless enable-vundo
-    ;; :hook (undo-tree-visualizer-mode-hook . mrf/undo-tree-hook)
-    :init
-    (setq undo-tree-visualizer-timestamps t
-        ;; undo-tree-visualizer-diff t
-        undo-tree-enable-undo-in-region t
-        ;; 10X bump of the undo limits to avoid issues with premature
-        ;; Emacs GC which truncages the undo history very aggresively
-        undo-limit 800000
-        undo-strong-limit 12000000
-        undo-outer-limit 120000000)
-    :config
-    (global-undo-tree-mode)
-    ;; This prevents the *.~undo-tree~ files from being persisted.
-    (with-eval-after-load 'undo-tree
-        (setq undo-tree-auto-save-history nil)))
+  (elpaca-process-queues)
 
 ;;; --------------------------------------------------------------------------
 
@@ -683,14 +629,14 @@ font size is computed + 20 of this value."
     (let ((step theme-cycle-step) (result 0))
 
         (if (not step) (setq step 1)) ;; If nil, default to step of 1
-        
+
         (when step
             (setq result (+ step theme-selector))
             (when (< result 0)
                 (setq result (- (length theme-list) 1)))
             (when (> result (- (length theme-list) 1))
                 (setq result 0)))
-        
+
         (message (format ">>> Current theme %S" theme))
         (setq-default theme-selector result)))
 
@@ -760,15 +706,13 @@ font size is computed + 20 of this value."
 
 ;;; --------------------------------------------------------------------------
 
-(add-to-list 'custom-theme-load-path (expand-file-name "Themes" custom-docs-dir))
-
-(use-package ef-themes :defer t :ensure t)
-(use-package modus-themes :defer t :ensure t)
-(use-package material-theme :defer t :ensure t)
-(use-package color-theme-modern :defer t :ensure t)
-(use-package color-theme-sanityinc-tomorrow :defer t :ensure t)
-(use-package darktooth-theme :defer t :ensure t)
-(use-package zenburn-theme :defer t :ensure t)
+(use-package ef-themes :ensure t)
+(use-package modus-themes :ensure t)
+(use-package material-theme :ensure t)
+(use-package color-theme-modern :ensure t)
+(use-package color-theme-sanityinc-tomorrow :ensure t)
+(use-package darktooth-theme :ensure t)
+(use-package zenburn-theme :ensure t)
 
 ;;; --------------------------------------------------------------------------
 
@@ -1042,17 +986,18 @@ font size is computed + 20 of this value."
 
 ;;; --------------------------------------------------------------------------
 
-(use-package spacious-padding
-    :hook (after-init . spacious-padding-mode)
-    :custom
-    (spacious-padding-widths
-      '( :internal-border-width 15
-           :header-line-width 4
-           :mode-line-width 6
-           :tab-width 4
-           :right-divider-width 30
-           :scroll-bar-width 8
-           :fringe-width 8)))
+;; (use-package spacious-padding
+;;     :ensure t
+;;     :hook (after-init . spacious-padding-mode)
+;;     :custom
+;;     (spacious-padding-widths
+;;       '( :internal-border-width 15
+;;            :header-line-width 4
+;;            :mode-line-width 6
+;;            :tab-width 4
+;;            :right-divider-width 30
+;;            :scroll-bar-width 8
+;;            :fringe-width 8)))
 
 ;; Read the doc string of `spacious-padding-subtle-mode-line' as it
 ;; is very flexible and provides several examples.
@@ -1074,7 +1019,7 @@ font size is computed + 20 of this value."
     (defface org-block-end-line
         '((t (:overline "#1D2C39" :foreground "SlateGray" :background "#1D2C39")))
         "Face used for the line delimiting the end of source blocks.")
-    
+
     (defface org-modern-horizontal-rule
         '((t (:strike-through "green" :weight bold)))
         "Face used for the Horizontal like (-----)"))
@@ -1099,7 +1044,7 @@ font size is computed + 20 of this value."
                            (org-level-7 . 1.1)
                            (org-level-8 . 1.1)))
             (set-face-attribute (car face) nil :font "ETBembo" :weight 'regular :height (cdr face)))
-      
+
         ;; Ensure that anything that should be fixed-pitch in Org files appears that way
         (set-face-attribute 'org-block nil    :foreground 'unspecified :inherit 'fixed-pitch)
         (set-face-attribute 'org-table nil    :inherit 'fixed-pitch)
@@ -1115,16 +1060,10 @@ font size is computed + 20 of this value."
 
 ;; -----------------------------------------------------------------
 
-(defun mrf/org-mode-visual-fill ()
-    (setq visual-fill-column-width custom-org-fill-column
-        visual-fill-column-center-text enable-org-fill-column-centering)
-    (visual-fill-column-mode 1))
-
 (defun mrf/org-mode-setup ()
     (org-indent-mode)
     (variable-pitch-mode 1)
     (visual-line-mode 1)
-    (mrf/org-mode-visual-fill)
     (setq org-ellipsis " ▾")
     (setq org-agenda-start-with-log-mode t)
     (setq org-log-done 'time)
@@ -1228,7 +1167,7 @@ font size is computed + 20 of this value."
 (mrf/org-theme-override-values)
 
 (use-package org
-    :defer t
+    :after yasnippet
     :commands (org-capture org-agenda)
     :hook (org-mode . mrf/org-mode-setup)
     :bind (:map org-mode-map
@@ -1301,6 +1240,24 @@ font size is computed + 20 of this value."
 
 ;;; --------------------------------------------------------------------------
 
+(use-package org-bullets
+    :after org
+    :hook (org-mode . org-bullets-mode)
+    :custom
+    (org-bullets-bullet-list '("◉" "○" "●" "○" "●" "○" "●")))
+
+;;; --------------------------------------------------------------------------
+
+(defun mrf/org-mode-visual-fill ()
+    (setq visual-fill-column-width custom-org-fill-column
+        visual-fill-column-center-text enable-org-fill-column-centering)
+    (visual-fill-column-mode 1))
+
+(use-package visual-fill-column
+    :hook (org-mode . mrf/org-mode-visual-fill))
+
+;;; --------------------------------------------------------------------------
+
 (with-eval-after-load 'org    
     (org-babel-do-load-languages
         'org-babel-load-languages
@@ -1341,7 +1298,6 @@ font size is computed + 20 of this value."
 
 (use-package org-roam
     ;; :demand t  ;; Ensure org-roam is loaded by default
-    :defer t
     :init
     (setq org-roam-v2-ack t)
     :after org
@@ -1476,33 +1432,25 @@ capture was not aborted."
 ;;; --------------------------------------------------------------------------
 
 (use-package ace-window
-    :defer t
-    ;;:ensure (:repo "abo-abo/ace-window" :fetcher github)
+    ;; :ensure (:repo "abo-abo/ace-window" :fetcher github)
     :bind ("M-o" . ace-window))
 
 ;;; --------------------------------------------------------------------------
 ;;; Window Number
 
 (use-package winum
-    :defer t
-    ;;:ensure (:host github :repo "deb0ch/emacs-winum")
+    ;; :ensure (:host github :repo "deb0ch/emacs-winum")
     :config (winum-mode))
 
 ;;; --------------------------------------------------------------------------
 ;;; Treemacs
 
 (use-package treemacs
-    :after (:all winum ace-window)
-    :bind (:map global-map
-              ("M-0"       . treemacs-select-window)
-              ("C-x t 1"   . treemacs-delete-other-windows)
-              ("C-x t t"   . treemacs)
-              ("C-x t d"   . treemacs-select-directory)
-              ("C-x t B"   . treemacs-bookmark)
-              ("C-x t C-t" . treemacs-find-file)
-              ("C-x t M-t" . treemacs-find-tag))
+    ;; :after (:all winum ace-window)
     :config
-    (setq treemacs-collapse-dirs                 (if treemacs-python-executable 3 0)
+    (with-eval-after-load 'winum
+        (define-key winum-keymap (kbd "M-0") #'treemacs-select-window))
+    (setq treemacs-collapse-dirs                   (if treemacs-python-executable 3 0)
         treemacs-deferred-git-apply-delay        0.5
         treemacs-directory-name-transformer      #'identity
         treemacs-display-in-side-window          t
@@ -1558,7 +1506,8 @@ capture was not aborted."
         treemacs-width                           38
         treemacs-width-increment                 1
         treemacs-width-is-initially-locked       t
-        treemacs-workspace-switch-cleanup        nil)
+        treemacs-workspace-switch-cleanup        nil
+        )
 
     ;; The default width and height of the icons is 22 pixels. If you are
     ;; using a Hi-DPI display, uncomment this to double the icon size.
@@ -1575,12 +1524,26 @@ capture was not aborted."
             (treemacs-git-mode 'deferred))
         (`(t . _)
             (treemacs-git-mode 'simple)))
-    (treemacs-hide-gitignored-files-mode nil))
+    (treemacs-hide-gitignored-files-mode nil)
+    :bind
+    (:map global-map
+        ("M-0"       . treemacs-select-window)
+        ("C-x t 1"   . treemacs-delete-other-windows)
+        ("C-x t t"   . treemacs)
+        ("C-x t d"   . treemacs-select-directory)
+        ("C-x t B"   . treemacs-bookmark)
+        ("C-x t C-t" . treemacs-find-file)
+        ("C-x t M-t" . treemacs-find-tag)))
+
+;;; --------------------------------------------------------------------------
+
+(use-package treemacs-projectile
+    :disabled
+    :after treemacs projectile)
 
 ;;; --------------------------------------------------------------------------
 
 (use-package treemacs-icons-dired
-    :after treemacs
     :hook (dired-mode . treemacs-icons-dired-enable-once))
 
 ;;; --------------------------------------------------------------------------
@@ -1594,7 +1557,8 @@ capture was not aborted."
 ;;    :config (treemacs-set-scope-type 'Perspectives))
 
 (use-package treemacs-persp ;;treemacs-perspective if you use perspective.el vs. persp-mode
-    ;;:ensure (:files ("src/extra/treemacs-persp.el" "treemacs-persp-pkg.el"):host github :repo "Alexander-Miller/treemacs")
+    ;;:ensure (:files ("src/extra/treemacs-persp.el" "treemacs-persp-pkg.el")
+    ;;         :host github :repo "Alexander-Miller/treemacs")
     :after (:any treemacs persp-mode) ;;or perspective vs. persp-mode
     :config (treemacs-set-scope-type 'Perspectives))
 
@@ -1607,52 +1571,11 @@ capture was not aborted."
 ;;; --------------------------------------------------------------------------
 
 (use-package treemacs-all-the-icons
-    :defer t
+    ;;:wait t
     :after treemacs
     :if (display-graphic-p))
 
-;;; --------------------------------------------------------------------------
-
-(use-package all-the-icons
-    :defer t
-    :when (display-graphic-p))
-
-(defun mrf/setup-dashboard-buffer ()
-    "Set up the dashboard buffer and optionally make it the first."
-    (setq dashboard-items '((recents . 15)
-                               (bookmarks . 10)
-                               (projects . 10))
-        dashboard-icon-type 'all-the-icons
-        dashboard-display-icons-p t
-        dashboard-center-content t
-        dashboard-set-heading-icons t
-        dashboard-set-file-icons t)
-    ;; dashboard-projects-backend 'projectile)
-
-    (global-set-key (kbd "C-c d") 'dashboard-open)
-
-    (if (equal display-dashboard-at-start t)
-        (progn
-            (setq initial-buffer-choice
-                (lambda ()
-                    (get-buffer-create "*dashboard*")))
-            (dashboard-open))
-        (get-buffer-create "*dashboard*")))
-
-(defun mrf/dashboard-banner ()
-    "Setup defaults for the dashboard banner buffer."
-    (setq dashboard-footer-messages '("Greetings Program!"))
-    (setq dashboard-banner-logo-title "Welcome to Emacs!")
-    (setq dashboard-startup-banner 'logo))
-
-(use-package dashboard
-    :defer t
-    ;; :ensure (:fetcher github	:repo "emacs-dashboard/emacs-dashboard"	:files (:defaults "banners"))
-    :bind ("C-c d" . dashboard-open)
-    :config
-    (mrf/dashboard-banner)
-    :hook ((after-init     . mrf/setup-dashboard-buffer)
-              (dashboard-mode . mrf/dashboard-banner)))
+(elpaca-process-queues)
 
 ;;; --------------------------------------------------------------------------
 ;;; Emacs Polyglot is the Emacs LSP client that stays out of your way:
@@ -1670,19 +1593,18 @@ Thanks @wyuenho on GitHub"
     :when (equal custom-ide 'custom-ide-eglot-lsp)
     ;; Open python files in tree-sitter mode.
     :defer t
-    :after company which-key
-    :straight (eglot :type git :host github :repo "emacs-straight/eglot" :files ("*" (:exclude ".git")))
+    :after company
     :init
     (setq company-backends
         (cons 'company-capf
             (remove 'company-capf company-backends)))
     :hook
     (lisp-mode . eglot-ensure)
+    (c-mode . eglot-ensure)
+    (c++-mode . eglot-ensure)
     (python-mode . eglot-ensure)
-    (rust-mode-hook . eglot-ensure)
-    ;; (c-mode . eglot-ensure)
-    ;; (c++-mode . eglot-ensure)
     ;; (prog-mode . eglot-ensure)
+    (rust-mode-hook . eglot-ensure)
     :config
     (add-to-list 'major-mode-remap-alist '(python-mode . python-ts-mode))
     (which-key-add-key-based-replacements "C-c g r" "find-symbol-reference")
@@ -1691,7 +1613,7 @@ Thanks @wyuenho on GitHub"
     (which-key-add-key-based-replacements "C-c g ?" "eldoc-definition")
     ;; (add-hook 'eglot-managed-mode-hook #'eldoc-box-hover-at-point-mode t)
     (add-to-list 'eglot-stay-out-of 'flymake)
-    ;; (add-to-list 'eglot-server-programs '((c-mode c++-mode) "clangd"))
+    (add-to-list 'eglot-server-programs '((c-mode c++-mode) "clangd"))
     (add-to-list 'eglot-server-programs '(python-mode . ("pylsp")))
     (add-to-list 'eglot-server-programs
         '((rust-ts-mode rust-mode) .
@@ -1765,14 +1687,15 @@ Thanks @wyuenho on GitHub"
 ;;; --------------------------------------------------------------------------
 
 (use-package markdown-mode
-    :defer t
     :when (equal custom-ide 'custom-ide-lsp-bridge))
     ;;:ensure (:fetcher github :repo "jrblevin/markdown-mode"))
 
 (use-package lsp-bridge
-    :defer t
+    :load-path "~/.emacs.d/lisp/lsp-bridge"
     :when (equal custom-ide 'custom-ide-lsp-bridge)
-    ;;:ensure (:host github :repo "manateelazycat/lsp-bridge" :files (:defaults "*.el" "*.py" "acm" "core" "langserver" "multiserver" "resources") :build (:not compile))
+    ;;:ensure (:host github :repo "manateelazycat/lsp-bridge"
+    ;;         :files (:defaults "*.el" "*.py" "acm" "core" "langserver" "multiserver" "resources")
+    ;;         :build (:not compile))
     :custom
     (lsp-bridge-python-lsp-server "pylsp")
     :config
@@ -1782,7 +1705,6 @@ Thanks @wyuenho on GitHub"
 
 (use-package anaconda-mode
     :when (equal custom-ide 'custom-ide-anaconda)
-    :defer t
     :bind (:map python-mode-map
               ("C-c g o" . anaconda-mode-find-definitions-other-frame)
               ("C-c g g" . anaconda-mode-find-definitions)
@@ -1798,7 +1720,6 @@ Thanks @wyuenho on GitHub"
 
 (use-package elpy
     :when (equal custom-ide 'custom-ide-elpy)
-    :defer t
     :after python which-key
     :custom
     (elpy-rpc-python-command "python3")
@@ -1824,18 +1745,19 @@ Thanks @wyuenho on GitHub"
     (which-key-add-key-based-replacements "C-c g ?" "eldoc-definition")
     (elpy-enable))
 
+(elpaca-process-queues)
+
 ;;; ------------------------------------------------------------------------
   ;;; Alternate fork to handle possible performance bug(s)
-(use-package jsonrpc
-    :defer t
-    :straight t)
-;;     :ensure (:host github
-;;        :repo "emacs-straight/jsonrpc" :files ("*" (:exclude ".git"))))
+(use-package jsonrpc)
+    ;;:ensure (:host github
+    ;;    :repo "emacs-straight/jsonrpc" :files ("*" (:exclude ".git"))))
 
 (use-package dape
     :when (equal debug-adapter 'enable-dape)
-    :defer t
     :after jsonrpc hydra
+    :defer t
+    ;; :defer t
     ;; To use window configuration like gud (gdb-mi)
     ;; :init
     ;; (setq dape-buffer-window-arrangement 'gud)
@@ -1870,9 +1792,7 @@ Thanks @wyuenho on GitHub"
 ;;; --------------------------------------------------------------------------
 ;;; Debug Adapter Protocol      
 (use-package dap-mode
-    :straight (dap-mode :type git :flavor melpa :files (:defaults "icons" "dap-mode-pkg.el") :host github :repo "emacs-lsp/dap-mode")
     :when (equal debug-adapter 'enable-dap-mode)
-    :defer t
     :after hydra
     ;; Uncomment the config below if you want all UI panes to be hidden by default!
     ;; :custom
@@ -1896,7 +1816,7 @@ Thanks @wyuenho on GitHub"
     (interactive)
     (mkdir mrf/vscode-js-debug-dir t)
     (let ((default-directory (expand-file-name mrf/vscode-js-debug-dir)))
-        
+
         (vc-git-clone "https://github.com/microsoft/vscode-js-debug.git" "." nil)
         (message "git repository created")
         (call-process "npm" nil "*snam-install*" t "install")
@@ -2000,7 +1920,6 @@ Thanks @wyuenho on GitHub"
 ;;; DAP for Python
 
 (use-package dap-python
-    :straight (dap-python :type git :host github :repo "emacs-lsp/dap-mode")
     :when (equal debug-adapter 'enable-dap-mode)
     ;;:ensure (:host github :repo "emacs-lsp/dap-mode")
     :after dap-mode
@@ -2038,7 +1957,9 @@ Thanks @wyuenho on GitHub"
     :defer t
     :hook ((typescript-mode . my-setup-dap-node)
               (js2-mode . my-setup-dap-node))         
-    ;;:ensure (:host github :repo "emacs-lsp/dap-mode" :files (:defaults "icons" "dap-mode-pkg.el"))
+    ;;:ensure (:host github
+    ;;         :repo "emacs-lsp/dap-mode"
+    ;;         :files (:defaults "icons" "dap-mode-pkg.el"))
     :after dap-mode
     :config
     (require 'dap-firefox)
@@ -2098,21 +2019,21 @@ Thanks @wyuenho on GitHub"
 "
       ("n" dap-next)    ("i" dap-step-in)    ("o" dap-step-out)   ("." dap-next)
       ("/" dap-step-in) ("," dap-step-out)   ("c" dap-continue)   ("r" dap-restart-frame)
-      
+
       ("ss" dap-switch-session) ("st" dap-switch-thread)    ("sf" dap-switch-stack-frame)
       ("su" dap-up-stack-frame) ("sd" dap-down-stack-frame) ("sl" dap-ui-locals)
       ("sb" dap-ui-breakpoints) ("sR" dap-ui-repl)          ("sS" dap-ui-sessions)
-      
+
       ("bb" dap-breakpoint-toggle)    ("ba" dap-breakpoint-add)           ("bd" dap-breakpoint-delete)
       ("bc" dap-breakpoint-condition) ("bh" dap-breakpoint-hit-condition) ("bl" dap-breakpoint-log-message)
-      
+
       ("dd" dap-debug)      ("dr" dap-debug-recent) ("ds" dap-debug-restart)
       ("dl" dap-debug-last) ("de" dap-debug-edit-template)
-      
+
       ("ee" dap-eval) ("ea" dap-ui-expressions-add) ("er" dap-eval-region) ("es" dap-eval-thing-at-point)
-      
+
       ("dx" mrf/end-debug-session) ("dX" mrf/delete-all-debug-sessions)
-      
+
       ("x" nil "exit Hydra" :color yellow) ("q" mrf/end-debug-session "quit" :color blue)
       ("Q" mrf/delete-all-debug-sessions :color red)))
 
@@ -2120,20 +2041,59 @@ Thanks @wyuenho on GitHub"
 
 (use-package realgud
     :disabled
-    :defer t
-    :after c-mode)
+    :after c-mode
+    :defer t)
 
 (use-package realgud-lldb
     :disabled
     :after realgud)
-    ;;:ensure (:files (:defaults ("lldb" "lldb/*.el") "realgud-lldb-pkg.el") :host github :repo "realgud/realgud-lldb"))
+    ;;:ensure (:files (:defaults ("lldb" "lldb/*.el") "realgud-lldb-pkg.el")
+    ;;         :host github :repo "realgud/realgud-lldb"))
+
+;;; --------------------------------------------------------------------------
+
+(use-package cc-mode
+    :when (package-installed-p 'realgud)
+    :bind (:map c-mode-map
+              ("C-c , j" . realgud:cmd-jump)
+              ("C-c , k" . realgud:cmd-kill)
+              ("C-c , s" . realgud:cmd-step)
+              ("C-c , n" . realgud:cmd-next)
+              ("C-c , q" . realgud:cmd-quit)
+              ("C-c , F" . realgud:window-bt)
+              ("C-c , U" . realgud:cmd-until)
+              ("C-c , X" . realgud:cmd-clear)
+              ("C-c , !" . realgud:cmd-shell)
+              ("C-c , b" . realgud:cmd-break)
+              ("C-c , f" . realgud:cmd-finish)
+              ("C-c , D" . realgud:cmd-delete)
+              ("C-c , +" . realgud:cmd-enable)
+              ("C-c , R" . realgud:cmd-restart)
+              ("C-c , -" . realgud:cmd-disable)
+              ("C-c , B" . realgud:window-brkpt)
+              ("C-c , c" . realgud:cmd-continue)
+              ("C-c , e" . realgud:cmd-eval-dwim)
+              ("C-c , Q" . realgud:cmd-terminate)
+              ("C-c , T" . realgud:cmd-backtrace)
+              ("C-c , h" . realgud:cmd-until-here)
+              ("C-c , u" . realgud:cmd-older-frame)
+              ("C-c , 4" . realgud:cmd-goto-loc-hist-4)
+              ("C-c , 5" . realgud:cmd-goto-loc-hist-5)
+              ("C-c , 6" . realgud:cmd-goto-loc-hist-6)
+              ("C-c , 7" . realgud:cmd-goto-loc-hist-7)
+              ("C-c , 8" . realgud:cmd-goto-loc-hist-8)
+              ("C-c , 9" . realgud:cmd-goto-loc-hist-9)
+              ("C-c , d" . realgud:cmd-newer-frame)
+              ("C-c , RET" . realgud:cmd-repeat-last)
+              ("C-c , E" . realgud:cmd-eval-at-point)
+              ("C-c , I" . realgud:cmdbuf-info-describe)
+              ("C-c , C-i" . realgud:cmd-info-breakpoints)))
 
 ;;; --------------------------------------------------------------------------
 
 (use-package orderless
     :when (or (equal completion-handler 'comphand-vertico)
-              (equal completion-handler 'comphand-ivy-counsel))
-    :defer t
+        (equal completion-handler 'comphand-ivy-counsel))
     :custom
     (completion-styles '(orderless basic))
     (completion-category-overrides '((file (styles basic partial-completion)))))
@@ -2143,7 +2103,6 @@ Thanks @wyuenho on GitHub"
 
 (use-package ivy
     :when (equal completion-handler 'comphand-ivy-counsel)
-    :defer t
     :bind (("C-s" . swiper)
               :map ivy-minibuffer-map
           ;;; ("TAB" . ivy-alt-done)
@@ -2178,9 +2137,10 @@ Thanks @wyuenho on GitHub"
 
 (use-package ivy-yasnippet
     :when (equal completion-handler 'comphand-ivy-counsel)
-    :defer t
-    :after (:any yasnippet ivy))
-    ;; :ensure (:host github :repo "mkcms/ivy-yasnippet"))
+    :after (:any yasnippet ivy)
+    :defer t)
+    ;;:ensure (:host github
+    ;;            :repo "mkcms/ivy-yasnippet"))
 
 ;;; --------------------------------------------------------------------------
 
@@ -2192,7 +2152,7 @@ Thanks @wyuenho on GitHub"
 
 (use-package counsel
     :when (equal completion-handler 'comphand-ivy-counsel)
-    :defer t
+    :after ivy
     :bind (   ("C-M-j" . 'counsel-switch-buffer)
               ("M-x" . 'counsel-M-x)
               ("C-x C-f" . 'counsel-find-file)
@@ -2219,7 +2179,6 @@ Thanks @wyuenho on GitHub"
 ;;;; Code Completion
 (use-package corfu
     :when enable-corfu
-    :defer t
     ;; Optional customizations
     :custom
     (corfu-cycle t)                 ; Allows cycling through candidates
@@ -2254,42 +2213,34 @@ Thanks @wyuenho on GitHub"
 
 ;;; --------------------------------------------------------------------------
 
-(defun mrf/vertico-other ()
-    (use-package vertico-prescient
-	:straight (vertico-prescient :type git :flavor melpa
-		      :files ("vertico-prescient.el" "vertico-prescient-pkg.el")
-		      :host github :repo "radian-software/prescient.el"))
-    
-    (use-package vertico-posframe
-	:straight (vertico-posframe :type git :host github
-		      :repo "emacs-straight/vertico-posframe" :files ("*" (:exclude ".git")))
-        :custom (vertico-posframe-parameters
-		    '((left-fringe . 8)
-			 (right-fringe . 8)))))
-
 (use-package vertico
     :when (equal completion-handler 'comphand-vertico)
-    :demand t
     ;;:wait t
+    :demand t   ; Otherwise won't get loaded immediately
     ;;:ensure (:repo "minad/vertico" :files (:defaults "extensions/vertico-*.el") :fetcher github)
     :config
     (vertico-mode)
     (recentf-mode t)
-    (vertico-multiform-mode 1)
+    (vertico-multiform-mode)
     (vertico-count 13)
     (vertico-cycle nil)
-    (mrf/vertico-other)
-    :bind ("C-x C-f" . ido-find-file)
+    (use-package vertico-prescient
+        :after vertico)
+    (use-package vertico-posframe
+      :after vertico
+        :custom
+        (vertico-posframe-parameters
+            '((left-fringe . 8)
+                 (right-fringe . 8))))
     ;; Clean up file path when typing
     :hook ((rfn-eshadow-update-overlay . vertico-directory-tidy)
-              ;; Make sure vertico state is saved
+            ;; Make sure vertico state is saved
               (minibuffer-setup . vertico-repeat-save)))
 
 ;;; --------------------------------------------------------------------------
 
 (use-package marginalia
     :when (equal completion-handler 'comphand-vertico)
-    :defer t
     :custom
     (marginalia-max-relative-age 0)
     (marginalia-align 'right)
@@ -2302,10 +2253,7 @@ Thanks @wyuenho on GitHub"
 (use-package consult
     :when (equal completion-handler 'comphand-vertico)
     ;; Replace bindings. Lazily loaded due by `use-package'.
-    :after vertico
     :bind (;; C-c bindings in `mode-specific-map'
-	      ([remap isearch-forward] . consult-line)
-	      ([remap isearch-backward] . consult-line)
               ("C-c M-x" . consult-mode-command)
               ("C-c h" . consult-history)
               ("C-c k" . consult-kmacro)
@@ -2361,8 +2309,10 @@ Thanks @wyuenho on GitHub"
     ;; Enable automatic preview at point in the *Completions* buffer. This is
     ;; relevant when you use the default completion UI.
     :hook (completion-list-mode . consult-preview-at-point-mode)
+
     ;; The :init configuration is always executed (Not lazy)
     :init
+
     ;; Optionally configure the register formatting. This improves the register
     ;; preview for `consult-register', `consult-register-load',
     ;; `consult-register-store' and the Emacs built-ins.
@@ -2380,6 +2330,7 @@ Thanks @wyuenho on GitHub"
     ;; Configure other variables and modes in the :config section,
     ;; after lazily loading the package.
     :config
+
     ;; Optionally configure preview. The default value
     ;; is 'any, such that any key triggers the preview.
     ;; (setq consult-preview-key 'any)
@@ -2418,16 +2369,12 @@ Thanks @wyuenho on GitHub"
   ;;;; 5. No project support
     ;; (setq consult-project-function nil)
 
-(use-package ido
-    :when (equal completion-handler 'comphand-built-in)
-    :config
-    (ido-everywhere t))
+(elpaca-process-queues)
 
 ;;; --------------------------------------------------------------------------
 
 (use-package flycheck
     :unless (equal custom-ide 'custom-ide-elpy)
-    :defer t
     :diminish FlM
     ;;:ensure (:host github :repo "flycheck/flycheck")
     :config
@@ -2447,8 +2394,7 @@ Thanks @wyuenho on GitHub"
 (use-package tree-sitter
     :init
     (message ">>> Loading tree-sitter")
-    :after (:any python python-mode lisp-mode)
-    :defer t
+    :after prog-mode
     :config
     ;; Activate tree-sitter globally (minor mode registered on every buffer)
     (global-tree-sitter-mode)
@@ -2464,8 +2410,6 @@ Thanks @wyuenho on GitHub"
     :after tree-sitter)
 
 (use-package ts-fold
-    :disabled
-    :straight 
     :after tree-sitter
     ;;:ensure (:host github :repo "emacs-tree-sitter/ts-fold")
     :bind (("C-<tab>" . ts-fold-toggle)
@@ -2474,7 +2418,7 @@ Thanks @wyuenho on GitHub"
 ;;; --------------------------------------------------------------------------
 
 (use-package magit
-    :after (:any python-mode rust-mode lisp-mode)
+    :after (:any python-mode c-mode c++-mode rust-mode)
     :commands (magit-status magit-get-current-branch)
     ;; :custom
     ;;  (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1)
@@ -2489,6 +2433,8 @@ Thanks @wyuenho on GitHub"
 
 (use-package treemacs-magit
     :after treemacs magit)
+
+(elpaca-process-queues)
 
 ;;; --------------------------------------------------------------------------
 
@@ -2519,24 +2465,25 @@ Thanks @wyuenho on GitHub"
         :config
         (setq typescript-indent-level 4)))
 
+(add-to-list 'auto-mode-alist '("\\.ts\\'" . typescript-ts-mode))
+
 ;;; --------------------------------------------------------------------------
 
 (defun mrf/load-js-file-hook ()
     (message "Running JS file hook")
     (js2-mode)
-    
+
     (when (equal debug-adapter 'enable-dap-mode)
         (dap-mode)
         (dap-firefox-setup))
-    
+
     (when (equal debug-adapter 'enable-dape)
         (dape))
 
     (highlight-indentation-mode nil)
     (dap-firefox-setup))
 
-(use-package nodejs-repl
-    :defer t)
+(use-package nodejs-repl)
 
 (defun mrf/nvm-which ()
     (let ((output (shell-command-to-string "source ~/.nvm/nvm.sh; nvm which")))
@@ -2547,17 +2494,18 @@ Thanks @wyuenho on GitHub"
 ;;; --------------------------------------------------------------------------
 
 (use-package js2-mode
-    :defer t
     :hook (js-mode . js2-minor-mode)
     :bind (:map js2-mode-map
               ("{" . paredit-open-curly)
               ("}" . paredit-close-curly-and-newline))
-    :mode ("\\.js\\'" "\\.mjs\\'" "\\.json$")
+    :mode ("\\.js\\'" "\\.mjs\\'")
     :custom (js2-highlight-level 3))
 
 (use-package ac-js2
     :after js2-mode
     :hook (js2-mode . ac-js2-mode))
+
+(add-to-list 'auto-mode-alist '("\\.json$" . js-mode))
 
 ;;; --------------------------------------------------------------------------
 
@@ -2587,19 +2535,16 @@ Thanks @wyuenho on GitHub"
 ;;; --------------------------------------------------------------------------
 
 (use-package z80-mode
-    :when enable-gb-dev
-    :straight (z80-mode :type git :host github :repo "SuperDisk/z80-mode"))
+    :when enable-gb-dev)
     ;;:ensure (:host github :repo "SuperDisk/z80-mode"))
 
 (use-package mwim
-    :when enable-gb-dev
-    :straight (mwim :type git :flavor melpa :host github :repo "alezost/mwim.el"))
+    :when enable-gb-dev)
     ;;:ensure (:host github :repo "alezost/mwim.el"))
 
 (use-package rgbds-mode
     :when enable-gb-dev
-    :after mwim
-    :straight (rgbds-mode :type git :host github :repo "japanoise/rgbds-mode"))
+    :after mwim)
     ;;:ensure (:host github :repo "japanoise/rgbds-mode"))
 
 ;;; --------------------------------------------------------------------------
@@ -2673,7 +2618,7 @@ Thanks @wyuenho on GitHub"
 
 (use-package python-mode
     :diminish Py
-    :defer t
+    :config
     :hook (python-mode . mrf/python-mode-triggered)
     :config
     (add-to-list 'auto-mode-alist '("\\.py\\'" . mrf/load-python-file-hook)))
@@ -2709,7 +2654,7 @@ Thanks @wyuenho on GitHub"
 ;;; --------------------------------------------------------------------------
 
 (use-package pyvenv-auto
-    :after (:any python python-mode)
+    :after python
     :config (message ">>> Starting pyvenv-auto")
     :hook (python-mode . pyvenv-auto-run))
 
@@ -2717,18 +2662,34 @@ Thanks @wyuenho on GitHub"
 
 (use-package pydoc
     ;;:ensure (:host github :repo "statmobile/pydoc")
-    :after (:any python python-mode)
+    :after python
     :custom
     (pydoc-python-command "python3")
     (pydoc-pip-version-command "pip3 --version"))
 
+(elpaca-process-queues)
+
 ;;; --------------------------------------------------------------------------
 
 (use-package slime
-    :defer t
     :mode ("\\.lisp\\'" . slime-mode)
     :config
     (setq inferior-lisp-program "/opt/homebrew/bin/sbcl"))
+
+;;; --------------------------------------------------------------------------
+
+(use-package swift-mode
+    :defer t)
+
+(use-package swift-helpful
+    ;;:ensure (:files ("*.el" "swift-info/*.info"
+    ;;                ("images" "swift-info/images/*.png") "swift-helpful-pkg.el")
+    ;;         :host github
+    ;;         :repo "danielmartin/swift-helpful")
+    :defer t)
+(use-package swift-playground-mode :ensure t :defer t :init
+    (autoload 'swift-playground-global-mode "swift-playground-mode" nil t)
+    (add-hook 'swift-mode-hook #'swift-playground-global-mode))
 
 ;;; --------------------------------------------------------------------------
 
@@ -2760,46 +2721,44 @@ Thanks @wyuenho on GitHub"
 ;;; --------------------------------------------------------------------------
 (when (equal custom-ide 'custom-ide-eglot-lsp)
     (use-package company
-	;;:wait t
-	:defer t
-	:after lsp-mode
-	:hook (after-init . global-company-mode)
-	:custom
-	(company-minimum-prefix-length 1)
-	(company-idle-delay 0.0)
-	:bind (:map company-active-map
-                  ("<tab>" . company-complete-selection))
-	(:map lsp-mode-map
+      ;;:wait t
+      :after lsp-mode
+      :hook (after-init . global-company-mode)
+      :custom
+      (company-minimum-prefix-length 1)
+      (company-idle-delay 0.0)
+      :bind (:map company-active-map
+                ("<tab>" . company-complete-selection))
+      (:map lsp-mode-map
             ("<tab>" . company-indent-or-complete-common))))
 
 (when (equal custom-ide 'custom-ide-elpy)
     (use-package company
-	;;:wait t
-	:defer t
-	:after elpy
-	:hook (after-init . global-company-mode)
-	:custom
-	(company-minimum-prefix-length 1)
-	(company-idle-delay 0.0)
-	:bind (:map company-active-map
-                  ("<tab>" . company-complete-selection))
-	(:map elpy-mode-map
+      ;;:wait t
+      :after elpy
+      :hook (after-init . global-company-mode)
+      :custom
+      (company-minimum-prefix-length 1)
+      (company-idle-delay 0.0)
+      :bind (:map company-active-map
+                ("<tab>" . company-complete-selection))
+      (:map elpy-mode-map
             ("<tab>" . company-indent-or-complete-common))))
 
 (when (equal custom-ide 'custom-ide-anaconda)
     (use-package company
-	;;:wait t
-	:defer t
-	:after anaconda-mode
-	:hook (after-init . global-company-mode)
-	:custom
-	(company-minimum-prefix-length 1)
-	(company-idle-delay 0.0)
-	:bind (:map company-active-map
-                  ("<tab>" . company-complete-selection))
-	(:map elpy-mode-map
+      ;;:wait t
+      :after anaconda-mode
+      :hook (after-init . global-company-mode)
+      :custom
+      (company-minimum-prefix-length 1)
+      (company-idle-delay 0.0)
+      :bind (:map company-active-map
+                ("<tab>" . company-complete-selection))
+      (:map elpy-mode-map
             ("<tab>" . company-indent-or-complete-common))))
 
+(elpaca-process-queues)
 ;; IMPORTANT:
 ;; Don't use company at all if lsp-bridge is active.
 ;; lsp-bridge already provides similar functionality.
@@ -2817,9 +2776,10 @@ Thanks @wyuenho on GitHub"
         (counsel-describe-function-function #'helpful-callable)
         (counsel-describe-variable-function #'helpful-variable))
     :bind
-    (when (equal completion-handler 'comphand-ivy-counsel)
+    (if (equal completion-handler 'comphand-ivy-counsel)
+      (progn
           ([remap describe-function] . counsel-describe-function)
-          ([remap describe-variable] . counsel-describe-variable))
+          ([remap describe-variable] . counsel-describe-variable)))
     ([remap describe-command] . helpful-command)
     ([remap describe-key] . helpful-key))
 
@@ -2836,7 +2796,6 @@ Thanks @wyuenho on GitHub"
 ;; Golen Ratio
 
 (use-package golden-ratio
-    :defer t
     :when enable-golden-ratio
     :custom
     (golden-ratio-auto-scale t)
@@ -2846,8 +2805,7 @@ Thanks @wyuenho on GitHub"
     (golden-ratio-exclude-modes '(treemacs-mode
                                      undo-tree-visdualizer-mode
                                      inferior-python-mode
-				     use-package-statistics-mode
-                                     ;;vundo-mode
+                                     vundo-mode
                                      which-key-mode
                                      c-mode
                                      cc-mode
@@ -2864,14 +2822,13 @@ Thanks @wyuenho on GitHub"
 
 (use-package neotree
     :when enable-neotree
-    :defer t
     :config
     (global-set-key [f8] 'neotree-toggle)
     (setq neo-theme (if (display-graphic-p) 'icons 'arrow)))
 
 ;;; --------------------------------------------------------------------------
 
-;; (use-package nerd-icons :defer t)
+(use-package nerd-icons)
 
 ;; (use-package doom-modeline
 ;;   :diabled
@@ -2883,7 +2840,6 @@ Thanks @wyuenho on GitHub"
 
 (use-package centaur-tabs
     :when enable-centaur-tabs
-    :defer t
     :custom
     ;; Set the style to rounded with icons (setq centaur-tabs-style "bar")
     (centaur-tabs-style "bar")
@@ -2897,14 +2853,12 @@ Thanks @wyuenho on GitHub"
 ;;; --------------------------------------------------------------------------
 
 (use-package diff-hl
-    :defer t
     :config
     (global-diff-hl-mode))
 
 ;;; --------------------------------------------------------------------------
 
 (use-package pulsar
-    :defer t
     :config
     (pulsar-global-mode)
     :custom
@@ -2917,7 +2871,6 @@ Thanks @wyuenho on GitHub"
 ;;; --------------------------------------------------------------------------
 
 (use-package popper
-    :defer t
     :bind (("C-`"   . popper-toggle)
               ("M-`"   . popper-cycle)
               ("C-M-`" . popper-toggle-type))
@@ -2934,15 +2887,100 @@ Thanks @wyuenho on GitHub"
              "^\\*vterm.*\\*$"  vterm-mode  ;vterm as a popup
              help-mode
              compilation-mode))
-    :config
     (popper-mode +1)
     (popper-echo-mode +1))
+
+  (elpaca-process-queues)
+
+;;; --------------------------------------------------------------------------
+
+(use-package all-the-icons
+    :when (display-graphic-p))
+
+(defun mrf/setup-dashboard-buffer ()
+    "Set up the dashboard buffer and optionally make it the first."
+    (setq dashboard-items '((recents . 15)
+                               (bookmarks . 10)
+                               (projects . 10))
+        dashboard-icon-type 'all-the-icons
+        dashboard-display-icons-p t
+        dashboard-center-content t
+        dashboard-set-heading-icons t
+        dashboard-set-file-icons t)
+    ;; dashboard-projects-backend 'projectile)
+
+    (global-set-key (kbd "C-c d") 'dashboard-open)
+
+    (if (equal display-dashboard-at-start t)
+        (progn
+            (setq initial-buffer-choice
+                (lambda ()
+                    (get-buffer-create "*dashboard*")))
+            (dashboard-open))
+        (get-buffer-create "*dashboard*")))
+
+(defun mrf/dashboard-banner ()
+    "Setup defaults for the dashboard banner buffer."
+    (setq dashboard-footer-messages '("Greetings Program!"))
+    (setq dashboard-banner-logo-title "Welcome to Emacs!")
+    (setq dashboard-startup-banner 'logo))
+
+(elpaca-use-package-mode nil)
+(use-package dashboard
+    ;;:ensure (:fetcher github
+    ;;          :repo "emacs-dashboard/emacs-dashboard"
+    ;;          :files (:defaults "banners"))
+    ;; :after dired
+    :config
+    (mrf/dashboard-banner)
+    :hook ((after-init     . mrf/setup-dashboard-buffer)
+              (dashboard-mode . mrf/dashboard-banner)))
+
+(elpaca-use-package-mode t)
+
+;;; --------------------------------------------------------------------------
+;; A cleaner and simpler undo package.
+
+(use-package vundo
+    :preface (elpaca-use-package-mode 0)
+    :defer t
+    :when enable-vundo
+    :bind (("C-x u" . vundo)
+              ("C-x r u" . vundo))
+    :config
+    (setq vundo-glyph-alist vundo-unicode-symbols)
+    (set-face-attribute 'vundo-default nil :family "Wingdings2")
+    (elpaca-use-package-mode 1))
+
+;;; --------------------------------------------------------------------------
+;; Full-featured undo-tree handling. Look to Vundo for something a little
+;; simpler.
+
+(defun mrf/undo-tree-hook ()
+    (set-frame-width (selected-frame) 20))
+
+(use-package undo-tree
+    :unless enable-vundo
+    ;; :hook (undo-tree-visualizer-mode-hook . mrf/undo-tree-hook)
+    :init
+    (setq undo-tree-visualizer-timestamps t
+        ;; undo-tree-visualizer-diff t
+        undo-tree-enable-undo-in-region t
+        ;; 10X bump of the undo limits to avoid issues with premature
+        ;; Emacs GC which truncages the undo history very aggresively
+        undo-limit 800000
+        undo-strong-limit 12000000
+        undo-outer-limit 120000000)
+    :config
+    (global-undo-tree-mode)
+    ;; This prevents the *.~undo-tree~ files from being persisted.
+    (with-eval-after-load 'undo-tree
+        (setq undo-tree-auto-save-history nil)))
 
 ;;; --------------------------------------------------------------------------
 
 (use-package term+
     ;;:ensure (:repo "tarao/term-plus-el" :fetcher github)
-    :defer t
     :commands term
     :config
     (setq explicit-shell-file-name "bash") ;; Change this to zsh, etc
@@ -2961,7 +2999,6 @@ Thanks @wyuenho on GitHub"
 
 (use-package vterm
     ;;:ensure (:fetcher github :repo "akermu/emacs-libvterm")
-    :defer t
     :commands vterm
     :config
     (setq vterm-environment ("PS1=\\u@\\h:\\w \n$"))
@@ -2982,7 +3019,7 @@ Thanks @wyuenho on GitHub"
     ;; (bind-keys :map eshell-mode-map
     ;;  ("C-r" . eshell-hist-mode)
     ;;  ("<home>" . eshell-bol))
-    
+
     ;; (evil-define-key '(normal insert visual) eshell-mode-map (kbd "C-r") 'counsel-esh-history)
     ;; (evil-define-key '(normal insert visual) eshell-mode-map (kbd "<home>") 'eshell-bol)
     ;; (evil-normalize-keymaps)
@@ -2996,7 +3033,6 @@ Thanks @wyuenho on GitHub"
     :after eshell)
 
 (use-package eshell
-    :defer t
     :hook (eshell-first-time-mode . efs/configure-eshell)
     :config
     (with-eval-after-load 'esh-opt
@@ -3005,6 +3041,8 @@ Thanks @wyuenho on GitHub"
 
     (eshell-git-prompt-use-theme 'powerline))
 
+(elpaca-process-queues)
+
 ;;; --------------------------------------------------------------------------
 
 ;; Prefer g-prefixed coreutils version of standard utilities when available
@@ -3012,12 +3050,9 @@ Thanks @wyuenho on GitHub"
     (when gls (setq insert-directory-program gls)))
 
 (use-package all-the-icons-dired
-    :defer t
-    :after dired
     :hook (dired-mode . all-the-icons-dired-mode))
 
 (use-package dired-open
-    :defer t
     :commands (dired dired-jump)
     :config
     ;; Doesn't work as expected!
@@ -3042,9 +3077,47 @@ Thanks @wyuenho on GitHub"
         [remap dired-up-directory] 'dired-single-up-directory))
 
 (use-package dired-single
-    :defer t
     :config
     (mrf/dired-single-keymap-init))
+
+;;; --------------------------------------------------------------------------
+
+(use-package popup)
+
+(defun mmm-menu ()
+    (interactive)
+    (let ((mmm-menu-choice (popup-cascade-menu '
+                               ("open-dashboard" "open-ielm"
+                                   ("Themes" "next-theme" "previous-theme" "which-theme")
+                                   ("Shells" "vterm" "vterm-other-window" "eshell")
+                                   "set-fill-column" "set-org-fill-column"
+                                   "eldoc-help" "pydoc-help"))))
+        (cond
+            ((equal mmm-menu-choice "open-dashboard")
+                (dashboard-open))
+            ((equal mmm-menu-choice "open-ielm")
+                (ielm))
+            ((equal mmm-menu-choice "next-theme")
+                (next-theme))
+            ((equal mmm-menu-choice "previous-theme")
+                (previous-theme))
+            ((equal mmm-menu-choice "which-theme")
+                (which-theme))
+            ((equal mmm-menu-choice "vterm")
+                (vterm))
+            ((equal mmm-menu-choice "vterm-other-window")
+                (vterm-other-window))
+            ((equal mmm-menu-choice "eshell")
+                (eshell))
+            ((equal mmm-menu-choice "set-fill-column")
+                (call-interactively 'mrf/set-fill-column-interactively))
+            ((equal mmm-menu-choice "set-org-fill-column")
+                (call-interactively 'mrf/set-org-fill-column-interactively))
+            ((equal mmm-menu-choice "eldoc-help")
+                (eldoc-box-help-at-point))
+            ((equal mmm-menu-choice "pydoc-help")
+                (pydoc-at-point)))
+        ))
 
 ;;; --------------------------------------------------------------------------
 
@@ -3060,7 +3133,6 @@ Thanks @wyuenho on GitHub"
             ("M-RET i" . ielm)
             ("M-RET v" . vterm-other-window)
             ("M-RET S" . smartparens-strict-mode)
-	    ("M-RET t" . treemacs)
             ("M-RET |" . global-display-fill-column-indicator-mode)
             ("M-RET C-=" . next-theme)
             ("M-RET C--" . previous-theme)
@@ -3077,25 +3149,21 @@ Thanks @wyuenho on GitHub"
     :lighter " mmm-keys")
 
 (mmm-keys-minor-mode 1)
-(add-hook 'which-key-mode-hook
-    (lambda ()
-	(which-key-add-key-based-replacements "M-RET t" "treemacs-toggle")
-	(which-key-add-key-based-replacements "M-RET f" "set-fill-column")
-	(which-key-add-key-based-replacements "M-RET F" "set-org-fill-column")
-	(which-key-add-key-based-replacements "M-RET" "Mitch's Menu")))
 
-(diminish 'mmm-keys-minor-mode "m3k")
+;; (which-key-add-key-based-replacements "M-RET f" "set-fill-column")
+;; (which-key-add-key-based-replacements "M-RET F" "set-org-fill-column")
+;; (which-key-add-key-based-replacements "M-RET" "Mitch's Menu")
+;; (diminish 'mmm-keys-minor-mode "m3k")
 
 ;;; --------------------------------------------------------------------------
 
-  (setq-default initial-scratch-message
-      (format ";; Hello, World and Happy hacking %s!\n%s\n\n"
-          user-login-name
-          ";; Press M-RET (Meta-RET) to open the Mitch's Menu"))
+(setq-default initial-scratch-message
+    (format ";; Hello, World and Happy hacking %s!\n%s\n\n"
+        user-login-name
+        ";; Press M-RET (Meta-RET) to open the Mitch's Menu"))
 
-;; (add-hook 'lisp-interaction-mode-hook 'use-package-report)
-  ;; (concat ";; Hello, World and Happy hacking "
-  ;;     user-login-name "!\n;; Press M-RET (C-c C-m) to open the Mitch Menu\n\n"))
+;; (concat ";; Hello, World and Happy hacking "
+;;     user-login-name "!\n;; Press M-RET (C-c C-m) to open the Mitch Menu\n\n"))
 
 ;;; --------------------------------------------------------------------------
 
