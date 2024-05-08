@@ -385,13 +385,9 @@ This directory is expected to be in the ~emacs-config-direcory~ dir. This can be
   ;;; --------------------------------------------------------------------------
 
   (add-to-list 'load-path (expand-file-name "lisp" emacs-config-directory))
-  (add-to-list 'load-path (expand-file-name "emacs-config-modules" emacs-config-directory))
 
   (add-to-list 'custom-theme-load-path (expand-file-name "Themes" custom-docs-dir))
   (add-to-list 'load-path (expand-file-name "lisp/ef-themes" emacs-config-directory))
-
-  ;; (use-package config-custom
-  ;;     :straight (config-custom :local-repo "/Users/strider/.emacs.d/emacs-config-modules"))
 
 #+end_src
 
@@ -3937,7 +3933,7 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
 #+end_src
 
 ** Company Packages
-#+begin_src emacs-lisp :tangle "emacs-config-modules/config-company.el" :mkdirp yes
+#+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
   (use-package company-box
       :after company

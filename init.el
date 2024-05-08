@@ -159,13 +159,9 @@ be taken into consideration when providing a width."
 ;;; --------------------------------------------------------------------------
 
 (add-to-list 'load-path (expand-file-name "lisp" emacs-config-directory))
-(add-to-list 'load-path (expand-file-name "emacs-config-modules" emacs-config-directory))
 
 (add-to-list 'custom-theme-load-path (expand-file-name "Themes" custom-docs-dir))
 (add-to-list 'load-path (expand-file-name "lisp/ef-themes" emacs-config-directory))
-
-;; (use-package config-custom
-;;     :straight (config-custom :local-repo "/Users/strider/.emacs.d/emacs-config-modules"))
 
 ;;; --------------------------------------------------------------------------
 ;;; Feature Toggles
