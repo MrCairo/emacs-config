@@ -1021,25 +1021,48 @@ This bit of code contains a list of themes that I like personally and then allow
 
 This is the main function that allows cycling (up or down) through the list of themes defined in the ~theme-list~.  This function is normally called by the ~disable-theme-functions~ hook. Before calling this function, set the variable ~theme-cycle-step~ to either a 1 or -1 depending upon which direction in the ~theme-list~ array to select the next element from. The resulting index will cycle to the end or the beginning of the list if the computed index goes beyond element 0 or the length of ~theme-list~. The parameter =theme= is passed to this function when a theme becomes disabled (via the ~disable-theme~ function) and represents the theme that has become disabled.
 
+#+begin_src emacs-lisp :tangle no
+  ;;; --------------------------------------------------------------------------
+
+  (defun mrf/cycle-theme-selector (&rest theme)
+      "Cycle the `theme-selector' by 1, resetting to 0 if beyond array bounds."
+      (interactive)
+      (when (not (eq theme-cycle-step nil))
+  	(let ((step theme-cycle-step) (result 0))
+              (when step
+  		(setq result (+ step theme-selector))
+  		(when (< result 0)
+                      (setq result (- (length theme-list) 1)))
+  		(when (> result (- (length theme-list) 1))
+                      (setq result 0)))
+
+              (message (format ">>> Current theme %S" theme))
+              (setq-default theme-selector result))))
+
+  ;; This is used to trigger the cycling of the theme-selector
+  ;; It is called when a theme is disabled. The theme is disabled from the
+  ;; `mrf/load-theme-from-selector' function.
+  (add-hook 'disable-theme-functions #'mrf/cycle-theme-selector)
+
+#+end_src
+
+
 #+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
 
   (defun mrf/cycle-theme-selector (&rest theme)
       "Cycle the `theme-selector' by 1, resetting to 0 if beyond array bounds."
       (interactive)
-      (let ((step theme-cycle-step) (result 0))
-
-          (if (not step) (setq step 1)) ;; If nil, default to step of 1
-
-          (when step
-              (setq result (+ step theme-selector))
-              (when (< result 0)
-                  (setq result (- (length theme-list) 1)))
-              (when (> result (- (length theme-list) 1))
-                  (setq result 0)))
-
-          (message (format ">>> Current theme %S" theme))
-          (setq-default theme-selector result)))
+      (when (not (eq theme-cycle-step nil))
+  	(let ((step theme-cycle-step) (result 0))
+              (when step
+  		(setq result (+ step theme-selector))
+  		(when (< result 0)
+                      (setq result (- (length theme-list) 1)))
+  		(when (> result (- (length theme-list) 1))
+                      (setq result 0)))
+              (message (format ">>> Current theme %S" theme))
+              (setq-default theme-selector result))))
 
   ;; This is used to trigger the cycling of the theme-selector
   ;; It is called when a theme is disabled. The theme is disabled from the
@@ -1058,19 +1081,21 @@ This function simply loads the theme from the theme-list indexed by the ~theme-s
   (defun mrf/load-theme-from-selector (&optional step)
       "Load the theme in `theme-list' indexed by `theme-selector'."
       (interactive)
-      (if step
-          (setq theme-cycle-step step)
-  	(setq theme-cycle-step 1))
+      (setq theme-cycle-step nil)
+      (cond
+  	((or (eq step nil) (eq step 0)) (setq theme-cycle-step 0))
+  	((> step 0) (setq theme-cycle-step 1))
+  	((< step 0) (setq theme-cycle-step -1)))
       (when loaded-theme
           (disable-theme (intern loaded-theme)))
       (setq loaded-theme (nth theme-selector theme-list))
       (message (concat ">>> Loading theme "
                    (format "%d: %S" theme-selector loaded-theme)))
       (load-theme (intern loaded-theme) t)
-      (when (equal (fboundp 'mrf/org-font-setup) t)
-          (mrf/org-font-setup))
+      (mrf/org-font-setup)
+      (mrf/org-set-face-attributes)
       (set-face-foreground 'line-number "SkyBlue4"))
-  
+
 #+end_src
 
 *** Theme selection helper functions.
@@ -1102,6 +1127,7 @@ This function simply loads the theme from the theme-list indexed by the ~theme-s
       (setq loaded-theme (nth theme-selector theme-list))
       (message (concat ">>> Startup Loading theme "
                    (format "%d: %S" theme-selector loaded-theme)))
+      (mrf/load-theme-from-selector)
       (load-theme (intern loaded-theme) t))
 
   ;; Go to NEXT theme
@@ -1130,6 +1156,55 @@ This is just a test area to see what colors look like in this =org= mode.
 
 #+end_src
 
+** Theme Override Values
+
+#+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
+  ;;; --------------------------------------------------------------------------
+
+  (defun mrf/org-theme-override-values ()
+      (defface org-block-begin-line
+          '((t (:underline "#1D2C39" :foreground "SlateGray" :background "#1D2C39")))
+          "Face used for the line delimiting the begin of source blocks.")
+
+      (defface org-block
+          '((t (:background "#242635" :extend t :font "JetBrains Mono")))
+          "Face used for the source block background.")
+
+      (defface org-block-end-line
+          '((t (:overline "#1D2C39" :foreground "SlateGray" :background "#1D2C39")))
+          "Face used for the line delimiting the end of source blocks.")
+
+      (defface org-modern-horizontal-rule
+          '((t (:strike-through "green" :weight bold)))
+          "Face used for the Horizontal like (-----)"))
+
+  ;;; --------------------------------------------------------------------------
+
+  (defun mrf/customize-modus-theme ()
+      (message ">> Applying modus customization")
+      (setq modus-themes-common-palette-overrides
+          '((bg-mode-line-active bg-blue-intense)
+               (fg-mode-line-active fg-main)
+               (border-mode-line-active blue-intense))))
+
+  (add-hook 'elpaca-after-init-hook 'mrf/customize-modus-theme)
+
+  (defun mrf/customize-ef-theme ()
+      (message ">> Applying ef-themes customization")      
+      (defface ef-themes-fixed-pitch
+          '((t (:background "#242635" :extend t :font "Courier New")))
+          "Face used for the source block background.")
+
+      (mrf/org-set-face-attributes)
+      (setq ef-themes-common-palette-override
+          '(  (bg-mode-line bg-blue-intense)
+               (fg-mode-line fg-main)
+               (border-mode-line-active blue-intense))))
+  (add-hook 'org-load-hook 'mrf/customize-ef-theme)
+  (add-hook 'elpaca-after-init-hook 'mrf/customize-ef-theme)
+
+#+end_src
+
 ** Color Theming
 
 #+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
@@ -1137,8 +1212,9 @@ This is just a test area to see what colors look like in this =org= mode.
 
   (add-to-list 'custom-theme-load-path (expand-file-name "Themes" custom-docs-dir))
 
-  (use-package ef-themes)
-  (use-package modus-themes)
+  (mrf/org-theme-override-values)
+  (use-package ef-themes :init (mrf/customize-ef-theme))
+  (use-package modus-themes :init (mrf/customize-modus-theme))
   (use-package material-theme)
   (use-package color-theme-modern)
   (use-package color-theme-sanityinc-tomorrow)
@@ -1150,47 +1226,8 @@ This is just a test area to see what colors look like in this =org= mode.
 ** Load a theme
 Selec a theme (or themes) to load. The last one specified is the one that is used as the current theme.
 
-** Modus (and other protesilaos) Themes
-
-#+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
-  ;;; --------------------------------------------------------------------------
-
-  (defun mrf/customize-modus-theme ()
-      (message "Applying modus customization")
-      (setq modus-themes-common-palette-overrides
-          '((bg-mode-line-active bg-blue-intense)
-               (fg-mode-line-active fg-main)
-               (border-mode-line-active blue-intense))))
-
-  (add-hook 'elpaca-after-init-hook 'mrf/customize-modus-theme)
-
-  (defun mrf/customize-ef-theme ()
-      (setq ef-themes-common-palette-overrides
-          '(  (bg-mode-line bg-blue-intense)
-               (fg-mode-line fg-main)
-               (border-mode-line-active blue-intense))))
-
-  (add-hook 'elpaca-after-init-hook 'mrf/customize-ef-theme)
-
-  #+end_src
-
 ** Cycle Through Themes
 Function and code to cycle through some selcted themes.
-
-#+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
-  ;;; --------------------------------------------------------------------------
-
-  (defvar loaded-theme nil
-      "The text representation of the loaded custom theme.")
-
-  (defun mrf/print-custom-theme-name ()
-      (message (format "Custom theme is %S" loaded-theme)))
-
-  (bind-keys
-      ("C-= =" . mrf/load-theme-from-selector)
-      ("C-= ?" . mrf/print-custom-theme-name))
-
-#+end_src
 
 ** Selected theme
 This includes the theme to use in both graphical and non-graphical.
@@ -1516,6 +1553,9 @@ This package provides a global minor mode to increase the spacing/padding of Ema
   ;;          :mode-line-inactive vertical-border))
 #+end_src
 
+#+RESULTS:
+: #s(hash-table size 65 test eql rehash-size 1.5 rehash-threshold 0.8125 data (:use-package (26172 5346 861412 0) :use-package-secs (0 0 835 0) :init (26172 4862 925034 0) :config (26172 4862 917866 0) :config-secs (0 0 12865 0) :init-secs (0 0 25576 0)))
+
 ** Must Install Packages
 *** Auto-complete
 Auto-Complete is an intelligent auto-completion extension for Emacs. It extends the standard Emacs completion interface and provides an environment that allows users to concentrate more on their own work.
@@ -1564,43 +1604,34 @@ The =mrf/org-font-setup= function configures various text faces to tweak the siz
 
 *NOTE:* Most of the code below has been taken from the [[https://systemcrafters.net][System Crafters]] site run by David Wilson. Please visit that site for lots of great stuff!
 
-** Theme Override Values
-
-#+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
-  ;;; --------------------------------------------------------------------------
-
-  (defun mrf/org-theme-override-values ()
-      (defface org-block-begin-line
-          '((t (:underline "#1D2C39" :foreground "SlateGray" :background "#1D2C39")))
-          "Face used for the line delimiting the begin of source blocks.")
-
-      (defface org-block
-          '((t (:background "#242635" :extend t :font "JetBrains Mono")))
-          "Face used for the source block background.")
-
-      (defface org-block-end-line
-          '((t (:overline "#1D2C39" :foreground "SlateGray" :background "#1D2C39")))
-          "Face used for the line delimiting the end of source blocks.")
-
-      (defface org-modern-horizontal-rule
-          '((t (:strike-through "green" :weight bold)))
-          "Face used for the Horizontal like (-----)"))
-
-#+end_src
-
 ** Font setup
 
 This function sets up the fonts faces that are used within org-mode.
 
 #+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
-  ;;; --------------------------------------------------------------------------
+    ;;; --------------------------------------------------------------------------
+
+  (defun mrf/org-set-face-attributes ()
+      (use-package faces :ensure nil)
+      ;; Ensure that anything that should be fixed-pitch in Org files appears that way
+      (set-face-attribute 'org-block nil    :foreground 'unspecified :inherit 'fixed-pitch :font "JetBrains Mono" )
+      (set-face-attribute 'org-table nil    :inherit 'fixed-pitch)
+      (set-face-attribute 'org-formula nil  :inherit 'fixed-pitch)
+      (set-face-attribute 'org-code nil     :inherit '(shadow fixed-pitch))
+      (set-face-attribute 'org-table nil    :inherit '(shadow fixed-pitch))
+      (set-face-attribute 'org-verbatim nil :inherit '(shadow fixed-pitch))
+      (set-face-attribute 'org-special-keyword nil :inherit '(font-lock-comment-face fixed-pitch))
+      (set-face-attribute 'org-meta-line nil :inherit '(font-lock-comment-face fixed-pitch))
+      (set-face-attribute 'org-checkbox nil  :inherit 'fixed-pitch)
+      (set-face-attribute 'line-number nil :inherit 'fixed-pitch)
+      (set-face-attribute 'line-number-current-line nil :inherit 'fixed-pitch))
 
   (defun mrf/org-font-setup ()
       "Setup org mode fonts."
       (use-package org-faces
-        :after org
-        :config
-  	(message "ORG-FACES configured.")
+          :after org
+          :config
+          (message "ORG-FACES configured.")
           (font-lock-add-keywords
               'org-mode
               '(("^ *\\([-]\\) "
@@ -1614,19 +1645,7 @@ This function sets up the fonts faces that are used within org-mode.
                              (org-level-7 . 1.1)
                              (org-level-8 . 1.1)))
               (set-face-attribute (car face) nil :font "ETBembo" :weight 'regular :height (cdr face)))
-
-          ;; Ensure that anything that should be fixed-pitch in Org files appears that way
-          (set-face-attribute 'org-block nil    :foreground 'unspecified :inherit 'fixed-pitch :font "Hack" )
-          (set-face-attribute 'org-table nil    :inherit 'fixed-pitch)
-          (set-face-attribute 'org-formula nil  :inherit 'fixed-pitch)
-          (set-face-attribute 'org-code nil     :inherit '(shadow fixed-pitch))
-          (set-face-attribute 'org-table nil    :inherit '(shadow fixed-pitch))
-          (set-face-attribute 'org-verbatim nil :inherit '(shadow fixed-pitch))
-          (set-face-attribute 'org-special-keyword nil :inherit '(font-lock-comment-face fixed-pitch))
-          (set-face-attribute 'org-meta-line nil :inherit '(font-lock-comment-face fixed-pitch))
-          (set-face-attribute 'org-checkbox nil  :inherit 'fixed-pitch)
-          (set-face-attribute 'line-number nil :inherit 'fixed-pitch)
-          (set-face-attribute 'line-number-current-line nil :inherit 'fixed-pitch)))
+          (mrf/org-set-face-attributes)))
 
 #+end_src
 
@@ -1792,6 +1811,7 @@ This section contains the basic configuration for =org-mode= plus the configurat
       (mrf/org-setup-agenda)
       (mrf/org-setup-capture-templates)
       (mrf/org-font-setup)
+      ;;(mrf/org-set-face-attributes)
       (yas-global-mode t)
       (define-key global-map (kbd "C-c j")
           (lambda () (interactive) (org-capture nil "jj"))))

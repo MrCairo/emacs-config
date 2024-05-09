@@ -666,19 +666,16 @@ font size is computed + 20 of this value."
 (defun mrf/cycle-theme-selector (&rest theme)
     "Cycle the `theme-selector' by 1, resetting to 0 if beyond array bounds."
     (interactive)
-    (let ((step theme-cycle-step) (result 0))
-
-        (if (not step) (setq step 1)) ;; If nil, default to step of 1
-
-        (when step
-            (setq result (+ step theme-selector))
-            (when (< result 0)
-                (setq result (- (length theme-list) 1)))
-            (when (> result (- (length theme-list) 1))
-                (setq result 0)))
-
-        (message (format ">>> Current theme %S" theme))
-        (setq-default theme-selector result)))
+    (when (not (eq theme-cycle-step nil))
+	(let ((step theme-cycle-step) (result 0))
+            (when step
+		(setq result (+ step theme-selector))
+		(when (< result 0)
+                    (setq result (- (length theme-list) 1)))
+		(when (> result (- (length theme-list) 1))
+                    (setq result 0)))
+            (message (format ">>> Current theme %S" theme))
+            (setq-default theme-selector result))))
 
 ;; This is used to trigger the cycling of the theme-selector
 ;; It is called when a theme is disabled. The theme is disabled from the
@@ -690,17 +687,19 @@ font size is computed + 20 of this value."
 (defun mrf/load-theme-from-selector (&optional step)
     "Load the theme in `theme-list' indexed by `theme-selector'."
     (interactive)
-    (if step
-        (setq theme-cycle-step step)
-	(setq theme-cycle-step 1))
+    (setq theme-cycle-step nil)
+    (cond
+	((or (eq step nil) (eq step 0)) (setq theme-cycle-step 0))
+	((> step 0) (setq theme-cycle-step 1))
+	((< step 0) (setq theme-cycle-step -1)))
     (when loaded-theme
         (disable-theme (intern loaded-theme)))
     (setq loaded-theme (nth theme-selector theme-list))
     (message (concat ">>> Loading theme "
                  (format "%d: %S" theme-selector loaded-theme)))
     (load-theme (intern loaded-theme) t)
-    (when (equal (fboundp 'mrf/org-font-setup) t)
-        (mrf/org-font-setup))
+    (mrf/org-font-setup)
+    (mrf/org-set-face-attributes)
     (set-face-foreground 'line-number "SkyBlue4"))
 
 (defun mrf/print-custom-theme-name ()
@@ -728,6 +727,7 @@ font size is computed + 20 of this value."
     (setq loaded-theme (nth theme-selector theme-list))
     (message (concat ">>> Startup Loading theme "
                  (format "%d: %S" theme-selector loaded-theme)))
+    (mrf/load-theme-from-selector)
     (load-theme (intern loaded-theme) t))
 
 ;; Go to NEXT theme
@@ -751,20 +751,27 @@ font size is computed + 20 of this value."
 
 ;;; --------------------------------------------------------------------------
 
-(add-to-list 'custom-theme-load-path (expand-file-name "Themes" custom-docs-dir))
+(defun mrf/org-theme-override-values ()
+    (defface org-block-begin-line
+        '((t (:underline "#1D2C39" :foreground "SlateGray" :background "#1D2C39")))
+        "Face used for the line delimiting the begin of source blocks.")
 
-(use-package ef-themes)
-(use-package modus-themes)
-(use-package material-theme)
-(use-package color-theme-modern)
-(use-package color-theme-sanityinc-tomorrow)
-(use-package darktooth-theme)
-(use-package zenburn-theme :defer t)
+    (defface org-block
+        '((t (:background "#242635" :extend t :font "JetBrains Mono")))
+        "Face used for the source block background.")
+
+    (defface org-block-end-line
+        '((t (:overline "#1D2C39" :foreground "SlateGray" :background "#1D2C39")))
+        "Face used for the line delimiting the end of source blocks.")
+
+    (defface org-modern-horizontal-rule
+        '((t (:strike-through "green" :weight bold)))
+        "Face used for the Horizontal like (-----)"))
 
 ;;; --------------------------------------------------------------------------
 
 (defun mrf/customize-modus-theme ()
-    (message "Applying modus customization")
+    (message ">> Applying modus customization")
     (setq modus-themes-common-palette-overrides
         '((bg-mode-line-active bg-blue-intense)
              (fg-mode-line-active fg-main)
@@ -773,24 +780,31 @@ font size is computed + 20 of this value."
 (add-hook 'elpaca-after-init-hook 'mrf/customize-modus-theme)
 
 (defun mrf/customize-ef-theme ()
-    (setq ef-themes-common-palette-overrides
+    (message ">> Applying ef-themes customization")      
+    (defface ef-themes-fixed-pitch
+        '((t (:background "#242635" :extend t :font "Courier New")))
+        "Face used for the source block background.")
+
+    (mrf/org-set-face-attributes)
+    (setq ef-themes-common-palette-override
         '(  (bg-mode-line bg-blue-intense)
              (fg-mode-line fg-main)
              (border-mode-line-active blue-intense))))
-
+(add-hook 'org-load-hook 'mrf/customize-ef-theme)
 (add-hook 'elpaca-after-init-hook 'mrf/customize-ef-theme)
 
 ;;; --------------------------------------------------------------------------
 
-(defvar loaded-theme nil
-    "The text representation of the loaded custom theme.")
+(add-to-list 'custom-theme-load-path (expand-file-name "Themes" custom-docs-dir))
 
-(defun mrf/print-custom-theme-name ()
-    (message (format "Custom theme is %S" loaded-theme)))
-
-(bind-keys
-    ("C-= =" . mrf/load-theme-from-selector)
-    ("C-= ?" . mrf/print-custom-theme-name))
+(mrf/org-theme-override-values)
+(use-package ef-themes :init (mrf/customize-ef-theme))
+(use-package modus-themes :init (mrf/customize-modus-theme))
+(use-package material-theme)
+(use-package color-theme-modern)
+(use-package color-theme-sanityinc-tomorrow)
+(use-package darktooth-theme)
+(use-package zenburn-theme :defer t)
 
 ;;; --------------------------------------------------------------------------
 ;; (add-hook 'emacs-startup-hook #'(mrf/load-theme-from-selector))
@@ -1055,31 +1069,27 @@ font size is computed + 20 of this value."
 
 ;;; --------------------------------------------------------------------------
 
-(defun mrf/org-theme-override-values ()
-    (defface org-block-begin-line
-        '((t (:underline "#1D2C39" :foreground "SlateGray" :background "#1D2C39")))
-        "Face used for the line delimiting the begin of source blocks.")
-
-    (defface org-block
-        '((t (:background "#242635" :extend t :font "JetBrains Mono")))
-        "Face used for the source block background.")
-
-    (defface org-block-end-line
-        '((t (:overline "#1D2C39" :foreground "SlateGray" :background "#1D2C39")))
-        "Face used for the line delimiting the end of source blocks.")
-
-    (defface org-modern-horizontal-rule
-        '((t (:strike-through "green" :weight bold)))
-        "Face used for the Horizontal like (-----)"))
-
-;;; --------------------------------------------------------------------------
+(defun mrf/org-set-face-attributes ()
+    (use-package faces :ensure nil)
+    ;; Ensure that anything that should be fixed-pitch in Org files appears that way
+    (set-face-attribute 'org-block nil    :foreground 'unspecified :inherit 'fixed-pitch :font "JetBrains Mono" )
+    (set-face-attribute 'org-table nil    :inherit 'fixed-pitch)
+    (set-face-attribute 'org-formula nil  :inherit 'fixed-pitch)
+    (set-face-attribute 'org-code nil     :inherit '(shadow fixed-pitch))
+    (set-face-attribute 'org-table nil    :inherit '(shadow fixed-pitch))
+    (set-face-attribute 'org-verbatim nil :inherit '(shadow fixed-pitch))
+    (set-face-attribute 'org-special-keyword nil :inherit '(font-lock-comment-face fixed-pitch))
+    (set-face-attribute 'org-meta-line nil :inherit '(font-lock-comment-face fixed-pitch))
+    (set-face-attribute 'org-checkbox nil  :inherit 'fixed-pitch)
+    (set-face-attribute 'line-number nil :inherit 'fixed-pitch)
+    (set-face-attribute 'line-number-current-line nil :inherit 'fixed-pitch))
 
 (defun mrf/org-font-setup ()
     "Setup org mode fonts."
     (use-package org-faces
-      :after org
-      :config
-	(message "ORG-FACES configured.")
+        :after org
+        :config
+        (message "ORG-FACES configured.")
         (font-lock-add-keywords
             'org-mode
             '(("^ *\\([-]\\) "
@@ -1093,19 +1103,7 @@ font size is computed + 20 of this value."
                            (org-level-7 . 1.1)
                            (org-level-8 . 1.1)))
             (set-face-attribute (car face) nil :font "ETBembo" :weight 'regular :height (cdr face)))
-
-        ;; Ensure that anything that should be fixed-pitch in Org files appears that way
-        (set-face-attribute 'org-block nil    :foreground 'unspecified :inherit 'fixed-pitch :font "Hack" )
-        (set-face-attribute 'org-table nil    :inherit 'fixed-pitch)
-        (set-face-attribute 'org-formula nil  :inherit 'fixed-pitch)
-        (set-face-attribute 'org-code nil     :inherit '(shadow fixed-pitch))
-        (set-face-attribute 'org-table nil    :inherit '(shadow fixed-pitch))
-        (set-face-attribute 'org-verbatim nil :inherit '(shadow fixed-pitch))
-        (set-face-attribute 'org-special-keyword nil :inherit '(font-lock-comment-face fixed-pitch))
-        (set-face-attribute 'org-meta-line nil :inherit '(font-lock-comment-face fixed-pitch))
-        (set-face-attribute 'org-checkbox nil  :inherit 'fixed-pitch)
-        (set-face-attribute 'line-number nil :inherit 'fixed-pitch)
-        (set-face-attribute 'line-number-current-line nil :inherit 'fixed-pitch)))
+        (mrf/org-set-face-attributes)))
 
 ;; -----------------------------------------------------------------
 
@@ -1250,6 +1248,7 @@ font size is computed + 20 of this value."
     (mrf/org-setup-agenda)
     (mrf/org-setup-capture-templates)
     (mrf/org-font-setup)
+    ;;(mrf/org-set-face-attributes)
     (yas-global-mode t)
     (define-key global-map (kbd "C-c j")
         (lambda () (interactive) (org-capture nil "jj"))))
