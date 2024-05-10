@@ -48,22 +48,32 @@
          ( "org" . "https://orgmode.org/elpa/")
          ( "melpa-stable" . "https://stable.melpa.org/packages/")))
 
+;; Highest number gets priority (what is not mentioned has priority 0)
+(setq package-archive-priorities
+    '(
+	 ( "org" . 99 )
+	 ( "melpa" . 40 )
+	 ( "gnu-elpa" . 30 )
+	 ( "melpa-stable" . 20 )
+	 ( "nongnu" . 10)
+	 ))
+
 (defun add-site-lisp-to-load-path (parent-dir)
     "Add every non-hidden subdir of PARENT-DIR to `load-path'."
     (use-package cl-lib)
     (let ((default-directory parent-dir))
-	(setq load-path
+  	(setq load-path
             (append
-		(cl-remove-if-not
-		    #'file-directory-p
-		    (directory-files (expand-file-name parent-dir) t "^[^\\.]"))
-		load-path))))
+  		(cl-remove-if-not
+  		    #'file-directory-p
+  		    (directory-files (expand-file-name parent-dir) t "^[^\\.]"))
+  		load-path))))
 
 ;; Add both site-lisp and its immediate subdirs to `load-path'
 (when (file-directory-p (expand-file-name "site-lisp/" user-emacs-directory))
     (let ((site-lisp-dir (expand-file-name "site-lisp/" user-emacs-directory)))
-	(push site-lisp-dir load-path)
-	(add-site-lisp-to-load-path site-lisp-dir)))
+  	(push site-lisp-dir load-path)
+  	(add-site-lisp-to-load-path site-lisp-dir)))
 
 (defun mrf/display-startup-time ()
     "Calculate and display startup time."
