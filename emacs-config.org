@@ -8,6 +8,8 @@
 
 This ORG file will configure the * init.el * file based upon all of the * emacs-lisp * source blocks. The emacs-lisp source blocks are defined in an organized order. While these blocks cn generally be moved around, there are some order dependencies. So it's generally best that this order be preserved to prevent any compile-time issues.
 
+Shout out to the many people in the Emacs community from which a lot of this configuration took inspiration from.
+
 
 * README:
 -----
@@ -32,11 +34,18 @@ This ORG file will configure the * init.el * file based upon all of the * emacs-
 * early-init.el
 
 #+begin_src emacs-lisp :tangle "early-init.el" :mkdirp yes
+  ;; -*- lexical-binding: t; -*-
   ;; Early initialization file for emacs
+  ;; This file has been auto-generated from an org-mode file. DO NOT EDIT.
 
   ;; Since we're using straight, we DON'T want to use the
   ;; normal package.el since straight replaces this.
   (setq package-enable-at-startup nil)
+
+  ;; Compile warnings
+  ;;  (setq warning-minimum-level :emergency)
+  (setq native-comp-async-report-warnings-errors 'silent) ;; native-comp warning
+  (setq byte-compile-warnings '(not free-vars unresolved noruntime lexical make-local))
 
   ;;; =========================================================================
   ;;; startup
@@ -55,20 +64,20 @@ This ORG file will configure the * init.el * file based upon all of the * emacs-
 
   (add-hook 'before-init-hook
       (lambda ()
-  	(setq read-process-output-max (* 64 1024 1024)) ;; 1mb
-  	(setq process-adaptive-read-buffering nil)
-  	;; warn when opening files bigger than 100MB
-  	(setq large-file-warning-threshold 100000000)
-  	;; reduce the frequency of garbage collection by making it happen on
-  	;; each 50MB of allocated data (the default is on every 0.76MB)
-  	(setq gc-cons-threshold 50000000)))
+          (setq read-process-output-max (* 64 1024 1024)) ;; 1mb
+          (setq process-adaptive-read-buffering nil)
+          ;; warn when opening files bigger than 100MB
+          (setq large-file-warning-threshold 100000000)
+          ;; reduce the frequency of garbage collection by making it happen on
+          ;; each 50MB of allocated data (the default is on every 0.76MB)
+          ;; Garbage Collections
+          (setq gc-cons-percentage 0.5)
+          (setq gc-cons-threshold 50000000)))
 
   (setq read-process-output-max (* 80 1024 1024))
   (setq process-adaptive-read-buffering nil)
   ;; (add-to-list 'default-frame-alist '(undecorated . t))
 
-  ;;; -------------------------------------------------------------------------
-  ;;; Package setup
 #+end_src
 
 ** Package related early initialization
@@ -96,6 +105,8 @@ This ORG file will configure the * init.el * file based upon all of the * emacs-
   	 ( "nongnu" . 10)
   	 ))
 
+  (setq gnutls-algorithm-priority "NORMAL:-VERS-TLS1.3") ;; w/o this Emacs freezes when refreshing ELPA
+
   (defun add-site-lisp-to-load-path (parent-dir)
       "Add every non-hidden subdir of PARENT-DIR to `load-path'."
       (use-package cl-lib)
@@ -115,56 +126,67 @@ This ORG file will configure the * init.el * file based upon all of the * emacs-
 
 #+end_src
 
-** Configure ~use-package~
+** Configure use-package
 
 #+begin_src emacs-lisp :tangle "early-init.el" :mkdirp yes
-
-  (defun mrf/display-startup-time ()
-      "Calculate and display startup time."
-      (message "Emacs loaded in %s with %d garbage collections."
-  	  (format "%.2f seconds"
-  	      (float-time
-  		  (time-subtract after-init-time before-init-time)))
-  	  gcs-done))
-
-  (add-hook 'emacs-startup-hook #'mrf/display-startup-time)
 
   (setq use-package-compute-statistics t
       use-package-verbose t
       use-package-always-ensure nil
       use-package-always-demand nil
       use-package-always-defer nil)
-  
+
+#+end_src
+
+** Garbage Collection
+#+begin_src emacs-lisp :tangle "early-init.el" :mkdirp yes
+
+  (use-package gcmh
+      :diminish gcmh-mode
+      :config
+      (setq gcmh-idle-delay 5
+          gcmh-high-cons-threshold (* 16 1024 1024))  ; 16mb
+      (gcmh-mode 1))
+
+  (add-hook 'emacs-startup-hook
+      (lambda ()
+          (setq gc-cons-percentage 0.1))) ;; Default value for `gc-cons-percentage'
+
+  (add-hook 'emacs-startup-hook
+      (lambda ()
+          (message "Emacs ready in %s with %d garbage collections."
+              (format "%.2f seconds"
+                  (float-time
+                      (time-subtract after-init-time before-init-time)))
+              gcs-done)))
+#+end_src
+
+#+begin_src emacs-lisp :tangle "early-init.el" :mkdirp yes
+  ;;; early-init.el ends here.
 #+end_src
 
 
 * init.el General Setup
 
+This section just sets up the starting part of the ~init.el~ file. These includes Elpaca bootrapping and other types of global setup.
+
 ** Lispy Header
 This is the standard format of a =lisp= header that should appear for all =lisp= scripts. It also indicates that the ~init.el~ file is generated from this ~Configure.org~ file.
 
 #+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
-  ;;; init.el -- Generated from emacs-config.org -*- flycheck-disabled-checkers: (emacs-lisp); -*-
+  ;;; init.el -*- flycheck-disabled-checkers: (emacs-lisp); lexical-binding: nil -*-
   ;;;
   ;;; Commentary:
 
-  ;; This file bootstraps the configuration which is created from tangling
-  ;; Configuration.org into this init.el file.
-  ;;
-  ;; So, DO NOT MODIFY.  THIS FILE IS GENERATED
-  ;; Edit the Configure.org file, save (auto-tangle) and this file will be
-  ;; generated.  Plus, there are a lot of comments that are in the Configure.org
-  ;; file that are not exported as part of this source.  The comments provide more
-  ;; detail for certain modes as well as other important details.  If there is a
-  ;; question as to why something is a certain way or how a package may work,
-  ;; the Configure.org file may contain those answers.
+  ;; This file bootstraps the configuration which is generated from tangling an org-mode file.
+  ;; So, DO NOT MODIFY this file directly as changes will be overwritten.
 
   ;;; Code:
 
   ;; Produce backtraces when errors occur: can be helpful to diagnose startup issues
   ;; (setq debug-on-error t)
   ;;
-
+  
 #+end_src
 
 ** Elpaca Bootstrap
@@ -231,8 +253,17 @@ Elpaca:
 
 #+end_src
 
+
+* Custom Variables
+
+Set various variables to =t= to turn on a specific feature or =nil= to disable it. Changing any of these values will require a restart of ~emacs~ since these values are inspected only during startup.
+
+*Note:* There are no thorough dependency check done if any of these values is enabled or disabled. There has been some effort, for example, to enable a keymap if ~dap~ or ~dape~ is enabled. But if something enabled requires some not obvious package to be installed, this isn't checked.
+
+Other variables are also defined here that define other emacs behaviors and defaults.
+
 ** Customization groups
-These are the groups used by this Emacs config for customization. It's important that these groups as well as the customizable file location variables be in the main ~init.el~ since there are startup values that require them *before* we can require other intialization files.
+These are the groups used by this Emacs config for customization.
 
 #+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
@@ -292,86 +323,7 @@ These are the groups used by this Emacs config for customization. It's important
 
 #+end_src
 
-** Use Shell Path
-Because in macOS, Emacs could be started outside of a shell (like an application on the Dock), this code is used to migrate the <current user's shell path to Emacs ~exec-path~.
-
-#+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
-  ;;; --------------------------------------------------------------------------
-
-  ;; Use shell path
-
-  (defun set-exec-path-from-shell-PATH ()
-     ;;; Set up Emacs' `exec-path' and PATH environment variable to match"
-     ;;; that used by the user's shell.
-     ;;; This is particularly useful under Mac OS X and macOS, where GUI
-     ;;; apps are not started from a shell."
-      (interactive)
-      (let ((path-from-shell (replace-regexp-in-string "[ \t\n]*$" ""
-                                 (shell-command-to-string "$SHELL --login -c 'echo $PATH'"))))
-          (setenv "PATH" path-from-shell)
-          (setq exec-path (split-string path-from-shell path-separator))
-          (add-to-list 'exec-path "/opt/homebrew/bin")
-          (add-to-list 'exec-path "/usr/local/bin")
-          (add-to-list 'exec-path "/opt/homebrew/opt/openjdk/bin")
-          (add-to-list 'exec-path "/opt/homebrew/opt/node@20/bin/node")
-          (setq-default insert-directory-program "gls"
-              dired-use-ls-dired t
-              ;; Needed to fix an issue on Mac which causes dired to fail
-              dired-listing-switches "-al --group-directories-first")))
-
-#+end_src
-
-** Emacs Config Directory
-
-By default, the =user-emacs-directory= points to the .emacs.d* directory from which the =init.el= is used when Emacs starts. What this means is that any package that writes to this directory will be writing files to this initialization directory. Since we want to keep this directory clean, we set this directory to something external. A new variable, =emacs-config-directory= is set to now point to the starting Emacs condfiguration directory.
-
-#+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
-  ;;; --------------------------------------------------------------------------
-  ;;; Set a variable that represents the actual emacs configuration directory.
-  ;;; This is being done so that the user-emacs-directory which normally points
-  ;;; to the .emacs.d directory can be re-assigned so that customized files don't
-  ;;; pollute the configuration directory. This is where things like YASnippet
-  ;;; snippets are saved and also additional color themese are stored.
-
-  (defvar emacs-config-directory user-emacs-directory)
-
-  ;;; Different emacs configuration installs with have their own configuration
-  ;;; directory.
-  (make-directory working-files-directory t)
-
-  ;;; Point the user-emacs-directory to the new working directory
-  (setq user-emacs-directory working-files-directory)
-  (message (concat ">>> Setting emacs-working-files directory to: " user-emacs-directory))
-
-  ;;; Put any emacs cusomized variables in a special file
-  (setq custom-file (expand-file-name "customized-vars.el" user-emacs-directory))
-  (load custom-file 'noerror 'nomessage)
-
-#+end_src
-
-** Require enacs-config-modules files
-
-This directory is expected to be in the ~emacs-config-direcory~ dir. This can be used to store custom lisp (or non-elpa/melpa) files that can'tbe found by =require.el= or =straight-use-package=.
-
-
-#+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
-  ;;; --------------------------------------------------------------------------
-
-  (add-to-list 'load-path (expand-file-name "lisp" emacs-config-directory))
-  (add-to-list 'custom-theme-load-path (expand-file-name "Themes" custom-docs-dir))
-
-#+end_src
-
-
-* Custom Variables
-
-Set various variables to =t= to turn on a specific feature or =nil= to disable it. Changing any of these values will require a restart of ~emacs~ since these values are inspected only during startup.
-
-*Note:* There are no thorough dependency check done if any of these values is enabled or disabled. There has been some effort, for example, to enable a keymap if ~dap~ or ~dape~ is enabled. But if something enabled requires some not obvious package to be installed, this isn't checked.
-
-Other variables are also defined here that define other emacs behaviors and defaults.
-
-** Custom Enable Flags
+** Custom Feature Toggles
 
 Thes values toggle the availability of specific packages. Only boolean type values are part of this group.
 
@@ -588,9 +540,81 @@ This is a curated selection of themes that I personally like. Most of them are d
 #+end_src
 
 
-
-
 * Global Configuration
+
+Setup initial paths, global values and settings, and Emacs working directories.
+
+** Use Shell Path
+Because in macOS, Emacs could be started outside of a shell (like an application on the Dock), this code is used to migrate the <current user's shell path to Emacs ~exec-path~.
+
+#+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
+  ;;; --------------------------------------------------------------------------
+
+  ;; Use shell path
+
+  (defun set-exec-path-from-shell-PATH ()
+     ;;; Set up Emacs' `exec-path' and PATH environment variable to match"
+     ;;; that used by the user's shell.
+     ;;; This is particularly useful under Mac OS X and macOS, where GUI
+     ;;; apps are not started from a shell."
+      (interactive)
+      (let ((path-from-shell (replace-regexp-in-string "[ \t\n]*$" ""
+                                 (shell-command-to-string "$SHELL --login -c 'echo $PATH'"))))
+          (setenv "PATH" path-from-shell)
+          (setq exec-path (split-string path-from-shell path-separator))
+          (add-to-list 'exec-path "/opt/homebrew/bin")
+          (add-to-list 'exec-path "/usr/local/bin")
+          (add-to-list 'exec-path "/opt/homebrew/opt/openjdk/bin")
+          (add-to-list 'exec-path "/opt/homebrew/opt/node@20/bin/node")
+          (setq-default insert-directory-program "gls"
+              dired-use-ls-dired t
+              ;; Needed to fix an issue on Mac which causes dired to fail
+              dired-listing-switches "-al --group-directories-first")))
+
+#+end_src
+
+** Emacs/User Config Directory
+
+By default, the =user-emacs-directory= points to the .emacs.d* directory from which the =init.el= is used when Emacs starts. What this means is that any package that writes to this directory will be writing files to this initialization directory. Since we want to keep this directory clean, we set this directory to something external. A new variable, =emacs-config-directory= is set to now point to the starting Emacs condfiguration directory.
+
+#+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
+  ;;; --------------------------------------------------------------------------
+  ;;; Set a variable that represents the actual emacs configuration directory.
+  ;;; This is being done so that the user-emacs-directory which normally points
+  ;;; to the .emacs.d directory can be re-assigned so that customized files don't
+  ;;; pollute the configuration directory. This is where things like YASnippet
+  ;;; snippets are saved and also additional color themese are stored.
+
+  (defvar emacs-config-directory user-emacs-directory)
+
+  ;;; Different emacs configuration installs with have their own configuration
+  ;;; directory.
+  (make-directory working-files-directory t)
+
+  ;;; Point the user-emacs-directory to the new working directory
+  (setq user-emacs-directory working-files-directory)
+  (message (concat ">>> Setting emacs-working-files directory to: " user-emacs-directory))
+
+  ;;; Put any emacs cusomized variables in a special file
+  (setq custom-file (expand-file-name "customized-vars.el" user-emacs-directory))
+  (load custom-file 'noerror 'nomessage)
+
+#+end_src
+
+** Additional Search Paths
+
+This directory is expected to be in the ~emacs-config-direcory~ dir. This can be used to store custom lisp (or non-elpa/melpa) files that can'tbe found by =require.el= or =straight-use-package=.
+
+
+#+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
+  ;;; --------------------------------------------------------------------------
+
+  (add-to-list 'load-path (expand-file-name "lisp" emacs-config-directory))
+  (add-to-list 'custom-theme-load-path (expand-file-name "Themes" custom-docs-dir))
+
+#+end_src
+
+** Global default variables
 
 #+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
 
@@ -615,10 +639,14 @@ This is a curated selection of themes that I personally like. Most of them are d
       fill-column 80            ;; Default line limit for fills
       ;; Triggers project for directories with any of the following files:
       project-vc-extra-root-markers '(".dir-locals.el"
-					 "requirements.txt"
-					 "Gemfile"
-					 "package.json")
+  				       "requirements.txt"
+  				       "Gemfile"
+  				       "package.json")
       )
+#+end_src
+
+
+#+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
 
   ;; (global-display-line-numbers-mode 1) ;; Line numbers appear everywhere
   (save-place-mode 1)                  ;; Remember where we were last editing a file.
@@ -627,8 +655,8 @@ This is a curated selection of themes that I personally like. Most of them are d
   (tool-bar-mode -1)                   ;; Hide the toolbar
   (global-prettify-symbols-mode 1)     ;; Display pretty symbols (i.e. λ = lambda)
   (add-hook 'prog-mode-hook 'display-line-numbers-mode)
-  
 #+end_src
+
 
 #+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
 
@@ -646,6 +674,11 @@ This is a curated selection of themes that I personally like. Most of them are d
       :hook (elpaca-after-init . default-text-scale-mode))
 
 #+end_src
+
+
+* Globally Enabled Packages
+
+The following packages are all intended to be available globally.
 
 ** Diminish
 #+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
@@ -961,6 +994,8 @@ These are useful snippets of code that are commonly used in various languages. Y
 
 
 * Undo Packages
+The packages below make the standard Emacs undo capabilities more visual.
+
 ** Vundo
 A great package that allows moving up and down the undo-redo tree.
 
@@ -1015,7 +1050,6 @@ A great package that allows moving up and down the undo-redo tree.
               (setq undo-tree-auto-save-history nil))))
   
 #+end_src
-
 
 
 * Custom Theme List and Selection
@@ -1334,6 +1368,7 @@ It's nice to know that Emacs is somewhat working. To help this along, we set the
       )
 
   (defun mrf/update-large-display ()
+      (message (format ">> mrf/update-lage-display %S" frame))    
       (modify-frame-parameters
           frame '((user-position . t)
                      (top . 0.0)
@@ -1849,6 +1884,7 @@ This section contains the basic configuration for =org-mode= plus the configurat
   ;;; --------------------------------------------------------------------------
 
   (use-package org-modern
+      :disabled
       :after org
       :hook (org-mode . org-modern-mode)
       :config
@@ -3729,7 +3765,7 @@ autopep8 automatically formats Python code to conform to the `PEP 8` style guide
 #+end_src
 
 ** Python Keybinding
-**** Helpful Macros
+*** Helpful Macros
 #+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
 

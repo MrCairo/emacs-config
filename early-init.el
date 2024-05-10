@@ -1,8 +1,15 @@
+;; -*- lexical-binding: t; -*-
 ;; Early initialization file for emacs
+;; This file has been auto-generated from an org-mode file. DO NOT EDIT.
 
 ;; Since we're using straight, we DON'T want to use the
 ;; normal package.el since straight replaces this.
 (setq package-enable-at-startup nil)
+
+;; Compile warnings
+;;  (setq warning-minimum-level :emergency)
+(setq native-comp-async-report-warnings-errors 'silent) ;; native-comp warning
+(setq byte-compile-warnings '(not free-vars unresolved noruntime lexical make-local))
 
 ;;; =========================================================================
 ;;; startup
@@ -21,20 +28,19 @@
 
 (add-hook 'before-init-hook
     (lambda ()
-	(setq read-process-output-max (* 64 1024 1024)) ;; 1mb
-	(setq process-adaptive-read-buffering nil)
-	;; warn when opening files bigger than 100MB
-	(setq large-file-warning-threshold 100000000)
-	;; reduce the frequency of garbage collection by making it happen on
-	;; each 50MB of allocated data (the default is on every 0.76MB)
-	(setq gc-cons-threshold 50000000)))
+        (setq read-process-output-max (* 64 1024 1024)) ;; 1mb
+        (setq process-adaptive-read-buffering nil)
+        ;; warn when opening files bigger than 100MB
+        (setq large-file-warning-threshold 100000000)
+        ;; reduce the frequency of garbage collection by making it happen on
+        ;; each 50MB of allocated data (the default is on every 0.76MB)
+        ;; Garbage Collections
+        (setq gc-cons-percentage 0.5)
+        (setq gc-cons-threshold 50000000)))
 
 (setq read-process-output-max (* 80 1024 1024))
 (setq process-adaptive-read-buffering nil)
 ;; (add-to-list 'default-frame-alist '(undecorated . t))
-
-;;; -------------------------------------------------------------------------
-;;; Package setup
 
 ;;; --------------------------------------------------------------------------
 
@@ -58,6 +64,8 @@
 	 ( "nongnu" . 10)
 	 ))
 
+(setq gnutls-algorithm-priority "NORMAL:-VERS-TLS1.3") ;; w/o this Emacs freezes when refreshing ELPA
+
 (defun add-site-lisp-to-load-path (parent-dir)
     "Add every non-hidden subdir of PARENT-DIR to `load-path'."
     (use-package cl-lib)
@@ -75,18 +83,29 @@
   	(push site-lisp-dir load-path)
   	(add-site-lisp-to-load-path site-lisp-dir)))
 
-(defun mrf/display-startup-time ()
-    "Calculate and display startup time."
-    (message "Emacs loaded in %s with %d garbage collections."
-	  (format "%.2f seconds"
-	      (float-time
-		  (time-subtract after-init-time before-init-time)))
-	  gcs-done))
-
-(add-hook 'emacs-startup-hook #'mrf/display-startup-time)
-
 (setq use-package-compute-statistics t
     use-package-verbose t
     use-package-always-ensure nil
     use-package-always-demand nil
     use-package-always-defer nil)
+
+(use-package gcmh
+    :diminish gcmh-mode
+    :config
+    (setq gcmh-idle-delay 5
+        gcmh-high-cons-threshold (* 16 1024 1024))  ; 16mb
+    (gcmh-mode 1))
+
+(add-hook 'emacs-startup-hook
+    (lambda ()
+        (setq gc-cons-percentage 0.1))) ;; Default value for `gc-cons-percentage'
+
+(add-hook 'emacs-startup-hook
+    (lambda ()
+        (message "Emacs ready in %s with %d garbage collections."
+            (format "%.2f seconds"
+                (float-time
+                    (time-subtract after-init-time before-init-time)))
+            gcs-done)))
+
+;;; early-init.el ends here.

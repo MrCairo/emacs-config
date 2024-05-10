@@ -1,17 +1,9 @@
-;;; init.el -- Generated from emacs-config.org -*- flycheck-disabled-checkers: (emacs-lisp); -*-
+;;; init.el -*- flycheck-disabled-checkers: (emacs-lisp); lexical-binding: nil -*-
 ;;;
 ;;; Commentary:
 
-;; This file bootstraps the configuration which is created from tangling
-;; Configuration.org into this init.el file.
-;;
-;; So, DO NOT MODIFY.  THIS FILE IS GENERATED
-;; Edit the Configure.org file, save (auto-tangle) and this file will be
-;; generated.  Plus, there are a lot of comments that are in the Configure.org
-;; file that are not exported as part of this source.  The comments provide more
-;; detail for certain modes as well as other important details.  If there is a
-;; question as to why something is a certain way or how a package may work,
-;; the Configure.org file may contain those answers.
+;; This file bootstraps the configuration which is generated from tangling an org-mode file.
+;; So, DO NOT MODIFY this file directly as changes will be overwritten.
 
 ;;; Code:
 
@@ -116,55 +108,6 @@ Note that the text is also centered on the screen so that should
 be taken into consideration when providing a width."
     :type 'natnum
     :group 'mrf-custom)
-
-;;; --------------------------------------------------------------------------
-
-;; Use shell path
-
-(defun set-exec-path-from-shell-PATH ()
-   ;;; Set up Emacs' `exec-path' and PATH environment variable to match"
-   ;;; that used by the user's shell.
-   ;;; This is particularly useful under Mac OS X and macOS, where GUI
-   ;;; apps are not started from a shell."
-    (interactive)
-    (let ((path-from-shell (replace-regexp-in-string "[ \t\n]*$" ""
-                               (shell-command-to-string "$SHELL --login -c 'echo $PATH'"))))
-        (setenv "PATH" path-from-shell)
-        (setq exec-path (split-string path-from-shell path-separator))
-        (add-to-list 'exec-path "/opt/homebrew/bin")
-        (add-to-list 'exec-path "/usr/local/bin")
-        (add-to-list 'exec-path "/opt/homebrew/opt/openjdk/bin")
-        (add-to-list 'exec-path "/opt/homebrew/opt/node@20/bin/node")
-        (setq-default insert-directory-program "gls"
-            dired-use-ls-dired t
-            ;; Needed to fix an issue on Mac which causes dired to fail
-            dired-listing-switches "-al --group-directories-first")))
-
-;;; --------------------------------------------------------------------------
-;;; Set a variable that represents the actual emacs configuration directory.
-;;; This is being done so that the user-emacs-directory which normally points
-;;; to the .emacs.d directory can be re-assigned so that customized files don't
-;;; pollute the configuration directory. This is where things like YASnippet
-;;; snippets are saved and also additional color themese are stored.
-
-(defvar emacs-config-directory user-emacs-directory)
-
-;;; Different emacs configuration installs with have their own configuration
-;;; directory.
-(make-directory working-files-directory t)
-
-;;; Point the user-emacs-directory to the new working directory
-(setq user-emacs-directory working-files-directory)
-(message (concat ">>> Setting emacs-working-files directory to: " user-emacs-directory))
-
-;;; Put any emacs cusomized variables in a special file
-(setq custom-file (expand-file-name "customized-vars.el" user-emacs-directory))
-(load custom-file 'noerror 'nomessage)
-
-;;; --------------------------------------------------------------------------
-
-(add-to-list 'load-path (expand-file-name "lisp" emacs-config-directory))
-(add-to-list 'custom-theme-load-path (expand-file-name "Themes" custom-docs-dir))
 
 ;;; --------------------------------------------------------------------------
 ;;; Feature Toggles
@@ -365,6 +308,55 @@ font size is computed + 20 of this value."
 
 ;;; --------------------------------------------------------------------------
 
+;; Use shell path
+
+(defun set-exec-path-from-shell-PATH ()
+   ;;; Set up Emacs' `exec-path' and PATH environment variable to match"
+   ;;; that used by the user's shell.
+   ;;; This is particularly useful under Mac OS X and macOS, where GUI
+   ;;; apps are not started from a shell."
+    (interactive)
+    (let ((path-from-shell (replace-regexp-in-string "[ \t\n]*$" ""
+                               (shell-command-to-string "$SHELL --login -c 'echo $PATH'"))))
+        (setenv "PATH" path-from-shell)
+        (setq exec-path (split-string path-from-shell path-separator))
+        (add-to-list 'exec-path "/opt/homebrew/bin")
+        (add-to-list 'exec-path "/usr/local/bin")
+        (add-to-list 'exec-path "/opt/homebrew/opt/openjdk/bin")
+        (add-to-list 'exec-path "/opt/homebrew/opt/node@20/bin/node")
+        (setq-default insert-directory-program "gls"
+            dired-use-ls-dired t
+            ;; Needed to fix an issue on Mac which causes dired to fail
+            dired-listing-switches "-al --group-directories-first")))
+
+;;; --------------------------------------------------------------------------
+;;; Set a variable that represents the actual emacs configuration directory.
+;;; This is being done so that the user-emacs-directory which normally points
+;;; to the .emacs.d directory can be re-assigned so that customized files don't
+;;; pollute the configuration directory. This is where things like YASnippet
+;;; snippets are saved and also additional color themese are stored.
+
+(defvar emacs-config-directory user-emacs-directory)
+
+;;; Different emacs configuration installs with have their own configuration
+;;; directory.
+(make-directory working-files-directory t)
+
+;;; Point the user-emacs-directory to the new working directory
+(setq user-emacs-directory working-files-directory)
+(message (concat ">>> Setting emacs-working-files directory to: " user-emacs-directory))
+
+;;; Put any emacs cusomized variables in a special file
+(setq custom-file (expand-file-name "customized-vars.el" user-emacs-directory))
+(load custom-file 'noerror 'nomessage)
+
+;;; --------------------------------------------------------------------------
+
+(add-to-list 'load-path (expand-file-name "lisp" emacs-config-directory))
+(add-to-list 'custom-theme-load-path (expand-file-name "Themes" custom-docs-dir))
+
+;;; --------------------------------------------------------------------------
+
 (setq-default
     window-resize-pixelwise t ;; enable smooth resizing
     window-resize-pixelwise t
@@ -384,9 +376,9 @@ font size is computed + 20 of this value."
     fill-column 80            ;; Default line limit for fills
     ;; Triggers project for directories with any of the following files:
     project-vc-extra-root-markers '(".dir-locals.el"
-					 "requirements.txt"
-					 "Gemfile"
-					 "package.json")
+				       "requirements.txt"
+				       "Gemfile"
+				       "package.json")
     )
 
 ;; (global-display-line-numbers-mode 1) ;; Line numbers appear everywhere
@@ -878,6 +870,7 @@ font size is computed + 20 of this value."
     )
 
 (defun mrf/update-large-display ()
+    (message (format ">> mrf/update-lage-display %S" frame))    
     (modify-frame-parameters
         frame '((user-position . t)
                    (top . 0.0)
@@ -1263,6 +1256,7 @@ font size is computed + 20 of this value."
 ;;; --------------------------------------------------------------------------
 
 (use-package org-modern
+    :disabled
     :after org
     :hook (org-mode . org-modern-mode)
     :config
