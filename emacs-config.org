@@ -74,7 +74,7 @@ This ORG file will configure the * init.el * file based upon all of the * emacs-
 ** Package related early initialization
 
 #+begin_src emacs-lisp :tangle "early-init.el" :mkdirp yes
-        ;;; --------------------------------------------------------------------------
+          ;;; --------------------------------------------------------------------------
 
   (setq package-vc-register-as-project nil) ; Emacs 30
   (add-hook 'package-menu-mode-hook #'hl-line-mode)
@@ -86,22 +86,32 @@ This ORG file will configure the * init.el * file based upon all of the * emacs-
            ( "org" . "https://orgmode.org/elpa/")
            ( "melpa-stable" . "https://stable.melpa.org/packages/")))
 
+  ;; Highest number gets priority (what is not mentioned has priority 0)
+  (setq package-archive-priorities
+      '(
+  	 ( "org" . 99 )
+  	 ( "melpa" . 40 )
+  	 ( "gnu-elpa" . 30 )
+  	 ( "melpa-stable" . 20 )
+  	 ( "nongnu" . 10)
+  	 ))
+
   (defun add-site-lisp-to-load-path (parent-dir)
       "Add every non-hidden subdir of PARENT-DIR to `load-path'."
       (use-package cl-lib)
       (let ((default-directory parent-dir))
-  	(setq load-path
+    	(setq load-path
               (append
-  		(cl-remove-if-not
-  		    #'file-directory-p
-  		    (directory-files (expand-file-name parent-dir) t "^[^\\.]"))
-  		load-path))))
+    		(cl-remove-if-not
+    		    #'file-directory-p
+    		    (directory-files (expand-file-name parent-dir) t "^[^\\.]"))
+    		load-path))))
 
   ;; Add both site-lisp and its immediate subdirs to `load-path'
   (when (file-directory-p (expand-file-name "site-lisp/" user-emacs-directory))
       (let ((site-lisp-dir (expand-file-name "site-lisp/" user-emacs-directory)))
-  	(push site-lisp-dir load-path)
-  	(add-site-lisp-to-load-path site-lisp-dir)))
+    	(push site-lisp-dir load-path)
+    	(add-site-lisp-to-load-path site-lisp-dir)))
 
 #+end_src
 
@@ -253,33 +263,32 @@ These are the groups used by this Emacs config for customization. It's important
 ** File Locations and Variables
 
 #+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
-  ;;; --------------------------------------------------------------------------
+    ;;; --------------------------------------------------------------------------
 
-  (defcustom display-dashboard-at-start t
-      "If set to t, the `dashboard' package will be displayed first.
-    Otherwise, the `dashboard' will be available but in the buffer
-     ,*dashboard*."
-      :type 'boolean
-      :group 'mrf-custom)
+    (defcustom display-dashboard-at-start t
+        "If set to t, the `dashboard' package will be displayed first.
+      Otherwise, the `dashboard' will be available but in the buffer
+       ,*dashboard*."
+        :type 'boolean
+        :group 'mrf-custom)
 
-  (defcustom custom-docs-dir "~/Documents/Emacs-Related"
-      "A directory used to store documents and customized data."
-      :type 'string
-      :group 'mrf-custom)
+    (defcustom custom-docs-dir "~/Documents/Emacs-Related"
+        "A directory used to store documents and customized data."
+        :type 'string
+        :group 'mrf-custom)
 
-  (defcustom working-files-directory
-      (expand-file-name
-          (concat "emacs-working-files_" emacs-version) custom-docs-dir)
-      "The directory where to store Emacs working files."
-      :type 'string
-      :group 'mrf-custom)
+    (defcustom working-files-directory
+        (expand-file-name "emacs-working-files" custom-docs-dir)
+        "The directory where to store Emacs working files."
+        :type 'string
+        :group 'mrf-custom)
 
-  (defcustom custom-org-fill-column 120
-      "The fill column width for Org mode text.
-  Note that the text is also centered on the screen so that should
-  be taken into consideration when providing a width."
-      :type 'natnum
-      :group 'mrf-custom)
+    (defcustom custom-org-fill-column 120
+        "The fill column width for Org mode text.
+    Note that the text is also centered on the screen so that should
+    be taken into consideration when providing a width."
+        :type 'natnum
+        :group 'mrf-custom)
 
 #+end_src
 
@@ -716,6 +725,7 @@ anzu.el is an Emacs port of anzu.vim. anzu.el provides a minor mode which displa
 #+end_src
 
 ** Miscellaneous Settings
+
 #+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
 
@@ -749,6 +759,7 @@ anzu.el is an Emacs port of anzu.vim. anzu.el provides a minor mode which displa
       (redraw-display))
 
 #+end_src
+
 ** Visual Fill
 We use [[https://github.com/joostkremers/visual-fill-column][visual-fill-column]] to center =org-mode= buffers for a more pleasing writing experience as it centers the contents of the buffer horizontally to seem more like you are editing a document.  This is really a matter of personal preference so you can remove the block below if you don't like the behavior.
 
@@ -862,8 +873,8 @@ This package displays ElDoc documentations in a childframe. The childframe is se
 
   ;; prevent (emacs) eldoc loaded before Elpaca activation warning.
   ;; (Warning only displayed during first Elpaca installation)
-  (elpaca-process-queues)
 
+  (elpaca-process-queues)
   (use-package eldoc
       :config
       (add-hook 'emacs-lisp-mode-hook 'eldoc-mode)
@@ -938,6 +949,15 @@ These are useful snippets of code that are commonly used in various languages. Y
 
 #+end_src
 
+** All-the-icons
+#+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
+  ;;; --------------------------------------------------------------------------
+
+  (use-package all-the-icons
+      :config (message ">> all-the-icons configured")
+      :when (display-graphic-p))
+  
+#+end_src
 
 
 * Undo Packages
@@ -969,23 +989,31 @@ A great package that allows moving up and down the undo-redo tree.
   (defun mrf/undo-tree-hook ()
       (set-frame-width (selected-frame) 20))
 
-  (use-package undo-tree
-      :unless enable-vundo
-      ;; :hook (undo-tree-visualizer-mode-hook . mrf/undo-tree-hook)
-      :init
-      (setq undo-tree-visualizer-timestamps t
-          ;; undo-tree-visualizer-diff t
-          undo-tree-enable-undo-in-region t
-          ;; 10X bump of the undo limits to avoid issues with premature
-          ;; Emacs GC which truncages the undo history very aggresively
-          undo-limit 800000
-          undo-strong-limit 12000000
-          undo-outer-limit 120000000)
-      :config
-      (global-undo-tree-mode)
-      ;; This prevents the *.~undo-tree~ files from being persisted.
-      (with-eval-after-load 'undo-tree
-          (setq undo-tree-auto-save-history nil)))
+  ;;
+  ;; Sometimes, when behind a firewall, the undo-tree package triggers elpaca
+  ;; to queue up the Queue package which then hangs and fails. This happens
+  ;; even if the :unless option is specified in the use-package (only :disabled
+  ;; seems to work which isn't what I want). So, we prevent the loading of the
+  ;; page altogether.
+  ;;
+  (unless enable-vundo
+      (use-package undo-tree
+  	;; :hook (undo-tree-visualizer-mode-hook . mrf/undo-tree-hook)
+  	:init
+  	(setq undo-tree-visualizer-timestamps t
+              ;; undo-tree-visualizer-diff t
+              undo-tree-enable-undo-in-region t
+              ;; 10X bump of the undo limits to avoid issues with premature
+              ;; Emacs GC which truncages the undo history very aggresively
+              undo-limit 800000
+              undo-strong-limit 12000000
+              undo-outer-limit 120000000)
+  	:config
+  	(global-undo-tree-mode)
+  	;; This prevents the *.~undo-tree~ files from being persisted.
+  	(with-eval-after-load 'undo-tree
+              (setq undo-tree-auto-save-history nil))))
+  
 #+end_src
 
 
@@ -1021,25 +1049,48 @@ This bit of code contains a list of themes that I like personally and then allow
 
 This is the main function that allows cycling (up or down) through the list of themes defined in the ~theme-list~.  This function is normally called by the ~disable-theme-functions~ hook. Before calling this function, set the variable ~theme-cycle-step~ to either a 1 or -1 depending upon which direction in the ~theme-list~ array to select the next element from. The resulting index will cycle to the end or the beginning of the list if the computed index goes beyond element 0 or the length of ~theme-list~. The parameter =theme= is passed to this function when a theme becomes disabled (via the ~disable-theme~ function) and represents the theme that has become disabled.
 
+#+begin_src emacs-lisp :tangle no
+  ;;; --------------------------------------------------------------------------
+
+  (defun mrf/cycle-theme-selector (&rest theme)
+      "Cycle the `theme-selector' by 1, resetting to 0 if beyond array bounds."
+      (interactive)
+      (when (not (eq theme-cycle-step nil))
+  	(let ((step theme-cycle-step) (result 0))
+              (when step
+  		(setq result (+ step theme-selector))
+  		(when (< result 0)
+                      (setq result (- (length theme-list) 1)))
+  		(when (> result (- (length theme-list) 1))
+                      (setq result 0)))
+
+              (message (format ">>> Current theme %S" theme))
+              (setq-default theme-selector result))))
+
+  ;; This is used to trigger the cycling of the theme-selector
+  ;; It is called when a theme is disabled. The theme is disabled from the
+  ;; `mrf/load-theme-from-selector' function.
+  (add-hook 'disable-theme-functions #'mrf/cycle-theme-selector)
+
+#+end_src
+
+
 #+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
 
   (defun mrf/cycle-theme-selector (&rest theme)
       "Cycle the `theme-selector' by 1, resetting to 0 if beyond array bounds."
       (interactive)
-      (let ((step theme-cycle-step) (result 0))
-
-          (if (not step) (setq step 1)) ;; If nil, default to step of 1
-
-          (when step
-              (setq result (+ step theme-selector))
-              (when (< result 0)
-                  (setq result (- (length theme-list) 1)))
-              (when (> result (- (length theme-list) 1))
-                  (setq result 0)))
-
-          (message (format ">>> Current theme %S" theme))
-          (setq-default theme-selector result)))
+      (when (not (eq theme-cycle-step nil))
+  	(let ((step theme-cycle-step) (result 0))
+              (when step
+  		(setq result (+ step theme-selector))
+  		(when (< result 0)
+                      (setq result (- (length theme-list) 1)))
+  		(when (> result (- (length theme-list) 1))
+                      (setq result 0)))
+              (message (format ">>> Current theme %S" theme))
+              (setq-default theme-selector result))))
 
   ;; This is used to trigger the cycling of the theme-selector
   ;; It is called when a theme is disabled. The theme is disabled from the
@@ -1058,19 +1109,21 @@ This function simply loads the theme from the theme-list indexed by the ~theme-s
   (defun mrf/load-theme-from-selector (&optional step)
       "Load the theme in `theme-list' indexed by `theme-selector'."
       (interactive)
-      (if step
-          (setq theme-cycle-step step)
-  	(setq theme-cycle-step 1))
+      (setq theme-cycle-step nil)
+      (cond
+  	((or (eq step nil) (eq step 0)) (setq theme-cycle-step 0))
+  	((> step 0) (setq theme-cycle-step 1))
+  	((< step 0) (setq theme-cycle-step -1)))
       (when loaded-theme
           (disable-theme (intern loaded-theme)))
       (setq loaded-theme (nth theme-selector theme-list))
       (message (concat ">>> Loading theme "
                    (format "%d: %S" theme-selector loaded-theme)))
       (load-theme (intern loaded-theme) t)
-      (when (equal (fboundp 'mrf/org-font-setup) t)
-          (mrf/org-font-setup))
+      (when (featurep 'org)
+  	(mrf/org-font-setup))
       (set-face-foreground 'line-number "SkyBlue4"))
-  
+
 #+end_src
 
 *** Theme selection helper functions.
@@ -1102,6 +1155,7 @@ This function simply loads the theme from the theme-list indexed by the ~theme-s
       (setq loaded-theme (nth theme-selector theme-list))
       (message (concat ">>> Startup Loading theme "
                    (format "%d: %S" theme-selector loaded-theme)))
+      (mrf/load-theme-from-selector)
       (load-theme (intern loaded-theme) t))
 
   ;; Go to NEXT theme
@@ -1130,6 +1184,55 @@ This is just a test area to see what colors look like in this =org= mode.
 
 #+end_src
 
+** Theme Override Values
+
+#+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
+  ;;; --------------------------------------------------------------------------
+
+  (defun mrf/org-theme-override-values ()
+      (defface org-block-begin-line
+          '((t (:underline "#1D2C39" :foreground "SlateGray" :background "#1D2C39")))
+          "Face used for the line delimiting the begin of source blocks.")
+
+      (defface org-block
+          '((t (:background "#242635" :extend t :font "JetBrains Mono")))
+          "Face used for the source block background.")
+
+      (defface org-block-end-line
+          '((t (:overline "#1D2C39" :foreground "SlateGray" :background "#1D2C39")))
+          "Face used for the line delimiting the end of source blocks.")
+
+      (defface org-modern-horizontal-rule
+          '((t (:strike-through "green" :weight bold)))
+          "Face used for the Horizontal like (-----)"))
+
+  ;;; --------------------------------------------------------------------------
+
+  (defun mrf/customize-modus-theme ()
+      (message ">> Applying modus customization")
+      (setq modus-themes-common-palette-overrides
+          '((bg-mode-line-active bg-blue-intense)
+               (fg-mode-line-active fg-main)
+               (border-mode-line-active blue-intense))))
+
+  (add-hook 'elpaca-after-init-hook 'mrf/customize-modus-theme)
+
+  (defun mrf/customize-ef-theme ()
+      (message ">> Applying ef-themes customization")      
+      (defface ef-themes-fixed-pitch
+          '((t (:background "#242635" :extend t :font "Courier New")))
+          "Face used for the source block background.")
+      (when (featurep 'org)
+  	(mrf/org-font-setup))
+      (setq ef-themes-common-palette-override
+          '(  (bg-mode-line bg-blue-intense)
+               (fg-mode-line fg-main)
+               (border-mode-line-active blue-intense))))
+  (add-hook 'org-load-hook 'mrf/customize-ef-theme)
+  (add-hook 'elpaca-after-init-hook 'mrf/customize-ef-theme)
+
+#+end_src
+
 ** Color Theming
 
 #+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
@@ -1137,8 +1240,9 @@ This is just a test area to see what colors look like in this =org= mode.
 
   (add-to-list 'custom-theme-load-path (expand-file-name "Themes" custom-docs-dir))
 
-  (use-package ef-themes)
-  (use-package modus-themes)
+  (mrf/org-theme-override-values)
+  (use-package ef-themes :init (mrf/customize-ef-theme))
+  (use-package modus-themes :init (mrf/customize-modus-theme))
   (use-package material-theme)
   (use-package color-theme-modern)
   (use-package color-theme-sanityinc-tomorrow)
@@ -1150,47 +1254,8 @@ This is just a test area to see what colors look like in this =org= mode.
 ** Load a theme
 Selec a theme (or themes) to load. The last one specified is the one that is used as the current theme.
 
-** Modus (and other protesilaos) Themes
-
-#+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
-  ;;; --------------------------------------------------------------------------
-
-  (defun mrf/customize-modus-theme ()
-      (message "Applying modus customization")
-      (setq modus-themes-common-palette-overrides
-          '((bg-mode-line-active bg-blue-intense)
-               (fg-mode-line-active fg-main)
-               (border-mode-line-active blue-intense))))
-
-  (add-hook 'elpaca-after-init-hook 'mrf/customize-modus-theme)
-
-  (defun mrf/customize-ef-theme ()
-      (setq ef-themes-common-palette-overrides
-          '(  (bg-mode-line bg-blue-intense)
-               (fg-mode-line fg-main)
-               (border-mode-line-active blue-intense))))
-
-  (add-hook 'elpaca-after-init-hook 'mrf/customize-ef-theme)
-
-  #+end_src
-
 ** Cycle Through Themes
 Function and code to cycle through some selcted themes.
-
-#+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
-  ;;; --------------------------------------------------------------------------
-
-  (defvar loaded-theme nil
-      "The text representation of the loaded custom theme.")
-
-  (defun mrf/print-custom-theme-name ()
-      (message (format "Custom theme is %S" loaded-theme)))
-
-  (bind-keys
-      ("C-= =" . mrf/load-theme-from-selector)
-      ("C-= ?" . mrf/print-custom-theme-name))
-
-#+end_src
 
 ** Selected theme
 This includes the theme to use in both graphical and non-graphical.
@@ -1516,6 +1581,9 @@ This package provides a global minor mode to increase the spacing/padding of Ema
   ;;          :mode-line-inactive vertical-border))
 #+end_src
 
+#+RESULTS:
+: #s(hash-table size 65 test eql rehash-size 1.5 rehash-threshold 0.8125 data (:use-package (26172 5346 861412 0) :use-package-secs (0 0 835 0) :init (26172 4862 925034 0) :config (26172 4862 917866 0) :config-secs (0 0 12865 0) :init-secs (0 0 25576 0)))
+
 ** Must Install Packages
 *** Auto-complete
 Auto-Complete is an intelligent auto-completion extension for Emacs. It extends the standard Emacs completion interface and provides an environment that allows users to concentrate more on their own work.
@@ -1564,30 +1632,6 @@ The =mrf/org-font-setup= function configures various text faces to tweak the siz
 
 *NOTE:* Most of the code below has been taken from the [[https://systemcrafters.net][System Crafters]] site run by David Wilson. Please visit that site for lots of great stuff!
 
-** Theme Override Values
-
-#+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
-  ;;; --------------------------------------------------------------------------
-
-  (defun mrf/org-theme-override-values ()
-      (defface org-block-begin-line
-          '((t (:underline "#1D2C39" :foreground "SlateGray" :background "#1D2C39")))
-          "Face used for the line delimiting the begin of source blocks.")
-
-      (defface org-block
-          '((t (:background "#242635" :extend t :font "JetBrains Mono")))
-          "Face used for the source block background.")
-
-      (defface org-block-end-line
-          '((t (:overline "#1D2C39" :foreground "SlateGray" :background "#1D2C39")))
-          "Face used for the line delimiting the end of source blocks.")
-
-      (defface org-modern-horizontal-rule
-          '((t (:strike-through "green" :weight bold)))
-          "Face used for the Horizontal like (-----)"))
-
-#+end_src
-
 ** Font setup
 
 This function sets up the fonts faces that are used within org-mode.
@@ -1597,37 +1641,35 @@ This function sets up the fonts faces that are used within org-mode.
 
   (defun mrf/org-font-setup ()
       "Setup org mode fonts."
-      (use-package org-faces
-        :after org
-        :config
-  	(message "ORG-FACES configured.")
-          (font-lock-add-keywords
-              'org-mode
-              '(("^ *\\([-]\\) "
-                    (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))))
-          (dolist (face '((org-level-1 . 1.75)
-                             (org-level-2 . 1.5)
-                             (org-level-3 . 1.25)
-                             (org-level-4 . 1.1)
-                             (org-level-5 . 1.1)
-                             (org-level-6 . 1.1)
-                             (org-level-7 . 1.1)
-                             (org-level-8 . 1.1)))
-              (set-face-attribute (car face) nil :font "ETBembo" :weight 'regular :height (cdr face)))
+      (use-package faces :ensure nil)
 
-          ;; Ensure that anything that should be fixed-pitch in Org files appears that way
-          (set-face-attribute 'org-block nil    :foreground 'unspecified :inherit 'fixed-pitch :font "Hack" )
-          (set-face-attribute 'org-table nil    :inherit 'fixed-pitch)
-          (set-face-attribute 'org-formula nil  :inherit 'fixed-pitch)
-          (set-face-attribute 'org-code nil     :inherit '(shadow fixed-pitch))
-          (set-face-attribute 'org-table nil    :inherit '(shadow fixed-pitch))
-          (set-face-attribute 'org-verbatim nil :inherit '(shadow fixed-pitch))
-          (set-face-attribute 'org-special-keyword nil :inherit '(font-lock-comment-face fixed-pitch))
-          (set-face-attribute 'org-meta-line nil :inherit '(font-lock-comment-face fixed-pitch))
-          (set-face-attribute 'org-checkbox nil  :inherit 'fixed-pitch)
-          (set-face-attribute 'line-number nil :inherit 'fixed-pitch)
-          (set-face-attribute 'line-number-current-line nil :inherit 'fixed-pitch)))
+      (font-lock-add-keywords
+          'org-mode
+          '(("^ *\\([-]\\) "
+                (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))))
+      
+      (set-face-attribute 'org-block nil    :foreground 'unspecified
+          :inherit 'fixed-pitch :font "JetBrains Mono" )
+      (set-face-attribute 'org-formula nil  :inherit 'fixed-pitch)
+      (set-face-attribute 'org-code nil     :inherit '(shadow fixed-pitch))
+      (set-face-attribute 'org-table nil    :inherit '(shadow fixed-pitch))
+      (set-face-attribute 'org-verbatim nil :inherit '(shadow fixed-pitch))
+      (set-face-attribute 'org-special-keyword nil :inherit '(font-lock-comment-face fixed-pitch))
+      (set-face-attribute 'org-meta-line nil :inherit '(font-lock-comment-face fixed-pitch))
+      (set-face-attribute 'org-checkbox nil  :inherit 'fixed-pitch)
+      (set-face-attribute 'line-number nil :inherit 'fixed-pitch)
+      (set-face-attribute 'line-number-current-line nil :inherit 'fixed-pitch)
 
+      (dolist (face '((org-level-1 . 1.75)
+                         (org-level-2 . 1.5)
+                         (org-level-3 . 1.25)
+                         (org-level-4 . 1.15)
+                         (org-level-5 . 1.1)
+                         (org-level-6 . 1.1)
+                         (org-level-7 . 1.1)
+                         (org-level-8 . 1.1)))
+          (set-face-attribute (car face) nil :font "SF Pro" :weight 'regular
+              :height (cdr face))))
 #+end_src
 
 ** Setup
@@ -1777,7 +1819,7 @@ This section contains the basic configuration for =org-mode= plus the configurat
       (advice-add 'org-refile :after 'org-save-all-org-buffers)
       (setq org-tag-alist
           '((:startgroup)
-                                          ; Put mutually exclusive tags here
+               ;; Put mutually exclusive tags here
                (:endgroup)
                ("@errand" . ?E)
                ("@home" . ?H)
@@ -1818,8 +1860,8 @@ This section contains the basic configuration for =org-mode= plus the configurat
                          window-divider-first-pixel
                          window-divider-last-pixel))
         (face-spec-reset-face face)
-        (set-face-foreground face (face-attribute 'default :background 'unspecified)))
-      (set-face-background 'fringe (face-attribute 'default :background 'unspecified))
+        (set-face-foreground face (face-attribute 'default :background nil)))
+      (set-face-background 'fringe (face-attribute 'default :background nil))
       (setq
         ;; Edit settings
         org-auto-align-tags nil
@@ -1941,6 +1983,7 @@ Org Roam solves these problems by making it easy to create topic-focused Org Fil
       :custom
       (org-roam-directory (expand-file-name "RoamNotes" custom-docs-dir))
       (org-roam-completion-everywhere t)
+      (org-roam-db-location (expand-file-name "RoamNotes" custom-docs-dir))
       :bind (("C-c n l" . org-roam-buffer-toggle)
                 ("C-c n f" . org-roam-node-find)
                 ("C-c n i" . org-roam-node-insert)
@@ -2309,47 +2352,27 @@ Dashboard is an extensible Emacs startup screen showing you what’s most import
 **** a cons of '("path/to/your/image.png" . "path/to/your/text.txt")
 
 #+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
-  ;;; --------------------------------------------------------------------------
-
-  (use-package all-the-icons
-      :when (display-graphic-p))
-
-  (defun mrf/dashboard-banner ()
-      "Setup defaults for the dashboard banner buffer."
-      (setq
-  	dashboard-center-content t
-      	dashboard-footer-messages '("Greetings Program!")
-  	dashboard-banner-logo-title "Welcome to Emacs!"
-  	dashboard-startup-banner 'logo))
-
-  (defun mrf/setup-dashboard-after-init ()
-      "Set up the dashboard buffer and optionally make it the first."
-      (setq dashboard-items '((recents . 15)
-                                 (bookmarks . 10)
-                                 (projects . 10))
-          dashboard-icon-type 'all-the-icons
-          dashboard-display-icons-p t
-          dashboard-set-heading-icons t
-          dashboard-set-file-icons t)
-
-      (global-set-key (kbd "C-c d") 'dashboard-open)
-
-      (if (equal display-dashboard-at-start t)
-          (progn
-              (setq initial-buffer-choice
-                  (lambda ()
-                      (get-buffer-create "*Dashboard*")))
-              (dashboard-open))
-  	(get-buffer-create "*Dashboard*")))
+    ;;; --------------------------------------------------------------------------
 
   (use-package dashboard
-      :ensure (:fetcher github :repo "emacs-dashboard/emacs-dashboard" :files (:defaults "banners"))
+      :custom
+      (dashboard-items '(   (recents . 15)
+                            (bookmarks . 10)
+                            (projects . 10)))
+      (dashboard-center-content t)
+      (dashboard-set-heading-icons t)
+      (dashboard-set-file-icons t)
+      (dashboard-footer-messages '("Greetings Program!"))
+      (dashboard-banner-logo-title "Welcome to Emacs!")
+      (dashboard-startup-banner 'logo)
       :bind ("C-c d" . dashboard-open)
       :config
-      (mrf/dashboard-banner)
-      (add-hook 'elpaca-after-init-hook #'mrf/setup-dashboard-after-init))
+      (add-hook 'elpaca-after-init-hook #'dashboard-insert-startupify-lists)
+      (add-hook 'elpaca-after-init-hook #'dashboard-initialize)
+      (dashboard-setup-startup-hook))
 
 #+end_src
+
 
 
 * Integrated Dev Environments
@@ -2382,12 +2405,15 @@ The following are configured for Python development and provide an IDE type expe
       (let ((root (projectile-project-root dir)))
           (and root (cons 'transient root))))
 
+  (use-package track-changes
+      :ensure (:package "track-changes" :source nil :protocol https :inherit t :depth 1 :repo "https://github.com/emacs-mirror/emacs" :local-repo "track-changes" :branch "master" :files ("lisp/emacs-lisp/track-changes.el" (:exclude ".git"))))
+  
   (use-package eglot
       :when (equal custom-ide 'custom-ide-eglot)
       :ensure (:repo "https://github.com/emacs-mirror/emacs" :local-repo "eglot" :branch "master"
   		:files ("lisp/progmodes/eglot.el" "doc/emacs/doclicense.texi" "doc/emacs/docstyle.texi"
   			   "doc/misc/eglot.texi" "etc/EGLOT-NEWS" (:exclude ".git")))
-      :after eldoc
+      :after eldoc track-changes company
       ;; :after (:all company which-key eldoc jsonrpc)
       :init
       (setq company-backends
@@ -3165,12 +3191,13 @@ Vertico provides a performant and minimalistic vertical completion UI based on t
       :demand t
       ;;:wait t
       ;;:ensure (:repo "minad/vertico" :files (:defaults "extensions/vertico-*.el") :fetcher github)
+      :custom
+      (recentf-mode t)
+      (vertico-count 12)
+      (vertico-cycle nil)
+      (vertico-multiform-mode 1)
       :config
       (vertico-mode)
-      (recentf-mode t)
-      (vertico-multiform-mode 1)
-      (vertico-count 13)
-      (vertico-cycle nil)
       (mrf/vertico-other)
       ;; :bind ("C-x C-f" . ido-find-file)
       ;; Clean up file path when typing
@@ -3327,7 +3354,7 @@ Consult provides search and navigation commands based on the Emacs completion fu
 
 #+end_src
 
-** Built-In
+** Built-In (Ido)
 Enable the IDO handler everywhere.
 
 #+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
@@ -3971,12 +3998,14 @@ The following packages are some additional quality of life features.
       (when (equal completion-handler 'comphand-ivy-counsel)
           (counsel-describe-function-function #'helpful-callable)
           (counsel-describe-variable-function #'helpful-variable))
-      :bind
+      :config
       (when (equal completion-handler 'comphand-ivy-counsel)
+  	(bind-keys
             ([remap describe-function] . counsel-describe-function)
-            ([remap describe-variable] . counsel-describe-variable))
-      ([remap describe-command] . helpful-command)
-      ([remap describe-key] . helpful-key))
+              ([remap describe-variable] . counsel-describe-variable)))
+      (bind-keys
+  	([remap describe-command] . helpful-command)
+  	([remap describe-key] . helpful-key)))
 
 #+end_src
 
@@ -4439,7 +4468,7 @@ This is a simple popup menu that provides some common QOL features in one menu.
 #+end_src
 
 
-* Mitch's Minor-Mode Standard Keymaps
+** Mitch's Minor-Mode Standard Keymaps
 
 This is a set of keymaps that do the same things as the popup menu. Both are here for convenience. *Note* that the ~mmm-menu~ is called with either a ="C-c RET RET"= or simply a ="C-c C-<return>"=.
 
@@ -4496,11 +4525,14 @@ Some final configuratiion to be done at the end of this configuration.
   ;;; --------------------------------------------------------------------------
 
   (setq-default initial-scratch-message
-      (format ";; Hello, World and Happy hacking %s!\n%s\n\n"
-          user-login-name
-          ";; Press M-RET (Meta-RET) to open the Mitch's Menu"))
+        (format ";; Hello, World and Happy hacking %s!\n%s\n\n"
+            user-login-name
+            ";; Press M-RET (Meta-RET) to open the Mitch's Menu"))
 
-;; (add-hook 'lisp-interaction-mode-hook 'use-package-report)
+  (if display-dashboard-at-start
+      (add-hook 'lisp-interaction-mode-hook 'dashboard-open))
+
+  ;; (add-hook 'lisp-interaction-mode-hook 'use-package-report)
 
 #+end_src
 

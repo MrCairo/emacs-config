@@ -105,8 +105,7 @@
     :group 'mrf-custom)
 
 (defcustom working-files-directory
-    (expand-file-name
-        (concat "emacs-working-files_" emacs-version) custom-docs-dir)
+    (expand-file-name "emacs-working-files" custom-docs-dir)
     "The directory where to store Emacs working files."
     :type 'string
     :group 'mrf-custom)
@@ -550,8 +549,8 @@ font size is computed + 20 of this value."
 
 ;; prevent (emacs) eldoc loaded before Elpaca activation warning.
 ;; (Warning only displayed during first Elpaca installation)
-(elpaca-process-queues)
 
+(elpaca-process-queues)
 (use-package eldoc
     :config
     (add-hook 'emacs-lisp-mode-hook 'eldoc-mode)
@@ -604,6 +603,12 @@ font size is computed + 20 of this value."
     (message ">>> YASnippet-Snippets Configured"))
 
 ;;; --------------------------------------------------------------------------
+
+(use-package all-the-icons
+    :config (message ">> all-the-icons configured")
+    :when (display-graphic-p))
+
+;;; --------------------------------------------------------------------------
 ;; A cleaner and simpler undo package.
 
 (use-package vundo
@@ -623,23 +628,30 @@ font size is computed + 20 of this value."
 (defun mrf/undo-tree-hook ()
     (set-frame-width (selected-frame) 20))
 
-(use-package undo-tree
-    :unless enable-vundo
-    ;; :hook (undo-tree-visualizer-mode-hook . mrf/undo-tree-hook)
-    :init
-    (setq undo-tree-visualizer-timestamps t
-        ;; undo-tree-visualizer-diff t
-        undo-tree-enable-undo-in-region t
-        ;; 10X bump of the undo limits to avoid issues with premature
-        ;; Emacs GC which truncages the undo history very aggresively
-        undo-limit 800000
-        undo-strong-limit 12000000
-        undo-outer-limit 120000000)
-    :config
-    (global-undo-tree-mode)
-    ;; This prevents the *.~undo-tree~ files from being persisted.
-    (with-eval-after-load 'undo-tree
-        (setq undo-tree-auto-save-history nil)))
+;;
+;; Sometimes, when behind a firewall, the undo-tree package triggers elpaca
+;; to queue up the Queue package which then hangs and fails. This happens
+;; even if the :unless option is specified in the use-package (only :disabled
+;; seems to work which isn't what I want). So, we prevent the loading of the
+;; page altogether.
+;;
+(unless enable-vundo
+    (use-package undo-tree
+	;; :hook (undo-tree-visualizer-mode-hook . mrf/undo-tree-hook)
+	:init
+	(setq undo-tree-visualizer-timestamps t
+            ;; undo-tree-visualizer-diff t
+            undo-tree-enable-undo-in-region t
+            ;; 10X bump of the undo limits to avoid issues with premature
+            ;; Emacs GC which truncages the undo history very aggresively
+            undo-limit 800000
+            undo-strong-limit 12000000
+            undo-outer-limit 120000000)
+	:config
+	(global-undo-tree-mode)
+	;; This prevents the *.~undo-tree~ files from being persisted.
+	(with-eval-after-load 'undo-tree
+            (setq undo-tree-auto-save-history nil))))
 
 ;;; --------------------------------------------------------------------------
 
@@ -666,19 +678,16 @@ font size is computed + 20 of this value."
 (defun mrf/cycle-theme-selector (&rest theme)
     "Cycle the `theme-selector' by 1, resetting to 0 if beyond array bounds."
     (interactive)
-    (let ((step theme-cycle-step) (result 0))
-
-        (if (not step) (setq step 1)) ;; If nil, default to step of 1
-
-        (when step
-            (setq result (+ step theme-selector))
-            (when (< result 0)
-                (setq result (- (length theme-list) 1)))
-            (when (> result (- (length theme-list) 1))
-                (setq result 0)))
-
-        (message (format ">>> Current theme %S" theme))
-        (setq-default theme-selector result)))
+    (when (not (eq theme-cycle-step nil))
+	(let ((step theme-cycle-step) (result 0))
+            (when step
+		(setq result (+ step theme-selector))
+		(when (< result 0)
+                    (setq result (- (length theme-list) 1)))
+		(when (> result (- (length theme-list) 1))
+                    (setq result 0)))
+            (message (format ">>> Current theme %S" theme))
+            (setq-default theme-selector result))))
 
 ;; This is used to trigger the cycling of the theme-selector
 ;; It is called when a theme is disabled. The theme is disabled from the
@@ -690,17 +699,19 @@ font size is computed + 20 of this value."
 (defun mrf/load-theme-from-selector (&optional step)
     "Load the theme in `theme-list' indexed by `theme-selector'."
     (interactive)
-    (if step
-        (setq theme-cycle-step step)
-	(setq theme-cycle-step 1))
+    (setq theme-cycle-step nil)
+    (cond
+	((or (eq step nil) (eq step 0)) (setq theme-cycle-step 0))
+	((> step 0) (setq theme-cycle-step 1))
+	((< step 0) (setq theme-cycle-step -1)))
     (when loaded-theme
         (disable-theme (intern loaded-theme)))
     (setq loaded-theme (nth theme-selector theme-list))
     (message (concat ">>> Loading theme "
                  (format "%d: %S" theme-selector loaded-theme)))
     (load-theme (intern loaded-theme) t)
-    (when (equal (fboundp 'mrf/org-font-setup) t)
-        (mrf/org-font-setup))
+    (when (featurep 'org)
+	(mrf/org-font-setup))
     (set-face-foreground 'line-number "SkyBlue4"))
 
 (defun mrf/print-custom-theme-name ()
@@ -728,6 +739,7 @@ font size is computed + 20 of this value."
     (setq loaded-theme (nth theme-selector theme-list))
     (message (concat ">>> Startup Loading theme "
                  (format "%d: %S" theme-selector loaded-theme)))
+    (mrf/load-theme-from-selector)
     (load-theme (intern loaded-theme) t))
 
 ;; Go to NEXT theme
@@ -751,20 +763,27 @@ font size is computed + 20 of this value."
 
 ;;; --------------------------------------------------------------------------
 
-(add-to-list 'custom-theme-load-path (expand-file-name "Themes" custom-docs-dir))
+(defun mrf/org-theme-override-values ()
+    (defface org-block-begin-line
+        '((t (:underline "#1D2C39" :foreground "SlateGray" :background "#1D2C39")))
+        "Face used for the line delimiting the begin of source blocks.")
 
-(use-package ef-themes)
-(use-package modus-themes)
-(use-package material-theme)
-(use-package color-theme-modern)
-(use-package color-theme-sanityinc-tomorrow)
-(use-package darktooth-theme)
-(use-package zenburn-theme :defer t)
+    (defface org-block
+        '((t (:background "#242635" :extend t :font "JetBrains Mono")))
+        "Face used for the source block background.")
+
+    (defface org-block-end-line
+        '((t (:overline "#1D2C39" :foreground "SlateGray" :background "#1D2C39")))
+        "Face used for the line delimiting the end of source blocks.")
+
+    (defface org-modern-horizontal-rule
+        '((t (:strike-through "green" :weight bold)))
+        "Face used for the Horizontal like (-----)"))
 
 ;;; --------------------------------------------------------------------------
 
 (defun mrf/customize-modus-theme ()
-    (message "Applying modus customization")
+    (message ">> Applying modus customization")
     (setq modus-themes-common-palette-overrides
         '((bg-mode-line-active bg-blue-intense)
              (fg-mode-line-active fg-main)
@@ -773,24 +792,31 @@ font size is computed + 20 of this value."
 (add-hook 'elpaca-after-init-hook 'mrf/customize-modus-theme)
 
 (defun mrf/customize-ef-theme ()
-    (setq ef-themes-common-palette-overrides
+    (message ">> Applying ef-themes customization")      
+    (defface ef-themes-fixed-pitch
+        '((t (:background "#242635" :extend t :font "Courier New")))
+        "Face used for the source block background.")
+    (when (featurep 'org)
+	(mrf/org-font-setup))
+    (setq ef-themes-common-palette-override
         '(  (bg-mode-line bg-blue-intense)
              (fg-mode-line fg-main)
              (border-mode-line-active blue-intense))))
-
+(add-hook 'org-load-hook 'mrf/customize-ef-theme)
 (add-hook 'elpaca-after-init-hook 'mrf/customize-ef-theme)
 
 ;;; --------------------------------------------------------------------------
 
-(defvar loaded-theme nil
-    "The text representation of the loaded custom theme.")
+(add-to-list 'custom-theme-load-path (expand-file-name "Themes" custom-docs-dir))
 
-(defun mrf/print-custom-theme-name ()
-    (message (format "Custom theme is %S" loaded-theme)))
-
-(bind-keys
-    ("C-= =" . mrf/load-theme-from-selector)
-    ("C-= ?" . mrf/print-custom-theme-name))
+(mrf/org-theme-override-values)
+(use-package ef-themes :init (mrf/customize-ef-theme))
+(use-package modus-themes :init (mrf/customize-modus-theme))
+(use-package material-theme)
+(use-package color-theme-modern)
+(use-package color-theme-sanityinc-tomorrow)
+(use-package darktooth-theme)
+(use-package zenburn-theme :defer t)
 
 ;;; --------------------------------------------------------------------------
 ;; (add-hook 'emacs-startup-hook #'(mrf/load-theme-from-selector))
@@ -1055,57 +1081,37 @@ font size is computed + 20 of this value."
 
 ;;; --------------------------------------------------------------------------
 
-(defun mrf/org-theme-override-values ()
-    (defface org-block-begin-line
-        '((t (:underline "#1D2C39" :foreground "SlateGray" :background "#1D2C39")))
-        "Face used for the line delimiting the begin of source blocks.")
-
-    (defface org-block
-        '((t (:background "#242635" :extend t :font "JetBrains Mono")))
-        "Face used for the source block background.")
-
-    (defface org-block-end-line
-        '((t (:overline "#1D2C39" :foreground "SlateGray" :background "#1D2C39")))
-        "Face used for the line delimiting the end of source blocks.")
-
-    (defface org-modern-horizontal-rule
-        '((t (:strike-through "green" :weight bold)))
-        "Face used for the Horizontal like (-----)"))
-
-;;; --------------------------------------------------------------------------
-
 (defun mrf/org-font-setup ()
     "Setup org mode fonts."
-    (use-package org-faces
-      :after org
-      :config
-	(message "ORG-FACES configured.")
-        (font-lock-add-keywords
-            'org-mode
-            '(("^ *\\([-]\\) "
-                  (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))))
-        (dolist (face '((org-level-1 . 1.75)
-                           (org-level-2 . 1.5)
-                           (org-level-3 . 1.25)
-                           (org-level-4 . 1.1)
-                           (org-level-5 . 1.1)
-                           (org-level-6 . 1.1)
-                           (org-level-7 . 1.1)
-                           (org-level-8 . 1.1)))
-            (set-face-attribute (car face) nil :font "ETBembo" :weight 'regular :height (cdr face)))
+    (use-package faces :ensure nil)
 
-        ;; Ensure that anything that should be fixed-pitch in Org files appears that way
-        (set-face-attribute 'org-block nil    :foreground 'unspecified :inherit 'fixed-pitch :font "Hack" )
-        (set-face-attribute 'org-table nil    :inherit 'fixed-pitch)
-        (set-face-attribute 'org-formula nil  :inherit 'fixed-pitch)
-        (set-face-attribute 'org-code nil     :inherit '(shadow fixed-pitch))
-        (set-face-attribute 'org-table nil    :inherit '(shadow fixed-pitch))
-        (set-face-attribute 'org-verbatim nil :inherit '(shadow fixed-pitch))
-        (set-face-attribute 'org-special-keyword nil :inherit '(font-lock-comment-face fixed-pitch))
-        (set-face-attribute 'org-meta-line nil :inherit '(font-lock-comment-face fixed-pitch))
-        (set-face-attribute 'org-checkbox nil  :inherit 'fixed-pitch)
-        (set-face-attribute 'line-number nil :inherit 'fixed-pitch)
-        (set-face-attribute 'line-number-current-line nil :inherit 'fixed-pitch)))
+    (font-lock-add-keywords
+        'org-mode
+        '(("^ *\\([-]\\) "
+              (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))))
+    
+    (set-face-attribute 'org-block nil    :foreground 'unspecified
+        :inherit 'fixed-pitch :font "JetBrains Mono" )
+    (set-face-attribute 'org-formula nil  :inherit 'fixed-pitch)
+    (set-face-attribute 'org-code nil     :inherit '(shadow fixed-pitch))
+    (set-face-attribute 'org-table nil    :inherit '(shadow fixed-pitch))
+    (set-face-attribute 'org-verbatim nil :inherit '(shadow fixed-pitch))
+    (set-face-attribute 'org-special-keyword nil :inherit '(font-lock-comment-face fixed-pitch))
+    (set-face-attribute 'org-meta-line nil :inherit '(font-lock-comment-face fixed-pitch))
+    (set-face-attribute 'org-checkbox nil  :inherit 'fixed-pitch)
+    (set-face-attribute 'line-number nil :inherit 'fixed-pitch)
+    (set-face-attribute 'line-number-current-line nil :inherit 'fixed-pitch)
+
+    (dolist (face '((org-level-1 . 1.75)
+                       (org-level-2 . 1.5)
+                       (org-level-3 . 1.25)
+                       (org-level-4 . 1.15)
+                       (org-level-5 . 1.1)
+                       (org-level-6 . 1.1)
+                       (org-level-7 . 1.1)
+                       (org-level-8 . 1.1)))
+        (set-face-attribute (car face) nil :font "SF Pro" :weight 'regular
+            :height (cdr face))))
 
 ;; -----------------------------------------------------------------
 
@@ -1235,7 +1241,7 @@ font size is computed + 20 of this value."
     (advice-add 'org-refile :after 'org-save-all-org-buffers)
     (setq org-tag-alist
         '((:startgroup)
-                                        ; Put mutually exclusive tags here
+             ;; Put mutually exclusive tags here
              (:endgroup)
              ("@errand" . ?E)
              ("@home" . ?H)
@@ -1268,8 +1274,8 @@ font size is computed + 20 of this value."
                        window-divider-first-pixel
                        window-divider-last-pixel))
       (face-spec-reset-face face)
-      (set-face-foreground face (face-attribute 'default :background 'unspecified)))
-    (set-face-background 'fringe (face-attribute 'default :background 'unspecified))
+      (set-face-foreground face (face-attribute 'default :background nil)))
+    (set-face-background 'fringe (face-attribute 'default :background nil))
     (setq
       ;; Edit settings
       org-auto-align-tags nil
@@ -1346,6 +1352,7 @@ font size is computed + 20 of this value."
     :custom
     (org-roam-directory (expand-file-name "RoamNotes" custom-docs-dir))
     (org-roam-completion-everywhere t)
+    (org-roam-db-location (expand-file-name "RoamNotes" custom-docs-dir))
     :bind (("C-c n l" . org-roam-buffer-toggle)
               ("C-c n f" . org-roam-node-find)
               ("C-c n i" . org-roam-node-insert)
@@ -1613,43 +1620,22 @@ capture was not aborted."
 
 ;;; --------------------------------------------------------------------------
 
-(use-package all-the-icons
-    :when (display-graphic-p))
-
-(defun mrf/dashboard-banner ()
-    "Setup defaults for the dashboard banner buffer."
-    (setq
-	dashboard-center-content t
-    	dashboard-footer-messages '("Greetings Program!")
-	dashboard-banner-logo-title "Welcome to Emacs!"
-	dashboard-startup-banner 'logo))
-
-(defun mrf/setup-dashboard-after-init ()
-    "Set up the dashboard buffer and optionally make it the first."
-    (setq dashboard-items '((recents . 15)
-                               (bookmarks . 10)
-                               (projects . 10))
-        dashboard-icon-type 'all-the-icons
-        dashboard-display-icons-p t
-        dashboard-set-heading-icons t
-        dashboard-set-file-icons t)
-
-    (global-set-key (kbd "C-c d") 'dashboard-open)
-
-    (if (equal display-dashboard-at-start t)
-        (progn
-            (setq initial-buffer-choice
-                (lambda ()
-                    (get-buffer-create "*Dashboard*")))
-            (dashboard-open))
-	(get-buffer-create "*Dashboard*")))
-
 (use-package dashboard
-    :ensure (:fetcher github :repo "emacs-dashboard/emacs-dashboard" :files (:defaults "banners"))
+    :custom
+    (dashboard-items '(   (recents . 15)
+                          (bookmarks . 10)
+                          (projects . 10)))
+    (dashboard-center-content t)
+    (dashboard-set-heading-icons t)
+    (dashboard-set-file-icons t)
+    (dashboard-footer-messages '("Greetings Program!"))
+    (dashboard-banner-logo-title "Welcome to Emacs!")
+    (dashboard-startup-banner 'logo)
     :bind ("C-c d" . dashboard-open)
     :config
-    (mrf/dashboard-banner)
-    (add-hook 'elpaca-after-init-hook #'mrf/setup-dashboard-after-init))
+    (add-hook 'elpaca-after-init-hook #'dashboard-insert-startupify-lists)
+    (add-hook 'elpaca-after-init-hook #'dashboard-initialize)
+    (dashboard-setup-startup-hook))
 
 ;;; --------------------------------------------------------------------------
 ;;; Emacs Polyglot is the Emacs LSP client that stays out of your way:
@@ -1663,12 +1649,15 @@ Thanks @wyuenho on GitHub"
     (let ((root (projectile-project-root dir)))
         (and root (cons 'transient root))))
 
+(use-package track-changes
+    :ensure (:package "track-changes" :source nil :protocol https :inherit t :depth 1 :repo "https://github.com/emacs-mirror/emacs" :local-repo "track-changes" :branch "master" :files ("lisp/emacs-lisp/track-changes.el" (:exclude ".git"))))
+
 (use-package eglot
     :when (equal custom-ide 'custom-ide-eglot)
     :ensure (:repo "https://github.com/emacs-mirror/emacs" :local-repo "eglot" :branch "master"
 		:files ("lisp/progmodes/eglot.el" "doc/emacs/doclicense.texi" "doc/emacs/docstyle.texi"
 			   "doc/misc/eglot.texi" "etc/EGLOT-NEWS" (:exclude ".git")))
-    :after eldoc
+    :after eldoc track-changes company
     ;; :after (:all company which-key eldoc jsonrpc)
     :init
     (setq company-backends
@@ -2251,12 +2240,13 @@ Thanks @wyuenho on GitHub"
     :demand t
     ;;:wait t
     ;;:ensure (:repo "minad/vertico" :files (:defaults "extensions/vertico-*.el") :fetcher github)
+    :custom
+    (recentf-mode t)
+    (vertico-count 12)
+    (vertico-cycle nil)
+    (vertico-multiform-mode 1)
     :config
     (vertico-mode)
-    (recentf-mode t)
-    (vertico-multiform-mode 1)
-    (vertico-count 13)
-    (vertico-cycle nil)
     (mrf/vertico-other)
     ;; :bind ("C-x C-f" . ido-find-file)
     ;; Clean up file path when typing
@@ -2791,12 +2781,14 @@ Thanks @wyuenho on GitHub"
     (when (equal completion-handler 'comphand-ivy-counsel)
         (counsel-describe-function-function #'helpful-callable)
         (counsel-describe-variable-function #'helpful-variable))
-    :bind
+    :config
     (when (equal completion-handler 'comphand-ivy-counsel)
+	(bind-keys
           ([remap describe-function] . counsel-describe-function)
-          ([remap describe-variable] . counsel-describe-variable))
-    ([remap describe-command] . helpful-command)
-    ([remap describe-key] . helpful-key))
+            ([remap describe-variable] . counsel-describe-variable)))
+    (bind-keys
+	([remap describe-command] . helpful-command)
+	([remap describe-key] . helpful-key)))
 
 ;;; --------------------------------------------------------------------------
 
@@ -3049,10 +3041,13 @@ Thanks @wyuenho on GitHub"
 
 ;;; --------------------------------------------------------------------------
 
-  (setq-default initial-scratch-message
+(setq-default initial-scratch-message
       (format ";; Hello, World and Happy hacking %s!\n%s\n\n"
           user-login-name
           ";; Press M-RET (Meta-RET) to open the Mitch's Menu"))
+
+(if display-dashboard-at-start
+    (add-hook 'lisp-interaction-mode-hook 'dashboard-open))
 
 ;; (add-hook 'lisp-interaction-mode-hook 'use-package-report)
 
