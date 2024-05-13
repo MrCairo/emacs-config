@@ -236,7 +236,7 @@ These are the groups used by this Emacs config for customization.
      "M.R. Fisher's configuration section."
      :group 'Local)
 
-  (defgroup mrf/custom-toggles nil
+  (defgroup mrf-custom-toggles nil
      "A set of toggles that enable or disable  specific packages."
      :group 'mrf-custom)
 
@@ -301,46 +301,50 @@ Thes values toggle the availability of specific packages. Only boolean type valu
      "If set to t, the z80-mode and other GameBoy related packages
       will be enabled."
      :type 'boolean
-     :group 'mrf/custom-toggles)
+    :group 'mrf-custom-toggles)
 
   (defcustom enable-ts nil
      "Set to t to enable TypeScript handling."
      :type 'boolean
-     :group 'mrf/custom-toggles)
+    :group 'mrf-custom-toggles)
 
   (defcustom enable-corfu nil
      "Setting to t enables Corfu instead of Ivy.
       Corfu is an alternative to the command completion package, IVY which also will
       include Swiper and Company.  If this value is set to nil then Ivy is used."
      :type 'boolean
-     :group 'mrf/custom-toggles)
+    :group 'mrf-custom-toggles)
 
   (defcustom enable-centaur-tabs nil
      "Set to t to enable `centaur-tabs' which uses tabs to represent open buffer."
      :type 'boolean
-     :group 'mrf/custom-toggles)
+    :group 'mrf-custom-toggles)
 
   (defcustom enable-neotree nil
      "Set to t to enable the `neotree' package."
      :type 'boolean
-     :group 'mrf/custom-toggles)
+    :group 'mrf-custom-toggles)
 
   (defcustom enable-golden-ratio nil
      "Set to t to enable `golden-ratio-mode' which resizes the active buffer
       window to the dimensions of a golden-rectangle "
      :type 'boolean
-     :group 'mrf/custom-toggles)
+    :group 'mrf-custom-toggles)
 
   (defcustom enable-org-fill-column-centering nil
      "Set to t to center the visual-fill column of the Org display."
      :type 'boolean
-     :group 'mrf/custom-toggles)
+    :group 'mrf-custom-toggles)
 
   (defcustom enable-projectile nil
      "Set to t to use projectile mode over the build in project.el."
      :type 'boolean
-     :group 'mrf/custom-toggles)
+    :group 'mrf-custom-toggles)
 
+  (defcustom enable-embark nil
+    "Set to t to enable the Embark package."
+    :type 'boolean
+    :group 'mrf-custom-toggles)
 #+end_src
 
 ** Feature selections
@@ -359,7 +363,7 @@ These are features that basically have multiple-choice options instead of being 
   capability to persist undo history across Emacs sessions.
 
   Finally, the standard undo handler can also be chosen."
-     :type '(choice
+    :type '(radio
 	       (const :tag "Vundo (default)" undo-handler-vundo)
 	       (const :tag "Undo-tree" undo-handler-undo-tree)
 	       (const :tag "Built-in" undo-handler-built-in))
@@ -377,7 +381,7 @@ These are features that basically have multiple-choice options instead of being 
   also includes Counsel. Counsel provides completion versions of common Emacs
   commands that are customised to make the best use of Ivy.  Swiper is an
   alternative to isearch that uses Ivy to show an overview of all matches."
-     :type '(choice
+    :type '(radio
 	       (const :tag "Use the Vertico completion system." comphand-vertico)
 	       (const :tag "Use Ivy, Counsel, Swiper completion systems" comphand-ivy-counsel)
 	       (const :tag "Built-in Ido" comphand-built-in))
@@ -393,7 +397,7 @@ These are features that basically have multiple-choice options instead of being 
   implemented entirely in Emacs Lisp. There are no other external dependencies
   with DAPE. DAPE supports most popular languages, however, not as many as
   dap-mode."
-     :type '(choice
+    :type '(radio
 	       (const :tag "Debug Adapter Protocol (DAP)" enable-dap-mode)
 	       (const :tag "Debug Adapter Protocol for Emacs (DAPE)" enable-dape))
      :group 'mrf-custom-choices)
@@ -414,13 +418,19 @@ These are features that basically have multiple-choice options instead of being 
 
   Anaconda-mode is another IDE for Python very much like Elpy. It is not as
   configurable but has a host of great feaures that just work."
-     :type '(choice
+    :type '(radio
 	       (const :tag "Elpy: Emacs Lisp Python Environment" custom-ide-elpy)
 	       (const :tag "Emacs Polyglot (Eglot)" custom-ide-eglot)
 	       (const :tag "Language Server Protocol (LSP)" custom-ide-lsp)
 	       (const :tag "LSP Bridge (standalone)" custom-ide-lsp-bridge)
 	       (const :tag "Python Anaconda-mode for Emacs" custom-ide-anaconda))
      :group 'mrf-custom-choices)
+
+  (defcustom custom-project-handler 'custom-project-project
+    "Select which project handler to use."
+    :type '(radio (const :tag "Projectile" custom-project-projectile)
+             (const :tag "Built-in project" custom-project-project))
+    :group 'mrf-custom-choices)
 
 #+end_src
 
@@ -576,7 +586,6 @@ By default, the =user-emacs-directory= points to the .emacs.d* directory from wh
 
   ;;; Point the user-emacs-directory to the new working directory
   (setq user-emacs-directory working-files-directory)
-  (message (concat ">>> Setting emacs-working-files directory to: " user-emacs-directory))
 
   ;;; Put any emacs cusomized variables in a special file
   (setq custom-file (expand-file-name "customized-vars.el" user-emacs-directory))
@@ -616,7 +625,7 @@ This directory is expected to be in the ~emacs-config-direcory~ dir. This can be
      history-length 25	       ;; Reasonable buffer length
      inhibit-startup-message t ;; Hide the startup message
      inhibit-startup-screent t
-     lisp-indent-offset '3     ;; emacs lisp tab size
+    lisp-indent-offset '2     ;; emacs lisp tab size
      visible-bell t	       ;; Set up the visible bell
      truncate-lines 1	       ;; long lines of text do not wrap
      fill-column 80	       ;; Default line limit for fills
@@ -645,14 +654,14 @@ This directory is expected to be in the ~emacs-config-direcory~ dir. This can be
 #+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
 
   ;; Allow access from emacsclient
-  ;; (add-hook 'elpaca-after-init-hook
-  ;;    (lambda ()
-  ;; 	(use-package server :ensure nil)
-  ;; 	(unless (server-running-p)
-  ;; 	   (server-start))))
+  (add-hook 'elpaca-after-init-hook
+    (lambda ()
+      (use-package server :ensure nil)
+      (unless (server-running-p)
+        (server-start))))
 
-  (when (fboundp 'pixel-scroll-precision-mode)
-     (pixel-scroll-precision-mode))
+  ;; (when (fboundp 'pixel-scroll-precision-mode)
+  ;;    (pixel-scroll-precision-mode))
 
   (use-package default-text-scale
      :hook (elpaca-after-init . default-text-scale-mode))
@@ -678,6 +687,7 @@ The following packages are all intended to be available globally.
      (diminish 'lisp-interaction-mode "Lim")
      (diminish 'counsel-mode)
      (diminish 'golden-ratio-mode)
+    (diminish 'mmm-keys-minor-mode "m3k")
      (diminish 'company-box-mode)
      (diminish 'company-mode))
 
@@ -953,8 +963,7 @@ These are useful snippets of code that are commonly used in various languages. Y
      (setq yas-prompt-functions '(yas-ido-prompt))
      (defun help/yas-after-exit-snippet-hook-fn ()
 	(prettify-symbols-mode))
-     (add-hook 'yas-after-exit-snippet-hook #'help/yas-after-exit-snippet-hook-fn)
-     (message ">>> YASnippet Configured"))
+    (add-hook 'yas-after-exit-snippet-hook #'help/yas-after-exit-snippet-hook-fn))
 
 #+end_src
 
@@ -966,9 +975,7 @@ Collections of more yasnippet snippets for various languages.
   ;;; --------------------------------------------------------------------------
 
   (use-package yasnippet-snippets
-     :after yasnippet
-     :config
-     (message ">>> YASnippet-Snippets Configured"))
+    :after yasnippet)
 
 #+end_src
 
@@ -983,7 +990,6 @@ aliasing of the icons.
   ;;; --------------------------------------------------------------------------
 
   (use-package all-the-icons
-     :config (message ">> all-the-icons configured")
      :when (display-graphic-p))
 
 #+end_src
@@ -1119,7 +1125,6 @@ This is the main function that allows cycling (up or down) through the list of t
 		 (setq result (- (length theme-list) 1)))
 	      (when (> result (- (length theme-list) 1))
 		 (setq result 0)))
-	   (message (format ">>> Current theme %S" theme))
 	   (setq-default theme-selector result))))
 
   ;; This is used to trigger the cycling of the theme-selector
@@ -1147,8 +1152,6 @@ This function simply loads the theme from the theme-list indexed by the ~theme-s
      (when loaded-theme
 	(disable-theme (intern loaded-theme)))
      (setq loaded-theme (nth theme-selector theme-list))
-     (message (concat ">>> Loading theme "
-		 (format "%d: %S" theme-selector loaded-theme)))
      (load-theme (intern loaded-theme) t)
      (when (featurep 'org)
 	(mrf/org-font-setup))
@@ -1183,8 +1186,6 @@ This function simply loads the theme from the theme-list indexed by the ~theme-s
 
   (defun reload-theme--from-startup ()
      (setq loaded-theme (nth theme-selector theme-list))
-     (message (concat ">>> Startup Loading theme "
-		 (format "%d: %S" theme-selector loaded-theme)))
      (mrf/load-theme-from-selector)
      (load-theme (intern loaded-theme) t))
 
@@ -1239,7 +1240,6 @@ This is just a test area to see what colors look like in this =org= mode.
   ;;; --------------------------------------------------------------------------
 
   (defun mrf/customize-modus-theme ()
-     (message ">> Applying modus customization")
      (setq modus-themes-common-palette-overrides
 	'((bg-mode-line-active bg-blue-intense)
 	    (fg-mode-line-active fg-main)
@@ -1248,7 +1248,6 @@ This is just a test area to see what colors look like in this =org= mode.
   (add-hook 'elpaca-after-init-hook 'mrf/customize-modus-theme)
 
   (defun mrf/customize-ef-theme ()
-     (message ">> Applying ef-themes customization")	  
      (defface ef-themes-fixed-pitch
 	'((t (:background "#242635" :extend t :font "Courier New")))
 	"Face used for the source block background.")
@@ -1301,7 +1300,8 @@ This includes the theme to use in both graphical and non-graphical.
      (progn
 	(defun load-terminal-theme ()
 	   (load-theme (intern default-terminal-theme) t))
-	(add-hook 'window-setup-hook 'load-terminal-theme)))
+      (add-hook 'window-setup-hook 'load-terminal-theme))
+    (add-hook 'window-setup-hook 'reload-theme--from-startup))
 
 #+end_src
 
@@ -1364,7 +1364,6 @@ It's nice to know that Emacs is somewhat working. To help this along, we set the
      )
 
   (defun mrf/update-large-display ()
-     (message (format ">> mrf/update-lage-display %S" frame))	 
      (modify-frame-parameters
 	frame '((user-position . t)
 		  (top . 0.0)
@@ -1443,10 +1442,12 @@ It's nice to know that Emacs is somewhat working. To help this along, we set the
 
   ;; This is done so that the Emacs window is sized early in the init phase along with the default font size.
   ;; Startup works without this but it's nice to see the window expand early...
+  (add-hook 'emacs-startup-hook
+    (lambda ()
   (when (display-graphic-p)
      (mrf/update-face-attribute)
      (unless (daemonp)
-	(mrf/frame-recenter)))
+  	(mrf/frame-recenter)))))
 
 #+end_src
 
@@ -1483,7 +1484,7 @@ The functions in the list =after-setting-font-hook= are called whenever the fram
 #+end_src
 
 ** Helper to up the font size for a higher-res monitor.
-**** Frame font selection
+*** Frame font selection
 This little function toggles between a larger font size and the default font size.
 
 #+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
@@ -1493,34 +1494,27 @@ This little function toggles between a larger font size and the default font siz
   (defvar mrf/font-size-slot 1)
 
   (defun mrf/update-font-size ()
-     (message "adjusting font size")
      (cond
 	((equal mrf/font-size-slot 3)
-	   (message "X-Large Font")
 	   (setq custom-default-font-size mrf/x-large-font-size
 	      mrf/default-variable-font-size (+ custom-default-font-size 20)
 	      mrf/font-size-slot 2)
 	   (mrf/update-face-attribute))
 	((equal mrf/font-size-slot 2)
-	   (message "Large Font")
 	   (setq custom-default-font-size mrf/large-font-size
 	      mrf/default-variable-font-size (+ custom-default-font-size 20)
 	      mrf/font-size-slot 1)
 	   (mrf/update-face-attribute))
 	((equal mrf/font-size-slot 1)
-	   (message "Medium Font")
 	   (setq custom-default-font-size mrf/medium-font-size
 	      mrf/default-variable-font-size (+ custom-default-font-size 20)
 	      mrf/font-size-slot 0)
 	   (mrf/update-face-attribute))
 	((equal mrf/font-size-slot 0)
-	   (message "Small Font")
 	   (setq custom-default-font-size mrf/small-font-size
 	      mrf/default-variable-font-size (+ custom-default-font-size 20)
 	      mrf/font-size-slot 3)
-	   (mrf/update-face-attribute))
-	)
-     )
+        (mrf/update-face-attribute))))
 
 #+end_src
 
@@ -1853,7 +1847,6 @@ This section contains the basic configuration for =org-mode= plus the configurat
      :bind (:map org-mode-map
   	      ("C-c e" . org-edit-src-code))
      :config
-     (message "ORG-MODE Configured")
      (setq org-hide-emphasis-markers nil)
      ;; Save Org buffers after refiling!
      (advice-add 'org-refile :after 'org-save-all-org-buffers)
@@ -1937,6 +1930,8 @@ This section contains the basic configuration for =org-mode= plus the configurat
 
   (use-package org-superstar
      :after org
+    :custom
+    (org-superstar-headline-bullets-list '("✪" "✫" "✦" "✧" "✸" "✺"))
      :hook (org-mode . org-superstar-mode))
 
 #+end_src
@@ -1984,7 +1979,6 @@ This snippet adds a hook to =org-mode= buffers so that source code blocks can be
   ;; should use this need to add a '#+auto_tangle: t' in the org file header.
   (use-package org-auto-tangle
      :after org
-     :defer t
      :hook (org-mode . org-auto-tangle-mode))
 
 #+end_src
@@ -2000,7 +1994,8 @@ While there is standard markdown support built into =org-mode=, this additional 
 
 #+end_src
 
-** Org-mode Roam
+
+* Org-mode Roam
 Org Mode is known to be a great tool not just for writing and personal notes but also TODO lists, project planning, time tracking, and more. Once you start to become really invested in Org Mode you’ll eventually have to come up with a system for managing your Org files so that it’s easy to store and find the information you need.
 
 Org Roam is an extension to Org Mode which solves a couple of the biggest problems that I’ve personally had when using Org for personal notes:
@@ -2057,7 +2052,7 @@ Org Roam solves these problems by making it easy to create topic-focused Org Fil
 
 #+end_src
 
-**** Org Agenda from Roam Notes
+** Org Agenda from Roam Notes
 One of the most useful features of Org Mode is the agenda view. You can actually use your Org Roam notes as the source for this view!
 
 Typically you won’t want to pull in all of your Org Roam notes, so we’ll only use the notes with a specific tag like Project.
@@ -2086,7 +2081,7 @@ Here is a snippet that will find all the notes with a specific tag and then set 
   ;; Build the agenda list the first time for the session
 #+end_src
 
-**** Selecting from a list of notes
+** Selecting from a list of notes
 The org-roam-node-find function gives us the ability to filter the list of notes that get displayed for selection.
 
 We can define our own function that shows a selection list for notes that have a specific tag like Project which we talked about before. This can be useful to set up a keybinding to quickly select from a specific set of notes!
@@ -2127,7 +2122,7 @@ This means that we can automatically create a new note with our project capture 
   (global-set-key (kbd "C-c n p") #'my/org-roam-find-project)
 #+end_src
 
-**** Keep and inbox of notes and tasks
+** Keep and inbox of notes and tasks
 If you want to quickly capture new notes and tasks with a single keybinding into a place that you can review later, we can use org-roam-capture- to capture to a single-specific file like Inbox.org!
 
 Even though this file won’t have the timestamped filename, it will still be treated as a node in your Org Roam notes.
@@ -2141,7 +2136,7 @@ Even though this file won’t have the timestamped filename, it will still be tr
 			:if-new (file+head "Inbox.org" "#+title: Inbox\n")))))
 #+end_src
 
-**** Capture a task
+** Capture a task
 If you’ve set up project note files like we mentioned earlier, you can set up a capture template that allows you to quickly capture tasks for any project.
 
 Much like the example before, we can either select a project that exists or automatically create a project note when it doesn’t exist yet.
@@ -2164,7 +2159,7 @@ Much like the example before, we can either select a project that exists or auto
 			   ("Tasks"))))))
 #+end_src
 
-**** Todo
+** Todo
 The following snippet sets up a hook for all Org task state changes and then copies the completed (DONE) entry to today’s note file
 
 #+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
@@ -2325,11 +2320,11 @@ Window numbers for Emacs: Navigate your windows and frames using numbers. This i
 #+end_src
 
 **** Treemacs Projectile
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
 
   (use-package treemacs-projectile
-     :when enable-projectile
+    :when (equal custom-project-handler 'custom-project-projectile)
      :after treemacs projectile)
 
 #+end_src
@@ -2503,7 +2498,6 @@ is a language server and an Emacs major mode.
   (defun mrf/lsp-mode-setup ()
      "Custom LSP setup function."
      (when (equal custom-ide 'custom-ide-lsp)
-	(message "Set up LSP header-line and other vars")
 	(setq lsp-headerline-breadcrumb-segments '(path-up-to-project file symbols))
 	(setq lsp-clangd-binary-path "/usr/bin/clangd")'
 	(lsp-headerline-breadcrumb-mode)))
@@ -2628,7 +2622,6 @@ Elpy is an Emacs package to bring powerful Python editing to Emacs.  It combines
 	      ("C-c g g" . elpy-goto-definition)
 	      ("C-c g ?" . elpy-doc))
      :config
-     (message "elpy loaded")
      (use-package jedi)
      (use-package flycheck
 	:when (equal custom-ide 'custom-ide-elpy)
@@ -2646,7 +2639,34 @@ Elpy is an Emacs package to bring powerful Python editing to Emacs.  It combines
 
 
 * Debugging
+
 ** Debug Adapter Protocol for Emacs (DAPE)
+
+Dape is a debug adapter client for Emacs. The debug adapter protocol, much like its more well-known counterpart, the language server protocol, aims to establish a common API for programming tools. However, instead of functionalities such as code completions, it provides a standardized interface for debuggers.
+
+To begin a debugging session, invoke the dape command. In the minibuffer prompt, enter a debug adapter configuration name from dape-configs.
+
+For complete functionality, make sure to enable eldoc-mode in your source buffers and repeat-mode for more pleasant key mappings.
+
+**Features**
+
+- Batteries included support (describe-variable dape-configs)
+- Log breakpoints
+- Conditional breakpoints
+- Variable explorer
+- Variable watch
+- Variable hover with eldoc
+- REPL
+- gdb-mi.el like interface
+- Memory editor with hexl
+- Integration with compile
+- Debug adapter configuration ergonomics
+- No external dependencies outside of core Emacs
+
+*** Example additional options
+
+-----
+*The following source blocks are meant as examples on what can be coded to enable certain features. They are normally NOT tangled.*
 
 **** To not display info and/or buffers on startup:
 #+begin_src emacs-lisp :tangle no
@@ -2676,8 +2696,10 @@ Elpy is an Emacs package to bring powerful Python editing to Emacs.  It combines
      (defun dape--save-on-start ()
 	(save-some-buffers t t)))
 #+end_src
+-----
 
-**** Add some specific dape configs:
+*** DAPE Configs for Python/Go Mode (stop-on-entry) :Python:
+
 #+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
   ;;; ------------------------------------------------------------------------
   (defun mrf/additional-dape-configs ()
@@ -2714,19 +2736,23 @@ Elpy is an Emacs package to bring powerful Python editing to Emacs.  It combines
 
 #+end_src
 
-**** The actual config:
+*** DAPE Initialization
+
 #+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
   ;;; ------------------------------------------------------------------------
+
+  ;; So normally I would just use a :when option here but since DAPE doesn't
+  ;; have a load function (it just starts the debugger with (dape)) this
+  ;; function checks for whether or not it should be used and then performs
+  ;; a (use-package ) to load it immediately.
+
   (use-package jsonrpc)
+
+  (defun mrf/prepare-dape ()
+    (when (equal debug-adapter 'enable-dape)
   (use-package dape
-     :when (equal debug-adapter 'enable-dape)
-     :ensure (  :depth 1
-  	      :repo "https://github.com/MrCairo/dape"
-  	      :branch "experimental-dape-prepare"
-  	      :local-repo "dape" :files ("*" (:exclude ".git")))
      :init
      (define-dape-hydra)
-     :defer t
      :after (:any jsonrpc hydra python)
      ;; To use window configuration like gud (gdb-mi)
      ;; :init
@@ -2737,15 +2763,14 @@ Elpy is an Emacs package to bring powerful Python editing to Emacs.  It combines
      (define-dape-hydra)
      (bind-keys :map prog-mode-map
   	("C-c ." . dape-hydra/body))
-     (mrf/additional-dape-configs)
-     (message "DAPE Configured"))
+        (mrf/additional-dape-configs))))
 
 #+end_src
 
 
-** Debug Adapter Protocol (DAP)
+** Debug Adapter Protocol (DAP) :Python:
 
-Provides a common protocol for debugging different systems. This is configured for Python
+DAP-Mode is an Emacs client/library for Debug Adapter Protocol is a wire protocol for communication between client and Debug Server. It's similar to the LSP but provides integration with debug server. This setup is configured for Python
 
 #+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
@@ -2763,10 +2788,10 @@ Provides a common protocol for debugging different systems. This is configured f
      (define-dap-hydra)
      (bind-keys :map prog-mode-map
 	("C-c ." . dap-hydra/body))
-     (dap-ui-mode 1)
-     (message "DAP mode loaded and configured."))
+    (dap-ui-mode 1))
 
 #+end_src
+
 ** Dape for TypeScript
 
 #+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
@@ -2781,11 +2806,8 @@ Provides a common protocol for debugging different systems. This is configured f
      (let ((default-directory (expand-file-name mrf/vscode-js-debug-dir)))
 
 	(vc-git-clone "https://github.com/microsoft/vscode-js-debug.git" "." nil)
-	(message "git repository created")
 	(call-process "npm" nil "*snam-install*" t "install")
-	(message "npm dependencies installed")
-	(call-process "npx" nil "*snam-install*" t "gulp" "dapDebugServer")
-	(message "vscode-js-debug installed")))
+      (call-process "npx" nil "*snam-install*" t "gulp" "dapDebugServer")))
 
 #+end_src
 
@@ -2903,7 +2925,7 @@ This is meant to be evaluated and run once. Calling this function will clone the
 
 #+end_src
 
-** DAP for Python
+** DAP Package for Python :Python:
 
 #+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
@@ -3051,7 +3073,7 @@ Since Realgud is options (in our configuratrion), we add it's keybindings condit
 
 #+end_src
 
-**** REALGud Keybindings
+*** REALGud Keybindings
 #+begin_src emacs-lisp :tangle no
   ;;; --------------------------------------------------------------------------
 
@@ -3148,7 +3170,7 @@ Ivy is an excellent completion framework for Emacs.  It provides a minimal yet p
 
 #+end_src
 
-**** Ivy-rich and ivy-yasnippet
+*** Ivy-rich and ivy-yasnippet
 
 Ivy-rich provides rich transformers for commands from ivy and counsel.
 Ivy-yasnippet lets you preview yasnippet snippets with ivy.
@@ -3171,7 +3193,7 @@ Ivy-yasnippet lets you preview yasnippet snippets with ivy.
 
 #+end_src
 
-**** Swiper
+*** Swiper
 Swiper is an alternative to isearch that uses Ivy to show an overview of all matches.
 
 #+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
@@ -3183,7 +3205,7 @@ Swiper is an alternative to isearch that uses Ivy to show an overview of all mat
 
 #+end_src
 
-**** Counsel
+*** Counsel
 
 ~ivy-mode~ ensures that any Emacs command using completing-read-function uses ivy for completion.
 Counsel takes this further, providing versions of common Emacs commands that are customised to make the best use of Ivy. For example, ~counsel-find-file~ has some additional keybindings. Pressing =DEL= will move you to the parent directory.
@@ -3206,7 +3228,7 @@ Counsel takes this further, providing versions of common Emacs commands that are
 
 #+end_src
 
-**** Ivy Prescient
+*** Ivy Prescient
 ~prescient.el~ is a library which sorts and filters lists of candidates, such as appear when you use a package like =Ivy= or =Company=.
 
 #+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
@@ -3406,6 +3428,53 @@ Enable the IDO handler everywhere.
 #+end_src
 
 
+** Embark
+
+Embark makes it easy to choose a command to run based on what is near point, both during a minibuffer completion session (in a way familiar to Helm or Counsel users) and in normal buffers. Bind the command  embark-act to a key and it acts like prefix-key for a keymap of actions (commands) relevant to the target around point. With point on an URL in a buffer you can open the URL in a browser or eww or download the file it points to. If while switching buffers you spot an old one, you can kill it right there and continue to select another. Embark comes preconfigured with over a hundred actions for common types of targets such as files, buffers, identifiers, s-expressions, sentences; and it is easy to add more actions and more target types. Embark can also collect all the candidates in a minibuffer to an occur-like buffer or export them to a buffer in a major-mode specific to the type of candidates, such as dired for a set of files, ibuffer for a set of buffers, or customize for a set of variables.
+
+#+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
+  ;;; --------------------------------------------------------------------------
+
+  (use-package embark
+    :when enable-embark
+    :bind
+    (("C-." . embark-act)         ;; pick some comfortable binding
+      ("C-;" . embark-dwim)        ;; good alternative: M-.
+      ("C-h B" . embark-bindings)) ;; alternative for `describe-bindings'
+
+    :init
+
+    ;; Optionally replace the key help with a completing-read interface
+    (setq prefix-help-command #'embark-prefix-help-command)
+
+    ;; Show the Embark target at point via Eldoc. You may adjust the
+    ;; Eldoc strategy, if you want to see the documentation from
+    ;; multiple providers. Beware that using this can be a little
+    ;; jarring since the message shown in the minibuffer can be more
+    ;; than one line, causing the modeline to move up and down:
+
+    ;; (add-hook 'eldoc-documentation-functions #'embark-eldoc-first-target)
+    ;; (setq eldoc-documentation-strategy #'eldoc-documentation-compose-eagerly)
+
+    :config
+
+    ;; Hide the mode line of the Embark live/completions buffers
+    (add-to-list 'display-buffer-alist
+      '("\\`\\*Embark Collect \\(Live\\|Completions\\)\\*"
+         nil
+         (window-parameters (mode-line-format . none)))))
+
+  ;; Consult users will also want the embark-consult package.
+  (use-package embark-consult
+    :when (equal completion-handler 'comphand-vertico)
+    :defer t
+    ;;:ensure t ; only need to install it, embark loads it after consult if found
+    :hook
+    (embark-collect-mode . consult-preview-at-point-mode))
+
+#+end_src
+
+
 * Language Support Packages
 ** Flycheck
 
@@ -3453,7 +3522,6 @@ Tree-sitter is a parser generator tool and an incremental parsing library. It ca
      :after (:any python python-mode lisp-mode)
      :config
      ;; Activate tree-sitter globally (minor mode registered on every buffer)
-     (message "TREE-SITTER Configured")
      (global-tree-sitter-mode)
      (cond
         ((equal custom-ide 'custom-ide-eglot)
@@ -3552,7 +3620,6 @@ This is a basic configuration for the TypeScript language so that =.ts= files ac
   ;;; --------------------------------------------------------------------------
 
   (defun mrf/load-js-file-hook ()
-     (message "Running JS file hook")
      (js2-mode)
 
      (when (equal debug-adapter 'enable-dap-mode)
@@ -3599,7 +3666,6 @@ This is a basic configuration for the TypeScript language so that =.ts= files ac
   ;;; --------------------------------------------------------------------------
 
   (defun mrf/load-c-file-hook ()
-     (message "Running C/C++ file hook")
      (c-mode)
      (unless (featurep 'realgud))
      (use-package realgud)
@@ -3678,23 +3744,20 @@ The following are keymaps that are used by by the custom-ide and for python-mode
 	      ("C-c g r" . lsp-find-references)
 	      ("C-c g o" . xref-find-definitions-other-window)
 	      ("C-c g g" . xref-find-definitions)
-	      ("C-c g ?" . eldoc-doc-buffer))
-	   (message (format ">>> set python-mode-map for %s" custom-ide)))
+  	("C-c g ?" . eldoc-doc-buffer)))
 	((equal custom-ide 'custom-ide-eglot)
 	   (bind-keys :map python-mode-map
 	      ("C-c g r" . eglot-find-implementation)
 	      ("C-c g o" . xref-find-definitions-other-window)
 	      ("C-c g g" . xref-find-definitions)
-	      ("C-c g ?" . eldoc-doc-buffer))
-	   (message (format ">>> set python-mode-map for %s" custom-ide)))
+  	("C-c g ?" . eldoc-doc-buffer)))
 	((equal custom-ide 'custom-ide-elpy)
 	   (elpy-enable)
 	   (bind-keys :map python-mode-map
 	      ("C-c g a" . elpy-goto-assignment)
 	      ("C-c g o" . elpy-goto-definition-other-window)
 	      ("C-c g g" . elpy-goto-definition)
-	      ("C-c g ?" . elpy-doc))
-	   (message (format ">>> setting python-mode-map for %s" custom-ide)))
+  	("C-c g ?" . elpy-doc)))
 	((equal custom-ide 'custom-ide-lsp-bridge)
 	   (bind-keys :map python-mode-map
 	      ("C-c g a" . lsp-bridge-find-reference)
@@ -3702,8 +3765,7 @@ The following are keymaps that are used by by the custom-ide and for python-mode
 	      ("C-c g g" . lsp-bridge-find-def)
 	      ("C-c g i" . lsp-bridge-find-impl)
 	      ("C-c g r" . lsp-bridge-rename)
-	      ("C-c g ?" . lsp-bridge-popup-documentation))
-	   (message (format ">>> set python-mode-map for %s" custom-ide)))
+  	("C-c g ?" . lsp-bridge-popup-documentation)))
 	))
 
 #+end_src
@@ -3726,7 +3788,6 @@ These functions are used during python intialization or file loading. This is wh
      (when (eq major-mode 'python-mode) ;; Python Only
   	(flycheck-mode 0)
   	(flycheck-mode t)
-  	(message "deleting trailing whitespace enabled")
         (delete-trailing-whitespace)))
 
   ;; Enable DAP or DAPE, Eglot or LSP modes
@@ -3735,17 +3796,16 @@ These functions are used during python intialization or file loading. This is wh
      (cond
         ((equal debug-adapter 'enable-dap-mode)
   	(unless (featurep 'dap-mode)
-  	   (dap-mode)))
+  	(dap-mode))
+        (define-dap-hydra))
         ((equal debug-adapter 'enable-dape)
-  	 (bind-keys :map python-mode-map
-  	    ("C-c ." . dape-hydra/body)))
+        (mrf/prepare-dape))
         ((equal custom-ide 'custom-ide-eglot)
   	 (add-hook 'python-mode-hook 'eglot-ensure))
         ((equal custom-ide-lsp)
   	 (add-hook 'python-mode-hook 'lsp-deferred))))
 
   (defun mrf/python-mode-triggered ()
-     (message ">>> mrf/python-mode-triggered")
      ;; (eldoc-box-hover-at-point-mode t) ;; Using Mitch Key for this
      (mrf/enable-python-features)
      (mrf/set-custom-ide-python-keymaps)
@@ -3816,7 +3876,6 @@ We use Pyvenv-auto is a package that automatically changes to the Python virtual
 
   (use-package pyvenv-auto
      :after python
-     :config (message ">>> Starting pyvenv-auto")
      :hook (python-mode . pyvenv-auto-run))
 
 #+end_src
@@ -3918,6 +3977,7 @@ Make sure that =gopls= is installed:
      :after go-mode
      :hook (go-mode . go-eldoc-setup)
      :config
+    (eglot-format-buffer-on-save)
      (set-face-attribute 'eldoc-highlight-function-argument nil
         :underline t :foreground "green"
         :weight 'bold))
@@ -4002,7 +4062,7 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
   ;;; --------------------------------------------------------------------------
 
   (use-package projectile
-     :when enable-projectile
+    :when (equal custom-project-handler 'custom-project-projectile)
      :diminish Proj
      :config (projectile-mode)
      :bind-keymap
@@ -4015,7 +4075,7 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
 
   (when (equal completion-handler 'comphand-ivy-counsel)
      (use-package counsel-projectile
-	:when enable-projectile
+      :when (equal custom-project-handler 'custom-project-projectile)
 	:after projectile
 	:config
 	(setq projectile-completion-system 'ivy)
@@ -4034,7 +4094,7 @@ This is the default built-in project system. For those not needing the full-feat
   	(cons 'go-module root)))
 
   (use-package project
-     :unless enable-projectile
+    :when (equal custom-project-handler 'custom-project-project)
      :ensure nil
      :defer t
      :config
@@ -4448,7 +4508,7 @@ Dired is a built-in file manager for Emacs that does some pretty amazing things!
 - =S= - Create a symbolic link to this file
 - =L= - Load an Emacs Lisp file into Emacs
 
-**** Configuration
+*** Configuration
 
 #+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
@@ -4474,7 +4534,7 @@ Dired is a built-in file manager for Emacs that does some pretty amazing things!
 
 #+end_src
 
-**** Single Window
+*** Single Window
 Dired, by default, opens up multiple windows - one for each directory. It would be nice to be able to limit =dired= to use just a single window. [[https://codeberg.org/amano.kenji/dired-single][dired-single]] does just that. We configure =dired-single= to open up a directory while in dired with the =C-<return>=  key combination. This will then open up the directory in the buffer named =*dired*=. Whenever a directory is opened with the =C-<return>= key sequence, that directory will then replace what's currently in the =*dired*= buffer.
 
 #+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
@@ -4498,6 +4558,7 @@ Dired, by default, opens up multiple windows - one for each directory. It would 
 
 
 * Mitch's Minor Mode
+
 This minor mode just defines frequently used hot-keys. It works well when =which-key= is active.
 
 ** Popup menu at point
@@ -4512,7 +4573,7 @@ This minor mode just defines frequently used hot-keys. It works well when =which
      (let ((mmm-menu-choice (popup-cascade-menu '
 			       ("open-dashboard" "open-ielm"
 				  ("Themes" "next-theme" "previous-theme" "which-theme")
-				Z	    ("Shells" "vterm" "vterm-other-window" "eshell")
+  			     ("Shells" "vterm" "vterm-other-window" "eshell")
 				  "set-fill-column" "set-org-fill-column"
 				  "eldoc-help" "pydoc-help"))))
 	(cond
@@ -4556,7 +4617,6 @@ This is a set of keymaps that do the same things as the popup menu. Both are her
 	(let ((map (make-sparse-keymap)))
 	   (bind-keys :map map
 	      ("M-RET p" . pulsar-pulse-line)
-	      ("M-RET C-p" . pulsar-highlight-line)
 	      ;;("M-RET RET" . mmm-menu)
 	      ("M-RET d" . dashboard-open)
 	      ("M-RET f" . mrf/set-fill-column-interactively)
@@ -4578,7 +4638,6 @@ This is a set of keymaps that do the same things as the popup menu. Both are her
 
   (mrf/define-mmm-minor-mode-map)
   (mmm-keys-minor-mode 1)
-  (diminish 'mmm-keys-minor-mode "m3k")
 
 #+end_src
 
@@ -4589,33 +4648,25 @@ shown. Plus, some keys are mode specific and will only appear when that major mo
 
 #+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
 
-  (defun mrf/mmm-handle-org-keys ()
-     "Enable/Disable org-mode specific mmm keys."
-     (if (equal major-mode 'org-mode)
-	(progn
+  (defun mrf/mmm-handle-context-keys ()
+    "Enable or Disable keys based upon featurep context."
+    (unbind-key "M-RET O f" mmm-keys-minor-mode-map)
+    (unbind-key "M-RET O l" mmm-keys-minor-mode-map)
+    (unbind-key "M-RET P ?" mmm-keys-minor-mode-map)
+    (cond
+      ((equal major-mode 'org-mode)
 	   (bind-keys :map mmm-keys-minor-mode-map
 	      ("M-RET O f" . mrf/set-org-fill-column-interactively)
 	      ("M-RET O l" . org-toggle-link-display)))
-	;; else
-	(progn
-	   (unbind-key "M-RET O f" mmm-keys-minor-mode-map)
-	   (unbind-key "M-RET O l" mmm-keys-minor-mode-map))))
-
-  (defun mrf/mmm-handle-python-keys ()
-     "Enable/Disable python-mode specific mmm keys."
-     (if (equal major-mode 'python-mode)
-	(progn
+      ((equal major-mode 'python-mode)
 	   (bind-keys :map mmm-keys-minor-mode-map
-	      ("M-RET P ?" . 'pydoc-at-point)))
-	;; else
-	(progn
-	   (unbind-key "M-RET P ?" mmm-keys-minor-mode-map))))
+  	("M-RET P" . 'pydoc-at-point)))))
 
   (add-hook 'which-key-inhibit-display-hook
      (lambda ()
-	(mrf/mmm-handle-python-keys)
-	(mrf/mmm-handle-org-keys)
+      (mrf/mmm-handle-context-keys)
 	(which-key-add-key-based-replacements "M-RET T" "theme-keys")
+      (which-key-add-key-based-replacements "M-RET P" "python-menu")
 	(which-key-add-key-based-replacements "M-RET O f" "set-org-fill-column")
 	(which-key-add-key-based-replacements "M-RET t" "treemacs-toggle")
 	(which-key-add-key-based-replacements "M-RET f" "set-fill-column")
@@ -4675,8 +4726,7 @@ The following is a list of major mode-hooks variables that are set so that they 
 				   (python-mode)))
 #+end_src
 
-
-***** Lispy Footer
+** Lispy Footer
 The standard =lisp= footer that should appear at the end of every =lisp= source file.
 
 #+begin_src emacs-lisp :tangle "init.el" :mkdirp yes

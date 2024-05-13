@@ -64,7 +64,7 @@
    "M.R. Fisher's configuration section."
    :group 'Local)
 
-(defgroup mrf/custom-toggles nil
+(defgroup mrf-custom-toggles nil
    "A set of toggles that enable or disable  specific packages."
    :group 'mrf-custom)
 
@@ -117,45 +117,50 @@ The Dashboard will be in the *dashboard* buffer and can also be opened using
    "If set to t, the z80-mode and other GameBoy related packages
     will be enabled."
    :type 'boolean
-   :group 'mrf/custom-toggles)
+  :group 'mrf-custom-toggles)
 
 (defcustom enable-ts nil
    "Set to t to enable TypeScript handling."
    :type 'boolean
-   :group 'mrf/custom-toggles)
+  :group 'mrf-custom-toggles)
 
 (defcustom enable-corfu nil
    "Setting to t enables Corfu instead of Ivy.
     Corfu is an alternative to the command completion package, IVY which also will
     include Swiper and Company.  If this value is set to nil then Ivy is used."
    :type 'boolean
-   :group 'mrf/custom-toggles)
+  :group 'mrf-custom-toggles)
 
 (defcustom enable-centaur-tabs nil
    "Set to t to enable `centaur-tabs' which uses tabs to represent open buffer."
    :type 'boolean
-   :group 'mrf/custom-toggles)
+  :group 'mrf-custom-toggles)
 
 (defcustom enable-neotree nil
    "Set to t to enable the `neotree' package."
    :type 'boolean
-   :group 'mrf/custom-toggles)
+  :group 'mrf-custom-toggles)
 
 (defcustom enable-golden-ratio nil
    "Set to t to enable `golden-ratio-mode' which resizes the active buffer
     window to the dimensions of a golden-rectangle "
    :type 'boolean
-   :group 'mrf/custom-toggles)
+  :group 'mrf-custom-toggles)
 
 (defcustom enable-org-fill-column-centering nil
    "Set to t to center the visual-fill column of the Org display."
    :type 'boolean
-   :group 'mrf/custom-toggles)
+  :group 'mrf-custom-toggles)
 
 (defcustom enable-projectile nil
    "Set to t to use projectile mode over the build in project.el."
    :type 'boolean
-   :group 'mrf/custom-toggles)
+  :group 'mrf-custom-toggles)
+
+(defcustom enable-embark nil
+  "Set to t to enable the Embark package."
+  :type 'boolean
+  :group 'mrf-custom-toggles)
 
 ;;; --------------------------------------------------------------------------
 
@@ -169,7 +174,7 @@ Undo-tree is a very mature and full featured undo handler. It also has the
 capability to persist undo history across Emacs sessions.
 
 Finally, the standard undo handler can also be chosen."
-   :type '(choice
+  :type '(radio
 	     (const :tag "Vundo (default)" undo-handler-vundo)
 	     (const :tag "Undo-tree" undo-handler-undo-tree)
 	     (const :tag "Built-in" undo-handler-built-in))
@@ -187,7 +192,7 @@ smaller, simpler, and smoother to use yet highly customizable.  The Ivy package
 also includes Counsel. Counsel provides completion versions of common Emacs
 commands that are customised to make the best use of Ivy.  Swiper is an
 alternative to isearch that uses Ivy to show an overview of all matches."
-   :type '(choice
+  :type '(radio
 	     (const :tag "Use the Vertico completion system." comphand-vertico)
 	     (const :tag "Use Ivy, Counsel, Swiper completion systems" comphand-ivy-counsel)
 	     (const :tag "Built-in Ido" comphand-built-in))
@@ -203,7 +208,7 @@ dape (Debug Adapter Protocol for Emacs) is similar to dap-mode but is
 implemented entirely in Emacs Lisp. There are no other external dependencies
 with DAPE. DAPE supports most popular languages, however, not as many as
 dap-mode."
-   :type '(choice
+  :type '(radio
 	     (const :tag "Debug Adapter Protocol (DAP)" enable-dap-mode)
 	     (const :tag "Debug Adapter Protocol for Emacs (DAPE)" enable-dape))
    :group 'mrf-custom-choices)
@@ -224,13 +229,19 @@ for which there is a language server and an Emacs major mode.
 
 Anaconda-mode is another IDE for Python very much like Elpy. It is not as
 configurable but has a host of great feaures that just work."
-   :type '(choice
+  :type '(radio
 	     (const :tag "Elpy: Emacs Lisp Python Environment" custom-ide-elpy)
 	     (const :tag "Emacs Polyglot (Eglot)" custom-ide-eglot)
 	     (const :tag "Language Server Protocol (LSP)" custom-ide-lsp)
 	     (const :tag "LSP Bridge (standalone)" custom-ide-lsp-bridge)
 	     (const :tag "Python Anaconda-mode for Emacs" custom-ide-anaconda))
    :group 'mrf-custom-choices)
+
+(defcustom custom-project-handler 'custom-project-project
+  "Select which project handler to use."
+  :type '(radio (const :tag "Projectile" custom-project-projectile)
+           (const :tag "Built-in project" custom-project-project))
+  :group 'mrf-custom-choices)
 
 ;;; --------------------------------------------------------------------------
 ;;; Theming related
@@ -362,7 +373,6 @@ font size is computed + 20 of this value."
 
 ;;; Point the user-emacs-directory to the new working directory
 (setq user-emacs-directory working-files-directory)
-(message (concat ">>> Setting emacs-working-files directory to: " user-emacs-directory))
 
 ;;; Put any emacs cusomized variables in a special file
 (setq custom-file (expand-file-name "customized-vars.el" user-emacs-directory))
@@ -388,7 +398,7 @@ font size is computed + 20 of this value."
    history-length 25	       ;; Reasonable buffer length
    inhibit-startup-message t ;; Hide the startup message
    inhibit-startup-screent t
-   lisp-indent-offset '3     ;; emacs lisp tab size
+  lisp-indent-offset '2     ;; emacs lisp tab size
    visible-bell t	       ;; Set up the visible bell
    truncate-lines 1	       ;; long lines of text do not wrap
    fill-column 80	       ;; Default line limit for fills
@@ -407,14 +417,14 @@ font size is computed + 20 of this value."
 (add-hook 'prog-mode-hook 'display-line-numbers-mode)
 
 ;; Allow access from emacsclient
-;; (add-hook 'elpaca-after-init-hook
-;;    (lambda ()
-;; 	(use-package server :ensure nil)
-;; 	(unless (server-running-p)
-;; 	   (server-start))))
+(add-hook 'elpaca-after-init-hook
+  (lambda ()
+    (use-package server :ensure nil)
+    (unless (server-running-p)
+      (server-start))))
 
-(when (fboundp 'pixel-scroll-precision-mode)
-   (pixel-scroll-precision-mode))
+;; (when (fboundp 'pixel-scroll-precision-mode)
+;;    (pixel-scroll-precision-mode))
 
 (use-package default-text-scale
    :hook (elpaca-after-init . default-text-scale-mode))
@@ -431,6 +441,7 @@ font size is computed + 20 of this value."
    (diminish 'lisp-interaction-mode "Lim")
    (diminish 'counsel-mode)
    (diminish 'golden-ratio-mode)
+  (diminish 'mmm-keys-minor-mode "m3k")
    (diminish 'company-box-mode)
    (diminish 'company-mode))
 
@@ -603,20 +614,16 @@ font size is computed + 20 of this value."
    (setq yas-prompt-functions '(yas-ido-prompt))
    (defun help/yas-after-exit-snippet-hook-fn ()
       (prettify-symbols-mode))
-   (add-hook 'yas-after-exit-snippet-hook #'help/yas-after-exit-snippet-hook-fn)
-   (message ">>> YASnippet Configured"))
+  (add-hook 'yas-after-exit-snippet-hook #'help/yas-after-exit-snippet-hook-fn))
 
 ;;; --------------------------------------------------------------------------
 
 (use-package yasnippet-snippets
-   :after yasnippet
-   :config
-   (message ">>> YASnippet-Snippets Configured"))
+  :after yasnippet)
 
 ;;; --------------------------------------------------------------------------
 
 (use-package all-the-icons
-   :config (message ">> all-the-icons configured")
    :when (display-graphic-p))
 
 
@@ -706,7 +713,6 @@ font size is computed + 20 of this value."
 	       (setq result (- (length theme-list) 1)))
 	    (when (> result (- (length theme-list) 1))
 	       (setq result 0)))
-	 (message (format ">>> Current theme %S" theme))
 	 (setq-default theme-selector result))))
 
 ;; This is used to trigger the cycling of the theme-selector
@@ -727,8 +733,6 @@ font size is computed + 20 of this value."
    (when loaded-theme
       (disable-theme (intern loaded-theme)))
    (setq loaded-theme (nth theme-selector theme-list))
-   (message (concat ">>> Loading theme "
-	       (format "%d: %S" theme-selector loaded-theme)))
    (load-theme (intern loaded-theme) t)
    (when (featurep 'org)
       (mrf/org-font-setup))
@@ -757,8 +761,6 @@ font size is computed + 20 of this value."
 
 (defun reload-theme--from-startup ()
    (setq loaded-theme (nth theme-selector theme-list))
-   (message (concat ">>> Startup Loading theme "
-	       (format "%d: %S" theme-selector loaded-theme)))
    (mrf/load-theme-from-selector)
    (load-theme (intern loaded-theme) t))
 
@@ -803,7 +805,6 @@ font size is computed + 20 of this value."
 ;;; --------------------------------------------------------------------------
 
 (defun mrf/customize-modus-theme ()
-   (message ">> Applying modus customization")
    (setq modus-themes-common-palette-overrides
       '((bg-mode-line-active bg-blue-intense)
 	  (fg-mode-line-active fg-main)
@@ -812,7 +813,6 @@ font size is computed + 20 of this value."
 (add-hook 'elpaca-after-init-hook 'mrf/customize-modus-theme)
 
 (defun mrf/customize-ef-theme ()
-   (message ">> Applying ef-themes customization")	  
    (defface ef-themes-fixed-pitch
       '((t (:background "#242635" :extend t :font "Courier New")))
       "Face used for the source block background.")
@@ -848,7 +848,8 @@ font size is computed + 20 of this value."
    (progn
       (defun load-terminal-theme ()
 	 (load-theme (intern default-terminal-theme) t))
-      (add-hook 'window-setup-hook 'load-terminal-theme)))
+    (add-hook 'window-setup-hook 'load-terminal-theme))
+  (add-hook 'window-setup-hook 'reload-theme--from-startup))
 
 ;;; --------------------------------------------------------------------------
 
@@ -898,7 +899,6 @@ font size is computed + 20 of this value."
    )
 
 (defun mrf/update-large-display ()
-   (message (format ">> mrf/update-lage-display %S" frame))	 
    (modify-frame-parameters
       frame '((user-position . t)
 		(top . 0.0)
@@ -972,10 +972,12 @@ font size is computed + 20 of this value."
 
 ;; This is done so that the Emacs window is sized early in the init phase along with the default font size.
 ;; Startup works without this but it's nice to see the window expand early...
-(when (display-graphic-p)
+(add-hook 'emacs-startup-hook
+  (lambda ()
+    (when (display-graphic-p)
    (mrf/update-face-attribute)
    (unless (daemonp)
-      (mrf/frame-recenter)))
+      (mrf/frame-recenter)))))
 
 ;;; --------------------------------------------------------------------------
 
@@ -1001,34 +1003,27 @@ font size is computed + 20 of this value."
 (defvar mrf/font-size-slot 1)
 
 (defun mrf/update-font-size ()
-   (message "adjusting font size")
    (cond
       ((equal mrf/font-size-slot 3)
-	 (message "X-Large Font")
 	 (setq custom-default-font-size mrf/x-large-font-size
 	    mrf/default-variable-font-size (+ custom-default-font-size 20)
 	    mrf/font-size-slot 2)
 	 (mrf/update-face-attribute))
       ((equal mrf/font-size-slot 2)
-	 (message "Large Font")
 	 (setq custom-default-font-size mrf/large-font-size
 	    mrf/default-variable-font-size (+ custom-default-font-size 20)
 	    mrf/font-size-slot 1)
 	 (mrf/update-face-attribute))
       ((equal mrf/font-size-slot 1)
-	 (message "Medium Font")
 	 (setq custom-default-font-size mrf/medium-font-size
 	    mrf/default-variable-font-size (+ custom-default-font-size 20)
 	    mrf/font-size-slot 0)
 	 (mrf/update-face-attribute))
       ((equal mrf/font-size-slot 0)
-	 (message "Small Font")
 	 (setq custom-default-font-size mrf/small-font-size
 	    mrf/default-variable-font-size (+ custom-default-font-size 20)
 	    mrf/font-size-slot 3)
-	 (mrf/update-face-attribute))
-      )
-   )
+      (mrf/update-face-attribute))))
 
 ;;; --------------------------------------------------------------------------
 ;; Some alternate keys below....
@@ -1265,7 +1260,6 @@ font size is computed + 20 of this value."
    :bind (:map org-mode-map
   	    ("C-c e" . org-edit-src-code))
    :config
-   (message "ORG-MODE Configured")
    (setq org-hide-emphasis-markers nil)
    ;; Save Org buffers after refiling!
    (advice-add 'org-refile :after 'org-save-all-org-buffers)
@@ -1335,6 +1329,8 @@ font size is computed + 20 of this value."
 
 (use-package org-superstar
    :after org
+  :custom
+  (org-superstar-headline-bullets-list '("✪" "✫" "✦" "✧" "✸" "✺"))
    :hook (org-mode . org-superstar-mode))
 
 ;;; --------------------------------------------------------------------------
@@ -1362,7 +1358,6 @@ font size is computed + 20 of this value."
 ;; should use this need to add a '#+auto_tangle: t' in the org file header.
 (use-package org-auto-tangle
    :after org
-   :defer t
    :hook (org-mode . org-auto-tangle-mode))
 
 ;;; --------------------------------------------------------------------------
@@ -1620,6 +1615,12 @@ capture was not aborted."
 
 ;;; --------------------------------------------------------------------------
 
+(use-package treemacs-projectile
+  :when (equal custom-project-handler 'custom-project-projectile)
+  :after treemacs projectile)
+
+;;; --------------------------------------------------------------------------
+
 (use-package treemacs-icons-dired
    :after treemacs
    :hook (dired-mode . treemacs-icons-dired-enable-once))
@@ -1671,21 +1672,21 @@ capture was not aborted."
 ;;; --------------------------------------------------------------------------
   ;;; Emacs Polyglot is the Emacs LSP client that stays out of your way:
 
-  (defvar mrf/clangd-path (executable-find "clangd")
+(defvar mrf/clangd-path (executable-find "clangd")
      "Clangd executable path.")
 
-  (defun mrf/projectile-proj-find-function (dir)
+(defun mrf/projectile-proj-find-function (dir)
      "Find the project `DIR' function for Projectile.
   Thanks @wyuenho on GitHub"
      (let ((root (projectile-project-root dir)))
       (and root (cons 'transient root))))
 
 
-  (use-package track-changes
+(use-package track-changes
      :defer t)
 ;;     :ensure (:package "track-changes" :source nil :protocol https :inherit t :depth 1 :repo "https://github.com/emacs-mirror/emacs" :local-repo "track-changes" :branch "master" :files ("lisp/emacs-lisp/track-changes.el" (:exclude ".git"))))
 
-  (use-package eglot
+(use-package eglot
      :when (equal custom-ide 'custom-ide-eglot)
      ;; :ensure (:repo "https://github.com/emacs-mirror/emacs" :local-repo "eglot" :branch "master"
      ;; 		:files ("lisp/progmodes/eglot.el" "doc/emacs/doclicense.texi" "doc/emacs/docstyle.texi"
@@ -1732,7 +1733,6 @@ capture was not aborted."
 (defun mrf/lsp-mode-setup ()
    "Custom LSP setup function."
    (when (equal custom-ide 'custom-ide-lsp)
-      (message "Set up LSP header-line and other vars")
       (setq lsp-headerline-breadcrumb-segments '(path-up-to-project file symbols))
       (setq lsp-clangd-binary-path "/usr/bin/clangd")'
       (lsp-headerline-breadcrumb-mode)))
@@ -1824,7 +1824,6 @@ capture was not aborted."
 	    ("C-c g g" . elpy-goto-definition)
 	    ("C-c g ?" . elpy-doc))
    :config
-   (message "elpy loaded")
    (use-package jedi)
    (use-package flycheck
       :when (equal custom-ide 'custom-ide-elpy)
@@ -1872,16 +1871,19 @@ capture was not aborted."
 	  :program dape-cwd-fn)))
 
 ;;; ------------------------------------------------------------------------
+
+;; So normally I would just use a :when option here but since DAPE doesn't
+;; have a load function (it just starts the debugger with (dape)) this
+;; function checks for whether or not it should be used and then performs
+;; a (use-package ) to load it immediately.
+
 (use-package jsonrpc)
-(use-package dape
-   :when (equal debug-adapter 'enable-dape)
-   :ensure (  :depth 1
-  	    :repo "https://github.com/MrCairo/dape"
-  	    :branch "experimental-dape-prepare"
-  	    :local-repo "dape" :files ("*" (:exclude ".git")))
+
+(defun mrf/prepare-dape ()
+  (when (equal debug-adapter 'enable-dape)
+    (use-package dape
    :init
    (define-dape-hydra)
-   :defer t
    :after (:any jsonrpc hydra python)
    ;; To use window configuration like gud (gdb-mi)
    ;; :init
@@ -1892,8 +1894,7 @@ capture was not aborted."
    (define-dape-hydra)
    (bind-keys :map prog-mode-map
       ("C-c ." . dape-hydra/body))
-   (mrf/additional-dape-configs)
-   (message "DAPE Configured"))
+      (mrf/additional-dape-configs))))
 
 ;;; --------------------------------------------------------------------------
 ;;; Debug Adapter Protocol
@@ -1910,8 +1911,7 @@ capture was not aborted."
    (define-dap-hydra)
    (bind-keys :map prog-mode-map
       ("C-c ." . dap-hydra/body))
-   (dap-ui-mode 1)
-   (message "DAP mode loaded and configured."))
+  (dap-ui-mode 1))
 
 ;;; --------------------------------------------------------------------------
 
@@ -1924,11 +1924,8 @@ capture was not aborted."
    (let ((default-directory (expand-file-name mrf/vscode-js-debug-dir)))
 
       (vc-git-clone "https://github.com/microsoft/vscode-js-debug.git" "." nil)
-      (message "git repository created")
       (call-process "npm" nil "*snam-install*" t "install")
-      (message "npm dependencies installed")
-      (call-process "npx" nil "*snam-install*" t "gulp" "dapDebugServer")
-      (message "vscode-js-debug installed")))
+    (call-process "npx" nil "*snam-install*" t "gulp" "dapDebugServer")))
 
 ;;; --------------------------------------------------------------------------
 
@@ -2345,6 +2342,45 @@ capture was not aborted."
 
 ;;; --------------------------------------------------------------------------
 
+(use-package embark
+  :when enable-embark
+  :bind
+  (("C-." . embark-act)         ;; pick some comfortable binding
+    ("C-;" . embark-dwim)        ;; good alternative: M-.
+    ("C-h B" . embark-bindings)) ;; alternative for `describe-bindings'
+
+  :init
+
+  ;; Optionally replace the key help with a completing-read interface
+  (setq prefix-help-command #'embark-prefix-help-command)
+
+  ;; Show the Embark target at point via Eldoc. You may adjust the
+  ;; Eldoc strategy, if you want to see the documentation from
+  ;; multiple providers. Beware that using this can be a little
+  ;; jarring since the message shown in the minibuffer can be more
+  ;; than one line, causing the modeline to move up and down:
+
+  ;; (add-hook 'eldoc-documentation-functions #'embark-eldoc-first-target)
+  ;; (setq eldoc-documentation-strategy #'eldoc-documentation-compose-eagerly)
+
+  :config
+
+  ;; Hide the mode line of the Embark live/completions buffers
+  (add-to-list 'display-buffer-alist
+    '("\\`\\*Embark Collect \\(Live\\|Completions\\)\\*"
+       nil
+       (window-parameters (mode-line-format . none)))))
+
+;; Consult users will also want the embark-consult package.
+(use-package embark-consult
+  :when (equal completion-handler 'comphand-vertico)
+  :defer t
+  ;;:ensure t ; only need to install it, embark loads it after consult if found
+  :hook
+  (embark-collect-mode . consult-preview-at-point-mode))
+
+;;; --------------------------------------------------------------------------
+
 (use-package flycheck
    :unless (equal custom-ide 'custom-ide-elpy)
    :diminish FlM
@@ -2373,7 +2409,6 @@ capture was not aborted."
    :after (:any python python-mode lisp-mode)
    :config
    ;; Activate tree-sitter globally (minor mode registered on every buffer)
-   (message "TREE-SITTER Configured")
    (global-tree-sitter-mode)
    (cond
       ((equal custom-ide 'custom-ide-eglot)
@@ -2426,7 +2461,6 @@ capture was not aborted."
 ;;; --------------------------------------------------------------------------
 
 (defun mrf/load-js-file-hook ()
-   (message "Running JS file hook")
    (js2-mode)
 
    (when (equal debug-adapter 'enable-dap-mode)
@@ -2464,7 +2498,6 @@ capture was not aborted."
 ;;; --------------------------------------------------------------------------
 
 (defun mrf/load-c-file-hook ()
-   (message "Running C/C++ file hook")
    (c-mode)
    (unless (featurep 'realgud))
    (use-package realgud)
@@ -2510,23 +2543,20 @@ capture was not aborted."
 	    ("C-c g r" . lsp-find-references)
 	    ("C-c g o" . xref-find-definitions-other-window)
 	    ("C-c g g" . xref-find-definitions)
-	    ("C-c g ?" . eldoc-doc-buffer))
-	 (message (format ">>> set python-mode-map for %s" custom-ide)))
+      ("C-c g ?" . eldoc-doc-buffer)))
       ((equal custom-ide 'custom-ide-eglot)
 	 (bind-keys :map python-mode-map
 	    ("C-c g r" . eglot-find-implementation)
 	    ("C-c g o" . xref-find-definitions-other-window)
 	    ("C-c g g" . xref-find-definitions)
-	    ("C-c g ?" . eldoc-doc-buffer))
-	 (message (format ">>> set python-mode-map for %s" custom-ide)))
+      ("C-c g ?" . eldoc-doc-buffer)))
       ((equal custom-ide 'custom-ide-elpy)
 	 (elpy-enable)
 	 (bind-keys :map python-mode-map
 	    ("C-c g a" . elpy-goto-assignment)
 	    ("C-c g o" . elpy-goto-definition-other-window)
 	    ("C-c g g" . elpy-goto-definition)
-	    ("C-c g ?" . elpy-doc))
-	 (message (format ">>> setting python-mode-map for %s" custom-ide)))
+      ("C-c g ?" . elpy-doc)))
       ((equal custom-ide 'custom-ide-lsp-bridge)
 	 (bind-keys :map python-mode-map
 	    ("C-c g a" . lsp-bridge-find-reference)
@@ -2534,8 +2564,7 @@ capture was not aborted."
 	    ("C-c g g" . lsp-bridge-find-def)
 	    ("C-c g i" . lsp-bridge-find-impl)
 	    ("C-c g r" . lsp-bridge-rename)
-	    ("C-c g ?" . lsp-bridge-popup-documentation))
-	 (message (format ">>> set python-mode-map for %s" custom-ide)))
+      ("C-c g ?" . lsp-bridge-popup-documentation)))
       ))
 
 ;;; --------------------------------------------------------------------------
@@ -2550,7 +2579,6 @@ capture was not aborted."
    (when (eq major-mode 'python-mode) ;; Python Only
       (flycheck-mode 0)
       (flycheck-mode t)
-      (message "deleting trailing whitespace enabled")
       (delete-trailing-whitespace)))
 
 ;; Enable DAP or DAPE, Eglot or LSP modes
@@ -2559,17 +2587,16 @@ capture was not aborted."
    (cond
       ((equal debug-adapter 'enable-dap-mode)
       (unless (featurep 'dap-mode)
-  	 (dap-mode)))
+      (dap-mode))
+      (define-dap-hydra))
       ((equal debug-adapter 'enable-dape)
-       (bind-keys :map python-mode-map
-  	  ("C-c ." . dape-hydra/body)))
+      (mrf/prepare-dape))
       ((equal custom-ide 'custom-ide-eglot)
        (add-hook 'python-mode-hook 'eglot-ensure))
       ((equal custom-ide-lsp)
        (add-hook 'python-mode-hook 'lsp-deferred))))
 
 (defun mrf/python-mode-triggered ()
-   (message ">>> mrf/python-mode-triggered")
    ;; (eldoc-box-hover-at-point-mode t) ;; Using Mitch Key for this
    (mrf/enable-python-features)
    (mrf/set-custom-ide-python-keymaps)
@@ -2616,7 +2643,6 @@ capture was not aborted."
 
 (use-package pyvenv-auto
    :after python
-   :config (message ">>> Starting pyvenv-auto")
    :hook (python-mode . pyvenv-auto-run))
 
 ;;; --------------------------------------------------------------------------
@@ -2667,6 +2693,7 @@ capture was not aborted."
    :after go-mode
    :hook (go-mode . go-eldoc-setup)
    :config
+  (eglot-format-buffer-on-save)
    (set-face-attribute 'eldoc-highlight-function-argument nil
       :underline t :foreground "green"
       :weight 'bold))
@@ -2730,7 +2757,7 @@ capture was not aborted."
 ;;; --------------------------------------------------------------------------
 
 (use-package projectile
-   :when enable-projectile
+  :when (equal custom-project-handler 'custom-project-projectile)
    :diminish Proj
    :config (projectile-mode)
    :bind-keymap
@@ -2743,7 +2770,7 @@ capture was not aborted."
 
 (when (equal completion-handler 'comphand-ivy-counsel)
    (use-package counsel-projectile
-      :when enable-projectile
+    :when (equal custom-project-handler 'custom-project-projectile)
       :after projectile
       :config
       (setq projectile-completion-system 'ivy)
@@ -2754,7 +2781,7 @@ capture was not aborted."
       (cons 'go-module root)))
 
 (use-package project
-   :unless enable-projectile
+  :when (equal custom-project-handler 'custom-project-project)
    :ensure nil
    :defer t
    :config
@@ -2996,7 +3023,6 @@ capture was not aborted."
       (let ((map (make-sparse-keymap)))
 	 (bind-keys :map map
 	    ("M-RET p" . pulsar-pulse-line)
-	    ("M-RET C-p" . pulsar-highlight-line)
 	    ;;("M-RET RET" . mmm-menu)
 	    ("M-RET d" . dashboard-open)
 	    ("M-RET f" . mrf/set-fill-column-interactively)
@@ -3018,35 +3044,26 @@ capture was not aborted."
 
 (mrf/define-mmm-minor-mode-map)
 (mmm-keys-minor-mode 1)
-(diminish 'mmm-keys-minor-mode "m3k")
 
-(defun mrf/mmm-handle-org-keys ()
-   "Enable/Disable org-mode specific mmm keys."
-   (if (equal major-mode 'org-mode)
-      (progn
+(defun mrf/mmm-handle-context-keys ()
+  "Enable or Disable keys based upon featurep context."
+  (unbind-key "M-RET O f" mmm-keys-minor-mode-map)
+  (unbind-key "M-RET O l" mmm-keys-minor-mode-map)
+  (unbind-key "M-RET P ?" mmm-keys-minor-mode-map)
+  (cond
+    ((equal major-mode 'org-mode)
 	 (bind-keys :map mmm-keys-minor-mode-map
 	    ("M-RET O f" . mrf/set-org-fill-column-interactively)
 	    ("M-RET O l" . org-toggle-link-display)))
-      ;; else
-      (progn
-	 (unbind-key "M-RET O f" mmm-keys-minor-mode-map)
-	 (unbind-key "M-RET O l" mmm-keys-minor-mode-map))))
-
-(defun mrf/mmm-handle-python-keys ()
-   "Enable/Disable python-mode specific mmm keys."
-   (if (equal major-mode 'python-mode)
-      (progn
+    ((equal major-mode 'python-mode)
 	 (bind-keys :map mmm-keys-minor-mode-map
-	    ("M-RET P ?" . 'pydoc-at-point)))
-      ;; else
-      (progn
-	 (unbind-key "M-RET P ?" mmm-keys-minor-mode-map))))
+      ("M-RET P" . 'pydoc-at-point)))))
 
 (add-hook 'which-key-inhibit-display-hook
    (lambda ()
-      (mrf/mmm-handle-python-keys)
-      (mrf/mmm-handle-org-keys)
+    (mrf/mmm-handle-context-keys)
       (which-key-add-key-based-replacements "M-RET T" "theme-keys")
+    (which-key-add-key-based-replacements "M-RET P" "python-menu")
       (which-key-add-key-based-replacements "M-RET O f" "set-org-fill-column")
       (which-key-add-key-based-replacements "M-RET t" "treemacs-toggle")
       (which-key-add-key-based-replacements "M-RET f" "set-fill-column")
