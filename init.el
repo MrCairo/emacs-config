@@ -1695,13 +1695,23 @@ capture was not aborted."
   (unless theme-did-load
     (mrf/load-theme-from-selector)))
 
+;;; ------------------------------------------------------------------------
+(use-package jsonrpc
+  :config
+  ;; For some odd reason, it is possible that jsonrpc will try to load a
+  ;; theme. (jsonrpc/lisp/custom.el:1362). If our theme hasn't been loaded
+  ;; yet, go ahead and try. This could prevent a startup without the theme
+  ;; properly loaded.
+  (unless theme-did-load
+    (mrf/load-theme-from-selector)))
+
 (use-package eglot
   :when (equal custom-ide 'custom-ide-eglot)
   ;; :ensure (:repo "https://github.com/emacs-mirror/emacs" :local-repo "eglot" :branch "master"
   ;; 		:files ("lisp/progmodes/eglot.el" "doc/emacs/doclicense.texi" "doc/emacs/docstyle.texi"
   ;; 			  "doc/misc/eglot.texi" "etc/EGLOT-NEWS" (:exclude ".git")))
   :after eldoc track-changes company
-  :after (:any company which-key eldoc jsonrpc)
+  :after (:any company which-key eldoc jsonrpc python)
   :init
   (setq company-backends
     (cons 'company-capf
@@ -1854,22 +1864,6 @@ capture was not aborted."
 ;;; ------------------------------------------------------------------------
 (defun mrf/additional-dape-configs ()
   "This does assume that this is called AFTER dape has been loaded."
-  (add-to-list 'dape-configs
-    `(debugpy-flask
-       modes (python-ts-mode python-mode)
-       command "python"
-       command-args ("-m" "debugpy.adapter" "--host" "0.0.0.0" "--port" :autoport)
-       port :autoport
-       :program dape-buffer-default
-       :args  []
-       :justMyCode nil
-       :console "integratedTerminal"
-       :showReturnValue t
-       :stopOnEntry t
-       :type "python"
-       :request "launch"
-       :cwd dape-cwd-fn
-       :program dape-buffer-default))
 
   (add-to-list 'dape-configs
     `(delve
@@ -1886,26 +1880,11 @@ capture was not aborted."
 
 ;;; ------------------------------------------------------------------------
 
-;; So normally I would just use a :when option here but since DAPE doesn't
-;; have a load function (it just starts the debugger with (dape)) this
-;; function checks for whether or not it should be used and then performs
-;; a (use-package ) to load it immediately.
-
-(use-package jsonrpc
-  :config
-  ;; For some odd reason, it is possible that jsonrpc will try to load a
-  ;; theme. (jsonrpc/lisp/custom.el:1362). If our theme hasn't been loaded
-  ;; yet, go ahead and try. This could prevent a startup without the theme
-  ;; properly loaded.
-  (unless theme-did-load
-    (mrf/load-theme-from-selector)))
-
 (use-package dape
   :when (equal debug-adapter 'debug-adapter-dape)
   :init
   (define-dape-hydra)
-  :ensure t
-  :after (:any jsonrpc hydra python)
+  :after (:any python go-mode)
   ;; To use window configuration like gud (gdb-mi)
   ;; :init
   ;; (setq dape-buffer-window-arrangement 'gud)
@@ -2591,6 +2570,7 @@ capture was not aborted."
 
 (defun mrf/load-python-file-hook ()
   (python-mode)
+  (message ">>> mrf/load-python-file-hook")
   (setq highlight-indentation-mode -1)
   (setq display-fill-column-indicator-mode t))
 
@@ -2604,17 +2584,23 @@ capture was not aborted."
 ;; Enable DAP or DAPE, Eglot or LSP modes
 ;; This function should only be called ONCE during python-mode startup.
 (defun mrf/enable-python-features ()
+  (message ">>> mrf/enable-python-features")
+  ;; _____________________________
+  ;; check for which debug adapter
   (cond
     ((equal debug-adapter 'debug-adapter-dap-mode)
-      (unless (featurep 'dap-mode)
-      (dap-mode))
+      (unless (featurep 'dap-mode) (dap-mode)) ;; Load if not loaded.
       (define-dap-hydra))
     ((equal debug-adapter 'debug-adapter-dape)
-      (message "DAPE ready."))
+      ;; dape should load as part of (use-package .... :after python)
+      (message "dape should be auto-loading for Python.")))
+  ;;___________________________
+  ;; check for which custom-ide
+  (cond
     ((equal custom-ide 'custom-ide-eglot)
-      (add-hook 'python-mode-hook 'eglot-ensure))
-    ((equal custom-ide-lsp)
-      (add-hook 'python-mode-hook 'lsp-deferred))))
+      (eglot-ensure))
+    ((equal custom-ide 'custom-ide-lsp)
+      (lsp-deferred))))
 
 (defun mrf/python-mode-triggered ()
   ;; (eldoc-box-hover-at-point-mode t) ;; Using Mitch Key for this
@@ -2717,6 +2703,10 @@ capture was not aborted."
   (set-face-attribute 'eldoc-highlight-function-argument nil
     :underline t :foreground "green"
     :weight 'bold))
+
+(use-package go-guru
+  :after go-mode
+  :hook (go-mode . go-guru-hl-identifier-mode))
 
 ;;; --------------------------------------------------------------------------
 
