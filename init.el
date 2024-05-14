@@ -3054,7 +3054,10 @@ capture was not aborted."
 
 ;;; --------------------------------------------------------------------------
 
-(add-hook 'elpaca-after-init-hook (lambda () (switch-to-buffer "*scratch*")))
+(add-hook 'elpaca-after-init-hook
+  (lambda ()
+    (switch-to-buffer "*scratch*") (end-of-buffer)))
+
 (add-hook 'lisp-interaction-mode-hook
   (lambda ()
     (setq-default initial-scratch-message
@@ -3063,6 +3066,7 @@ capture was not aborted."
       ";; Press M-RET (Meta-RET) to open the Mitch's Menu"))))
 
 (if dashboard-landing-screen
+  ;; (add-hook 'inferior-emacs-lisp-mode 'dashboard-open)
   (add-hook 'lisp-interaction-mode-hook 'dashboard-open))
 
 ;; (add-hook 'lisp-interaction-mode-hook 'use-package-report)

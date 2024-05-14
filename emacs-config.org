@@ -4688,7 +4688,10 @@ Some final configuratiion to be done at the end of this configuration.
 #+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
 
-  (add-hook 'elpaca-after-init-hook (lambda () (switch-to-buffer "*scratch*")))
+  (add-hook 'elpaca-after-init-hook
+    (lambda ()
+      (switch-to-buffer "*scratch*") (end-of-buffer)))
+
   (add-hook 'lisp-interaction-mode-hook
     (lambda ()
       (setq-default initial-scratch-message
@@ -4697,6 +4700,7 @@ Some final configuratiion to be done at the end of this configuration.
   	";; Press M-RET (Meta-RET) to open the Mitch's Menu"))))
 
   (if dashboard-landing-screen
+    ;; (add-hook 'inferior-emacs-lisp-mode 'dashboard-open)
     (add-hook 'lisp-interaction-mode-hook 'dashboard-open))
 
   ;; (add-hook 'lisp-interaction-mode-hook 'use-package-report)
