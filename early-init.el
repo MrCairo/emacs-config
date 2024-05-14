@@ -30,23 +30,6 @@
 
 (setq gnutls-algorithm-priority "NORMAL:-VERS-TLS1.3") ;; w/o this Emacs freezes when refreshing ELPA
 
-;; (defun add-site-lisp-to-load-path (parent-dir)
-;;    "Add every non-hidden subdir of PARENT-DIR to `load-path'."
-;;    (use-package cl-lib)
-;;    (let ((default-directory parent-dir))
-;; 	(setq load-path
-;; 	   (append
-;; 	      (cl-remove-if-not
-;; 		 #'file-directory-p
-;; 		 (directory-files (expand-file-name parent-dir) t "^[^\\.]"))
-;; 	      load-path))))
-
-;; ;; Add both site-lisp and its immediate subdirs to `load-path'
-;; (when (file-directory-p (expand-file-name "site-lisp/" user-emacs-directory))
-;;    (let ((site-lisp-dir (expand-file-name "site-lisp/" user-emacs-directory)))
-;; 	(push site-lisp-dir load-path)
-;; 	(add-site-lisp-to-load-path site-lisp-dir)))
-
 (setq use-package-compute-statistics t
   use-package-verbose t
   use-package-always-ensure nil

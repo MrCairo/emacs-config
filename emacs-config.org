@@ -67,23 +67,6 @@ Shout out to the many people in the Emacs community from which a lot of this con
 
   (setq gnutls-algorithm-priority "NORMAL:-VERS-TLS1.3") ;; w/o this Emacs freezes when refreshing ELPA
 
-  ;; (defun add-site-lisp-to-load-path (parent-dir)
-  ;;    "Add every non-hidden subdir of PARENT-DIR to `load-path'."
-  ;;    (use-package cl-lib)
-  ;;    (let ((default-directory parent-dir))
-  ;; 	(setq load-path
-  ;; 	   (append
-  ;; 	      (cl-remove-if-not
-  ;; 		 #'file-directory-p
-  ;; 		 (directory-files (expand-file-name parent-dir) t "^[^\\.]"))
-  ;; 	      load-path))))
-
-  ;; ;; Add both site-lisp and its immediate subdirs to `load-path'
-  ;; (when (file-directory-p (expand-file-name "site-lisp/" user-emacs-directory))
-  ;;    (let ((site-lisp-dir (expand-file-name "site-lisp/" user-emacs-directory)))
-  ;; 	(push site-lisp-dir load-path)
-  ;; 	(add-site-lisp-to-load-path site-lisp-dir)))
-
 #+end_src
 
 ** Configure use-package
@@ -387,7 +370,7 @@ These are features that basically have multiple-choice options instead of being 
   	   (const :tag "Built-in Ido" comphand-built-in))
     :group 'mrf-custom-choices)
 
-  (defcustom debug-adapter 'enable-dape
+  (defcustom debug-adapter 'debug-adapter-dape
     "Select the debug adapter to use for debugging applications.  dap-mode is an
   Emacs client/library for Debug Adapter Protocol is a wire protocol for
   communication between client and Debug Server. It’s similar to the LSP but
@@ -398,8 +381,8 @@ These are features that basically have multiple-choice options instead of being 
   with DAPE. DAPE supports most popular languages, however, not as many as
   dap-mode."
     :type '(radio
-  	   (const :tag "Debug Adapter Protocol (DAP)" enable-dap-mode)
-  	   (const :tag "Debug Adapter Protocol for Emacs (DAPE)" enable-dape))
+  	   (const :tag "Debug Adapter Protocol (DAP)" debug-adapter-dap-mode)
+  	   (const :tag "Debug Adapter Protocol for Emacs (DAPE)" debug-adapter-dape))
     :group 'mrf-custom-choices)
 
   (defcustom custom-ide 'custom-ide-eglot
@@ -589,6 +572,7 @@ By default, the =user-emacs-directory= points to the .emacs.d* directory from wh
 
   ;;; Put any emacs cusomized variables in a special file
   (setq custom-file (expand-file-name "customized-vars.el" user-emacs-directory))
+  ;; (add-hook 'elpaca-after-init-hook (lambda () (load custom-file 'noerror 'nomessage)))
   (load custom-file 'noerror 'nomessage)
 
 #+end_src
@@ -677,23 +661,26 @@ The following packages are all intended to be available globally.
 #+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
 
-
   (defun mrf/set-diminish ()
     (when enable-projectile
       (diminish 'projectile-mode "PrM"))
     (diminish 'anaconda-mode)
     (diminish 'tree-sitter-mode "ts")
-    (diminish 'ts-fold-mode)
     (diminish 'lisp-interaction-mode "Lim")
     (diminish 'counsel-mode)
+    (diminish 'lisp-interaction-mode "iLisp")
     (diminish 'golden-ratio-mode)
     (diminish 'mmm-keys-minor-mode "m3k")
     (diminish 'company-box-mode)
     (diminish 'company-mode))
 
   (use-package diminish
-    :ensure (:host github :repo "myrjola/diminish.el")
-    :hook (elpaca-after-init . mrf/set-diminish))
+    :config
+    (if (not elpaca-after-init-time)
+      (add-hook 'elpaca-after-init-hook
+        (lambda () (run-with-timer 0.05 nil 'mrf/set-diminish)))
+      (run-with-timer 1.0 nil 'mrf/set-diminsh)))
+
 
 #+end_src
 
@@ -899,7 +886,7 @@ The Hydra is vanquished once Hercules, any binding that isn't the Hydra's head, 
 This package displays ElDoc documentations in a childframe. The childframe is selectable and scrollable with mouse, even though the cursor is hidden.
 
 #+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
-  ;;; --------------------------------------------------------------------------
+    ;;; --------------------------------------------------------------------------
 
   ;; prevent (emacs) eldoc loaded before Elpaca activation warning.
   ;; (Warning only displayed during first Elpaca installation)
@@ -910,7 +897,13 @@ This package displays ElDoc documentations in a childframe. The childframe is se
     :config
     (add-hook 'emacs-lisp-mode-hook 'eldoc-mode)
     (add-hook 'lisp-interaction-mode-hook 'eldoc-mode)
-    (add-hook 'ielm-mode-hook 'eldoc-mode))
+    (add-hook 'ielm-mode-hook 'eldoc-mode)
+    ;; Eldoc will try to load/unload a theme which can cause issues with our
+    ;; theme loading mechanism. Our theme could fail to load because of this.
+    ;; So, to get our themes loading properly, load it here if not already
+    ;; loaded.
+    (unless theme-did-load
+      (mrf/load-theme-from-selector)))
 
   (use-package eldoc-box
     :after eldoc
@@ -1028,12 +1021,7 @@ Vundo displays the undo history as a tree and lets you move in the tree to go ba
 
 **** Undo Tree
 
-Instead of treating undo/redo as a linear sequence of changes, undo-tree-mode treats undo history as a branching tree of changes,
-similar to the way Vim handles it. This makes it substantially easier to undo and redo any change, while preserving the entire
-history of past states. The undo-tree visualizer is particularly helpful in complex cases. An added side bonus is that undo history
-can in some cases be stored more efficiently, allowing more changes to accumulate before Emacs starts discarding history. Undo
-history can be saved persistently across sessions with Emacs 24.3 and later. It also sports various other nifty features: storing
-and restoring past buffer states in registers, a diff view of the changes that will be made by undoing, and probably more besides.
+Instead of treating undo/redo as a linear sequence of changes, undo-tree-mode treats undo history as a branching tree of changes, similar to the way Vim handles it. This makes it substantially easier to undo and redo any change, while preserving the entire history of past states. The undo-tree visualizer is particularly helpful in complex cases. An added side bonus is that undo history can in some cases be stored more efficiently, allowing more changes to accumulate before Emacs starts discarding history. Undo history can be saved persistently across sessions with Emacs 24.3 and later. It also sports various other nifty features: storing and restoring past buffer states in registers, a diff view of the changes that will be made by undoing, and probably more besides.
 
 #+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
@@ -1060,8 +1048,8 @@ and restoring past buffer states in registers, a diff view of the changes that w
     (use-package undo-tree
       ;; :hook (undo-tree-visualizer-mode-hook . mrf/undo-tree-hook)
       :init
-      (setq undo-tree-visualizer-timestamps t
-        ;; undo-tree-visualizer-diff t
+      (setq undo-tree-visualizer-timestamps t   
+        undo-tree-visualizer-diff nil
         undo-tree-enable-undo-in-region t
         ;; 10X bump of the undo limits to avoid issues with premature
         ;; Emacs GC which truncages the undo history very aggresively
@@ -1071,7 +1059,9 @@ and restoring past buffer states in registers, a diff view of the changes that w
       :config
       (global-undo-tree-mode)
       (advice-add 'undo-tree-visualize :around #'undo-tree-split-side-by-side)
-
+      (bind-keys :map undo-tree-visualizer-mode-map
+        ("RET" . undo-tree-visualizer-quit)
+        ("C-g" . undo-tree-visualizer-abort))
       ;; This prevents the *.~undo-tree~ files from being persisted.
       (with-eval-after-load 'undo-tree
         (setq undo-tree-auto-save-history nil))))
@@ -1141,6 +1131,9 @@ This function simply loads the theme from the theme-list indexed by the ~theme-s
 #+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
 
+  (defvar theme-did-load nil
+    "Set to true if the last Theme was loaded.")
+
   (defun mrf/load-theme-from-selector (&optional step)
     "Load the theme in `theme-list' indexed by `theme-selector'."
     (interactive)
@@ -1152,7 +1145,7 @@ This function simply loads the theme from the theme-list indexed by the ~theme-s
     (when loaded-theme
       (disable-theme (intern loaded-theme)))
     (setq loaded-theme (nth theme-selector theme-list))
-    (load-theme (intern loaded-theme) t)
+    (setq theme-did-load (load-theme (intern loaded-theme) t))
     (when (featurep 'org)
       (mrf/org-font-setup))
     (set-face-foreground 'line-number "SkyBlue4"))
@@ -1184,11 +1177,6 @@ This function simply loads the theme from the theme-list indexed by the ~theme-s
     (interactive)
     (mrf/print-custom-theme-name))
 
-  (defun reload-theme--from-startup ()
-    (setq loaded-theme (nth theme-selector theme-list))
-    (mrf/load-theme-from-selector)
-    (load-theme (intern loaded-theme) t))
-
   ;; Go to NEXT theme
   (global-set-key (kbd "C-c C-=") 'next-theme)
   ;; Go to PREVIOUS theme
@@ -1197,23 +1185,6 @@ This function simply loads the theme from the theme-list indexed by the ~theme-s
   (global-set-key (kbd "C-c C-?") 'which-theme)
 #+end_src
 
-
-This is just a test area to see what colors look like in this =org= mode.
-
-#+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
-  ;;; --------------------------------------------------------------------------
-
-  ;; Normally not used but it's here so it's easy to change the block colors.
-  (defun mrf/customize-org-block-colors ()
-    (defface org-block-begin-line
-      '((t (:underline "#1D2C39" :foreground "#676E95" :background "#1D2C39")))
-      "Face used for the line delimiting the begin of source blocks.")
-
-    (defface org-block-end-line
-      '((t (:overline "#1D2C39" :foreground "#676E95" :background "#1D2C39")))
-      "Face used for the line delimiting the end of source blocks."))
-
-#+end_src
 
 ** Theme Override Values
 
@@ -1240,6 +1211,8 @@ This is just a test area to see what colors look like in this =org= mode.
   ;;; --------------------------------------------------------------------------
 
   (defun mrf/customize-modus-theme ()
+    (when (featurep 'org)
+      (mrf/org-font-setup))
     (setq modus-themes-common-palette-overrides
       '((bg-mode-line-active bg-blue-intense)
          (fg-mode-line-active fg-main)
@@ -1254,7 +1227,7 @@ This is just a test area to see what colors look like in this =org= mode.
     (when (featurep 'org)
       (mrf/org-font-setup))
     (setq ef-themes-common-palette-override
-      '(  (bg-mode-line bg-blue-intense)
+      '( (bg-mode-line bg-blue-intense)
          (fg-mode-line fg-main)
          (border-mode-line-active blue-intense))))
   ;;(add-hook 'org-load-hook 'mrf/customize-ef-theme)
@@ -1280,12 +1253,6 @@ This is just a test area to see what colors look like in this =org= mode.
 
 #+end_src
 
-** Load a theme
-Selec a theme (or themes) to load. The last one specified is the one that is used as the current theme.
-
-** Cycle Through Themes
-Function and code to cycle through some selcted themes.
-
 ** Selected theme
 This includes the theme to use in both graphical and non-graphical.
 
@@ -1295,13 +1262,22 @@ This includes the theme to use in both graphical and non-graphical.
   ;; (mrf/load-theme-from-selector)
   ;; For terminal mode we choose Material theme
 
-  (if (display-graphic-p)
-    (add-hook 'window-setup-hook #'reload-theme--from-startup)
+  (if (not (display-graphic-p))
     (progn
       (defun load-terminal-theme ()
         (load-theme (intern default-terminal-theme) t))
-      (add-hook 'window-setup-hook 'load-terminal-theme))
-    (add-hook 'window-setup-hook 'reload-theme--from-startup))
+      (add-hook 'elpaca-after-init-hook 'load-terminal-theme))
+    (progn
+      (if (not elpaca-after-init-time)
+        (add-hook 'elpaca-after-init-hook
+  	(lambda () (unless theme-did-load
+  		(mrf/load-theme-from-selector))))
+        ;; else
+        (add-hook 'window-setup-hook
+  	(lambda ()
+  	  (unless theme-did-load
+  	    (mrf/load-theme-from-selector))))
+        )))
 
 #+end_src
 
@@ -2441,10 +2417,17 @@ is a language server and an Emacs major mode.
     (let ((root (projectile-project-root dir)))
       (and root (cons 'transient root))))
 
-
   (use-package track-changes
-    :defer t)
-  ;;     :ensure (:package "track-changes" :source nil :protocol https :inherit t :depth 1 :repo "https://github.com/emacs-mirror/emacs" :local-repo "track-changes" :branch "master" :files ("lisp/emacs-lisp/track-changes.el" (:exclude ".git"))))
+    :defer t
+    :config
+    (unless theme-did-load
+      (mrf/load-theme-from-selector)))
+
+#+end_src
+
+*** The main Eglot configuration
+
+#+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
 
   (use-package eglot
     :when (equal custom-ide 'custom-ide-eglot)
@@ -2470,10 +2453,15 @@ is a language server and an Emacs major mode.
     (which-key-add-key-based-replacements "C-c g o" "find-defitions-other-window")
     (which-key-add-key-based-replacements "C-c g g" "find-defitions")
     (which-key-add-key-based-replacements "C-c g ?" "eldoc-definition")
+    ;; Eldoc/Eglot will try to load/unload a theme which can cause issues with our
+    ;; theme loading mechanism. Our theme could fail to load because of this.  So,
+    ;; to get our themes loading properly, load it here if not already loaded.
+    (unless theme-did-load
+      (mrf/load-theme-from-selector))
     ;; (add-hook 'eglot-managed-mode-hook #'eldoc-box-hover-at-point-mode t)
     (add-to-list 'eglot-stay-out-of 'flymake)
     ;; (add-to-list 'eglot-server-programs '((c-mode c++-mode) "clangd"))
-    (add-to-list 'eglot-server-programs '(python-mode . ("pylsp")))
+    (add-to-list 'eglot-server-programs '(python-mode . ("pylsp")))  
     (setq-default eglot-workspace-configuration
       '((:gopls .
     	((staticcheck . t)
@@ -2483,7 +2471,6 @@ is a language server and an Emacs major mode.
     		  :plugins (:pycodestyle (:enabled nil)
     			     :mccabe (:enabled nil)
     			     :flake8 (:enabled t)))))))
-
 #+end_src
 
 ** Language Server Protocol (lsp-mode)
@@ -2739,31 +2726,45 @@ For complete functionality, make sure to enable eldoc-mode in your source buffer
 *** DAPE Initialization
 
 #+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
-  ;;; ------------------------------------------------------------------------
+    ;;; ------------------------------------------------------------------------
 
   ;; So normally I would just use a :when option here but since DAPE doesn't
   ;; have a load function (it just starts the debugger with (dape)) this
   ;; function checks for whether or not it should be used and then performs
   ;; a (use-package ) to load it immediately.
 
-  (use-package jsonrpc)
+  (use-package jsonrpc
+    :config
+    ;; For some odd reason, it is possible that jsonrpc will try to load a
+    ;; theme. (jsonrpc/lisp/custom.el:1362). If our theme hasn't been loaded
+    ;; yet, go ahead and try. This could prevent a startup without the theme
+    ;; properly loaded.
+    (unless theme-did-load
+      (mrf/load-theme-from-selector)))
+    
+  (use-package dape
+    :when (equal debug-adapter 'debug-adapter-dape)
+    :init
+    (define-dape-hydra)
+    :ensure t
+    :after (:any jsonrpc hydra python)
+    ;; To use window configuration like gud (gdb-mi)
+    ;; :init
+    ;; (setq dape-buffer-window-arrangement 'gud)
+    :custom
+    (dape-buffer-window-arrangement 'right)  ;; Info buffers to the right
+    :config
+    (define-dape-hydra)
+    (message "prepare-dape end")
+    (bind-keys :map prog-mode-map
+      ("C-c ." . dape-hydra/body))
+    (mrf/additional-dape-configs))
 
-  (defun mrf/prepare-dape ()
-    (when (equal debug-adapter 'enable-dape)
-      (use-package dape
-        :init
-        (define-dape-hydra)
-        :after (:any jsonrpc hydra python)
-        ;; To use window configuration like gud (gdb-mi)
-        ;; :init
-        ;; (setq dape-buffer-window-arrangement 'gud)
-        :custom
-        (dape-buffer-window-arrangement 'right)  ;; Info buffers to the right
-        :config
-        (define-dape-hydra)
-        (bind-keys :map prog-mode-map
-  	("C-c ." . dape-hydra/body))
-        (mrf/additional-dape-configs))))
+  ;; (defun mrf/prepare-dape ()
+  ;;   (message "prepare-dape 1 of 4")
+  ;;   (when (equal debug-adapter 'debug-adapter-dape)
+  ;;     (message "prepare-date 2 of 4")
+  ;;     ))
 
 #+end_src
 
@@ -2776,7 +2777,7 @@ DAP-Mode is an Emacs client/library for Debug Adapter Protocol is a wire protoco
   ;;; --------------------------------------------------------------------------
   ;;; Debug Adapter Protocol
   (use-package dap-mode
-    :when (equal debug-adapter 'enable-dap-mode)
+    :when (equal debug-adapter 'debug-adapter-dap-mode)
     :after hydra
     ;; Uncomment the config below if you want all UI panes to be hidden by default!
     ;; :custom
@@ -2906,7 +2907,7 @@ This is meant to be evaluated and run once. Calling this function will clone the
       (dap--put-if-absent :name "LLDB Debug")))
 
   (use-package dap-cpptools
-    :when (equal debug-adapter 'enable-dap-mode)
+    :when (equal debug-adapter 'debug-adapter-dap-mode)
     :disabled
     :after dap-mode
     ;;:ensure (:host github :repo "emacs-lsp/dap-mode")
@@ -2934,7 +2935,7 @@ This is meant to be evaluated and run once. Calling this function will clone the
 
   (use-package dap-python
     :ensure (:package "dap-python" :type git :host github :repo "emacs-lsp/dap-mode")
-    :when (equal debug-adapter 'enable-dap-mode)
+    :when (equal debug-adapter 'debug-adapter-dap-mode)
     ;;:ensure (:host github :repo "emacs-lsp/dap-mode")
     :after dap-mode
     :config
@@ -2970,7 +2971,7 @@ This is meant to be evaluated and run once. Calling this function will clone the
     (unless (file-exists-p dap-node-debug-path) (dap-node-setup)))
 
   (use-package dap-node
-    :when (equal debug-adapter 'enable-dap-mode)
+    :when (equal debug-adapter 'debug-adapter-dap-mode)
     :disabled
     :hook ((typescript-mode . my-setup-dap-node)
   	  (js2-mode . my-setup-dap-node))
@@ -3336,8 +3337,8 @@ Marginalia are marks or annotations placed at the margin of the page of a book	o
   ;;; --------------------------------------------------------------------------
 
   (use-package marginalia
-    :when (equal completion-handler 'comphand-vertico)
-    :after vertico
+    ;; :when (equal completion-handler 'comphand-vertico)
+    ;; :after vertico
     :custom
     (marginalia-max-relative-age 0)
     (marginalia-align 'left)
@@ -3510,8 +3511,7 @@ Tree-sitter is a parser generator tool and an incremental parsing library. It ca
   ;;; --------------------------------------------------------------------------
 
   (defun mrf/tree-sitter-setup ()
-    (tree-sitter-hl-mode t)
-    (ts-fold-mode t))
+    (tree-sitter-hl-mode t))
 
   (defun lsp-go-install-save-hooks ()
     (add-hook 'before-save-hook #'lsp-format-buffer t t)
@@ -3538,13 +3538,6 @@ Tree-sitter is a parser generator tool and an incremental parsing library. It ca
 
   (use-package tree-sitter-langs
     :after tree-sitter)
-
-  (use-package ts-fold
-    :disabled
-    :after tree-sitter
-    ;;:ensure (:host github :repo "emacs-tree-sitter/ts-fold")
-    :bind (("C-<tab>" . ts-fold-toggle)
-  	  ("C-c f"	 . ts-fold-open-all)))
 
 #+end_src
 
@@ -3587,7 +3580,7 @@ This is a basic configuration for the TypeScript language so that =.ts= files ac
 #+begin_src emacs-lisp :tangle "excluded-init.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
 
-  (when (equal debug-adapter 'enable-dap-mode)
+  (when (equal debug-adapter 'debug-adapter-dap-mode)
     (use-package typescript-ts-mode
       :after (:any dap-mode dape-mode)
       :mode "\\.ts\\'"
@@ -3600,7 +3593,7 @@ This is a basic configuration for the TypeScript language so that =.ts= files ac
       (setq typescript-indent-level 4)
       (dap-node-setup)))
 
-  (when (equal debug-adapter 'enable-dape)
+  (when (equal debug-adapter 'debug-adapter-dape)
     (use-package typescript-ts-mode
       :after dape-mode
       :mode ("\\.ts\\'")
@@ -3622,11 +3615,11 @@ This is a basic configuration for the TypeScript language so that =.ts= files ac
   (defun mrf/load-js-file-hook ()
     (js2-mode)
 
-    (when (equal debug-adapter 'enable-dap-mode)
+    (when (equal debug-adapter 'debug-adapter-dap-mode)
       (dap-mode)
       (dap-firefox-setup))
 
-    (when (equal debug-adapter 'enable-dape)
+    (when (equal debug-adapter 'debug-adapter-dape)
       (dape))
 
     (highlight-indentation-mode nil)
@@ -3794,12 +3787,12 @@ These functions are used during python intialization or file loading. This is wh
   ;; This function should only be called ONCE during python-mode startup.
   (defun mrf/enable-python-features ()
     (cond
-      ((equal debug-adapter 'enable-dap-mode)
+      ((equal debug-adapter 'debug-adapter-dap-mode)
         (unless (featurep 'dap-mode)
   	(dap-mode))
         (define-dap-hydra))
-      ((equal debug-adapter 'enable-dape)
-        (mrf/prepare-dape))
+      ((equal debug-adapter 'debug-adapter-dape)
+        (message "DAPE ready."))
       ((equal custom-ide 'custom-ide-eglot)
         (add-hook 'python-mode-hook 'eglot-ensure))
       ((equal custom-ide-lsp)
@@ -3994,15 +3987,17 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
   ;;; --------------------------------------------------------------------------
 
   (use-package company
-    :after (:any lsp-mode elpy anaconda-mode)
-    ;; :ensure (:wait t)
-    :hook (elpaca-after-init . global-company-mode)
+    ;; Don't use lsp-bridge with company as lsp-bridge already provides the same
+    ;; features. They actually collide.
+    :unless (equal custom-ide 'custom-ide-lsp-bridge)
+    :after (:any lsp-mode elpy anaconda-mode eglot)
     :bind (:map company-active-map
   	  ("<tab>" . company-complete-selection))
     :custom
     (company-minimum-prefix-length 1)
     (company-idle-delay 0.0)
     :config
+    (global-company-mode 1)
     (cond
       ((equal custom-ide 'custom-ide-eglot)
         (bind-keys :map eglot-mode-map
@@ -4150,7 +4145,8 @@ The following packages are some additional quality of life features.
   ;;; --------------------------------------------------------------------------
 
   (use-package solaire-mode
-    ;;:ensure (:host github :repo "hlissner/emacs-solaire-mode")
+    :after treemacs
+    :ensure (:package "solaire-mode" :source "MELPA" :protocol https :inherit t :depth 1 :repo "hlissner/emacs-solaire-mode" :fetcher github :files ("*.el" "*.el.in" "dir" "*.info" "*.texi" "*.texinfo" "doc/dir" "doc/*.info" "doc/*.texi" "doc/*.texinfo" "lisp/*.el" (:exclude ".dir-locals.el" "test.el" "tests.el" "*-test.el" "*-tests.el" "LICENSE" "README*" "*-pkg.el")))
     :hook (elpaca-after-init . solaire-global-mode)
     :config
     (push '(treemacs-window-background-face . solaire-default-face) solaire-mode-remap-alist)
@@ -4201,20 +4197,6 @@ A tree plugin like NerdTree for Vim
     (global-set-key [f8] 'neotree-toggle)
     (setq neo-theme (if (display-graphic-p) 'icons 'arrow)))
 
-#+end_src
-
-** Icons
-Some icons to be used in grpahical mode.
-
-#+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
-  ;;; --------------------------------------------------------------------------
-
-  ;; (use-package nerd-icons )
-
-  ;; (use-package doom-modeline
-  ;;   :diabled
-  ;;   :init (doom-modeline-mode 1)
-  ;;   :custom ((doom-modeline-height 15)))
 #+end_src
 
 ** Useful functions and Keybindings
@@ -4286,7 +4268,7 @@ Popper is a minor-mode to tame the flood of ephemeral windows Emacs produces, wh
 
 Designate any buffer to “popup” status, and it will stay out of your way. Disimss or summon it easily with one key. Cycle through all your “popups” or just the ones relevant to your current buffer. Group popups automatically so you’re presented with the most relevant ones. Useful for many things, including toggling display of REPLs, documentation, compilation or shell output: any buffer you need instant access to but want kept out of your way!
 
-#+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
+#+begin_src emacs-lisp :tangle no
   ;;; --------------------------------------------------------------------------
 
   (use-package popper
@@ -4530,9 +4512,13 @@ Dired is a built-in file manager for Emacs that does some pretty amazing things!
   				 ("mkv" . "mpv"))))
 
   (use-package dired-hide-dotfiles
+    :after dired-mode
     :hook (dired-mode . dired-hide-dotfiles-mode))
 
 #+end_src
+
+#+RESULTS:
+: #s(hash-table size 65 test eql rehash-size 1.5 rehash-threshold 0.8125 data (:use-package (26178 33358 905208 0) :use-package-secs (0 0 140 0)))
 
 *** Single Window
 Dired, by default, opens up multiple windows - one for each directory. It would be nice to be able to limit =dired= to use just a single window. [[https://codeberg.org/amano.kenji/dired-single][dired-single]] does just that. We configure =dired-single= to open up a directory while in dired with the =C-<return>=  key combination. This will then open up the directory in the buffer named =*dired*=. Whenever a directory is opened with the =C-<return>= key sequence, that directory will then replace what's currently in the =*dired*= buffer.
@@ -4552,6 +4538,7 @@ Dired, by default, opens up multiple windows - one for each directory. It would 
       [remap dired-up-directory] 'dired-single-up-directory))
 
   (use-package dired-single
+    :after dired
     :config
     (mrf/dired-single-keymap-init))
 #+end_src
@@ -4684,6 +4671,7 @@ Some final configuratiion to be done at the end of this configuration.
 #+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
 
+  (add-hook 'elpaca-after-init-hook (lambda () (switch-to-buffer "*scratch*")))
   (add-hook 'lisp-interaction-mode-hook
     (lambda ()
       (setq-default initial-scratch-message

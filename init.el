@@ -198,7 +198,7 @@ alternative to isearch that uses Ivy to show an overview of all matches."
   	 (const :tag "Built-in Ido" comphand-built-in))
   :group 'mrf-custom-choices)
 
-(defcustom debug-adapter 'enable-dape
+(defcustom debug-adapter 'debug-adapter-dape
   "Select the debug adapter to use for debugging applications.  dap-mode is an
 Emacs client/library for Debug Adapter Protocol is a wire protocol for
 communication between client and Debug Server. It’s similar to the LSP but
@@ -209,8 +209,8 @@ implemented entirely in Emacs Lisp. There are no other external dependencies
 with DAPE. DAPE supports most popular languages, however, not as many as
 dap-mode."
   :type '(radio
-  	 (const :tag "Debug Adapter Protocol (DAP)" enable-dap-mode)
-  	 (const :tag "Debug Adapter Protocol for Emacs (DAPE)" enable-dape))
+  	 (const :tag "Debug Adapter Protocol (DAP)" debug-adapter-dap-mode)
+  	 (const :tag "Debug Adapter Protocol for Emacs (DAPE)" debug-adapter-dape))
   :group 'mrf-custom-choices)
 
 (defcustom custom-ide 'custom-ide-eglot
@@ -376,6 +376,7 @@ font size is computed + 20 of this value."
 
 ;;; Put any emacs cusomized variables in a special file
 (setq custom-file (expand-file-name "customized-vars.el" user-emacs-directory))
+;; (add-hook 'elpaca-after-init-hook (lambda () (load custom-file 'noerror 'nomessage)))
 (load custom-file 'noerror 'nomessage)
 
 ;;; --------------------------------------------------------------------------
@@ -431,23 +432,25 @@ font size is computed + 20 of this value."
 
 ;;; --------------------------------------------------------------------------
 
-
 (defun mrf/set-diminish ()
   (when enable-projectile
     (diminish 'projectile-mode "PrM"))
   (diminish 'anaconda-mode)
   (diminish 'tree-sitter-mode "ts")
-  (diminish 'ts-fold-mode)
   (diminish 'lisp-interaction-mode "Lim")
   (diminish 'counsel-mode)
+  (diminish 'lisp-interaction-mode "iLisp")
   (diminish 'golden-ratio-mode)
   (diminish 'mmm-keys-minor-mode "m3k")
   (diminish 'company-box-mode)
   (diminish 'company-mode))
 
 (use-package diminish
-  :ensure (:host github :repo "myrjola/diminish.el")
-  :hook (elpaca-after-init . mrf/set-diminish))
+  :config
+  (if (not elpaca-after-init-time)
+    (add-hook 'elpaca-after-init-hook
+      (lambda () (run-with-timer 0.05 nil 'mrf/set-diminish)))
+    (run-with-timer 1.0 nil 'mrf/set-diminsh)))
 
 ;;; --------------------------------------------------------------------------
 ;; Which Key Helper
@@ -577,7 +580,13 @@ font size is computed + 20 of this value."
   :config
   (add-hook 'emacs-lisp-mode-hook 'eldoc-mode)
   (add-hook 'lisp-interaction-mode-hook 'eldoc-mode)
-  (add-hook 'ielm-mode-hook 'eldoc-mode))
+  (add-hook 'ielm-mode-hook 'eldoc-mode)
+  ;; Eldoc will try to load/unload a theme which can cause issues with our
+  ;; theme loading mechanism. Our theme could fail to load because of this.
+  ;; So, to get our themes loading properly, load it here if not already
+  ;; loaded.
+  (unless theme-did-load
+    (mrf/load-theme-from-selector)))
 
 (use-package eldoc-box
   :after eldoc
@@ -664,8 +673,8 @@ font size is computed + 20 of this value."
   (use-package undo-tree
     ;; :hook (undo-tree-visualizer-mode-hook . mrf/undo-tree-hook)
     :init
-    (setq undo-tree-visualizer-timestamps t
-      ;; undo-tree-visualizer-diff t
+    (setq undo-tree-visualizer-timestamps t   
+      undo-tree-visualizer-diff nil
       undo-tree-enable-undo-in-region t
       ;; 10X bump of the undo limits to avoid issues with premature
       ;; Emacs GC which truncages the undo history very aggresively
@@ -675,7 +684,9 @@ font size is computed + 20 of this value."
     :config
     (global-undo-tree-mode)
     (advice-add 'undo-tree-visualize :around #'undo-tree-split-side-by-side)
-
+    (bind-keys :map undo-tree-visualizer-mode-map
+      ("RET" . undo-tree-visualizer-quit)
+      ("C-g" . undo-tree-visualizer-abort))
     ;; This prevents the *.~undo-tree~ files from being persisted.
     (with-eval-after-load 'undo-tree
       (setq undo-tree-auto-save-history nil))))
@@ -722,6 +733,9 @@ font size is computed + 20 of this value."
 
 ;;; --------------------------------------------------------------------------
 
+(defvar theme-did-load nil
+  "Set to true if the last Theme was loaded.")
+
 (defun mrf/load-theme-from-selector (&optional step)
   "Load the theme in `theme-list' indexed by `theme-selector'."
   (interactive)
@@ -733,7 +747,7 @@ font size is computed + 20 of this value."
   (when loaded-theme
     (disable-theme (intern loaded-theme)))
   (setq loaded-theme (nth theme-selector theme-list))
-  (load-theme (intern loaded-theme) t)
+  (setq theme-did-load (load-theme (intern loaded-theme) t))
   (when (featurep 'org)
     (mrf/org-font-setup))
   (set-face-foreground 'line-number "SkyBlue4"))
@@ -759,29 +773,12 @@ font size is computed + 20 of this value."
   (interactive)
   (mrf/print-custom-theme-name))
 
-(defun reload-theme--from-startup ()
-  (setq loaded-theme (nth theme-selector theme-list))
-  (mrf/load-theme-from-selector)
-  (load-theme (intern loaded-theme) t))
-
 ;; Go to NEXT theme
 (global-set-key (kbd "C-c C-=") 'next-theme)
 ;; Go to PREVIOUS theme
 (global-set-key (kbd "C-c C--") 'previous-theme)
 ;; Print current theme
 (global-set-key (kbd "C-c C-?") 'which-theme)
-
-;;; --------------------------------------------------------------------------
-
-;; Normally not used but it's here so it's easy to change the block colors.
-(defun mrf/customize-org-block-colors ()
-  (defface org-block-begin-line
-    '((t (:underline "#1D2C39" :foreground "#676E95" :background "#1D2C39")))
-    "Face used for the line delimiting the begin of source blocks.")
-
-  (defface org-block-end-line
-    '((t (:overline "#1D2C39" :foreground "#676E95" :background "#1D2C39")))
-    "Face used for the line delimiting the end of source blocks."))
 
 ;;; --------------------------------------------------------------------------
 
@@ -805,6 +802,8 @@ font size is computed + 20 of this value."
 ;;; --------------------------------------------------------------------------
 
 (defun mrf/customize-modus-theme ()
+  (when (featurep 'org)
+    (mrf/org-font-setup))
   (setq modus-themes-common-palette-overrides
     '((bg-mode-line-active bg-blue-intense)
        (fg-mode-line-active fg-main)
@@ -819,7 +818,7 @@ font size is computed + 20 of this value."
   (when (featurep 'org)
     (mrf/org-font-setup))
   (setq ef-themes-common-palette-override
-    '(  (bg-mode-line bg-blue-intense)
+    '( (bg-mode-line bg-blue-intense)
        (fg-mode-line fg-main)
        (border-mode-line-active blue-intense))))
 ;;(add-hook 'org-load-hook 'mrf/customize-ef-theme)
@@ -843,13 +842,22 @@ font size is computed + 20 of this value."
 ;; (mrf/load-theme-from-selector)
 ;; For terminal mode we choose Material theme
 
-(if (display-graphic-p)
-  (add-hook 'window-setup-hook #'reload-theme--from-startup)
+(if (not (display-graphic-p))
   (progn
     (defun load-terminal-theme ()
       (load-theme (intern default-terminal-theme) t))
-    (add-hook 'window-setup-hook 'load-terminal-theme))
-  (add-hook 'window-setup-hook 'reload-theme--from-startup))
+    (add-hook 'elpaca-after-init-hook 'load-terminal-theme))
+  (progn
+    (if (not elpaca-after-init-time)
+      (add-hook 'elpaca-after-init-hook
+      (lambda () (unless theme-did-load
+  	      (mrf/load-theme-from-selector))))
+      ;; else
+      (add-hook 'window-setup-hook
+      (lambda ()
+  	(unless theme-did-load
+  	  (mrf/load-theme-from-selector))))
+      )))
 
 ;;; --------------------------------------------------------------------------
 
@@ -1681,10 +1689,11 @@ capture was not aborted."
   (let ((root (projectile-project-root dir)))
     (and root (cons 'transient root))))
 
-
 (use-package track-changes
-  :defer t)
-;;     :ensure (:package "track-changes" :source nil :protocol https :inherit t :depth 1 :repo "https://github.com/emacs-mirror/emacs" :local-repo "track-changes" :branch "master" :files ("lisp/emacs-lisp/track-changes.el" (:exclude ".git"))))
+  :defer t
+  :config
+  (unless theme-did-load
+    (mrf/load-theme-from-selector)))
 
 (use-package eglot
   :when (equal custom-ide 'custom-ide-eglot)
@@ -1710,10 +1719,15 @@ capture was not aborted."
   (which-key-add-key-based-replacements "C-c g o" "find-defitions-other-window")
   (which-key-add-key-based-replacements "C-c g g" "find-defitions")
   (which-key-add-key-based-replacements "C-c g ?" "eldoc-definition")
+  ;; Eldoc/Eglot will try to load/unload a theme which can cause issues with our
+  ;; theme loading mechanism. Our theme could fail to load because of this.  So,
+  ;; to get our themes loading properly, load it here if not already loaded.
+  (unless theme-did-load
+    (mrf/load-theme-from-selector))
   ;; (add-hook 'eglot-managed-mode-hook #'eldoc-box-hover-at-point-mode t)
   (add-to-list 'eglot-stay-out-of 'flymake)
   ;; (add-to-list 'eglot-server-programs '((c-mode c++-mode) "clangd"))
-  (add-to-list 'eglot-server-programs '(python-mode . ("pylsp")))
+  (add-to-list 'eglot-server-programs '(python-mode . ("pylsp")))  
   (setq-default eglot-workspace-configuration
     '((:gopls .
       ((staticcheck . t)
@@ -1877,29 +1891,43 @@ capture was not aborted."
 ;; function checks for whether or not it should be used and then performs
 ;; a (use-package ) to load it immediately.
 
-(use-package jsonrpc)
+(use-package jsonrpc
+  :config
+  ;; For some odd reason, it is possible that jsonrpc will try to load a
+  ;; theme. (jsonrpc/lisp/custom.el:1362). If our theme hasn't been loaded
+  ;; yet, go ahead and try. This could prevent a startup without the theme
+  ;; properly loaded.
+  (unless theme-did-load
+    (mrf/load-theme-from-selector)))
 
-(defun mrf/prepare-dape ()
-  (when (equal debug-adapter 'enable-dape)
-    (use-package dape
-      :init
-      (define-dape-hydra)
-      :after (:any jsonrpc hydra python)
-      ;; To use window configuration like gud (gdb-mi)
-      ;; :init
-      ;; (setq dape-buffer-window-arrangement 'gud)
-      :custom
-      (dape-buffer-window-arrangement 'right)  ;; Info buffers to the right
-      :config
-      (define-dape-hydra)
-      (bind-keys :map prog-mode-map
-      ("C-c ." . dape-hydra/body))
-      (mrf/additional-dape-configs))))
+(use-package dape
+  :when (equal debug-adapter 'debug-adapter-dape)
+  :init
+  (define-dape-hydra)
+  :ensure t
+  :after (:any jsonrpc hydra python)
+  ;; To use window configuration like gud (gdb-mi)
+  ;; :init
+  ;; (setq dape-buffer-window-arrangement 'gud)
+  :custom
+  (dape-buffer-window-arrangement 'right)  ;; Info buffers to the right
+  :config
+  (define-dape-hydra)
+  (message "prepare-dape end")
+  (bind-keys :map prog-mode-map
+    ("C-c ." . dape-hydra/body))
+  (mrf/additional-dape-configs))
+
+;; (defun mrf/prepare-dape ()
+;;   (message "prepare-dape 1 of 4")
+;;   (when (equal debug-adapter 'debug-adapter-dape)
+;;     (message "prepare-date 2 of 4")
+;;     ))
 
 ;;; --------------------------------------------------------------------------
 ;;; Debug Adapter Protocol
 (use-package dap-mode
-  :when (equal debug-adapter 'enable-dap-mode)
+  :when (equal debug-adapter 'debug-adapter-dap-mode)
   :after hydra
   ;; Uncomment the config below if you want all UI panes to be hidden by default!
   ;; :custom
@@ -2001,7 +2029,7 @@ capture was not aborted."
     (dap--put-if-absent :name "LLDB Debug")))
 
 (use-package dap-cpptools
-  :when (equal debug-adapter 'enable-dap-mode)
+  :when (equal debug-adapter 'debug-adapter-dap-mode)
   :disabled
   :after dap-mode
   ;;:ensure (:host github :repo "emacs-lsp/dap-mode")
@@ -2024,7 +2052,7 @@ capture was not aborted."
 
 (use-package dap-python
   :ensure (:package "dap-python" :type git :host github :repo "emacs-lsp/dap-mode")
-  :when (equal debug-adapter 'enable-dap-mode)
+  :when (equal debug-adapter 'debug-adapter-dap-mode)
   ;;:ensure (:host github :repo "emacs-lsp/dap-mode")
   :after dap-mode
   :config
@@ -2269,8 +2297,8 @@ capture was not aborted."
 ;;; --------------------------------------------------------------------------
 
 (use-package marginalia
-  :when (equal completion-handler 'comphand-vertico)
-  :after vertico
+  ;; :when (equal completion-handler 'comphand-vertico)
+  ;; :after vertico
   :custom
   (marginalia-max-relative-age 0)
   (marginalia-align 'left)
@@ -2397,8 +2425,7 @@ capture was not aborted."
 ;;; --------------------------------------------------------------------------
 
 (defun mrf/tree-sitter-setup ()
-  (tree-sitter-hl-mode t)
-  (ts-fold-mode t))
+  (tree-sitter-hl-mode t))
 
 (defun lsp-go-install-save-hooks ()
   (add-hook 'before-save-hook #'lsp-format-buffer t t)
@@ -2425,13 +2452,6 @@ capture was not aborted."
 
 (use-package tree-sitter-langs
   :after tree-sitter)
-
-(use-package ts-fold
-  :disabled
-  :after tree-sitter
-  ;;:ensure (:host github :repo "emacs-tree-sitter/ts-fold")
-  :bind (("C-<tab>" . ts-fold-toggle)
-  	("C-c f"	 . ts-fold-open-all)))
 
 ;;; --------------------------------------------------------------------------
 
@@ -2463,11 +2483,11 @@ capture was not aborted."
 (defun mrf/load-js-file-hook ()
   (js2-mode)
 
-  (when (equal debug-adapter 'enable-dap-mode)
+  (when (equal debug-adapter 'debug-adapter-dap-mode)
     (dap-mode)
     (dap-firefox-setup))
 
-  (when (equal debug-adapter 'enable-dape)
+  (when (equal debug-adapter 'debug-adapter-dape)
     (dape))
 
   (highlight-indentation-mode nil)
@@ -2585,12 +2605,12 @@ capture was not aborted."
 ;; This function should only be called ONCE during python-mode startup.
 (defun mrf/enable-python-features ()
   (cond
-    ((equal debug-adapter 'enable-dap-mode)
+    ((equal debug-adapter 'debug-adapter-dap-mode)
       (unless (featurep 'dap-mode)
       (dap-mode))
       (define-dap-hydra))
-    ((equal debug-adapter 'enable-dape)
-      (mrf/prepare-dape))
+    ((equal debug-adapter 'debug-adapter-dape)
+      (message "DAPE ready."))
     ((equal custom-ide 'custom-ide-eglot)
       (add-hook 'python-mode-hook 'eglot-ensure))
     ((equal custom-ide-lsp)
@@ -2701,15 +2721,17 @@ capture was not aborted."
 ;;; --------------------------------------------------------------------------
 
 (use-package company
-  :after (:any lsp-mode elpy anaconda-mode)
-  ;; :ensure (:wait t)
-  :hook (elpaca-after-init . global-company-mode)
+  ;; Don't use lsp-bridge with company as lsp-bridge already provides the same
+  ;; features. They actually collide.
+  :unless (equal custom-ide 'custom-ide-lsp-bridge)
+  :after (:any lsp-mode elpy anaconda-mode eglot)
   :bind (:map company-active-map
   	("<tab>" . company-complete-selection))
   :custom
   (company-minimum-prefix-length 1)
   (company-idle-delay 0.0)
   :config
+  (global-company-mode 1)
   (cond
     ((equal custom-ide 'custom-ide-eglot)
       (bind-keys :map eglot-mode-map
@@ -2810,7 +2832,8 @@ capture was not aborted."
 ;;; --------------------------------------------------------------------------
 
 (use-package solaire-mode
-  ;;:ensure (:host github :repo "hlissner/emacs-solaire-mode")
+  :after treemacs
+  :ensure (:package "solaire-mode" :source "MELPA" :protocol https :inherit t :depth 1 :repo "hlissner/emacs-solaire-mode" :fetcher github :files ("*.el" "*.el.in" "dir" "*.info" "*.texi" "*.texinfo" "doc/dir" "doc/*.info" "doc/*.texi" "doc/*.texinfo" "lisp/*.el" (:exclude ".dir-locals.el" "test.el" "tests.el" "*-test.el" "*-tests.el" "LICENSE" "README*" "*-pkg.el")))
   :hook (elpaca-after-init . solaire-global-mode)
   :config
   (push '(treemacs-window-background-face . solaire-default-face) solaire-mode-remap-alist)
@@ -2852,15 +2875,6 @@ capture was not aborted."
   (setq neo-theme (if (display-graphic-p) 'icons 'arrow)))
 
 ;;; --------------------------------------------------------------------------
-
-;; (use-package nerd-icons )
-
-;; (use-package doom-modeline
-;;   :diabled
-;;   :init (doom-modeline-mode 1)
-;;   :custom ((doom-modeline-height 15)))
-
-;;; --------------------------------------------------------------------------
 ;; Enable tabs for each buffer
 
 (use-package centaur-tabs
@@ -2892,29 +2906,6 @@ capture was not aborted."
   (pulsar-iterations 10)
   (pulsar-face 'pulsar-magenta)
   (pulsar-highlight-face 'pulsar-yellow))
-
-;;; --------------------------------------------------------------------------
-
-(use-package popper
-  :bind (("C-`"   . popper-toggle)
-  	("M-`"   . popper-cycle)
-  	("C-M-`" . popper-toggle-type))
-  :init
-  (setq popper-reference-buffers
-    '("\\*Messages\\*"
-       "\\*scratch\\*"
-       "\\*ielm\\*"
-       "Output\\*$"
-       "\\*Async Shell Command\\*"
-       "^\\*eshell.*\\*$" eshell-mode ;eshell as a popup
-       "^\\*shell.*\\*$"  shell-mode  ;shell as a popup
-       "^\\*term.*\\*$"   term-mode   ;term as a popup
-       "^\\*vterm.*\\*$"  vterm-mode  ;vterm as a popup
-       help-mode
-       compilation-mode))
-  :config
-  (popper-mode +1)
-  (popper-echo-mode +1))
 
 ;;; --------------------------------------------------------------------------
 
@@ -2998,6 +2989,7 @@ capture was not aborted."
   			       ("mkv" . "mpv"))))
 
 (use-package dired-hide-dotfiles
+  :after dired-mode
   :hook (dired-mode . dired-hide-dotfiles-mode))
 
 ;;; --------------------------------------------------------------------------
@@ -3014,6 +3006,7 @@ capture was not aborted."
     [remap dired-up-directory] 'dired-single-up-directory))
 
 (use-package dired-single
+  :after dired
   :config
   (mrf/dired-single-keymap-init))
 
@@ -3071,6 +3064,7 @@ capture was not aborted."
 
 ;;; --------------------------------------------------------------------------
 
+(add-hook 'elpaca-after-init-hook (lambda () (switch-to-buffer "*scratch*")))
 (add-hook 'lisp-interaction-mode-hook
   (lambda ()
     (setq-default initial-scratch-message
