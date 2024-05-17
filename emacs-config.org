@@ -8,11 +8,43 @@
 
 This ORG file will configure the * init.el * file based upon all of the * emacs-lisp * source blocks. The emacs-lisp source blocks are defined in an organized order. While these blocks cn generally be moved around, there are some order dependencies. So it's generally best that this order be preserved to prevent any compile-time issues.
 
-Shout out to the many people in the Emacs community from which a lot of this configuration took inspiration from.
+The goal of this Emacs configuration is to make an Emacs configuration that has a good collection of popular options. So far, the following collections of options are included here:
+
+** Landging Screen Options:
+*** Dashboard
+*** IELM (Integrated Emacs Lisp Mode)
+*** Default ~*scratch*~ buffer
+** Completion Frameworks:
+*** Vertico, Consult
+*** Ivy, Counsel, Swiper
+*** Corfu
+** Undo Handlers
+*** Vundo
+*** Undo-tree
+** Debug Adapters
+*** DAPE
+*** DAP
+** Integrated Develpment Environments
+*** Elpy
+*** Eglot
+*** Stand-alone LSP
+*** LSP Bridge (experimental)
+*** Anaconda-mode for Python
+** Project Options
+*** Projectile
+*** project.el
+** Custom Themes
+*** Several popular themes that are easy to cycle between and also good on the eyes.
+** Other Optional Features
+*** GameBoy Development Packages
+*** Neo Tree
+*** Golden Ratio
+*** Embark
 
 
 * README:
------
+
+--------------------------------------------------------------------------------
 
 - This config requires Emacs 29+
 
@@ -28,7 +60,9 @@ Shout out to the many people in the Emacs community from which a lot of this con
 
 - Take a look a the [[Custom enable flags][Custom Variables]] and [[Customization groups][Groups]] section to see what options exist. It's important to note that these variables need to be adhered to. Another thing to note is that the various =enable*= flags are not used as =:if= option in =use-package= statement. Instead, a lisp conditional statement is used so that the package is actually never loaded or installed. This improves overall startup performance.
   
------
+- Shout out to the many people in the Emacs community from which a lot of this configuration took inspiration from.
+  
+--------------------------------------------------------------------------------
 
 
 * early-init.el
@@ -223,8 +257,8 @@ These are the groups used by this Emacs config for customization.
     "A set of toggles that enable or disable  specific packages."
     :group 'mrf-custom)
 
-  (defgroup mrf-custom-choices nil
-    "Customization from a selection of specific features."
+  (defgroup mrf-custom-features nil
+    "Customization from a selection of specific features and handlers."
     :group 'mrf-custom)
 
   (defgroup mrf-custom-fonts nil
@@ -272,9 +306,9 @@ These are the groups used by this Emacs config for customization.
 
 #+end_src
 
-** Custom Feature Toggles
+** Custom Package Toggles
 
-Thes values toggle the availability of specific packages. Only boolean type values are part of this group.
+Thes values toggle the availability of specific packages. These options are not grouped together as can be done with the =mrf-custom-features= group so are all separate values.
 
 #+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
@@ -288,13 +322,6 @@ Thes values toggle the availability of specific packages. Only boolean type valu
 
   (defcustom enable-ts nil
     "Set to t to enable TypeScript handling."
-    :type 'boolean
-    :group 'mrf-custom-toggles)
-
-  (defcustom enable-corfu nil
-    "Setting to t enables Corfu instead of Ivy.
-      Corfu is an alternative to the command completion package, IVY which also will
-      include Swiper and Company.  If this value is set to nil then Ivy is used."
     :type 'boolean
     :group 'mrf-custom-toggles)
 
@@ -319,11 +346,6 @@ Thes values toggle the availability of specific packages. Only boolean type valu
     :type 'boolean
     :group 'mrf-custom-toggles)
 
-  (defcustom enable-projectile nil
-    "Set to t to use projectile mode over the build in project.el."
-    :type 'boolean
-    :group 'mrf-custom-toggles)
-
   (defcustom enable-embark nil
     "Set to t to enable the Embark package."
     :type 'boolean
@@ -331,6 +353,7 @@ Thes values toggle the availability of specific packages. Only boolean type valu
 #+end_src
 
 ** Feature selections
+
 These are features that basically have multiple-choice options instead of being a typical binary t or nil.
 
 #+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
@@ -350,7 +373,7 @@ These are features that basically have multiple-choice options instead of being 
   	   (const :tag "Vundo (default)" undo-handler-vundo)
   	   (const :tag "Undo-tree" undo-handler-undo-tree)
   	   (const :tag "Built-in" undo-handler-built-in))
-    :group 'mrf-custom-choices)
+    :group 'mrf-custom-features)
 
   (defcustom completion-handler 'comphand-vertico
     "Select the default minibuffer completion handler.
@@ -365,10 +388,11 @@ These are features that basically have multiple-choice options instead of being 
   commands that are customised to make the best use of Ivy.  Swiper is an
   alternative to isearch that uses Ivy to show an overview of all matches."
     :type '(radio
-  	   (const :tag "Use the Vertico completion system." comphand-vertico)
-  	   (const :tag "Use Ivy, Counsel, Swiper completion systems" comphand-ivy-counsel)
+  	   (const :tag "Vertico completion system." comphand-vertico)
+  	   (const :tag "Ivy, Counsel, Swiper completion systems" comphand-ivy-counsel)
+  	   (const :tag "Cofu completion systems" comphand-corfu)
   	   (const :tag "Built-in Ido" comphand-built-in))
-    :group 'mrf-custom-choices)
+    :group 'mrf-custom-features)
 
   (defcustom debug-adapter 'debug-adapter-dape
     "Select the debug adapter to use for debugging applications.  dap-mode is an
@@ -383,7 +407,7 @@ These are features that basically have multiple-choice options instead of being 
     :type '(radio
   	   (const :tag "Debug Adapter Protocol (DAP)" debug-adapter-dap-mode)
   	   (const :tag "Debug Adapter Protocol for Emacs (DAPE)" debug-adapter-dape))
-    :group 'mrf-custom-choices)
+    :group 'mrf-custom-features)
 
   (defcustom custom-ide 'custom-ide-eglot
     "Select which IDE will be used for Python development.
@@ -407,13 +431,13 @@ These are features that basically have multiple-choice options instead of being 
   	   (const :tag "Language Server Protocol (LSP)" custom-ide-lsp)
   	   (const :tag "LSP Bridge (standalone)" custom-ide-lsp-bridge)
   	   (const :tag "Python Anaconda-mode for Emacs" custom-ide-anaconda))
-    :group 'mrf-custom-choices)
+    :group 'mrf-custom-features)
 
   (defcustom custom-project-handler 'custom-project-project
     "Select which project handler to use."
     :type '(radio (const :tag "Projectile" custom-project-projectile)
              (const :tag "Built-in project" custom-project-project))
-    :group 'mrf-custom-choices)
+    :group 'mrf-custom-features)
 
 #+end_src
 
@@ -662,7 +686,7 @@ The following packages are all intended to be available globally.
   ;;; --------------------------------------------------------------------------
 
   (defun mrf/set-diminish ()
-    (when enable-projectile
+    (when (equal custom-project-handler 'custom-project-projectile)
       (diminish 'projectile-mode "PrM"))
     (diminish 'anaconda-mode)
     (diminish 'tree-sitter-mode "ts")
@@ -1981,51 +2005,13 @@ Org Roam is an extension to Org Mode which solves a couple of the biggest proble
 
 Org Roam solves these problems by making it easy to create topic-focused Org Files and link them together so that you can treat the information as nodes in a network rather than as hierarchical documents. You can think of it like a personal wiki!
 
+** Some required pacakages 
+
 #+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
-  ;; (use-package emacsql)
-  ;; (use-package emacsql-sqlite)
-
-  (use-package org-roam
-    ;; :demand t  ;; Ensure org-roam is loaded by default
-    :init
-    (setq org-roam-v2-ack t)
-    :after org
-    :custom
-    (org-roam-directory (expand-file-name "RoamNotes" custom-docs-dir))
-    (org-roam-completion-everywhere t)
-    (org-roam-db-location (expand-file-name "RoamNotes" custom-docs-dir))
-    :bind (("C-c n l" . org-roam-buffer-toggle)
-  	  ("C-c n f" . org-roam-node-find)
-  	  ("C-c n i" . org-roam-node-insert)
-  	  ("C-c n I" . org-roam-node-insert-immediate)
-  	  ("C-c n p" . my/org-roam-find-project)
-  	  ("C-c n t" . my/org-roam-capture-task)
-  	  ("C-c n b" . my/org-roam-capture-inbox)
-  	  :map org-mode-map
-  	  ("C-M-i" . completion-at-point)
-  	  :map org-roam-dailies-map
-  	  ("Y" . org-roam-dailies-capture-yesterday)
-  	  ("T" . org-roam-dailies-capture-tomorrow))
-    :bind-keymap
-    ("C-c n d" . org-roam-dailies-map)
-    :config
-    (require 'org-roam-dailies) ;; Ensure the keymap is available
-    (my/org-roam-refresh-agenda-list)
-    (add-to-list 'org-after-todo-state-change-hook
-      (lambda ()
-        (when (equal org-state "DONE")
-  	(my/org-roam-copy-todo-to-today))))
-    (org-roam-db-autosync-mode))
-
-  (defun org-roam-node-insert-immediate (arg &rest args)
-    (interactive "P")
-    (let ((args (push arg args))
-  	 (org-roam-capture-templates
-  	   (list (append (car org-roam-capture-templates)
-  		   '(:immediate-finish t)))))
-      (apply #'org-roam-node-insert args)))
-
+  (use-package emacsql :demand t :ensure t)
+  (use-package emacsql-sqlite :demand t :ensure t)
+   
 #+end_src
 
 ** Org Agenda from Roam Notes
@@ -2040,19 +2026,19 @@ Here is a snippet that will find all the notes with a specific tag and then set 
   ;; The buffer you put this code in must have lexical-binding set to t!
   ;; See the final configuration at the end for more details.
 
-  (defun my/org-roam-filter-by-tag (tag-name)
+  (defun mrf/org-roam-filter-by-tag (tag-name)
     (lambda (node)
       (member tag-name (org-roam-node-tags node))))
 
-  (defun my/org-roam-list-notes-by-tag (tag-name)
+  (defun mrf/org-roam-list-notes-by-tag (tag-name)
     (mapcar #'org-roam-node-file
       (seq-filter
-        (my/org-roam-filter-by-tag tag-name)
+        (mrf/org-roam-filter-by-tag tag-name)
         (org-roam-node-list))))
 
-  (defun my/org-roam-refresh-agenda-list ()
+  (defun mrf/org-roam-refresh-agenda-list ()
     (interactive)
-    (setq org-agenda-files (my/org-roam-list-notes-by-tag "Project")))
+    (setq org-agenda-files (mrf/org-roam-list-notes-by-tag "Project")))
 
   ;; Build the agenda list the first time for the session
 #+end_src
@@ -2069,33 +2055,34 @@ This means that we can automatically create a new note with our project capture 
 #+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
 
-  (defun my/org-roam-project-finalize-hook ()
+  (defun mrf/org-roam-project-finalize-hook ()
     "Adds the captured project file to `org-agenda-files' if the
   capture was not aborted."
     ;; Remove the hook since it was added temporarily
-    (remove-hook 'org-capture-after-finalize-hook #'my/org-roam-project-finalize-hook)
+    (remove-hook 'org-capture-after-finalize-hook #'mrf/org-roam-project-finalize-hook)
 
     ;; Add project file to the agenda list if the capture was confirmed
     (unless org-note-abort
       (with-current-buffer (org-capture-get :buffer)
         (add-to-list 'org-agenda-files (buffer-file-name)))))
 
-  (defun my/org-roam-find-project ()
+  (defun mrf/org-roam-find-project ()
     (interactive)
     ;; Add the project file to the agenda after capture is finished
-    (add-hook 'org-capture-after-finalize-hook #'my/org-roam-project-finalize-hook)
+    (add-hook 'org-capture-after-finalize-hook #'mrf/org-roam-project-finalize-hook)
 
     ;; Select a project file to open, creating it if necessary
     (org-roam-node-find
       nil
       nil
-      (my/org-roam-filter-by-tag "Project")
+      (mrf/org-roam-filter-by-tag "Project")
       :templates
       '(("p" "project" plain "* Goals\n\n%?\n\n* Tasks\n\n** TODO Add initial tasks\n\n* Dates\n\n"
   	:if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n#+category: ${title}\n#+filetags: Project")
   	:unnarrowed t))))
 
-  (global-set-key (kbd "C-c n p") #'my/org-roam-find-project)
+  (global-set-key (kbd "C-c n p") #'mrf/org-roam-find-project)
+  
 #+end_src
 
 ** Keep and inbox of notes and tasks
@@ -2105,11 +2092,24 @@ Even though this file won’t have the timestamped filename, it will still be tr
 #+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
 
-  (defun my/org-roam-capture-inbox ()
+  (defun mrf/org-roam-capture-inbox ()
     (interactive)
     (org-roam-capture- :node (org-roam-node-create)
       :templates '(("i" "inbox" plain "* %?"
   		   :if-new (file+head "Inbox.org" "#+title: Inbox\n")))))
+#+end_src
+
+** Insert a node immediately
+
+#+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
+
+  (defun mrf/org-roam-node-insert-immediate (arg &rest args)
+    (interactive "P")
+    (let ((args (push arg args))
+  	 (org-roam-capture-templates
+  	   (list (append (car org-roam-capture-templates)
+  		   '(:immediate-finish t)))))
+      (apply #'org-roam-node-insert args)))
 #+end_src
 
 ** Capture a task
@@ -2120,14 +2120,14 @@ Much like the example before, we can either select a project that exists or auto
 #+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
 
-  (defun my/org-roam-capture-task ()
+  (defun mrf/org-roam-capture-task ()
     (interactive)
     ;; Add the project file to the agenda after capture is finished
-    (add-hook 'org-capture-after-finalize-hook #'my/org-roam-project-finalize-hook)
+    (add-hook 'org-capture-after-finalize-hook #'mrf/org-roam-project-finalize-hook)
 
     ;; Capture the new task, creating the project file if necessary
     (org-roam-capture- :node (org-roam-node-read nil
-  			     (my/org-roam-filter-by-tag "Project"))
+  			     (mrf/org-roam-filter-by-tag "Project"))
       :templates '(("p" "project" plain "** TODO %?"
   		   :if-new
   		   (file+head+olp "%<%Y%m%d%H%M%S>-${slug}.org"
@@ -2141,7 +2141,7 @@ The following snippet sets up a hook for all Org task state changes and then cop
 #+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
   ;;; --------------------------------------------------------------------------
 
-  (defun my/org-roam-copy-todo-to-today ()
+  (defun mrf/org-roam-copy-todo-to-today ()
     (interactive)
     (let ((org-refile-keep t) ;; Set this to nil to delete the original!
   	 (org-roam-dailies-capture-templates
@@ -2173,6 +2173,47 @@ The following snippet sets up a hook for all Org task state changes and then cop
   	  ("C-c C-o" . toc-org-markdown-follow-thing-at-point)))
 
 #+end_src
+
+** Main Org-roam Configuration
+
+#+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
+
+  (use-package org-roam
+    ;; :demand t  ;; Ensure org-roam is loaded by default
+    :init
+    (setq org-roam-v2-ack t)
+    (make-directory (expand-file-name "org-roam-notes" user-emacs-directory) t)
+    :ensure t
+    :commands (org-roam-node-find org-roam-node-insert org-roam-capture-templates)
+    ;; :after org
+    :custom
+    (org-roam-directory (expand-file-name "org-roam-notes" user-emacs-directory))
+    (org-roam-completion-everywhere t)
+    :bind (("C-c n l" . org-roam-buffer-toggle)
+  	  ("C-c n f" . org-roam-node-find)
+  	  ("C-c n i" . org-roam-node-insert)
+  	  ("C-c n I" . mrf/org-roam-node-insert-immediate)
+  	  ("C-c n p" . mrf/org-roam-find-project)
+  	  ("C-c n t" . mrf/org-roam-capture-task)
+  	  ("C-c n b" . mrf/org-roam-capture-inbox)
+  	  :map org-mode-map
+  	  ("C-M-i" . completion-at-point)
+  	  :map org-roam-dailies-map
+  	  ("Y" . org-roam-dailies-capture-yesterday)
+  	  ("T" . org-roam-dailies-capture-tomorrow))
+    :bind-keymap
+    ("C-c n d" . org-roam-dailies-map)
+    :config
+    (require 'org-roam-dailies) ;; Ensure the keymap is available
+    (mrf/org-roam-refresh-agenda-list)
+    (add-to-list 'org-after-todo-state-change-hook
+      (lambda ()
+        (when (equal org-state "DONE")
+  	(mrf/org-roam-copy-todo-to-today))))
+    (org-roam-db-autosync-mode))
+  
+#+end_src
+
 
 
 * Treemacs
@@ -2755,7 +2796,6 @@ For complete functionality, make sure to enable eldoc-mode in your source buffer
   ;;     ))
 #+end_src
 
-
 ** Debug Adapter Protocol (DAP) :Python:
 
 DAP-Mode is an Emacs client/library for Debug Adapter Protocol is a wire protocol for communication between client and Debug Server. It's similar to the LSP but provides integration with debug server. This setup is configured for Python
@@ -2875,7 +2915,6 @@ This is meant to be evaluated and run once. Calling this function will clone the
 
 #+RESULTS:
 : define-dape-hydra
-
 
 ** DAP for C/C++
 #+begin_src emacs-lisp :tangle "init.el" :mkdirp yes
@@ -3241,7 +3280,7 @@ Corfu enhances in-buffer completion with a small completion popup. The current c
 
   ;;;; Code Completion
   (use-package corfu
-    :when enable-corfu
+    :when (equal completion-handler 'comphand-corfu)
     ;; Optional customizations
     :custom
     (corfu-cycle t)		     ; Allows cycling through candidates
@@ -3398,7 +3437,6 @@ Consult provides search and navigation commands based on the Emacs completion fu
 
 #+end_src
 
-
 ** Built-In (Ido)
 Enable the IDO handler everywhere.
 
@@ -3414,7 +3452,6 @@ Enable the IDO handler everywhere.
         (ido-everywhere t))))
 
 #+end_src
-
 
 ** Embark
 
@@ -4621,7 +4658,6 @@ This is a set of keymaps that do the same things as the popup menu. Both are her
       (let ((map (make-sparse-keymap)))
         (bind-keys :map map
   	("M-RET p" . pulsar-pulse-line)
-  	;;("M-RET RET" . mmm-menu)
   	("M-RET d" . dashboard-open)
   	("M-RET f" . mrf/set-fill-column-interactively)
   	("M-RET i" . ielm)
@@ -4657,9 +4693,11 @@ shown. Plus, some keys are mode specific and will only appear when that major mo
     (unbind-key "M-RET O f" mmm-keys-minor-mode-map)
     (unbind-key "M-RET O l" mmm-keys-minor-mode-map)
     (unbind-key "M-RET P ?" mmm-keys-minor-mode-map)
+    (unbind-key "M-RET M-RET" mmm-keys-minor-mode-map)
     (cond
       ((equal major-mode 'org-mode)
         (bind-keys :map mmm-keys-minor-mode-map
+  	("M-RET RET" . org-insert-heading)
   	("M-RET O f" . mrf/set-org-fill-column-interactively)
   	("M-RET O l" . org-toggle-link-display)))
       ((equal major-mode 'python-mode)
@@ -4700,7 +4738,7 @@ Some final configuratiion to be done at the end of this configuration.
   	";; Press M-RET (Meta-RET) to open the Mitch's Menu"))))
 
   (if dashboard-landing-screen
-    ;; (add-hook 'inferior-emacs-lisp-mode 'dashboard-open)
+    ;; (add-hook 'inferior-emacs-lisp-mode 'dashboard-open) ;; IELM open?
     (add-hook 'lisp-interaction-mode-hook 'dashboard-open))
 
   ;; (add-hook 'lisp-interaction-mode-hook 'use-package-report)
