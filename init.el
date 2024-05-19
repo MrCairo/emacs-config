@@ -404,6 +404,7 @@ font size is computed + 20 of this value."
 (show-paren-mode 1)
 (tool-bar-mode -1)		       ;; Hide the toolbar
 (global-prettify-symbols-mode 1)     ;; Display pretty symbols (i.e. λ = lambda)
+(repeat-mode 1)
 (add-hook 'prog-mode-hook 'display-line-numbers-mode)
 
 ;; Allow access from emacsclient
@@ -415,9 +416,6 @@ font size is computed + 20 of this value."
 
 ;; (when (fboundp 'pixel-scroll-precision-mode)
 ;;    (pixel-scroll-precision-mode))
-
-(use-package default-text-scale
-  :hook (elpaca-after-init . default-text-scale-mode))
 
 ;;; --------------------------------------------------------------------------
 
@@ -444,11 +442,28 @@ font size is computed + 20 of this value."
 ;;; --------------------------------------------------------------------------
 ;; Which Key Helper
 
+(defun mrf/minor-mode-is-active (minor-mode)
+  (interactive)
+  (equal (car (member minor-mode minor-mode-list)) minor-mode))
+
+(defun mrf/enable-gr-mode ()
+  (interactive)
+  (when (featurep 'golden-ratio)
+    (message "<< Golden Ratio is installed >>")
+    (if (mrf/minor-mode-is-active 'golden-ratio-mode)
+      (progn (message "-------- Disabling GR Mode")
+      (golden-ratio-mode 0))
+      (progn (mrf/minor-mode-is-active 'golden-ratio-mode)
+      (message "++++++++ Enabling GR Mode")
+      (golden-ratio-mode +1)))))
+
 (use-package which-key
   :diminish which-key-mode
   :custom (which-key-idle-delay 1)
+  ;; :hook (which-key-inhibit-display . mrf/enable-gr-mode)
   :config
   (which-key-mode)
+  ;; (add-hook 'which-key-inhibit-display-hook 'mrf/enable-gr-mode)
   (which-key-setup-side-window-right))
 
 ;;; --------------------------------------------------------------------------
@@ -489,29 +504,15 @@ font size is computed + 20 of this value."
   :config
   (rainbow-delimiters-mode))
 
-(use-package dash
-  :disabled)
-;; :ensure (:files ("dash.el" "dash.texi" "dash-pkg.el")
-;;	      :host github
-;;	      :repo "magnars/dash.el"))
-
-
-(defun mrf/set-fill-column-interactively (num)
-  "Asks for the fill column."
-  (interactive "nfill-column: ")
-  (set-fill-column num))
-
-(defun mrf/set-org-fill-column-interactively (num)
-  "Asks for the fill column for Org mode."
-  (interactive "norg-fill-column: ")
-  (setq custom-org-fill-column num)
-  (mrf/org-mode-visual-fill)
-  (redraw-display))
-
 ;;; --------------------------------------------------------------------------
 
 (use-package visual-fill-column
   :after org)
+
+;;; --------------------------------------------------------------------------
+
+(use-package default-text-scale
+  :hook (elpaca-after-init . default-text-scale-mode))
 
 ;;; --------------------------------------------------------------------------
 
@@ -623,6 +624,19 @@ font size is computed + 20 of this value."
 
 (use-package all-the-icons
   :when (display-graphic-p))
+
+;;; --------------------------------------------------------------------------
+
+(use-package ace-window
+  ;;:ensure (:repo "abo-abo/ace-window" :fetcher github)
+  :bind ("M-o" . ace-window))
+
+;;; --------------------------------------------------------------------------
+;;; Window Number
+
+(use-package winum
+  ;;:ensure (:host github :repo "deb0ch/emacs-winum")
+  :config (winum-mode))
 
 
 
@@ -831,16 +845,18 @@ font size is computed + 20 of this value."
 ;; (mrf/load-theme-from-selector)
 ;; For terminal mode we choose Material theme
 
+(defun mrf/load-terminal-theme ()
+  (load-theme (intern default-terminal-theme) t))
+
 (if (not (display-graphic-p))
-  (progn
-    (defun load-terminal-theme ()
-      (load-theme (intern default-terminal-theme) t))
-    (add-hook 'elpaca-after-init-hook 'load-terminal-theme))
+  (add-hook 'elpaca-after-init-hook 'mrf/load-terminal-theme)
+  ;;else
   (progn
     (if (not elpaca-after-init-time)
       (add-hook 'elpaca-after-init-hook
-      (lambda () (unless theme-did-load
-  	      (mrf/load-theme-from-selector))))
+      (lambda ()
+  	(unless theme-did-load
+  	  (mrf/load-theme-from-selector))))
       ;; else
       (add-hook 'window-setup-hook
       (lambda ()
@@ -890,10 +906,8 @@ font size is computed + 20 of this value."
       (cond (( > width 3000) (mrf/update-large-display))
   	(( > width 2000) (mrf/update-built-in-display))
   	(t (mrf/set-frame-alpha-maximized)))
-      )
-      )
-    )
-  )
+      ))
+    ))
 
 (defun mrf/update-large-display ()
   (modify-frame-parameters
@@ -902,8 +916,7 @@ font size is computed + 20 of this value."
   	   (left . 0.70)
   	   (width . (text-pixels . 2800))
   	   (height . (text-pixels . 1650))) ;; 1800
-    )
-  )
+    ))
 
 (defun mrf/update-built-in-display ()
   (modify-frame-parameters
@@ -912,8 +925,7 @@ font size is computed + 20 of this value."
   	   (left . 0.90)
   	   (width . (text-pixels . 1800))
   	   (height . (text-pixels . 1170)));; 1329
-    )
-  )
+    ))
 
 
 ;; Set frame transparency
@@ -942,18 +954,13 @@ font size is computed + 20 of this value."
   "Set the font faces."
   ;; ====================================
   (set-face-attribute 'default nil
-    ;; :font "Hack"
-    ;; :font "Fira Code Retina"
-    ;; :font "Menlo"
     :family default-font-family
     :height custom-default-font-size
     :weight 'medium)
 
   ;; Set the fixed pitch face
   (set-face-attribute 'fixed-pitch nil
-    ;; :font "Lantinghei TC Demibold"
     :family mono-spaced-font-family
-    ;; :font "Fira Code Retina"
     :height custom-default-font-size
     :weight 'medium)
 
@@ -963,10 +970,6 @@ font size is computed + 20 of this value."
     :height (+ custom-default-font-size 20)
     :weight 'medium))
 
-;; (mrf/update-face-attribute)
-;; (add-hook 'window-setup-hook #'mrf/frame-recenter)
-;; (add-hook 'elpaca-after-init-hook #'mrf/frame-recenter)
-
 ;; This is done so that the Emacs window is sized early in the init phase along with the default font size.
 ;; Startup works without this but it's nice to see the window expand early...
 (add-hook 'emacs-startup-hook
@@ -975,15 +978,6 @@ font size is computed + 20 of this value."
       (mrf/update-face-attribute)
       (unless (daemonp)
       (mrf/frame-recenter)))))
-
-;;; --------------------------------------------------------------------------
-
-(defun mrf/default-font-height-change ()
-  (setq-default custom-default-font-size (face-attribute 'default :height))
-  (mrf/update-face-attribute)
-  (mrf/frame-recenter))
-
-(add-hook 'after-setting-font-hook 'mrf/default-font-height-change)
 
 ;;; --------------------------------------------------------------------------
 
@@ -1063,12 +1057,15 @@ font size is computed + 20 of this value."
   (mrf/frame-recenter)
   )
 
+;; This is done so that the Emacs window is sized early in the init phase along with the default font size.
+;; Startup works without this but it's nice to see the window expand early...
 (when (display-graphic-p)
   (add-hook 'elpaca-after-init-hook
     (lambda ()
       (progn
       (mrf/update-face-attribute)
-      (mrf/frame-recenter)))
+      (unless (daemonp)
+  	(mrf/frame-recenter))))
     ))
 
 ;;; --------------------------------------------------------------------------
@@ -1414,7 +1411,7 @@ capture was not aborted."
       :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n#+category: ${title}\n#+filetags: Project")
       :unnarrowed t))))
 
-(global-set-key (kbd "C-c n p") #'mrf/org-roam-find-project)
+;; (global-set-key (kbd "C-c n p") #'mrf/org-roam-find-project)
 
 ;;; --------------------------------------------------------------------------
 
@@ -1478,6 +1475,7 @@ capture was not aborted."
 
 (use-package org-roam
   ;; :demand t  ;; Ensure org-roam is loaded by default
+  :disabled
   :init
   (setq org-roam-v2-ack t)
   (make-directory (expand-file-name "org-roam-notes" user-emacs-directory) t)
@@ -1512,16 +1510,83 @@ capture was not aborted."
 
 ;;; --------------------------------------------------------------------------
 
-(use-package ace-window
-  ;;:ensure (:repo "abo-abo/ace-window" :fetcher github)
-  :bind ("M-o" . ace-window))
+(defun mrf/define-denote-keymap ()
+  (interactive)
+  ;; Denote DOES NOT define any key bindings.  This is for the user to
+  ;; decide.  For example:
+  (let ((map global-map))
+    (define-key map (kbd "C-c n n") #'denote)
+    (define-key map (kbd "C-c n c") #'denote-region) ; "contents" mnemonic
+    (define-key map (kbd "C-c n N") #'denote-type)
+    (define-key map (kbd "C-c n o") #'denote-open-or-create)
+    (define-key map (kbd "C-c n d") #'denote-date)
+    (define-key map (kbd "C-c n z") #'denote-signature) ; "zettelkasten" mnemonic
+    (define-key map (kbd "C-c n s") #'denote-subdirectory)
+    (define-key map (kbd "C-c n t") #'denote-template)
+    ;; If you intend to use Denote with a variety of file types, it is
+    ;; easier to bind the link-related commands to the `global-map', as
+    ;; shown here.  Otherwise follow the same pattern for `org-mode-map',
+    ;; `markdown-mode-map', and/or `text-mode-map'.
+    (define-key map (kbd "C-c n i") #'denote-link) ; "insert" mnemonic
+    (define-key map (kbd "C-c n I") #'denote-add-links)
+    (define-key map (kbd "C-c n b") #'denote-backlinks)
+    (define-key map (kbd "C-c n f f") #'denote-find-link)
+    (define-key map (kbd "C-c n f b") #'denote-find-backlink)
+    ;; Note that `denote-rename-file' can work from any context, not just
+    ;; Dired bufffers.  That is why we bind it here to the `global-map'.
+    (define-key map (kbd "C-c n r") #'denote-rename-file)
+    (define-key map (kbd "C-c n R") #'denote-rename-file-using-front-matter))
+
+  ;; Key bindings specifically for Dired.
+  (let ((map dired-mode-map))
+    (define-key map (kbd "C-c C-d C-i") #'denote-link-dired-marked-notes)
+    (define-key map (kbd "C-c C-d C-r") #'denote-dired-rename-files)
+    (define-key map (kbd "C-c C-d C-k") #'denote-dired-rename-marked-files-with-keywords)
+    (define-key map (kbd "C-c C-d C-R") #'denote-dired-rename-marked-files-using-front-matter))
+
+  (if (mrf/minor-mode-is-active 'which-key-mode)
+    (which-key-add-key-based-replacements "C-c n f" "denote-find")))
 
 ;;; --------------------------------------------------------------------------
-;;; Window Number
 
-(use-package winum
-  ;;:ensure (:host github :repo "deb0ch/emacs-winum")
-  :config (winum-mode))
+(use-package denote
+  :custom
+  (denote-directory (expand-file-name "notes" user-emacs-directory))
+  (denote-save-buffers nil)
+  (denote-known-keywords '("emacs" "philosophy" "politics" "economics"))
+  (denote-infer-keywords t)
+  (denote-sort-keywords t)
+  (denote-file-type nil) ; Org is the default, set others here
+  (denote-prompts '(title keywords))
+  (denote-excluded-directories-regexp nil)
+  (denote-excluded-keywords-regexp nil)
+  (denote-rename-confirmations '(rewrite-front-matter modify-file-name))
+  (denote-date-prompt-use-org-read-date t)
+  (denote-date-format nil) ; read doc string
+  (denote-backlinks-show-context t)
+  (denote-dired-directories
+    (list denote-directory
+      (thread-last denote-directory (expand-file-name "attachments"))
+      (expand-file-name "books" user-emacs-directory)))
+  :config
+  (add-hook 'find-file-hook #'denote-link-buttonize-buffer)
+  (add-hook 'dired-mode-hook #'denote-dired-mode-in-directories)
+  (denote-rename-buffer-mode 1)
+
+  (mrf/define-denote-keymap) ;; Define the keymap for Denote.
+
+  (with-eval-after-load 'org-capture
+    (setq denote-org-capture-specifiers "%l\n%i\n%?")
+    (add-to-list 'org-capture-templates
+      '("n" "New note (with denote.el)" plain
+         (file denote-last-path)
+         #'denote-org-capture
+         :no-save t
+         :immediate-finish nil
+         :kill-buffer t
+         :jump-to-captured t)))
+
+  (add-hook 'context-menu-functions #'denote-context-menu))
 
 ;;; --------------------------------------------------------------------------
 ;;; Treemacs
@@ -1895,23 +1960,6 @@ capture was not aborted."
 ;;     ))
 
 ;;; --------------------------------------------------------------------------
-;;; Debug Adapter Protocol
-(use-package dap-mode
-  :when (equal debug-adapter 'debug-adapter-dap-mode)
-  :after hydra
-  ;; Uncomment the config below if you want all UI panes to be hidden by default!
-  ;; :custom
-  ;; (lsp-enable-dap-auto-configure nil)
-  :commands dap-debug
-  :custom
-  (dap-auto-configure-features '(sessions locals breakpoints expressions repl controls tooltip))
-  :config
-  (define-dap-hydra)
-  (bind-keys :map prog-mode-map
-    ("C-c ." . dap-hydra/body))
-  (dap-ui-mode 1))
-
-;;; --------------------------------------------------------------------------
 
 (setq mrf/vscode-js-debug-dir (file-name-concat user-emacs-directory "dape/vscode-js-debug"))
 
@@ -1941,6 +1989,8 @@ capture was not aborted."
   (interactive)
   (dape-breakpoint-remove-all)
   (mrf/dape-end-debug-session))
+
+;;; --------------------------------------------------------------------------
 
 (defun define-dape-hydra ()
   (defhydra dape-hydra (:color pink :hint nil :foreign-keys run)
@@ -1983,6 +2033,23 @@ capture was not aborted."
     ("x" nil "exit Hydra" :color yellow)
     ("q" mrf/dape-end-debug-session "quit" :color blue)
     ("Q" mrf/dape-delete-all-debug-sessions :color red)))
+
+;;; --------------------------------------------------------------------------
+;;; Debug Adapter Protocol
+(use-package dap-mode
+  :when (equal debug-adapter 'debug-adapter-dap-mode)
+  :after hydra
+  ;; Uncomment the config below if you want all UI panes to be hidden by default!
+  ;; :custom
+  ;; (lsp-enable-dap-auto-configure nil)
+  :commands dap-debug
+  :custom
+  (dap-auto-configure-features '(sessions locals breakpoints expressions repl controls tooltip))
+  :config
+  (define-dap-hydra)
+  (bind-keys :map prog-mode-map
+    ("C-c ." . dap-hydra/body))
+  (dap-ui-mode 1))
 
 ;;; --------------------------------------------------------------------------
 
@@ -2044,8 +2111,31 @@ capture was not aborted."
       :request "launch"
       :name "Python :: Run file (buffer)")))
 
-;;; --------------------------------------------------------------------------
+(use-package dap-cpptools
+  :ensure (:package "dap-cpptools" :type git :host github :repo "emacs-lsp/dap-mode")
+  :when (equal debug-adapter 'debug-adapter-dap-mode)
+  ;;:ensure (:host github :repo "emacs-lsp/dap-mode")
+  :after dap-mode
+  :custom
+   ;; Make sure that terminal programs open a term for I/O in an Emacs buffer
+  (dap-default-terminal-kind "integrated")
+  :config
+  (dap-register-debug-template "Rust::CppTools Run Configuration"
+    (list :type "cppdbg"
+      :request "launch"
+      :name "Rust::Run"
+      :MIMode "gdb"
+      :miDebuggerPath "rust-gdb"
+      :environment []
+      :program "${workspaceFolder}/target/debug/hello / replace with binary"
+      :cwd "${workspaceFolder}"
+      :console "external"
+      :dap-compilation "cargo build"
+      :dap-compilation-dir "${workspaceFolder}"))
+  (dap-auto-configure-mode +1)
+  (dap-cpptools-setup))
 
+;;; --------------------------------------------------------------------------
 (defun mrf/end-debug-session ()
   "End the debug session and delete project Python buffers."
   (interactive)
@@ -2066,6 +2156,8 @@ capture was not aborted."
   (dap-ui-show-many-windows)
   (dap-debug))
 
+;;; --------------------------------------------------------------------------
+
 (defun define-dap-hydra ()
   (defhydra dap-hydra (:color pink :hint nil :foreign-keys run)
     "
@@ -2081,36 +2173,43 @@ capture was not aborted."
   		    _sS_: List sessions
   		    _sR_: Session Repl
 "
-    ("n" dap-next)	  ("i" dap-step-in)    ("o" dap-step-out)   ("." dap-next)
-    ("/" dap-step-in) ("," dap-step-out)   ("c" dap-continue)   ("r" dap-restart-frame)
-
-    ("ss" dap-switch-session) ("st" dap-switch-thread)    ("sf" dap-switch-stack-frame)
-    ("su" dap-up-stack-frame) ("sd" dap-down-stack-frame) ("sl" dap-ui-locals)
-    ("sb" dap-ui-breakpoints) ("sR" dap-ui-repl)	      ("sS" dap-ui-sessions)
-
-    ("bb" dap-breakpoint-toggle)	("ba" dap-breakpoint-add)	    ("bd" dap-breakpoint-delete)
-    ("bc" dap-breakpoint-condition) ("bh" dap-breakpoint-hit-condition) ("bl" dap-breakpoint-log-message)
-
-    ("dd" dap-debug)      ("dr" dap-debug-recent) ("ds" dap-debug-restart)
-    ("dl" dap-debug-last) ("de" dap-debug-edit-template)
-
-    ("ee" dap-eval) ("ea" dap-ui-expressions-add) ("er" dap-eval-region) ("es" dap-eval-thing-at-point)
-
-    ("dx" mrf/end-debug-session) ("dX" mrf/delete-all-debug-sessions)
-
-    ("x" nil "exit Hydra" :color yellow) ("q" mrf/end-debug-session "quit" :color blue)
-    ("Q" mrf/delete-all-debug-sessions :color red)))
-
-;;; --------------------------------------------------------------------------
-
-(use-package realgud
-  :disabled
-  :after c-mode)
-
-(use-package realgud-lldb
-  :disabled
-  :after realgud)
-;;:ensure (:files (:defaults ("lldb" "lldb/*.el") "realgud-lldb-pkg.el") :host github :repo "realgud/realgud-lldb"))
+    ("n" dap-next)
+    ("i" dap-step-in)
+    ("o" dap-step-out)
+    ("." dap-next)
+    ("/" dap-step-in)
+    ("," dap-step-out)
+    ("c" dap-continue)
+    ("r" dap-restart-frame)
+    ("ss" dap-switch-session)
+    ("st" dap-switch-thread)
+    ("sf" dap-switch-stack-frame)
+    ("su" dap-up-stack-frame)
+    ("sd" dap-down-stack-frame)
+    ("sl" dap-ui-locals)
+    ("sb" dap-ui-breakpoints)
+    ("sR" dap-ui-repl)
+    ("sS" dap-ui-sessions)
+    ("bb" dap-breakpoint-toggle)
+    ("ba" dap-breakpoint-add)
+    ("bd" dap-breakpoint-delete)
+    ("bc" dap-breakpoint-condition)
+    ("bh" dap-breakpoint-hit-condition)
+    ("bl" dap-breakpoint-log-message)
+    ("dd" dap-debug)
+    ("dr" dap-debug-recent)
+    ("ds" dap-debug-restart)
+    ("dl" dap-debug-last)
+    ("de" dap-debug-edit-template)
+    ("ee" dap-eval)
+    ("ea" dap-ui-expressions-add)
+    ("er" dap-eval-region)
+    ("es" dap-eval-thing-at-point)
+    ("dx" mrf/dap-end-debug-session)
+    ("dX" mrf/dap-delete-all-debug-sessions)
+    ("x" nil "exit Hydra" :color yellow)
+    ("q" mrf/dap-end-debug-session "quit" :color blue)
+    ("Q" mrf/dap-delete-all-debug-sessions :color red)))
 
 ;;; --------------------------------------------------------------------------
 
@@ -2173,8 +2272,9 @@ capture was not aborted."
 
 (use-package counsel
   :when (equal completion-handler 'comphand-ivy-counsel)
-  :bind (   ("C-M-j" . 'counsel-switch-buffer)
+  :bind ( ("C-M-j" . 'counsel-switch-buffer)
   	("M-x" . 'counsel-M-x)
+  	("M-g o" . 'counsel-outline)
   	("C-x C-f" . 'counsel-find-file)
   	("C-c C-r" . 'ivy-resume)
   	:map minibuffer-local-map
@@ -2670,6 +2770,17 @@ capture was not aborted."
   :config
   (setq rust-format-on-save t))
 
+(use-package rust-analyzer)
+
+(use-package cargo-mode
+  :ensure (:fetcher github :repo "ayrat555/cargo-mode"
+  	  :files ("*.el" "*.el.in" "dir" "*.info" "*.texi"
+  		   "*.texinfo" "doc/dir" "doc/*.info" "doc/*.texi"
+  		   "doc/*.texinfo" "lisp/*.el"
+  		   (:exclude ".dir-locals.el" "test.el" "tests.el"
+  		     "*-test.el" "*-tests.el" "LICENSE" "README*"
+  		     "*-pkg.el"))))
+
 ;;; --------------------------------------------------------------------------
 
 (defun eglot-format-buffer-on-save ()
@@ -2793,102 +2904,6 @@ capture was not aborted."
   (add-hook 'project-find-functions #'project-find-go-module))
 
 ;;; --------------------------------------------------------------------------
-;; helpful package
-
-(use-package helpful
-  :commands (helpful-callable helpful-variable helpful-command helpful-key)
-  :custom
-  (when (equal completion-handler 'comphand-ivy-counsel)
-    (counsel-describe-function-function #'helpful-callable)
-    (counsel-describe-variable-function #'helpful-variable))
-  :config
-  (when (equal completion-handler 'comphand-ivy-counsel)
-    (bind-keys
-      ([remap describe-function] . counsel-describe-function)
-      ([remap describe-variable] . counsel-describe-variable)))
-  (bind-keys
-    ([remap describe-command] . helpful-command)
-    ([remap describe-key] . helpful-key)))
-
-;;; --------------------------------------------------------------------------
-
-(use-package solaire-mode
-  :after treemacs
-  :ensure (:package "solaire-mode" :source "MELPA" :protocol https :inherit t :depth 1 :repo "hlissner/emacs-solaire-mode" :fetcher github :files ("*.el" "*.el.in" "dir" "*.info" "*.texi" "*.texinfo" "doc/dir" "doc/*.info" "doc/*.texi" "doc/*.texinfo" "lisp/*.el" (:exclude ".dir-locals.el" "test.el" "tests.el" "*-test.el" "*-tests.el" "LICENSE" "README*" "*-pkg.el")))
-  :hook (elpaca-after-init . solaire-global-mode)
-  :config
-  (push '(treemacs-window-background-face . solaire-default-face) solaire-mode-remap-alist)
-  (push '(treemacs-hl-line-face . solaire-hl-line-face) solaire-mode-remap-alist))
-
-;;; --------------------------------------------------------------------------
-;; Golen Ratio
-
-(use-package golden-ratio
-  :when enable-golden-ratio
-  :custom
-  (golden-ratio-auto-scale t)
-  (golden-ratio-adjust-factor .4)
-  (golden-ratio-wide-adjust-factor .4)
-  (golden-ratio-max-width 100)
-  (golden-ratio-exclude-modes '(treemacs-mode
-  			       undo-tree-visdualizer-mode
-  			       inferior-python-mode
-  			       use-package-statistics-mode
-  			       vundo-mode
-  			       which-key-mode
-  			       c-mode
-  			       cc-mode
-  			       dashboard-mode
-  			       python-mode
-  			       markdown-mode))
-  (golden-ratio-exclude-buffer-regexp '("dap*"
-  				       "*dape*"
-  				       "*python*"))
-  :config
-  (golden-ratio-mode 1))
-
-;;; --------------------------------------------------------------------------
-
-(use-package neotree
-  :when enable-neotree
-  :config
-  (global-set-key [f8] 'neotree-toggle)
-  (setq neo-theme (if (display-graphic-p) 'icons 'arrow)))
-
-;;; --------------------------------------------------------------------------
-;; Enable tabs for each buffer
-
-(use-package centaur-tabs
-  :when enable-centaur-tabs
-  :custom
-  ;; Set the style to rounded with icons (setq centaur-tabs-style "bar")
-  (centaur-tabs-style "bar")
-  (centaur-tabs-set-icons t)
-  (centaur-tabs-set-modified-marker t)
-  :bind (("C-c <" . centaur-tabs-backward)
-  	("C-c >" . centaur-tabs-forward))
-  :config ;; Enable centaur-tabs
-  (centaur-tabs-mode t))
-
-;;; --------------------------------------------------------------------------
-
-(use-package diff-hl
-  :config
-  (global-diff-hl-mode))
-
-;;; --------------------------------------------------------------------------
-
-(use-package pulsar
-  :config
-  (pulsar-global-mode)
-  :custom
-  (pulsar-pulse t)
-  (pulsar-delay 0.10)
-  (pulsar-iterations 10)
-  (pulsar-face 'pulsar-magenta)
-  (pulsar-highlight-face 'pulsar-yellow))
-
-;;; --------------------------------------------------------------------------
 
 (use-package term+
   ;;:ensure (:repo "tarao/term-plus-el" :fetcher github)
@@ -2992,6 +3007,114 @@ capture was not aborted."
   (mrf/dired-single-keymap-init))
 
 ;;; --------------------------------------------------------------------------
+;; helpful package
+
+(use-package helpful
+  :commands (helpful-callable helpful-variable helpful-command helpful-key)
+  :custom
+  (when (equal completion-handler 'comphand-ivy-counsel)
+    (counsel-describe-function-function #'helpful-callable)
+    (counsel-describe-variable-function #'helpful-variable))
+  :config
+  (when (equal completion-handler 'comphand-ivy-counsel)
+    (bind-keys
+      ([remap describe-function] . counsel-describe-function)
+      ([remap describe-variable] . counsel-describe-variable)))
+  (bind-keys
+    ([remap describe-command] . helpful-command)
+    ([remap describe-key] . helpful-key)))
+
+;;; --------------------------------------------------------------------------
+
+(use-package solaire-mode
+  :after treemacs
+  :ensure (:package "solaire-mode" :source "MELPA" :protocol https :inherit t :depth 1 :repo "hlissner/emacs-solaire-mode" :fetcher github :files ("*.el" "*.el.in" "dir" "*.info" "*.texi" "*.texinfo" "doc/dir" "doc/*.info" "doc/*.texi" "doc/*.texinfo" "lisp/*.el" (:exclude ".dir-locals.el" "test.el" "tests.el" "*-test.el" "*-tests.el" "LICENSE" "README*" "*-pkg.el")))
+  :hook (elpaca-after-init . solaire-global-mode)
+  :config
+  (push '(treemacs-window-background-face . solaire-default-face) solaire-mode-remap-alist)
+  (push '(treemacs-hl-line-face . solaire-hl-line-face) solaire-mode-remap-alist))
+
+;;; --------------------------------------------------------------------------
+;; Golen Ratio
+
+(use-package golden-ratio
+  :when enable-golden-ratio
+  :custom
+  (golden-ratio-auto-scale t)
+  (golden-ratio-adjust-factor .4)
+  (golden-ratio-wide-adjust-factor .4)
+  (golden-ratio-max-width 100)
+  (golden-ratio-exclude-modes '(
+  			       prog-mode
+  			       dashboard-mode
+  			       ;;inferior-emacs-lisp-mode
+  			       ;;inferior-python-mode
+  			       comint-mode
+  			       ;;lisp-interaction-mode
+  			       treemacs-mode
+  			       undo-tree-visualizer-mode
+  			       vundo-mode
+  			       ))
+  (golden-ratio-exclude-buffer-regexp '("dap*"
+  				       "*dape*"
+  				       "*python*"))
+  :config
+  (golden-ratio-mode 1))
+
+;;; --------------------------------------------------------------------------
+
+(use-package neotree
+  :when enable-neotree
+  :config
+  (global-set-key [f8] 'neotree-toggle)
+  (setq neo-theme (if (display-graphic-p) 'icons 'arrow)))
+
+;;; --------------------------------------------------------------------------
+;; Enable tabs for each buffer
+
+(use-package centaur-tabs
+  :when enable-centaur-tabs
+  :custom
+  ;; Set the style to rounded with icons (setq centaur-tabs-style "bar")
+  (centaur-tabs-style "bar")
+  (centaur-tabs-set-icons t)
+  (centaur-tabs-set-modified-marker t)
+  :bind (("C-c <" . centaur-tabs-backward)
+  	("C-c >" . centaur-tabs-forward))
+  :config ;; Enable centaur-tabs
+  (centaur-tabs-mode t))
+
+;;; --------------------------------------------------------------------------
+
+(use-package diff-hl
+  :config
+  (global-diff-hl-mode))
+
+;;; --------------------------------------------------------------------------
+
+(use-package pulsar
+  :config
+  (pulsar-global-mode)
+  :custom
+  (pulsar-pulse t)
+  (pulsar-delay 0.10)
+  (pulsar-iterations 10)
+  (pulsar-face 'pulsar-magenta)
+  (pulsar-highlight-face 'pulsar-yellow))
+
+(defun mrf/set-fill-column-interactively (num)
+  "Asks for the fill column."
+  (interactive "nfill-column: ")
+  (set-fill-column num))
+
+(defun mrf/set-org-fill-column-interactively (num)
+  "Asks for the fill column for Org mode."
+  (interactive "norg-fill-column: ")
+  (setq custom-org-fill-column num)
+  (mrf/org-mode-visual-fill)
+  (redraw-display))
+
+;;; --------------------------------------------------------------------------
 (defun mrf/define-mmm-minor-mode-map ()
   (defvar mmm-keys-minor-mode-map
     (let ((map (make-sparse-keymap)))
@@ -3020,29 +3143,32 @@ capture was not aborted."
 
 (defun mrf/mmm-handle-context-keys ()
   "Enable or Disable keys based upon featurep context."
-  (unbind-key "M-RET O f" mmm-keys-minor-mode-map)
-  (unbind-key "M-RET O l" mmm-keys-minor-mode-map)
-  (unbind-key "M-RET P ?" mmm-keys-minor-mode-map)
-  (unbind-key "M-RET M-RET" mmm-keys-minor-mode-map)
-  (cond
-    ((equal major-mode 'org-mode)
-      (bind-keys :map mmm-keys-minor-mode-map
-      ("M-RET RET" . org-insert-heading)
-      ("M-RET O f" . mrf/set-org-fill-column-interactively)
-      ("M-RET O l" . org-toggle-link-display)))
-    ((equal major-mode 'python-mode)
-      (bind-keys :map mmm-keys-minor-mode-map
-      ("M-RET P" . 'pydoc-at-point)))))
+  (let ((map mmm-keys-minor-mode-map))
+    (unbind-key "M-RET o f" map)
+    (unbind-key "M-RET o l" map)
+    (unbind-key "M-RET P ?" map)
+    (unbind-key "M-RET M-RET" map)
+    (cond
+      ((equal major-mode 'org-mode)
+      (bind-keys :map map
+    	("M-RET M-RET" . org-insert-heading)
+    	("M-RET o f" . mrf/set-org-fill-column-interactively)
+    	("M-RET o l" . org-toggle-link-display)))
+      ((equal major-mode 'python-mode)
+      (bind-keys :map map
+    	("M-RET P" . 'pydoc-at-point))))))
 
-(add-hook 'which-key-inhibit-display-hook
-  (lambda ()
-    (mrf/mmm-handle-context-keys)
-    (which-key-add-key-based-replacements "M-RET T" "theme-keys")
-    (which-key-add-key-based-replacements "M-RET P" "python-menu")
-    (which-key-add-key-based-replacements "M-RET O f" "set-org-fill-column")
-    (which-key-add-key-based-replacements "M-RET t" "treemacs-toggle")
-    (which-key-add-key-based-replacements "M-RET f" "set-fill-column")
-    (which-key-add-key-based-replacements "M-RET" "Mitch's Menu")))
+(defun mrf/mmm-update-menu ()
+  (interactive)
+  (mrf/mmm-handle-context-keys)
+  (which-key-add-key-based-replacements "M-RET T" "theme-keys")
+  (which-key-add-key-based-replacements "M-RET P" "python-menu")
+  (which-key-add-key-based-replacements "M-RET o" "org-menu")
+  (which-key-add-key-based-replacements "M-RET t" "treemacs-toggle")
+  (which-key-add-key-based-replacements "M-RET f" "set-fill-column")
+  (which-key-add-key-based-replacements "M-RET" "Mitch's Menu"))
+
+(add-hook 'which-key-inhibit-display-hook 'mrf/mmm-update-menu)
 
 ;;; --------------------------------------------------------------------------
 
@@ -3055,7 +3181,7 @@ capture was not aborted."
     (setq-default initial-scratch-message
       (format
       ";; Hello, World and Happy hacking %s!\n%s\n\n" user-login-name
-      ";; Press M-RET (Meta-RET) to open the Mitch's Menu"))))
+      ";; Press M-RET (Meta-RET) to open Mitch's Context Aware Menu"))))
 
 (if dashboard-landing-screen
   ;; (add-hook 'inferior-emacs-lisp-mode 'dashboard-open) ;; IELM open?
