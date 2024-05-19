@@ -1,7 +1,7 @@
 ;;; --------------------------------------------------------------------------
 
 ;; Adjust garbage collection threshold for early startup (see use of gcmh below)
-(setq gc-cons-threshold (* 128 1024 1024))
+(setq gc-cons-threshold (* 100 1024 1024))
 
 ;; Process performance tuning
 
@@ -40,8 +40,8 @@
   (lambda ()
     (setq startup-time-message
       (format "Emacs read in %.2f seconds with %d garbage collections."
-      (float-time (time-subtract after-init-time before-init-time))
-      gcs-done))
+	(float-time (time-subtract after-init-time before-init-time))
+	gcs-done))
     (message startup-time-message)))
 
 ;; (use-package gcmh

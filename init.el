@@ -16,35 +16,35 @@
 (defvar elpaca-builds-directory (expand-file-name "builds/" elpaca-directory))
 (defvar elpaca-repos-directory (expand-file-name "repos/" elpaca-directory))
 (defvar elpaca-order '(elpaca :repo "https://github.com/progfolio/elpaca.git"
-  		      :ref nil :depth 1
-  		      :files (:defaults "elpaca-test.el" (:exclude "extensions"))
-  		      :build (:not elpaca--activate-package)))
+			:ref nil :depth 1
+			:files (:defaults "elpaca-test.el" (:exclude "extensions"))
+			:build (:not elpaca--activate-package)))
 (let* ((repo	(expand-file-name "elpaca/" elpaca-repos-directory))
-      (build (expand-file-name "elpaca/" elpaca-builds-directory))
-      (order (cdr elpaca-order))
-      (default-directory repo))
+	(build (expand-file-name "elpaca/" elpaca-builds-directory))
+	(order (cdr elpaca-order))
+	(default-directory repo))
   (add-to-list 'load-path (if (file-exists-p build) build repo))
   (unless (file-exists-p repo)
     (make-directory repo t)
     (when (< emacs-major-version 28) (require 'subr-x))
     (condition-case-unless-debug err
       (if-let ((buffer
-  	       (pop-to-buffer-same-window "*elpaca-bootstrap*"))
-  	      ((zerop (apply #'call-process
-  			`("git" nil ,buffer t "clone"
-  			   ,@(when-let ((depth (plist-get order :depth)))
-  			       (list (format "--depth=%d" depth)
-  				 "--no-single-branch"))
-  			   ,(plist-get order :repo) ,repo))))
-  	      ((zerop (call-process "git" nil buffer t "checkout"
-  			(or (plist-get order :ref) "--"))))
-  	      (emacs (concat invocation-directory invocation-name))
-  	      ((zerop (call-process emacs nil buffer nil "-Q" "-L" "." "--batch"
-  			"--eval" "(byte-recompile-directory \".\" 0 'force)")))
-  	      ((require 'elpaca))
-  	      ((elpaca-generate-autoloads "elpaca" repo)))
-      (progn (message "%s" (buffer-string)) (kill-buffer buffer))
-      (error "%s" (with-current-buffer buffer (buffer-string))))
+		 (pop-to-buffer-same-window "*elpaca-bootstrap*"))
+		((zerop (apply #'call-process
+			  `("git" nil ,buffer t "clone"
+			     ,@(when-let ((depth (plist-get order :depth)))
+				 (list (format "--depth=%d" depth)
+				   "--no-single-branch"))
+			     ,(plist-get order :repo) ,repo))))
+		((zerop (call-process "git" nil buffer t "checkout"
+			  (or (plist-get order :ref) "--"))))
+		(emacs (concat invocation-directory invocation-name))
+		((zerop (call-process emacs nil buffer nil "-Q" "-L" "." "--batch"
+			  "--eval" "(byte-recompile-directory \".\" 0 'force)")))
+		((require 'elpaca))
+		((elpaca-generate-autoloads "elpaca" repo)))
+	(progn (message "%s" (buffer-string)) (kill-buffer buffer))
+	(error "%s" (with-current-buffer buffer (buffer-string))))
       ((error) (warn "%s" err) (delete-directory repo 'recursive))))
   (unless (require 'elpaca-autoloads nil t)
     (require 'elpaca)
@@ -163,9 +163,9 @@ capability to persist undo history across Emacs sessions.
 
 Finally, the standard undo handler can also be chosen."
   :type '(radio
-  	 (const :tag "Vundo (default)" undo-handler-vundo)
-  	 (const :tag "Undo-tree" undo-handler-undo-tree)
-  	 (const :tag "Built-in" undo-handler-built-in))
+	   (const :tag "Vundo (default)" undo-handler-vundo)
+	   (const :tag "Undo-tree" undo-handler-undo-tree)
+	   (const :tag "Built-in" undo-handler-built-in))
   :group 'mrf-custom-features)
 
 (defcustom completion-handler 'comphand-vertico
@@ -181,10 +181,10 @@ also includes Counsel. Counsel provides completion versions of common Emacs
 commands that are customised to make the best use of Ivy.  Swiper is an
 alternative to isearch that uses Ivy to show an overview of all matches."
   :type '(radio
-  	 (const :tag "Vertico completion system." comphand-vertico)
-  	 (const :tag "Ivy, Counsel, Swiper completion systems" comphand-ivy-counsel)
-  	 (const :tag "Cofu completion systems" comphand-corfu)
-  	 (const :tag "Built-in Ido" comphand-built-in))
+	   (const :tag "Vertico completion system." comphand-vertico)
+	   (const :tag "Ivy, Counsel, Swiper completion systems" comphand-ivy-counsel)
+	   (const :tag "Cofu completion systems" comphand-corfu)
+	   (const :tag "Built-in Ido" comphand-built-in))
   :group 'mrf-custom-features)
 
 (defcustom debug-adapter 'debug-adapter-dape
@@ -198,8 +198,8 @@ implemented entirely in Emacs Lisp. There are no other external dependencies
 with DAPE. DAPE supports most popular languages, however, not as many as
 dap-mode."
   :type '(radio
-  	 (const :tag "Debug Adapter Protocol (DAP)" debug-adapter-dap-mode)
-  	 (const :tag "Debug Adapter Protocol for Emacs (DAPE)" debug-adapter-dape))
+	   (const :tag "Debug Adapter Protocol (DAP)" debug-adapter-dap-mode)
+	   (const :tag "Debug Adapter Protocol for Emacs (DAPE)" debug-adapter-dape))
   :group 'mrf-custom-features)
 
 (defcustom custom-ide 'custom-ide-eglot
@@ -219,11 +219,11 @@ for which there is a language server and an Emacs major mode.
 Anaconda-mode is another IDE for Python very much like Elpy. It is not as
 configurable but has a host of great feaures that just work."
   :type '(radio
-  	 (const :tag "Elpy: Emacs Lisp Python Environment" custom-ide-elpy)
-  	 (const :tag "Emacs Polyglot (Eglot)" custom-ide-eglot)
-  	 (const :tag "Language Server Protocol (LSP)" custom-ide-lsp)
-  	 (const :tag "LSP Bridge (standalone)" custom-ide-lsp-bridge)
-  	 (const :tag "Python Anaconda-mode for Emacs" custom-ide-anaconda))
+	   (const :tag "Elpy: Emacs Lisp Python Environment" custom-ide-elpy)
+	   (const :tag "Emacs Polyglot (Eglot)" custom-ide-eglot)
+	   (const :tag "Language Server Protocol (LSP)" custom-ide-lsp)
+	   (const :tag "LSP Bridge (standalone)" custom-ide-lsp-bridge)
+	   (const :tag "Python Anaconda-mode for Emacs" custom-ide-anaconda))
   :group 'mrf-custom-features)
 
 (defcustom custom-project-handler 'custom-project-project
@@ -236,16 +236,16 @@ configurable but has a host of great feaures that just work."
 ;;; Theming related
 
 (defcustom theme-list '("palenight-deeper-blue"
-  		       "ef-symbiosis"
-  		       "ef-maris-light"
-  		       "ef-maris-dark"
-  		       "ef-kassio"
-  		       "ef-bio"
-  		       "sanityinc-tomorrow-bright"
-  		       "ef-melissa-dark"
-  		       "darktooth-dark"
-  		       "material"
-  		       "deeper-blue")
+			 "ef-symbiosis"
+			 "ef-maris-light"
+			 "ef-maris-dark"
+			 "ef-kassio"
+			 "ef-bio"
+			 "sanityinc-tomorrow-bright"
+			 "ef-melissa-dark"
+			 "darktooth-dark"
+			 "material"
+			 "deeper-blue")
   "My personal list of themes to cycle through indexed by `theme-selector'.
 If additional themes are added, they must be previously installed."
   :group 'mrf-custom-theming
@@ -335,7 +335,7 @@ font size is computed + 20 of this value."
    ;;; apps are not started from a shell."
   (interactive)
   (let ((path-from-shell (replace-regexp-in-string "[ \t\n]*$" ""
-  			 (shell-command-to-string "$SHELL --login -c 'echo $PATH'"))))
+			   (shell-command-to-string "$SHELL --login -c 'echo $PATH'"))))
     (setenv "PATH" path-from-shell)
     (setq exec-path (split-string path-from-shell path-separator))
     (add-to-list 'exec-path "/opt/homebrew/bin")
@@ -365,6 +365,9 @@ font size is computed + 20 of this value."
 
 ;;; Put any emacs cusomized variables in a special file
 (setq custom-file (expand-file-name "customized-vars.el" user-emacs-directory))
+;; create custom file if it does not exists.
+(unless (file-exists-p custom-file)
+  (write-region "" nil custom-file))
 ;; (add-hook 'elpaca-after-init-hook (lambda () (load custom-file 'noerror 'nomessage)))
 (load custom-file 'noerror 'nomessage)
 
@@ -394,17 +397,27 @@ font size is computed + 20 of this value."
   fill-column 80	       ;; Default line limit for fills
   ;; Triggers project for directories with any of the following files:
   project-vc-extra-root-markers '(".dir-locals.el"
-  				 "requirements.txt"
-  				 "Gemfile"
-  				 "package.json"))
+				   "requirements.txt"
+				   "Gemfile"
+				   "package.json"))
+
+(setq savehist-file (expand-file-name "savehist" user-emacs-directory))
+(savehist-mode t)
+(setq history-length t)
+(setq history-delete-duplicates t)
+(setq savehist-save-minibuffer-history 1)
+(setq savehist-additional-variables
+      '(kill-ring
+        search-ring
+        regexp-search-ring))
 
 ;; (global-display-line-numbers-mode 1) ;; Line numbers appear everywhere
 (save-place-mode 1)		       ;; Remember where we were last editing a file.
-(savehist-mode t)
 (show-paren-mode 1)
+(column-number-mode 1)
 (tool-bar-mode -1)		       ;; Hide the toolbar
 (global-prettify-symbols-mode 1)     ;; Display pretty symbols (i.e. λ = lambda)
-(repeat-mode 1)
+;; (repeat-mode 1)
 (add-hook 'prog-mode-hook 'display-line-numbers-mode)
 
 ;; Allow access from emacsclient
@@ -416,6 +429,12 @@ font size is computed + 20 of this value."
 
 ;; (when (fboundp 'pixel-scroll-precision-mode)
 ;;    (pixel-scroll-precision-mode))
+
+;;; --------------------------------------------------------------------------
+
+(use-package hydra
+  :ensure (:repo "abo-abo/hydra" :fetcher github
+	    :files (:defaults (:exclude "lv.el"))))
 
 ;;; --------------------------------------------------------------------------
 
@@ -440,39 +459,21 @@ font size is computed + 20 of this value."
     (run-with-timer 1.0 nil 'mrf/set-diminsh)))
 
 ;;; --------------------------------------------------------------------------
-;; Which Key Helper
-
-(defun mrf/minor-mode-is-active (minor-mode)
-  (interactive)
-  (equal (car (member minor-mode minor-mode-list)) minor-mode))
-
-(defun mrf/enable-gr-mode ()
-  (interactive)
-  (when (featurep 'golden-ratio)
-    (message "<< Golden Ratio is installed >>")
-    (if (mrf/minor-mode-is-active 'golden-ratio-mode)
-      (progn (message "-------- Disabling GR Mode")
-      (golden-ratio-mode 0))
-      (progn (mrf/minor-mode-is-active 'golden-ratio-mode)
-      (message "++++++++ Enabling GR Mode")
-      (golden-ratio-mode +1)))))
 
 (use-package which-key
   :diminish which-key-mode
   :custom (which-key-idle-delay 1)
-  ;; :hook (which-key-inhibit-display . mrf/enable-gr-mode)
   :config
   (which-key-mode)
-  ;; (add-hook 'which-key-inhibit-display-hook 'mrf/enable-gr-mode)
   (which-key-setup-side-window-right))
 
 ;;; --------------------------------------------------------------------------
 
 (use-package multiple-cursors
   :bind (("C-S-c C-S-c" . mc/edit-lines)
-  	("C->" . mc/mark-next-like-this)
-  	("C-<" . mc/mark-previous-like-this)
-  	("C-c C-<" . mc/mark-all-like-this)))
+	  ("C->" . mc/mark-next-like-this)
+	  ("C-<" . mc/mark-previous-like-this)
+	  ("C-c C-<" . mc/mark-all-like-this)))
 
 ;;; --------------------------------------------------------------------------
 
@@ -491,18 +492,6 @@ font size is computed + 20 of this value."
     [remap isearch-query-replace]  #'anzu-isearch-query-replace)
   (define-key isearch-mode-map
     [remap isearch-query-replace-regexp] #'anzu-isearch-query-replace-regexp))
-
-;;; --------------------------------------------------------------------------
-
-(column-number-mode)
-
-(use-package page-break-lines
-  :config
-  (global-page-break-lines-mode))
-
-(use-package rainbow-delimiters
-  :config
-  (rainbow-delimiters-mode))
 
 ;;; --------------------------------------------------------------------------
 
@@ -555,12 +544,6 @@ font size is computed + 20 of this value."
 
 ;;; --------------------------------------------------------------------------
 
-(use-package hydra
-  :ensure (:repo "abo-abo/hydra" :fetcher github
-  	  :files (:defaults (:exclude "lv.el"))))
-
-;;; --------------------------------------------------------------------------
-
 ;; prevent (emacs) eldoc loaded before Elpaca activation warning.
 ;; (Warning only displayed during first Elpaca installation)
 
@@ -603,7 +586,7 @@ font size is computed + 20 of this value."
 
 (use-package yasnippet
   :bind (:map yas-minor-mode-map
-  	("<C-'>" . yas-expand))
+	  ("<C-'>" . yas-expand))
   :config
   (setq yas-global-mode t)
   (setq yas-minor-mode t)
@@ -670,7 +653,7 @@ font size is computed + 20 of this value."
   (defun undo-tree-split-side-by-side (original-function &rest args)
     "Split undo-tree side-by-side"
     (let ((split-height-threshold nil)
-  	 (split-width-threshold 0))
+	   (split-width-threshold 0))
       (apply original-function args)))
 
   (use-package undo-tree
@@ -722,11 +705,11 @@ font size is computed + 20 of this value."
   (when (not (eq theme-cycle-step nil))
     (let ((step theme-cycle-step) (result 0))
       (when step
-      (setq result (+ step theme-selector))
-      (when (< result 0)
-  	(setq result (- (length theme-list) 1)))
-      (when (> result (- (length theme-list) 1))
-  	(setq result 0)))
+	(setq result (+ step theme-selector))
+	(when (< result 0)
+	  (setq result (- (length theme-list) 1)))
+	(when (> result (- (length theme-list) 1))
+	  (setq result 0)))
       (setq-default theme-selector result))))
 
 ;; This is used to trigger the cycling of the theme-selector
@@ -837,7 +820,8 @@ font size is computed + 20 of this value."
 (use-package material-theme :defer t)
 (use-package color-theme-modern :defer t)
 (use-package color-theme-sanityinc-tomorrow :defer t)
-(use-package darktooth-theme :defer t)
+;; Can't defer darktooth since we need the base theme to always load
+(use-package darktooth-theme :ensure t)
 (use-package zenburn-theme :defer t)
 
 ;;; --------------------------------------------------------------------------
@@ -854,14 +838,14 @@ font size is computed + 20 of this value."
   (progn
     (if (not elpaca-after-init-time)
       (add-hook 'elpaca-after-init-hook
-      (lambda ()
-  	(unless theme-did-load
-  	  (mrf/load-theme-from-selector))))
+	(lambda ()
+	  (unless theme-did-load
+	    (mrf/load-theme-from-selector))))
       ;; else
       (add-hook 'window-setup-hook
-      (lambda ()
-  	(unless theme-did-load
-  	  (mrf/load-theme-from-selector))))
+	(lambda ()
+	  (unless theme-did-load
+	    (mrf/load-theme-from-selector))))
       )))
 
 ;;; --------------------------------------------------------------------------
@@ -902,29 +886,29 @@ font size is computed + 20 of this value."
   (unless (eq 'maximised (frame-parameter nil 'fullscreen))
     (progn
       (let ((width (nth 3 (assq 'geometry (car (display-monitor-attributes-list)))))
-  	   (height (nth 4 (assq 'geometry (car (display-monitor-attributes-list))))))
-      (cond (( > width 3000) (mrf/update-large-display))
-  	(( > width 2000) (mrf/update-built-in-display))
-  	(t (mrf/set-frame-alpha-maximized)))
-      ))
+	     (height (nth 4 (assq 'geometry (car (display-monitor-attributes-list))))))
+	(cond (( > width 3000) (mrf/update-large-display))
+	  (( > width 2000) (mrf/update-built-in-display))
+	  (t (mrf/set-frame-alpha-maximized)))
+	))
     ))
 
 (defun mrf/update-large-display ()
   (modify-frame-parameters
     frame '((user-position . t)
-  	   (top . 0.0)
-  	   (left . 0.70)
-  	   (width . (text-pixels . 2800))
-  	   (height . (text-pixels . 1650))) ;; 1800
+	     (top . 0.0)
+	     (left . 0.70)
+	     (width . (text-pixels . 2800))
+	     (height . (text-pixels . 1650))) ;; 1800
     ))
 
 (defun mrf/update-built-in-display ()
   (modify-frame-parameters
     frame '((user-position . t)
-  	   (top . 0.0)
-  	   (left . 0.90)
-  	   (width . (text-pixels . 1800))
-  	   (height . (text-pixels . 1170)));; 1329
+	     (top . 0.0)
+	     (left . 0.90)
+	     (width . (text-pixels . 1800))
+	     (height . (text-pixels . 1170)));; 1329
     ))
 
 
@@ -977,7 +961,7 @@ font size is computed + 20 of this value."
     (when (display-graphic-p)
       (mrf/update-face-attribute)
       (unless (daemonp)
-      (mrf/frame-recenter)))))
+	(mrf/frame-recenter)))))
 
 ;;; --------------------------------------------------------------------------
 
@@ -997,23 +981,23 @@ font size is computed + 20 of this value."
   (cond
     ((equal mrf/font-size-slot 3)
       (setq custom-default-font-size mrf/x-large-font-size
-      mrf/default-variable-font-size (+ custom-default-font-size 20)
-      mrf/font-size-slot 2)
+	mrf/default-variable-font-size (+ custom-default-font-size 20)
+	mrf/font-size-slot 2)
       (mrf/update-face-attribute))
     ((equal mrf/font-size-slot 2)
       (setq custom-default-font-size mrf/large-font-size
-      mrf/default-variable-font-size (+ custom-default-font-size 20)
-      mrf/font-size-slot 1)
+	mrf/default-variable-font-size (+ custom-default-font-size 20)
+	mrf/font-size-slot 1)
       (mrf/update-face-attribute))
     ((equal mrf/font-size-slot 1)
       (setq custom-default-font-size mrf/medium-font-size
-      mrf/default-variable-font-size (+ custom-default-font-size 20)
-      mrf/font-size-slot 0)
+	mrf/default-variable-font-size (+ custom-default-font-size 20)
+	mrf/font-size-slot 0)
       (mrf/update-face-attribute))
     ((equal mrf/font-size-slot 0)
       (setq custom-default-font-size mrf/small-font-size
-      mrf/default-variable-font-size (+ custom-default-font-size 20)
-      mrf/font-size-slot 3)
+	mrf/default-variable-font-size (+ custom-default-font-size 20)
+	mrf/font-size-slot 3)
       (mrf/update-face-attribute))))
 
 ;;; --------------------------------------------------------------------------
@@ -1063,9 +1047,9 @@ font size is computed + 20 of this value."
   (add-hook 'elpaca-after-init-hook
     (lambda ()
       (progn
-      (mrf/update-face-attribute)
-      (unless (daemonp)
-  	(mrf/frame-recenter))))
+	(mrf/update-face-attribute)
+	(unless (daemonp)
+	  (mrf/frame-recenter))))
     ))
 
 ;;; --------------------------------------------------------------------------
@@ -1091,17 +1075,17 @@ font size is computed + 20 of this value."
 
 ;;; --------------------------------------------------------------------------
 
+(use-package faces :ensure nil)
 (defun mrf/org-font-setup ()
   "Setup org mode fonts."
-  (use-package faces :ensure nil)
 
   (font-lock-add-keywords
     'org-mode
     '(("^ *\\([-]\\) "
-      (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))))
-
+	(0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))))
+  
   (set-face-attribute 'org-block nil	   :foreground 'unspecified
-    :inherit 'fixed-pitch :font "JetBrains Mono" )
+    :inherit 'fixed-pitch :font "JetBrains Mono" :height custom-default-font-size)
   (set-face-attribute 'org-formula nil  :inherit 'fixed-pitch)
   (set-face-attribute 'org-code nil	   :inherit '(shadow fixed-pitch))
   (set-face-attribute 'org-table nil	   :inherit '(shadow fixed-pitch))
@@ -1113,13 +1097,13 @@ font size is computed + 20 of this value."
   (set-face-attribute 'line-number-current-line nil :inherit 'fixed-pitch)
 
   (dolist (face '((org-level-1 . 1.50)
-  		 (org-level-2 . 1.25)
-  		 (org-level-3 . 1.15)
-  		 (org-level-4 . 1.05)
-  		 (org-level-5 . 0.95)
-  		 (org-level-6 . 0.90)
-  		 (org-level-7 . 0.90)
-  		 (org-level-8 . 0.90)))
+		   (org-level-2 . 1.25)
+		   (org-level-3 . 1.15)
+		   (org-level-4 . 1.05)
+		   (org-level-5 . 0.95)
+		   (org-level-6 . 0.90)
+		   (org-level-7 . 0.90)
+		   (org-level-8 . 0.90)))
     (set-face-attribute (car face) nil :font "SF Pro" :weight 'regular
       :height (cdr face))))
 
@@ -1148,7 +1132,7 @@ font size is computed + 20 of this value."
   (setq org-todo-keywords
     '((sequence "TODO(t)" "NEXT(n)" "|" "DONE(d!)")
        (sequence "BACKLOG(b)" "PLAN(p)" "READY(r)" "ACTIVE(a)"
-       "REVIEW(v)" "WAIT(w@/!)" "HOLD(h)" "|" "COMPLETED(c)" "CANC(k@)")))
+	 "REVIEW(v)" "WAIT(w@/!)" "HOLD(h)" "|" "COMPLETED(c)" "CANC(k@)")))
   (setq org-refile-targets
     '(("Archive.org" :maxlevel . 1)
        ("Tasks.org" :maxlevel . 1))))
@@ -1158,50 +1142,50 @@ font size is computed + 20 of this value."
 (defun mrf/org-setup-agenda ()
   (setq org-agenda-custom-commands
     '(("d" "Dashboard"
-      ((agenda "" ((org-deadline-warning-days 7)))
-  	(todo "NEXT"
-  	  ((org-agenda-overriding-header "Next Tasks")))
-  	(tags-todo "agenda/ACTIVE" ((org-agenda-overriding-header "Active Projects")))))
+	((agenda "" ((org-deadline-warning-days 7)))
+	  (todo "NEXT"
+	    ((org-agenda-overriding-header "Next Tasks")))
+	  (tags-todo "agenda/ACTIVE" ((org-agenda-overriding-header "Active Projects")))))
 
        ("n" "Next Tasks"
-       ((todo "NEXT"
-  	  ((org-agenda-overriding-header "Next Tasks")))))
+	 ((todo "NEXT"
+	    ((org-agenda-overriding-header "Next Tasks")))))
 
        ("W" "Work Tasks" tags-todo "+work-email")
 
        ;; Low-effort next actions
        ("e" tags-todo "+TODO=\"NEXT\"+Effort<15&+Effort>0"
-       ((org-agenda-overriding-header "Low Effort Tasks")
-  	 (org-agenda-max-todos 20)
-  	 (org-agenda-files org-agenda-files)))
+	 ((org-agenda-overriding-header "Low Effort Tasks")
+	   (org-agenda-max-todos 20)
+	   (org-agenda-files org-agenda-files)))
 
        ("w" "Workflow Status"
-       ((todo "WAIT"
-  	  ((org-agenda-overriding-header "Waiting on External")
-  	    (org-agenda-files org-agenda-files)))
-  	 (todo "REVIEW"
-  	   ((org-agenda-overriding-header "In Review")
-  	     (org-agenda-files org-agenda-files)))
-  	 (todo "PLAN"
-  	   ((org-agenda-overriding-header "In Planning")
-  	     (org-agenda-todo-list-sublevels nil)
-  	     (org-agenda-files org-agenda-files)))
-  	 (todo "BACKLOG"
-  	   ((org-agenda-overriding-header "Project Backlog")
-  	     (org-agenda-todo-list-sublevels nil)
-  	     (org-agenda-files org-agenda-files)))
-  	 (todo "READY"
-  	   ((org-agenda-overriding-header "Ready for Work")
-  	     (org-agenda-files org-agenda-files)))
-  	 (todo "ACTIVE"
-  	   ((org-agenda-overriding-header "Active Projects")
-  	     (org-agenda-files org-agenda-files)))
-  	 (todo "COMPLETED"
-  	   ((org-agenda-overriding-header "Completed Projects")
-  	     (org-agenda-files org-agenda-files)))
-  	 (todo "CANC"
-  	   ((org-agenda-overriding-header "Cancelled Projects")
-  	     (org-agenda-files org-agenda-files)))))))
+	 ((todo "WAIT"
+	    ((org-agenda-overriding-header "Waiting on External")
+	      (org-agenda-files org-agenda-files)))
+	   (todo "REVIEW"
+	     ((org-agenda-overriding-header "In Review")
+	       (org-agenda-files org-agenda-files)))
+	   (todo "PLAN"
+	     ((org-agenda-overriding-header "In Planning")
+	       (org-agenda-todo-list-sublevels nil)
+	       (org-agenda-files org-agenda-files)))
+	   (todo "BACKLOG"
+	     ((org-agenda-overriding-header "Project Backlog")
+	       (org-agenda-todo-list-sublevels nil)
+	       (org-agenda-files org-agenda-files)))
+	   (todo "READY"
+	     ((org-agenda-overriding-header "Ready for Work")
+	       (org-agenda-files org-agenda-files)))
+	   (todo "ACTIVE"
+	     ((org-agenda-overriding-header "Active Projects")
+	       (org-agenda-files org-agenda-files)))
+	   (todo "COMPLETED"
+	     ((org-agenda-overriding-header "Completed Projects")
+	       (org-agenda-files org-agenda-files)))
+	   (todo "CANC"
+	     ((org-agenda-overriding-header "Cancelled Projects")
+	       (org-agenda-files org-agenda-files)))))))
   ) ;; mrf/org-setup-agenda
 
 ;;; --------------------------------------------------------------------------
@@ -1210,31 +1194,31 @@ font size is computed + 20 of this value."
   (setq org-capture-templates
     `(("t" "Tasks / Projects")
        ("tt" "Task" entry (file+olp "~/Projects/Code/emacs-from-scratch/OrgFiles/Tasks.org" "Inbox")
-       "* TODO %?\n  %U\n  %a\n	 %i" :empty-lines 1)
+	 "* TODO %?\n  %U\n  %a\n	 %i" :empty-lines 1)
 
        ("j" "Journal Entries")
        ("jj" "Journal" entry
-       (file+olp+datetree "~/Projects/Code/emacs-from-scratch/OrgFiles/Journal.org")
-       "\n* %<%I:%M %p> - Journal :journal:\n\n%?\n\n"
-       ;; ,(dw/read-file-as-string "~/Notes/Templates/Daily.org")
-       :clock-in :clock-resume
-       :empty-lines 1)
+	 (file+olp+datetree "~/Projects/Code/emacs-from-scratch/OrgFiles/Journal.org")
+	 "\n* %<%I:%M %p> - Journal :journal:\n\n%?\n\n"
+	 ;; ,(dw/read-file-as-string "~/Notes/Templates/Daily.org")
+	 :clock-in :clock-resume
+	 :empty-lines 1)
        ("jm" "Meeting" entry
-       (file+olp+datetree "~/Projects/Code/emacs-from-scratch/OrgFiles/Journal.org")
-       "* %<%I:%M %p> - %a :meetings:\n\n%?\n\n"
-       :clock-in :clock-resume
-       :empty-lines 1)
+	 (file+olp+datetree "~/Projects/Code/emacs-from-scratch/OrgFiles/Journal.org")
+	 "* %<%I:%M %p> - %a :meetings:\n\n%?\n\n"
+	 :clock-in :clock-resume
+	 :empty-lines 1)
 
        ("w" "Workflows")
        ("we" "Checking Email" entry (file+olp+datetree
-  				    "~/Projects/Code/emacs-from-scratch/OrgFiles/Journal.org")
-       "* Checking Email :email:\n\n%?" :clock-in :clock-resume :empty-lines 1)
+				      "~/Projects/Code/emacs-from-scratch/OrgFiles/Journal.org")
+	 "* Checking Email :email:\n\n%?" :clock-in :clock-resume :empty-lines 1)
 
        ("m" "Metrics Capture")
        ("mw" "Weight" table-line (file+headline
-  				 "~/Projects/Code/emacs-from-scratch/OrgFiles/Metrics.org"
-  				 "Weight")
-       "| %U | %^{Weight} | %^{Notes} |" :kill-buffer t))))
+				   "~/Projects/Code/emacs-from-scratch/OrgFiles/Metrics.org"
+				   "Weight")
+	 "| %U | %^{Weight} | %^{Notes} |" :kill-buffer t))))
 
 ;;; --------------------------------------------------------------------------
 
@@ -1252,7 +1236,7 @@ font size is computed + 20 of this value."
   (org-startup-with-inline-images t)
   (org-image-actual-width '(300))
   :bind (:map org-mode-map
-  	("C-c e" . org-edit-src-code))
+	  ("C-c e" . org-edit-src-code))
   :config
   (setq org-hide-emphasis-markers nil)
   ;; Save Org buffers after refiling!
@@ -1290,8 +1274,8 @@ font size is computed + 20 of this value."
     '((right-divider-width . 40)
        (internal-border-width . 40)))
   (dolist (face '(window-divider
-  		 window-divider-first-pixel
-  		 window-divider-last-pixel))
+		   window-divider-first-pixel
+		   window-divider-last-pixel))
     (face-spec-reset-face face)
     (set-face-foreground face (face-attribute 'default :background nil)))
   (set-face-background 'fringe (face-attribute 'default :background nil))
@@ -1348,13 +1332,6 @@ font size is computed + 20 of this value."
   (add-to-list 'org-structure-template-alist '("py" . "src python")))
 
 ;;; --------------------------------------------------------------------------
-;; Automatically tangle our Org config file when we saveed. Org files that
-;; should use this need to add a '#+auto_tangle: t' in the org file header.
-(use-package org-auto-tangle
-  :after org
-  :hook (org-mode . org-auto-tangle-mode))
-
-;;; --------------------------------------------------------------------------
 
 (use-package ox-gfm
   :after org)
@@ -1408,8 +1385,8 @@ capture was not aborted."
     (mrf/org-roam-filter-by-tag "Project")
     :templates
     '(("p" "project" plain "* Goals\n\n%?\n\n* Tasks\n\n** TODO Add initial tasks\n\n* Dates\n\n"
-      :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n#+category: ${title}\n#+filetags: Project")
-      :unnarrowed t))))
+	:if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n#+category: ${title}\n#+filetags: Project")
+	:unnarrowed t))))
 
 ;; (global-set-key (kbd "C-c n p") #'mrf/org-roam-find-project)
 
@@ -1419,14 +1396,14 @@ capture was not aborted."
   (interactive)
   (org-roam-capture- :node (org-roam-node-create)
     :templates '(("i" "inbox" plain "* %?"
-  		 :if-new (file+head "Inbox.org" "#+title: Inbox\n")))))
+		   :if-new (file+head "Inbox.org" "#+title: Inbox\n")))))
 
 (defun mrf/org-roam-node-insert-immediate (arg &rest args)
   (interactive "P")
   (let ((args (push arg args))
-       (org-roam-capture-templates
-  	 (list (append (car org-roam-capture-templates)
-  		 '(:immediate-finish t)))))
+	 (org-roam-capture-templates
+	   (list (append (car org-roam-capture-templates)
+		   '(:immediate-finish t)))))
     (apply #'org-roam-node-insert args)))
 
 ;;; --------------------------------------------------------------------------
@@ -1438,23 +1415,23 @@ capture was not aborted."
 
   ;; Capture the new task, creating the project file if necessary
   (org-roam-capture- :node (org-roam-node-read nil
-  			   (mrf/org-roam-filter-by-tag "Project"))
+			     (mrf/org-roam-filter-by-tag "Project"))
     :templates '(("p" "project" plain "** TODO %?"
-  		 :if-new
-  		 (file+head+olp "%<%Y%m%d%H%M%S>-${slug}.org"
-  		   "#+title: ${title}\n#+category: ${title}\n#+filetags: Project"
-  		   ("Tasks"))))))
+		   :if-new
+		   (file+head+olp "%<%Y%m%d%H%M%S>-${slug}.org"
+		     "#+title: ${title}\n#+category: ${title}\n#+filetags: Project"
+		     ("Tasks"))))))
 
 ;;; --------------------------------------------------------------------------
 
 (defun mrf/org-roam-copy-todo-to-today ()
   (interactive)
   (let ((org-refile-keep t) ;; Set this to nil to delete the original!
-       (org-roam-dailies-capture-templates
-  	 '(("t" "tasks" entry "%?"
-  	     :if-new (file+head+olp "%<%Y-%m-%d>.org" "#+title: %<%Y-%m-%d>\n" ("Tasks")))))
-       (org-after-refile-insert-hook #'save-buffer)
-       today-file pos)
+	 (org-roam-dailies-capture-templates
+	   '(("t" "tasks" entry "%?"
+	       :if-new (file+head+olp "%<%Y-%m-%d>.org" "#+title: %<%Y-%m-%d>\n" ("Tasks")))))
+	 (org-after-refile-insert-hook #'save-buffer)
+	 today-file pos)
     (save-window-excursion
       (org-roam-dailies--capture (current-time) t)
       (setq today-file (buffer-file-name))
@@ -1462,7 +1439,7 @@ capture was not aborted."
 
     ;; Only refile if the target file is different than the current file
     (unless (equal (file-truename today-file)
-  	    (file-truename (buffer-file-name)))
+	      (file-truename (buffer-file-name)))
       (org-refile nil nil (list "Tasks" today-file nil pos)))))
 
 (use-package toc-org
@@ -1471,7 +1448,7 @@ capture was not aborted."
   (org-mode . toc-org-mode)
   (markdown-mode-hook . toc-org-mode)
   :bind (:map markdown-mode-map
-  	("C-c C-o" . toc-org-markdown-follow-thing-at-point)))
+	  ("C-c C-o" . toc-org-markdown-follow-thing-at-point)))
 
 (use-package org-roam
   ;; :demand t  ;; Ensure org-roam is loaded by default
@@ -1486,17 +1463,17 @@ capture was not aborted."
   (org-roam-directory (expand-file-name "org-roam-notes" user-emacs-directory))
   (org-roam-completion-everywhere t)
   :bind (("C-c n l" . org-roam-buffer-toggle)
-  	("C-c n f" . org-roam-node-find)
-  	("C-c n i" . org-roam-node-insert)
-  	("C-c n I" . mrf/org-roam-node-insert-immediate)
-  	("C-c n p" . mrf/org-roam-find-project)
-  	("C-c n t" . mrf/org-roam-capture-task)
-  	("C-c n b" . mrf/org-roam-capture-inbox)
-  	:map org-mode-map
-  	("C-M-i" . completion-at-point)
-  	:map org-roam-dailies-map
-  	("Y" . org-roam-dailies-capture-yesterday)
-  	("T" . org-roam-dailies-capture-tomorrow))
+	  ("C-c n f" . org-roam-node-find)
+	  ("C-c n i" . org-roam-node-insert)
+	  ("C-c n I" . mrf/org-roam-node-insert-immediate)
+	  ("C-c n p" . mrf/org-roam-find-project)
+	  ("C-c n t" . mrf/org-roam-capture-task)
+	  ("C-c n b" . mrf/org-roam-capture-inbox)
+	  :map org-mode-map
+	  ("C-M-i" . completion-at-point)
+	  :map org-roam-dailies-map
+	  ("Y" . org-roam-dailies-capture-yesterday)
+	  ("T" . org-roam-dailies-capture-tomorrow))
   :bind-keymap
   ("C-c n d" . org-roam-dailies-map)
   :config
@@ -1505,7 +1482,7 @@ capture was not aborted."
   (add-to-list 'org-after-todo-state-change-hook
     (lambda ()
       (when (equal org-state "DONE")
-      (mrf/org-roam-copy-todo-to-today))))
+	(mrf/org-roam-copy-todo-to-today))))
   (org-roam-db-autosync-mode))
 
 ;;; --------------------------------------------------------------------------
@@ -1594,13 +1571,13 @@ capture was not aborted."
 (use-package treemacs
   :after (:all winum ace-window)
   :bind (:map global-map
-  	("M-0"	   . treemacs-select-window)
-  	("C-x t 1"   . treemacs-delete-other-windows)
-  	("C-x t t"   . treemacs)
-  	("C-x t d"   . treemacs-select-directory)
-  	("C-x t B"   . treemacs-bookmark)
-  	("C-x t C-t" . treemacs-find-file)
-  	("C-x t M-t" . treemacs-find-tag))
+	  ("M-0"	   . treemacs-select-window)
+	  ("C-x t 1"   . treemacs-delete-other-windows)
+	  ("C-x t t"   . treemacs)
+	  ("C-x t d"   . treemacs-select-directory)
+	  ("C-x t B"   . treemacs-bookmark)
+	  ("C-x t C-t" . treemacs-find-file)
+	  ("C-x t M-t" . treemacs-find-tag))
   :config
   (setq treemacs-collapse-dirs		  (if treemacs-python-executable 3 0)
     treemacs-deferred-git-apply-delay	 0.5
@@ -1628,8 +1605,8 @@ capture was not aborted."
     treemacs-no-delete-other-windows	 t
     treemacs-project-follow-cleanup		 nil
     treemacs-persist-file			 (expand-file-name
-  						 ".cache/treemacs-persist"
-  						 user-emacs-directory)
+						   ".cache/treemacs-persist"
+						   user-emacs-directory)
     treemacs-position			 'left
     treemacs-read-string-input		 'from-child-frame
     treemacs-recenter-distance		 0.1
@@ -1638,9 +1615,9 @@ capture was not aborted."
     treemacs-recenter-after-project-jump	 'always
     treemacs-recenter-after-project-expand	 'on-distance
     treemacs-litter-directories		 '("/node_modules"
-  					  "/.venv"
-  					  "/.cask"
-  					  "/__pycache__")
+					    "/.venv"
+					    "/.cask"
+					    "/__pycache__")
     treemacs-project-follow-into-home	 nil
     treemacs-show-cursor			 nil
     treemacs-show-hidden-files		 t
@@ -1670,7 +1647,7 @@ capture was not aborted."
   (when treemacs-python-executable
     (treemacs-git-commit-diff-mode t))
   (pcase (cons (not (null (executable-find "git")))
-  	 (not (null treemacs-python-executable)))
+	   (not (null treemacs-python-executable)))
     (`(t . t)
       (treemacs-git-mode 'deferred))
     (`(t . _)
@@ -1718,8 +1695,8 @@ capture was not aborted."
 (use-package dashboard
   :custom
   (dashboard-items '(   (recents . 15)
-  		    (bookmarks . 10)
-  		    (projects . 10)))
+		      (bookmarks . 10)
+		      (projects . 10)))
   (dashboard-center-content t)
   (dashboard-set-heading-icons t)
   (dashboard-set-file-icons t)
@@ -1796,13 +1773,13 @@ capture was not aborted."
   (add-to-list 'eglot-server-programs '(python-mode . ("pylsp")))  
   (setq-default eglot-workspace-configuration
     '((:gopls .
-      ((staticcheck . t)
-    	(matcher . "CaseSensitive")))))
+  	((staticcheck . t)
+  	  (matcher . "CaseSensitive")))))
   (setq-default eglot-workspace-configuration
     '((:pylsp . (:configurationSources ["flake8"]
-    		:plugins (:pycodestyle (:enabled nil)
-    			   :mccabe (:enabled nil)
-    			   :flake8 (:enabled t)))))))
+  		  :plugins (:pycodestyle (:enabled nil)
+  			     :mccabe (:enabled nil)
+  			     :flake8 (:enabled t)))))))
 
 ;;; --------------------------------------------------------------------------
 ;;; Language Server Protocol
@@ -1830,19 +1807,19 @@ capture was not aborted."
   :when (equal custom-ide 'custom-ide-lsp)
   :after lsp
   :config (setq lsp-ui-sideline-enable t
-  	  lsp-ui-sideline-show-hover t
-  	  lsp-ui-sideline-delay 0.5
-  	  lsp-ui-sideline-ignore-duplicates t
-  	  lsp-ui-doc-delay 3
-  	  lsp-ui-doc-position 'top
-  	  lsp-ui-doc-alignment 'frame
-  	  lsp-ui-doc-header nil
-  	  lsp-ui-doc-show-with-cursor t
-  	  lsp-ui-doc-include-signature t
-  	  lsp-ui-doc-use-childframe t)
+	    lsp-ui-sideline-show-hover t
+	    lsp-ui-sideline-delay 0.5
+	    lsp-ui-sideline-ignore-duplicates t
+	    lsp-ui-doc-delay 3
+	    lsp-ui-doc-position 'top
+	    lsp-ui-doc-alignment 'frame
+	    lsp-ui-doc-header nil
+	    lsp-ui-doc-show-with-cursor t
+	    lsp-ui-doc-include-signature t
+	    lsp-ui-doc-use-childframe t)
   :commands lsp-ui-mode
   :bind (:map lsp-ui-mode-map
-  	("C-c l d" . lsp-ui-doc-focus-frame))
+	  ("C-c l d" . lsp-ui-doc-focus-frame))
   :custom
   (lsp-ui-doc-position 'bottom)
   :hook (lsp-mode . lsp-ui-mode))
@@ -1851,13 +1828,13 @@ capture was not aborted."
   :when (equal custom-ide 'custom-ide-lsp)
   :after lsp treemacs
   :bind (:map prog-mode-map
-  	("C-c t" . treemacs))
+	  ("C-c t" . treemacs))
   :config
   (lsp-treemacs-sync-mode 1))
 
 (use-package lsp-ivy
   :when (and (equal custom-ide 'custom-ide-lsp)
-  	(equal completion-handler 'comphand-ivy-counsel))
+	  (equal completion-handler 'comphand-ivy-counsel))
   :after lsp ivy)
 
 ;;; --------------------------------------------------------------------------
@@ -1879,9 +1856,9 @@ capture was not aborted."
 (use-package anaconda-mode
   :when (equal custom-ide 'custom-ide-anaconda)
   :bind (:map python-mode-map
-  	("C-c g o" . anaconda-mode-find-definitions-other-frame)
-  	("C-c g g" . anaconda-mode-find-definitions)
-  	("C-c C-x" . next-error))
+	  ("C-c g o" . anaconda-mode-find-definitions-other-frame)
+	  ("C-c g g" . anaconda-mode-find-definitions)
+	  ("C-c C-x" . next-error))
   :config
   (which-key-add-key-based-replacements "C-c g o" "find-defitions-other-window")
   (which-key-add-key-based-replacements "C-c g g" "find-defitions")
@@ -1899,10 +1876,10 @@ capture was not aborted."
   (display-fill-column-indicator-mode 1)
   (highlight-indentation-mode nil)
   :bind (:map python-mode-map
-  	("C-c g a" . elpy-goto-assignment)
-  	("C-c g o" . elpy-goto-definition-other-window)
-  	("C-c g g" . elpy-goto-definition)
-  	("C-c g ?" . elpy-doc))
+	  ("C-c g a" . elpy-goto-assignment)
+	  ("C-c g o" . elpy-goto-definition-other-window)
+	  ("C-c g g" . elpy-goto-definition)
+	  ("C-c g ?" . elpy-doc))
   :config
   (use-package jedi)
   (use-package flycheck
@@ -1920,7 +1897,7 @@ capture was not aborted."
 ;;; ------------------------------------------------------------------------
 (defun mrf/additional-dape-configs ()
   "This does assume that this is called AFTER dape has been loaded."
-
+  
   (add-to-list 'dape-configs
     `(delve
        modes (go-mode go-ts-mode)
@@ -2054,7 +2031,7 @@ capture was not aborted."
 ;;; --------------------------------------------------------------------------
 
 (setq dap-lldb-debug-program
-  "/Users/strider/Developer/plain_unix/llvm-project/build/bin/lldb-dap")
+  "/Users/strider/Developer/command-line-unix/llvm/lldb-build/bin/lldb-dap")
 
 (defun mrf/populate-lldb-start-file-args (conf)
   "Populate CONF with the required arguments."
@@ -2079,9 +2056,9 @@ capture was not aborted."
     (dap-register-debug-provider "lldb-dap" 'mrf/populate-lldb-start-file-args)
     (dap-register-debug-template "LLDB DAP :: Run from project directory"
       (list :type "lldb-dap"
-      :name "LLDB using DAP"
-      :program "a.out"
-      :request "launch"))))
+	:name "LLDB using DAP"
+	:program "a.out"
+	:request "launch"))))
 
 ;;; --------------------------------------------------------------------------
 ;;; DAP for Python
@@ -2110,6 +2087,12 @@ capture was not aborted."
       :program nil
       :request "launch"
       :name "Python :: Run file (buffer)")))
+
+(use-package dap-lldb
+  :defer t
+  :ensure (:package "dap-lldb" :type git :host github :repo "emacs-lsp/dap-mode")
+  :custom
+  (dap-lldb-debug-program "~/Developer/command-line-unix/llvm/lldb-build/bin/lldb-dap"))
 
 (use-package dap-cpptools
   :ensure (:package "dap-cpptools" :type git :host github :repo "emacs-lsp/dap-mode")
@@ -2169,9 +2152,9 @@ capture was not aborted."
   _c_: Continue	_su_: Up stack frame	 _bc_: Set condition	_de_: Edit debug template   _ea_: Add expression.
   _r_: Restart frame	_sd_: Down stack frame	 _bh_: Set hit count	_ds_: Debug restart
   _Q_: Disconnect	_sl_: List locals	 _bl_: Set log message	_dx_: end session
-  		    _sb_: List breakpoints			      _dX_: end all sessions
-  		    _sS_: List sessions
-  		    _sR_: Session Repl
+		      _sb_: List breakpoints			      _dX_: end all sessions
+		      _sS_: List sessions
+		      _sR_: Session Repl
 "
     ("n" dap-next)
     ("i" dap-step-in)
@@ -2211,11 +2194,13 @@ capture was not aborted."
     ("q" mrf/dap-end-debug-session "quit" :color blue)
     ("Q" mrf/dap-delete-all-debug-sessions :color red)))
 
+(use-package prescient)
+
 ;;; --------------------------------------------------------------------------
 
 (use-package orderless
   :when (or (equal completion-handler 'comphand-vertico)
-  	(equal completion-handler 'comphand-ivy-counsel))
+	  (equal completion-handler 'comphand-ivy-counsel))
   :custom
   (completion-styles '(orderless basic))
   (completion-category-overrides '((file (styles basic partial-completion)))))
@@ -2226,18 +2211,18 @@ capture was not aborted."
 (use-package ivy
   :when (equal completion-handler 'comphand-ivy-counsel)
   :bind (("C-s" . swiper)
-  	:map ivy-minibuffer-map
-  	  ;;; ("TAB" . ivy-alt-done)
-  	("C-l" . ivy-alt-done)
-  	("C-j" . ivy-next-line)
-  	("C-k" . ivy-previous-line)
-  	:map ivy-switch-buffer-map
-  	("C-k" . ivy-previous-line)
-  	("C-l" . ivy-done)
-  	("C-d" . ivy-switch-buffer-kill)
-  	:map ivy-reverse-i-search-map
-  	("C-k" . ivy-previous-line)
-  	("C-d" . ivy-reverse-i-search-kill))
+	  :map ivy-minibuffer-map
+	    ;;; ("TAB" . ivy-alt-done)
+	  ("C-l" . ivy-alt-done)
+	  ("C-j" . ivy-next-line)
+	  ("C-k" . ivy-previous-line)
+	  :map ivy-switch-buffer-map
+	  ("C-k" . ivy-previous-line)
+	  ("C-l" . ivy-done)
+	  ("C-d" . ivy-switch-buffer-kill)
+	  :map ivy-reverse-i-search-map
+	  ("C-k" . ivy-previous-line)
+	  ("C-d" . ivy-reverse-i-search-kill))
   :custom
   (enable-recursive-minibuffers t)
   (ivy-use-virtual-buffers t)
@@ -2273,12 +2258,12 @@ capture was not aborted."
 (use-package counsel
   :when (equal completion-handler 'comphand-ivy-counsel)
   :bind ( ("C-M-j" . 'counsel-switch-buffer)
-  	("M-x" . 'counsel-M-x)
-  	("M-g o" . 'counsel-outline)
-  	("C-x C-f" . 'counsel-find-file)
-  	("C-c C-r" . 'ivy-resume)
-  	:map minibuffer-local-map
-  	("C-r" . 'counsel-minibuffer-history))
+	  ("M-x" . 'counsel-M-x)
+	  ("M-g o" . 'counsel-outline)
+	  ("C-x C-f" . 'counsel-find-file)
+	  ("C-c C-r" . 'ivy-resume)
+	  :map minibuffer-local-map
+	  ("C-r" . 'counsel-minibuffer-history))
   :custom
   (counsel-linux-app-format-function #'counsel-linux-app-format-function-name-only)
   :config
@@ -2288,7 +2273,7 @@ capture was not aborted."
 
 (use-package ivy-prescient
   :when (equal completion-handler 'comphand-ivy-counsel)
-  :after ivy
+  :after (ivy prescient)
   :custom
   (prescient-persist-mode t)
   (ivy-prescient-mode t)
@@ -2311,39 +2296,29 @@ capture was not aborted."
   (corfu-on-exact-match nil)	     ; Don't auto expand tempel snippets
   ;; Optionally use TAB for cycling, default is `corfu-complete'.
   :bind (:map corfu-map
-  	("M-SPC"	    . corfu-insert-separator)
-  	("TAB"	    . corfu-next)
-  	([tab]	    . corfu-next)
-  	("S-TAB"	    . corfu-previous)
-  	([backtab]    . corfu-previous)
-  	("S-<return>" . corfu-insert)
-  	("RET"	    . nil))
+	  ("M-SPC"	    . corfu-insert-separator)
+	  ("TAB"	    . corfu-next)
+	  ([tab]	    . corfu-next)
+	  ("S-TAB"	    . corfu-previous)
+	  ([backtab]    . corfu-previous)
+	  ("S-<return>" . corfu-insert)
+	  ("RET"	    . nil))
   :init
   (global-corfu-mode)
   (corfu-history-mode)
   (corfu-popupinfo-mode) ; Popup completion info
   :config
-  (use-package corfu-prescient
-    :after corfu))
-(add-hook 'eshell-mode-hook
-  (lambda () (setq-local corfu-quit-at-boundary t
-  	     corfu-quit-no-match t
-  	     corfu-auto nil)
-    (corfu-mode)))
+  (add-hook 'eshell-mode-hook
+    (lambda () (setq-local corfu-quit-at-boundary t
+		 corfu-quit-no-match t
+		 corfu-auto nil)
+      (corfu-mode))))
+
+(use-package corfu-prescient
+  :when (equal completion-handler 'comphand-corfu)
+  :after (corfu prescient))
 
 ;;; --------------------------------------------------------------------------
-
-(defun mrf/vertico-other ()
-  (use-package vertico-prescient
-    :ensure (:package "vertico-prescient" :fetcher github
-  	    :repo "radian-software/prescient.el" :files ("vertico-prescient.el")))
-
-  (use-package vertico-posframe
-    :ensure (:package "vertico-posframe" :repo "https://github.com/tumashu/vertico-posframe"
-  	    :local-repo "vertico-posframe" :files ("*" (:exclude ".git")))
-    :custom (vertico-posframe-parameters
-  	    '((left-fringe . 8)
-  	       (right-fringe . 8)))))
 
 (use-package vertico
   :when (equal completion-handler 'comphand-vertico)
@@ -2357,12 +2332,11 @@ capture was not aborted."
   (vertico-multiform-mode 1)
   :config
   (vertico-mode)
-  (mrf/vertico-other)
   ;; :bind ("C-x C-f" . ido-find-file)
   ;; Clean up file path when typing
   :hook ((rfn-eshadow-update-overlay . vertico-directory-tidy)
-  	;; Make sure vertico state is saved
-  	(minibuffer-setup . vertico-repeat-save)))
+	  ;; Make sure vertico state is saved
+	  (minibuffer-setup . vertico-repeat-save)))
 
 ;;; --------------------------------------------------------------------------
 
@@ -2382,7 +2356,7 @@ capture was not aborted."
 
 (use-package consult
   :when (equal completion-handler 'comphand-vertico)
-  :after vertico
+  :After vertico
   :bind
   ([remap switch-to-buffer] . consult-buffer)
   ([remap switch-to-buffer-other-window] . consult-buffer-other-window)
@@ -2422,11 +2396,39 @@ capture was not aborted."
     '(consult--source-hidden-buffer 
        consult--source-buffer
        (:name "Ephemeral" :state consult--buffer-state
-       :narrow 109 :category buffer
-       :items ("*Messages*"  "*scratch*" "*vterm*"
-  		"*Async-native-compile-log*" "*dashboard*"))
+	 :narrow 109 :category buffer
+	 :items ("*Messages*"  "*scratch*" "*vterm*"
+		  "*Async-native-compile-log*" "*dashboard*"))
        consult--source-modified-buffer
        consult--source-recent-file)))
+
+;;; --------------------------------------------------------------------------
+
+(use-package vertico-prescient
+  :when (equal completion-handler 'comphand-vertico)
+  :after vertico prescient)
+
+;;; --------------------------------------------------------------------------
+
+(use-package vertico-posframe
+  :when (equal completion-handler 'comphand-vertico)
+  :after vertico
+  :custom
+  (setq vertico-multiform-commands
+    '((consult-line
+        posframe
+        (vertico-posframe-poshandler . posframe-poshandler-frame-top-center)
+        (vertico-posframe-border-width . 10)
+        ;; NOTE: This is useful when emacs is used in both in X and
+        ;; terminal, for posframe do not work well in terminal, so
+        ;; vertico-buffer-mode will be used as fallback at the
+        ;; moment.
+        (vertico-posframe-fallback-mode . vertico-buffer-mode))
+       (t posframe)))
+  (vertico-multiform-mode 1)
+  (setq vertico-posframe-parameters
+    '((left-fringe . 8)
+       (right-fringe . 8))))
 
 ;;; --------------------------------------------------------------------------
 
@@ -2576,8 +2578,8 @@ capture was not aborted."
 (use-package js2-mode
   :hook (js-mode . js2-minor-mode)
   :bind (:map js2-mode-map
-  	("{" . paredit-open-curly)
-  	("}" . paredit-close-curly-and-newline))
+	  ("{" . paredit-open-curly)
+	  ("}" . paredit-close-curly-and-newline))
   :mode ("\\.js\\'" "\\.mjs\\'" "\\.json$")
   :custom (js2-highlight-level 3))
 
@@ -2600,10 +2602,10 @@ capture was not aborted."
   (unless (file-exists-p "Makefile")
     (set (make-local-variable 'compile-command)
       (let ((file (file-name-nondirectory buffer-file-name)))
-      (format "%s -o %s %s"
-  	(if  (equal (file-name-extension file) "cpp") "g++" "gcc" )
-  	(file-name-sans-extension file)
-  	file)))
+	(format "%s -o %s %s"
+	  (if  (equal (file-name-extension file) "cpp") "g++" "gcc" )
+	  (file-name-sans-extension file)
+	  file)))
     (compile compile-command)))
 
 (global-set-key [f9] 'code-compile)
@@ -2630,31 +2632,31 @@ capture was not aborted."
   (cond
     ((equal custom-ide 'custom-ide-lsp)
       (bind-keys :map python-mode-map
-      ("C-c g r" . lsp-find-references)
-      ("C-c g o" . xref-find-definitions-other-window)
-      ("C-c g g" . xref-find-definitions)
-      ("C-c g ?" . eldoc-doc-buffer)))
+	("C-c g r" . lsp-find-references)
+	("C-c g o" . xref-find-definitions-other-window)
+	("C-c g g" . xref-find-definitions)
+	("C-c g ?" . eldoc-doc-buffer)))
     ((equal custom-ide 'custom-ide-eglot)
       (bind-keys :map python-mode-map
-      ("C-c g r" . eglot-find-implementation)
-      ("C-c g o" . xref-find-definitions-other-window)
-      ("C-c g g" . xref-find-definitions)
-      ("C-c g ?" . eldoc-doc-buffer)))
+	("C-c g r" . eglot-find-implementation)
+	("C-c g o" . xref-find-definitions-other-window)
+	("C-c g g" . xref-find-definitions)
+	("C-c g ?" . eldoc-doc-buffer)))
     ((equal custom-ide 'custom-ide-elpy)
       (elpy-enable)
       (bind-keys :map python-mode-map
-      ("C-c g a" . elpy-goto-assignment)
-      ("C-c g o" . elpy-goto-definition-other-window)
-      ("C-c g g" . elpy-goto-definition)
-      ("C-c g ?" . elpy-doc)))
+	("C-c g a" . elpy-goto-assignment)
+	("C-c g o" . elpy-goto-definition-other-window)
+	("C-c g g" . elpy-goto-definition)
+	("C-c g ?" . elpy-doc)))
     ((equal custom-ide 'custom-ide-lsp-bridge)
       (bind-keys :map python-mode-map
-      ("C-c g a" . lsp-bridge-find-reference)
-      ("C-c g o" . lsp-bridge-find-def-other-window)
-      ("C-c g g" . lsp-bridge-find-def)
-      ("C-c g i" . lsp-bridge-find-impl)
-      ("C-c g r" . lsp-bridge-rename)
-      ("C-c g ?" . lsp-bridge-popup-documentation)))
+	("C-c g a" . lsp-bridge-find-reference)
+	("C-c g o" . lsp-bridge-find-def-other-window)
+	("C-c g g" . lsp-bridge-find-def)
+	("C-c g i" . lsp-bridge-find-impl)
+	("C-c g r" . lsp-bridge-rename)
+	("C-c g ?" . lsp-bridge-popup-documentation)))
     ))
 
 ;;; --------------------------------------------------------------------------
@@ -2765,21 +2767,21 @@ capture was not aborted."
   :disabled
   :init (setq rust-mode-treesitter-derive t)
   :hook (rust-mode . (lambda ()
-  		     (setq indent-tabs-mode nil)
-  		     (prettify-symbols-mode)))
+		       (setq indent-tabs-mode nil)
+		       (prettify-symbols-mode)))
   :config
   (setq rust-format-on-save t))
 
-(use-package rust-analyzer)
+; ;(use-package rust-analyzer)
 
 (use-package cargo-mode
   :ensure (:fetcher github :repo "ayrat555/cargo-mode"
-  	  :files ("*.el" "*.el.in" "dir" "*.info" "*.texi"
-  		   "*.texinfo" "doc/dir" "doc/*.info" "doc/*.texi"
-  		   "doc/*.texinfo" "lisp/*.el"
-  		   (:exclude ".dir-locals.el" "test.el" "tests.el"
-  		     "*-test.el" "*-tests.el" "LICENSE" "README*"
-  		     "*-pkg.el"))))
+	    :files ("*.el" "*.el.in" "dir" "*.info" "*.texi"
+		     "*.texinfo" "doc/dir" "doc/*.info" "doc/*.texi"
+		     "doc/*.texinfo" "lisp/*.el"
+		     (:exclude ".dir-locals.el" "test.el" "tests.el"
+		       "*-test.el" "*-tests.el" "LICENSE" "README*"
+		       "*-pkg.el"))))
 
 ;;; --------------------------------------------------------------------------
 
@@ -2818,7 +2820,7 @@ capture was not aborted."
   :unless (equal custom-ide 'custom-ide-lsp-bridge)
   :after (:any lsp-mode elpy anaconda-mode eglot)
   :bind (:map company-active-map
-  	("<tab>" . company-complete-selection))
+	  ("<tab>" . company-complete-selection))
   :custom
   (company-minimum-prefix-length 1)
   (company-idle-delay 0.0)
@@ -2827,16 +2829,16 @@ capture was not aborted."
   (cond
     ((equal custom-ide 'custom-ide-eglot)
       (bind-keys :map eglot-mode-map
-      ("<tab>" . company-indent-or-complete-common)))
+	("<tab>" . company-indent-or-complete-common)))
     ((equal custom-ide 'custom-ide-lsp)
       (bind-keys :map lsp-mode-map
-      ("<tab>" . company-indent-or-complete-common)))
+	("<tab>" . company-indent-or-complete-common)))
     ((equal custom-ide 'custom-ide-elpy)
       (bind-keys :map elpy-mode-map
-      ("<tab>" . company-indent-or-complete-common)))
+	("<tab>" . company-indent-or-complete-common)))
     ((equal custom-ide 'custom-ide-anaconda)
       (bind-keys :map anaconda-mode-map
-      ("<tab>" . company-indent-or-complete-common)))))
+	("<tab>" . company-indent-or-complete-common)))))
 
 ;; IMPORTANT:
 ;; Don't use company at all if lsp-bridge is active.
@@ -2982,7 +2984,7 @@ capture was not aborted."
   ;; Doesn't work as expected!
   ;;(add-to-list 'dired-open-functions #'dired-open-xdg t)
   (setq dired-open-extensions '(("png" . "feh")
-  			       ("mkv" . "mpv"))))
+				 ("mkv" . "mpv"))))
 
 (use-package dired-hide-dotfiles
   :after dired-mode
@@ -3028,7 +3030,8 @@ capture was not aborted."
 
 (use-package solaire-mode
   :after treemacs
-  :ensure (:package "solaire-mode" :source "MELPA" :protocol https :inherit t :depth 1 :repo "hlissner/emacs-solaire-mode" :fetcher github :files ("*.el" "*.el.in" "dir" "*.info" "*.texi" "*.texinfo" "doc/dir" "doc/*.info" "doc/*.texi" "doc/*.texinfo" "lisp/*.el" (:exclude ".dir-locals.el" "test.el" "tests.el" "*-test.el" "*-tests.el" "LICENSE" "README*" "*-pkg.el")))
+  :ensure (:package "solaire-mode" :source "MELPA"
+	   :repo "hlissner/emacs-solaire-mode" :fetcher github)
   :hook (elpaca-after-init . solaire-global-mode)
   :config
   (push '(treemacs-window-background-face . solaire-default-face) solaire-mode-remap-alist)
@@ -3045,19 +3048,19 @@ capture was not aborted."
   (golden-ratio-wide-adjust-factor .4)
   (golden-ratio-max-width 100)
   (golden-ratio-exclude-modes '(
-  			       prog-mode
-  			       dashboard-mode
-  			       ;;inferior-emacs-lisp-mode
-  			       ;;inferior-python-mode
-  			       comint-mode
-  			       ;;lisp-interaction-mode
-  			       treemacs-mode
-  			       undo-tree-visualizer-mode
-  			       vundo-mode
-  			       ))
+				 prog-mode
+				 dashboard-mode
+				 ;;inferior-emacs-lisp-mode
+				 ;;inferior-python-mode
+				 comint-mode
+				 ;;lisp-interaction-mode
+				 treemacs-mode
+				 undo-tree-visualizer-mode
+				 vundo-mode
+				 ))
   (golden-ratio-exclude-buffer-regexp '("dap*"
-  				       "*dape*"
-  				       "*python*"))
+					 "*dape*"
+					 "*python*"))
   :config
   (golden-ratio-mode 1))
 
@@ -3080,7 +3083,7 @@ capture was not aborted."
   (centaur-tabs-set-icons t)
   (centaur-tabs-set-modified-marker t)
   :bind (("C-c <" . centaur-tabs-backward)
-  	("C-c >" . centaur-tabs-forward))
+	  ("C-c >" . centaur-tabs-forward))
   :config ;; Enable centaur-tabs
   (centaur-tabs-mode t))
 
@@ -3119,17 +3122,17 @@ capture was not aborted."
   (defvar mmm-keys-minor-mode-map
     (let ((map (make-sparse-keymap)))
       (bind-keys :map map
-      ("M-RET p" . pulsar-pulse-line)
-      ("M-RET d" . dashboard-open)
-      ("M-RET f" . mrf/set-fill-column-interactively)
-      ("M-RET i" . ielm)
-      ("M-RET v" . vterm-other-window)
-      ("M-RET t" . treemacs)
-      ("M-RET |" . global-display-fill-column-indicator-mode)
-      ("M-RET T +" . next-theme)
-      ("M-RET T -" . previous-theme)
-      ("M-RET T ?" . which-theme)
-      ("M-RET ?" . eldoc-box-help-at-point))
+	("M-RET p" . pulsar-pulse-line)
+	("M-RET d" . dashboard-open)
+	("M-RET f" . mrf/set-fill-column-interactively)
+	("M-RET i" . ielm)
+	("M-RET v" . vterm-other-window)
+	("M-RET t" . treemacs)
+	("M-RET |" . global-display-fill-column-indicator-mode)
+	("M-RET T +" . next-theme)
+	("M-RET T -" . previous-theme)
+	("M-RET T ?" . which-theme)
+	("M-RET ?" . eldoc-box-help-at-point))
       map)
     "mmm-keys-minor-mode keymap.")
 
@@ -3150,13 +3153,13 @@ capture was not aborted."
     (unbind-key "M-RET M-RET" map)
     (cond
       ((equal major-mode 'org-mode)
-      (bind-keys :map map
-    	("M-RET M-RET" . org-insert-heading)
-    	("M-RET o f" . mrf/set-org-fill-column-interactively)
-    	("M-RET o l" . org-toggle-link-display)))
+  	(bind-keys :map map
+  	  ("M-RET M-RET" . org-insert-heading)
+  	  ("M-RET o f" . mrf/set-org-fill-column-interactively)
+  	  ("M-RET o l" . org-toggle-link-display)))
       ((equal major-mode 'python-mode)
-      (bind-keys :map map
-    	("M-RET P" . 'pydoc-at-point))))))
+  	(bind-keys :map map
+  	  ("M-RET P" . 'pydoc-at-point))))))
 
 (defun mrf/mmm-update-menu ()
   (interactive)
@@ -3180,8 +3183,8 @@ capture was not aborted."
   (lambda ()
     (setq-default initial-scratch-message
       (format
-      ";; Hello, World and Happy hacking %s!\n%s\n\n" user-login-name
-      ";; Press M-RET (Meta-RET) to open Mitch's Context Aware Menu"))))
+	";; Hello, World and Happy hacking %s!\n%s\n\n" user-login-name
+	";; Press M-RET (Meta-RET) to open Mitch's Context Aware Menu"))))
 
 (if dashboard-landing-screen
   ;; (add-hook 'inferior-emacs-lisp-mode 'dashboard-open) ;; IELM open?
