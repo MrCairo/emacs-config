@@ -2552,6 +2552,33 @@ capture was not aborted."
 
 ;;; --------------------------------------------------------------------------
 
+(when (equal debug-adapter 'debug-adapter-dap-mode)
+  (use-package typescript-ts-mode
+    :after (:any dap-mode dape-mode)
+    :mode "\\.ts\\'"
+    :hook
+    (typescript-ts-mode . lsp-deferred)
+    (js2-mode . lsp-deferred)
+    :bind (:map typescript-mode-map
+	    ("C-c ." . dap-hydra/body))
+    :config
+    (setq typescript-indent-level 4)
+    (dap-node-setup)))
+
+(when (equal debug-adapter 'debug-adapter-dape)
+  (use-package typescript-ts-mode
+    :after dape-mode
+    :mode ("\\.ts\\'")
+    :hook
+    (typescript-ts-mode . lsp-deferred)
+    (js2-mode . lsp-deferred)
+    :bind (:map typescript-mode-map
+	    ("C-c ." . dape-hydra/body))
+    :config
+    (setq typescript-indent-level 4)))
+
+;;; --------------------------------------------------------------------------
+
 (defun mrf/load-js-file-hook ()
   (js2-mode)
 

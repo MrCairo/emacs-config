@@ -1328,6 +1328,9 @@ This function simply loads the theme from the theme-list indexed by the ~theme-s
 
 ** Color Theming
 
+<<<Color Theming>>> as a curated list of theming packages.
+*Note:* If new themes are added in the ~theme-list~ custom variable then they must be included here along with any customizations.
+
 #+begin_src emacs-lisp :tangle "init.el" 
   ;;; --------------------------------------------------------------------------
 
@@ -3794,7 +3797,7 @@ Tree-sitter is a parser generator tool and an incremental parsing library. It ca
 *** Typescript
 This is a basic configuration for the TypeScript language so that =.ts= files activate =typescript-ts-mode= when opened.  We're also adding a hook to =typescript-mode-hook= to call =lsp-deferred= so that we activate =lsp-mode= to get LSP features every time we edit TypeScript code.
 
-#+begin_src emacs-lisp :tangle "excluded-init.el" 
+#+begin_src emacs-lisp :tangle "init.el" 
   ;;; --------------------------------------------------------------------------
 
   (when (equal debug-adapter 'debug-adapter-dap-mode)
