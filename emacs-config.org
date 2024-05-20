@@ -58,7 +58,7 @@ The goal of this Emacs configuration is to make an Emacs configuration that has 
 
 --------------------------------------------------------------------------------
 
-- This config requires Emacs 29+
+- This config requires Emacs 29.1+
 
 - While this configuration includes support for several languages - and I mean support for syntax highlighting and, to some extent, debugging - this configuration caters to be a Python develpment environment.
 
@@ -160,7 +160,7 @@ The goal of this Emacs configuration is to make an Emacs configuration that has 
 #+end_src
 
 
-* init.el package bootstrap
+* Elpaca package manager bootstrap
 
 This section just sets up the starting part of the ~init.el~ file. These includes Elpaca bootrapping and other types of global setup.
 
@@ -983,6 +983,8 @@ These are useful snippets of code that are commonly used in various languages. Y
     (define-key yas-minor-mode-map (kbd "<tab>") nil)
     (add-to-list #'yas-snippet-dirs (expand-file-name "Snippets" custom-docs-dir))
     (yas-reload-all)
+    (add-hook 'prog-mode-hook 'yas-minor-mode)
+    (add-hook 'text-mode-hook 'yas-minor-mode)
     (setq yas-prompt-functions '(yas-ido-prompt))
     (defun help/yas-after-exit-snippet-hook-fn ()
       (prettify-symbols-mode))
@@ -1081,6 +1083,8 @@ Window numbers for Emacs: Navigate your windows and frames using numbers. This i
 
 ** Local packages
 
+These are packages located in the ~"lisp"~ directory within the emacs-config-directory.
+
 #+begin_src emacs-lisp :tangle "init.el" 
 
 
@@ -1088,7 +1092,7 @@ Window numbers for Emacs: Navigate your windows and frames using numbers. This i
 #+end_src
 
 
-* Custom Undo Systems
+* Undo Systems
 
 *These packages are selected via the =M-x customize= function.*
 
@@ -1115,10 +1119,22 @@ Vundo displays the undo history as a tree and lets you move in the tree to go ba
 
 Instead of treating undo/redo as a linear sequence of changes, undo-tree-mode treats undo history as a branching tree of changes, similar to the way Vim handles it. This makes it substantially easier to undo and redo any change, while preserving the entire history of past states. The undo-tree visualizer is particularly helpful in complex cases. An added side bonus is that undo history can in some cases be stored more efficiently, allowing more changes to accumulate before Emacs starts discarding history. Undo history can be saved persistently across sessions with Emacs 24.3 and later. It also sports various other nifty features: storing and restoring past buffer states in registers, a diff view of the changes that will be made by undoing, and probably more besides.
 
-#+begin_src emacs-lisp :tangle "init.el" 
+#+begin_src emacs-lisp :tangle "init.el"
   ;;; --------------------------------------------------------------------------
-  ;; Full-featured undo-tree handling. Look to Vundo for something a little
-  ;; simpler.
+
+  (defun mrf/undo-tree-hook ()
+    (set-frame-width (selected-frame) 20))
+
+  (defun undo-tree-split-side-by-side (original-function &rest args)
+    "Split undo-tree side-by-side"
+    (let ((split-height-threshold nil)
+  	 (split-width-threshold 0))
+      (apply original-function args)))
+  
+#+end_src
+
+#+begin_src emacs-lisp :tangle "init.el"
+  ;;; --------------------------------------------------------------------------
 
   ;;
   ;; Sometimes, when behind a firewall, the undo-tree package triggers elpaca
@@ -1128,41 +1144,30 @@ Instead of treating undo/redo as a linear sequence of changes, undo-tree-mode tr
   ;; page altogether.
   ;;
   (when (equal undo-handler 'undo-handler-undo-tree)
-    (defun mrf/undo-tree-hook ()
-      (set-frame-width (selected-frame) 20))
-
-    (defun undo-tree-split-side-by-side (original-function &rest args)
-      "Split undo-tree side-by-side"
-      (let ((split-height-threshold nil)
-  	   (split-width-threshold 0))
-        (apply original-function args)))
-
     (use-package undo-tree
-      ;; :hook (undo-tree-visualizer-mode-hook . mrf/undo-tree-hook)
       :init
-      (setq undo-tree-visualizer-timestamps t   
-        undo-tree-visualizer-diff nil
+      (setq undo-tree-visualizer-timestamps nil
+        undo-tree-visualizer-diff t
         undo-tree-enable-undo-in-region t
         ;; 10X bump of the undo limits to avoid issues with premature
         ;; Emacs GC which truncages the undo history very aggresively
         undo-limit 800000
         undo-strong-limit 12000000
         undo-outer-limit 120000000)
+      :diminish undo-tree-mode
       :config
       (global-undo-tree-mode)
       (advice-add 'undo-tree-visualize :around #'undo-tree-split-side-by-side)
       (bind-keys :map undo-tree-visualizer-mode-map
         ("RET" . undo-tree-visualizer-quit)
         ("C-g" . undo-tree-visualizer-abort))
-      ;; This prevents the *.~undo-tree~ files from being persisted.
-      (with-eval-after-load 'undo-tree
-        (setq undo-tree-auto-save-history nil))))
+      (setq undo-tree-auto-save-history nil)))
 
 #+end_src
 
 
 
-* Custom Theme List and Selection
+* Theme List and Selection
 
 This bit of code contains a list of themes that I like personally and then allows them to be switched between themselves. The index of ~theme-selector~ is what is set in order to access a theme via the ~mrf/load-theme-from-selector()~ function.
 
@@ -2629,27 +2634,29 @@ Client for Language Server Protocol (v3.14). lsp-mode aims to provide IDE-like e
     :init
     (setq lsp-keymap-prefix "C-c l")  ;; Or 'C-l', 's-l'
     :config
+    (mrf/define-rust-lsp-values)
     (lsp-enable-which-key-integration t))
 
   (use-package lsp-ui
     :when (equal custom-ide 'custom-ide-lsp)
     :after lsp
-    :config (setq lsp-ui-sideline-enable t
-  	    lsp-ui-sideline-show-hover t
-  	    lsp-ui-sideline-delay 0.5
-  	    lsp-ui-sideline-ignore-duplicates t
-  	    lsp-ui-doc-delay 3
-  	    lsp-ui-doc-position 'top
-  	    lsp-ui-doc-alignment 'frame
-  	    lsp-ui-doc-header nil
-  	    lsp-ui-doc-show-with-cursor t
-  	    lsp-ui-doc-include-signature t
-  	    lsp-ui-doc-use-childframe t)
+    :custom
+    (lsp-ui-sideline-enable t)
+    (lsp-ui-sideline-show-hover t)
+    (lsp-ui-sideline-delay 0.5)
+    (lsp-ui-sideline-ignore-duplicates t)
+    (lsp-ui-peek-always-show t)
+    (lsp-ui-doc-delay 3)
+    (lsp-ui-doc-position 'bottom)
+    ;;(lsp-ui-doc-position 'top)
+    (lsp-ui-doc-alignment 'frame)
+    (lsp-ui-doc-header nil)
+    (lsp-ui-doc-show-with-cursor t)
+    (lsp-ui-doc-include-signature t)
+    (lsp-ui-doc-use-childframe t)
     :commands lsp-ui-mode
     :bind (:map lsp-ui-mode-map
   	  ("C-c l d" . lsp-ui-doc-focus-frame))
-    :custom
-    (lsp-ui-doc-position 'bottom)
     :hook (lsp-mode . lsp-ui-mode))
 
   (use-package lsp-treemacs
@@ -2665,6 +2672,27 @@ Client for Language Server Protocol (v3.14). lsp-mode aims to provide IDE-like e
   	  (equal completion-handler 'comphand-ivy-counsel))
     :after lsp ivy)
 
+#+end_src
+
+*** Rust LSP configuration
+#+begin_src emacs-lisp
+
+  (defun mrf/define-rust-lsp-values ()
+    (setq-default lsp-rust-analyzer-cargo-watch-command "clippy")
+    (setq-default lsp-eldoc-render-all t)
+    (setq-default lsp-idle-delay 0.6)
+    ;; enable / disable the hints as you prefer:
+    (setq-default lsp-inlay-hint-enable t)
+    ;; These are optional configurations. See
+    ;; https://emacs-lsp.github.io/lsp-mode/page/lsp-rust-analyzer/#lsp-rust-analyzer-display-chaining-hints
+    ;; for a full list
+    (setq-default lsp-rust-analyzer-display-lifetime-elision-hints-enable "skip_trivial")
+    (setq-default lsp-rust-analyzer-display-chaining-hints t)
+    (setq-default lsp-rust-analyzer-display-lifetime-elision-hints-use-parameter-names nil)
+    (setq-default lsp-rust-analyzer-display-closure-return-type-hints t)
+    (setq-default lsp-rust-analyzer-display-parameter-hints nil)
+    (setq-default lsp-rust-analyzer-display-reborrow-hints nil))
+  
 #+end_src
 
 ** LSP Bridge
@@ -2757,533 +2785,6 @@ Elpy is an Emacs package to bring powerful Python editing to Emacs.  It combines
 
 #+end_src
 
-
-* Debug Support
-
-** Debug Adapter Protocol for Emacs (<<<DAPE>>>)
-
-Dape is a debug adapter client for Emacs. The debug adapter protocol, much like its more well-known counterpart, the language server protocol, aims to establish a common API for programming tools. However, instead of functionalities such as code completions, it provides a standardized interface for debuggers.
-
-To begin a debugging session, invoke the dape command. In the minibuffer prompt, enter a debug adapter configuration name from dape-configs.
-
-For complete functionality, make sure to enable eldoc-mode in your source buffers and repeat-mode for more pleasant key mappings.
-
-**Features**
-
-- Batteries included support (describe-variable dape-configs)
-- Log breakpoints
-- Conditional breakpoints
-- Variable explorer
-- Variable watch
-- Variable hover with eldoc
-- REPL
-- gdb-mi.el like interface
-- Memory editor with hexl
-- Integration with compile
-- Debug adapter configuration ergonomics
-- No external dependencies outside of core Emacs
-
-*** Example additional options
-
------
-*The following source blocks are meant as examples on what can be coded to enable certain features. They are normally NOT tangled.*
-
-**** To not display info and/or buffers on startup:
-#+begin_src emacs-lisp :tangle no
-  (remove-hook 'dape-on-start-hooks 'dape-info)
-  (remove-hook 'dape-on-start-hooks 'dape-repl)
-#+end_src
-
-**** To display info and/or repl buffers on stopped
-#+begin_src emacs-lisp :tangle no
-  (add-hook 'dape-on-stopped-hooks 'dape-info)
-  (add-hook 'dape-on-stopped-hooks 'dape-repl)
-#+end_src
-
-**** By default dape uses gdb keybinding prefix If you do not want to use any prefix, set it to nil.
-#+begin_src emacs-lisp :tangle no
-  (setq dape-key-prefix "\C-x\C-a")
-#+end_src
-
-**** Kill compile buffer on build success:
-#+begin_src emacs-lisp :tangle no
-  (add-hook 'dape-compile-compile-hooks 'kill-buffer)
-#+end_src
-
-**** Save buffers on startup, useful for interpreted languages
-#+begin_src emacs-lisp :tangle no
-  (add-hook 'dape-on-start-hooks
-    (defun dape--save-on-start ()
-      (save-some-buffers t t)))
-#+end_src
------
-
-*** DAPE Configs for Go Mode :Golang:
-
-#+begin_src emacs-lisp :tangle "init.el" 
-  ;;; ------------------------------------------------------------------------
-  (defun mrf/additional-dape-configs ()
-    "This does assume that this is called AFTER dape has been loaded."
-    
-    (add-to-list 'dape-configs
-      `(delve
-         modes (go-mode go-ts-mode)
-         command "dlv"
-         command-args ("dap" "--listen" "127.0.0.1:55878")
-         command-cwd dape-cwd-fn
-         host "127.0.0.1"
-         port 55878
-         :type "debug"	;; needed to set the adapterID correctly as a string type
-         :request "launch"
-         :cwd dape-cwd-fn
-         :program dape-cwd-fn)))
-
-#+end_src
-
-*** DAPE Initialization
-
-
-#+begin_src emacs-lisp :tangle "init.el" 
-  ;;; ------------------------------------------------------------------------
-  
-  (use-package dape
-    :when (equal debug-adapter 'debug-adapter-dape)
-    :init
-    (define-dape-hydra)
-    :after (:any python go-mode)
-    ;; To use window configuration like gud (gdb-mi)
-    ;; :init
-    ;; (setq dape-buffer-window-arrangement 'gud)
-    :custom
-    (dape-buffer-window-arrangement 'right)  ;; Info buffers to the right
-    :config
-    (define-dape-hydra)
-    (message "prepare-dape end")
-    (bind-keys :map prog-mode-map
-      ("C-c ." . dape-hydra/body))
-    (mrf/additional-dape-configs))
-
-  ;; (defun mrf/prepare-dape ()
-  ;;   (message "prepare-dape 1 of 4")
-  ;;   (when (equal debug-adapter 'debug-adapter-dape)
-  ;;     (message "prepare-date 2 of 4")
-  ;;     ))
-#+end_src
-
-*** DAPE for TypeScript
-
-#+begin_src emacs-lisp :tangle "init.el" 
-  ;;; --------------------------------------------------------------------------
-
-  (setq mrf/vscode-js-debug-dir (file-name-concat user-emacs-directory "dape/vscode-js-debug"))
-
-  (defun mrf/install-vscode-js-debug ()
-    "Run installation procedure to install JS debugging support"
-    (interactive)
-    (mkdir mrf/vscode-js-debug-dir t)
-    (let ((default-directory (expand-file-name mrf/vscode-js-debug-dir)))
-
-      (vc-git-clone "https://github.com/microsoft/vscode-js-debug.git" "." nil)
-      (call-process "npm" nil "*snam-install*" t "install")
-      (call-process "npx" nil "*snam-install*" t "gulp" "dapDebugServer")))
-
-#+end_src
-
-***** Run This Only Once!
-
-This is meant to be evaluated and run once. Calling this function will clone the vscode-js-debug framework. This is a DAP-based JavaScript debugger. It debugs Node.js, Chrome, Edge, WebView2, VS Code extensions, and more. It has been the default JavaScript debugger in Visual Studio Code since 1.46, and is gradually rolling out in Visual Studio proper.
-
-#+begin_src emacs-lisp :tangle "init.el" 
-  ;;; --------------------------------------------------------------------------
-
-  ;; (mrf/install-vscode-js-debug)
-
-#+end_src
-
-#+RESULTS:
-: vscode-js-debug installed
-
-*** DAPE Hydra
-**** DAPE Debug Functions
-
-#+begin_src emacs-lisp :tangle "init.el"  :output silent
-  ;;; --------------------------------------------------------------------------
-
-  (defun mrf/dape-end-debug-session ()
-    "End the debug session."
-    (interactive)
-    (dape-quit))
-
-  (defun mrf/dape-delete-all-debug-sessions ()
-    "End the debug session and delete all breakpoints."
-    (interactive)
-    (dape-breakpoint-remove-all)
-    (mrf/dape-end-debug-session))
-#+end_src
-
-**** DAPE Hydra Definition
-
-#+begin_src emacs-lisp :tangle "init.el"  :output silent
-
-  ;;; --------------------------------------------------------------------------
-
-  (defun define-dape-hydra ()
-    (defhydra dape-hydra (:color pink :hint nil :foreign-keys run)
-      "
-    ^Stepping^          ^Switch^                 ^Breakpoints^          ^Debug^                     ^Eval
-    ^^^^^^^^----------------------------------------------------------------------------------------------------------------
-    _._: Next           _st_: Thread             _bb_: Toggle           _dd_: Debug                 _ee_: Eval Expression
-    _/_: Step in        _si_: Info               _bd_: Delete           _dw_: Watch dwim
-    _,_: Step out       _sf_: Stack Frame        _ba_: Add              _dx_: end session
-    _c_: Continue       _su_: Up stack frame     _bc_: Set condition    _dX_: end all sessions
-    _r_: Restart frame  _sd_: Down stack frame   _bl_: Set log message  _dp_: Initialize DAPE
-    _Q_: Disconnect     _sR_: Session Repl
-                      _sU_: Info Update"
-      ("n" dape-next)
-      ("i" dape-step-in)
-      ("o" dape-step-out)
-      ("." dape-next)
-      ("/" dape-step-in)
-      ("," dape-step-out)
-      ("c" dape-continue)
-      ("r" dape-restart)
-      ("si" dape-info)
-      ("st" dape-select-thread)
-      ("sf" dape-select-stack)
-      ("su" dape-stack-select-up)
-      ("sU" dape-info-update)
-      ("sd" dape-stack-select-down)
-      ("sR" dape-repl)
-      ("bb" dape-breakpoint-toggle)
-      ("ba" dape--breakpoint-place)
-      ("bd" dape-breakpoint-remove-at-point)
-      ("bc" dape-breakpoint-expression)
-      ("bl" dape-breakpoint-log)
-      ("dd" dape)
-      ("dw" dape-watch-dwim)
-      ("ee" dape-evaluate-expression)
-      ("dx" mrf/dape-end-debug-session)
-      ("dX" mrf/dape-delete-all-debug-sessions)
-      ("dp" dape-prepare)
-      ("x" nil "exit Hydra" :color yellow)
-      ("q" mrf/dape-end-debug-session "quit" :color blue)
-      ("Q" mrf/dape-delete-all-debug-sessions :color red)))
-#+end_src
-
-#+RESULTS:
-: define-dape-hydra
-
-** Debug Adapter Protocol (<<<DAP>>>)
-
-DAP-Mode is an Emacs client/library for Debug Adapter Protocol is a wire protocol for communication between client and Debug Server. It's similar to the LSP but provides integration with debug server. This setup is configured for Python
-
-#+begin_src emacs-lisp :tangle "init.el" 
-  ;;; --------------------------------------------------------------------------
-  ;;; Debug Adapter Protocol
-  (use-package dap-mode
-    :when (equal debug-adapter 'debug-adapter-dap-mode)
-    :after hydra
-    ;; Uncomment the config below if you want all UI panes to be hidden by default!
-    ;; :custom
-    ;; (lsp-enable-dap-auto-configure nil)
-    :commands dap-debug
-    :custom
-    (dap-auto-configure-features '(sessions locals breakpoints expressions repl controls tooltip))
-    :config
-    (define-dap-hydra)
-    (bind-keys :map prog-mode-map
-      ("C-c ." . dap-hydra/body))
-    (dap-ui-mode 1))
-
-#+end_src
-
-*** DAP for C/C++
-#+begin_src emacs-lisp :tangle "init.el" 
-  ;;; --------------------------------------------------------------------------
-
-  (setq dap-lldb-debug-program
-    "/Users/strider/Developer/command-line-unix/llvm/lldb-build/bin/lldb-dap")
-
-  (defun mrf/populate-lldb-start-file-args (conf)
-    "Populate CONF with the required arguments."
-    (-> conf
-      (dap--put-if-absent :dap-server-path dap-lldb-debug-program)
-      (dap--put-if-absent :type "lldb-dap")
-      (dap--put-if-absent :cwd default-directory)
-      (dap--put-if-absent :program (funcall dap-lldb-debugged-program-function))
-      (dap--put-if-absent :name "LLDB Debug")))
-
-  (use-package dap-cpptools
-    :when (equal debug-adapter 'debug-adapter-dap-mode)
-    :disabled
-    :after dap-mode
-    ;;:ensure (:host github :repo "emacs-lsp/dap-mode")
-    :config
-    (use-package dap-lldb
-      :disabled
-      ;;:ensure (:host github :repo "emacs-lsp/dap-mode")
-      :after dap-mode
-      :config
-      (dap-register-debug-provider "lldb-dap" 'mrf/populate-lldb-start-file-args)
-      (dap-register-debug-template "LLDB DAP :: Run from project directory"
-        (list :type "lldb-dap"
-  	:name "LLDB using DAP"
-  	:program "a.out"
-  	:request "launch"))))
-
-#+end_src
-
-*** DAP Package for Python :Python:
-
-#+begin_src emacs-lisp :tangle "init.el" 
-  ;;; --------------------------------------------------------------------------
-  ;;; DAP for Python
-
-
-  (use-package dap-python
-    :ensure (:package "dap-python" :type git :host github :repo "emacs-lsp/dap-mode")
-    :when (equal debug-adapter 'debug-adapter-dap-mode)
-    ;;:ensure (:host github :repo "emacs-lsp/dap-mode")
-    :after dap-mode
-    :config
-    (setq dap-python-executable "python3") ;; Otherwise it looks for 'python' else error.
-    (setq dap-python-debugger 'debugpy)
-    (dap-register-debug-template "Python :: Run file from project directory"
-      (list :type "python"
-        :args ""
-        :cwd nil
-        :module nil
-        :program nil
-        :request "launch"))
-    (dap-register-debug-template "Python :: Run file (buffer)"
-      (list :type "python"
-        :args ""
-        :cwd nil
-        :module nil
-        :program nil
-        :request "launch"
-        :name "Python :: Run file (buffer)")))
-#+end_src
-
-*** DAP Setup for LLDB
-Something that is needed for Rust and Go debugging.
-
-#+begin_src emacs-lisp :tangle "init.el" 
-
-  (use-package dap-lldb
-    :defer t
-    :ensure (:package "dap-lldb" :type git :host github :repo "emacs-lsp/dap-mode")
-    :custom
-    (dap-lldb-debug-program "~/Developer/command-line-unix/llvm/lldb-build/bin/lldb-dap"))
-
-  (use-package dap-cpptools
-    :ensure (:package "dap-cpptools" :type git :host github :repo "emacs-lsp/dap-mode")
-    :when (equal debug-adapter 'debug-adapter-dap-mode)
-    ;;:ensure (:host github :repo "emacs-lsp/dap-mode")
-    :after dap-mode
-    :custom
-     ;; Make sure that terminal programs open a term for I/O in an Emacs buffer
-    (dap-default-terminal-kind "integrated")
-    :config
-    (dap-register-debug-template "Rust::CppTools Run Configuration"
-      (list :type "cppdbg"
-        :request "launch"
-        :name "Rust::Run"
-        :MIMode "gdb"
-        :miDebuggerPath "rust-gdb"
-        :environment []
-        :program "${workspaceFolder}/target/debug/hello / replace with binary"
-        :cwd "${workspaceFolder}"
-        :console "external"
-        :dap-compilation "cargo build"
-        :dap-compilation-dir "${workspaceFolder}"))
-    (dap-auto-configure-mode +1)
-    (dap-cpptools-setup))
-
-#+end_src
-
-*** DAP Template for NodeJS
-#+begin_src emacs-lisp :tangle no
-  ;;; --------------------------------------------------------------------------
-  ;;; DAP for NodeJS
-
-  (defun my-setup-dap-node ()
-    "Require dap-node feature and run dap-node-setup if VSCode module isn't already installed"
-    (require 'dap-node)
-    (unless (file-exists-p dap-node-debug-path) (dap-node-setup)))
-
-  (use-package dap-node
-    :when (equal debug-adapter 'debug-adapter-dap-mode)
-    :disabled
-    :hook ((typescript-mode . my-setup-dap-node)
-  	  (js2-mode . my-setup-dap-node))
-    ;;:ensure (:host github :repo "emacs-lsp/dap-mode" :files (:defaults "icons" "dap-mode-pkg.el"))
-    :after dap-mode
-    :config
-    (require 'dap-firefox)
-    (dap-register-debug-template
-      "Launch index.ts"
-      (list :type "node"
-        :request "launch"
-        :program "${workspaceFolder}/index.ts"
-        :dap-compilation "npx tsc index.ts --outdir dist --sourceMap true"
-        :outFiles (list "${workspaceFolder}/dist/**/*.js")
-        :name "Launch index.ts")))
-  ;; (dap-register-debug-template
-  ;;	"Launch index.ts"
-  ;;	(list :type "node"
-  ;;	:request "launch"
-  ;;	:program "${workspaceFolder}/index.ts"
-  ;;	:dap-compilation "npx tsc index.ts --outdir dist --sourceMap true"
-  ;;	:outFiles (list "${workspaceFolder}/dist/**/*.js")
-  ;;	:name "Launch index.ts"))
-#+end_src
-
-*** DAP Hydra
-
-**** DAP Debug Functions
-#+begin_src emacs-lisp :tangle "init.el" 
-  ;;; --------------------------------------------------------------------------
-  (defun mrf/end-debug-session ()
-    "End the debug session and delete project Python buffers."
-    (interactive)
-    (kill-matching-buffers "\*Python :: Run file [from|\(buffer]*" nil :NO-ASK)
-    (kill-matching-buffers "\*Python: Current File*" nil :NO-ASK)
-    (kill-matching-buffers "\*dap-ui-*" nil :NO-ASK)
-    (dap-disconnect (dap--cur-session)))
-
-  (defun mrf/delete-all-debug-sessions ()
-    "End the debug session and delete project Python buffers and all breakpoints."
-    (interactive)
-    (dap-breakpoint-delete-all)
-    (mrf/end-debug-session))
-
-  (defun mrf/begin-debug-session ()
-    "Begin a debug session with several dap windows enabled."
-    (interactive)
-    (dap-ui-show-many-windows)
-    (dap-debug))
-
-#+end_src
-
-**** DAP Hydra Definition Function
-#+begin_src emacs-lisp :tangle "init.el" 
-  ;;; --------------------------------------------------------------------------
-
-  (defun define-dap-hydra ()
-    (defhydra dap-hydra (:color pink :hint nil :foreign-keys run)
-      "
-    ^Stepping^		^Switch^		 ^Breakpoints^		^Debug^			    ^Eval
-    ^^^^^^^^----------------------------------------------------------------------------------------------------------------
-    _._: Next		_ss_: Session		 _bb_: Toggle		_dd_: Debug		    _ee_: Eval
-    _/_: Step in	_st_: Thread		 _bd_: Delete		_dr_: Debug recent	    _er_: Eval region
-    _,_: Step out	_sf_: Stack frame	 _ba_: Add		_dl_: Debug last	    _es_: Eval thing at point
-    _c_: Continue	_su_: Up stack frame	 _bc_: Set condition	_de_: Edit debug template   _ea_: Add expression.
-    _r_: Restart frame	_sd_: Down stack frame	 _bh_: Set hit count	_ds_: Debug restart
-    _Q_: Disconnect	_sl_: List locals	 _bl_: Set log message	_dx_: end session
-  		      _sb_: List breakpoints			      _dX_: end all sessions
-  		      _sS_: List sessions
-  		      _sR_: Session Repl
-  "
-      ("n" dap-next)
-      ("i" dap-step-in)
-      ("o" dap-step-out)
-      ("." dap-next)
-      ("/" dap-step-in)
-      ("," dap-step-out)
-      ("c" dap-continue)
-      ("r" dap-restart-frame)
-      ("ss" dap-switch-session)
-      ("st" dap-switch-thread)
-      ("sf" dap-switch-stack-frame)
-      ("su" dap-up-stack-frame)
-      ("sd" dap-down-stack-frame)
-      ("sl" dap-ui-locals)
-      ("sb" dap-ui-breakpoints)
-      ("sR" dap-ui-repl)
-      ("sS" dap-ui-sessions)
-      ("bb" dap-breakpoint-toggle)
-      ("ba" dap-breakpoint-add)
-      ("bd" dap-breakpoint-delete)
-      ("bc" dap-breakpoint-condition)
-      ("bh" dap-breakpoint-hit-condition)
-      ("bl" dap-breakpoint-log-message)
-      ("dd" dap-debug)
-      ("dr" dap-debug-recent)
-      ("ds" dap-debug-restart)
-      ("dl" dap-debug-last)
-      ("de" dap-debug-edit-template)
-      ("ee" dap-eval)
-      ("ea" dap-ui-expressions-add)
-      ("er" dap-eval-region)
-      ("es" dap-eval-thing-at-point)
-      ("dx" mrf/dap-end-debug-session)
-      ("dX" mrf/dap-delete-all-debug-sessions)
-      ("x" nil "exit Hydra" :color yellow)
-      ("q" mrf/dap-end-debug-session "quit" :color blue)
-      ("Q" mrf/dap-delete-all-debug-sessions :color red)))
-  
-#+end_src
-
-** RealGUD (waiting for lldb)
-
-Since Realgud is options (in our configuratrion), we add it's keybindings conditionally. *Note* that these keybindings are still compatible with =dap-mode= keybindings.
-#+begin_src emacs-lisp :tangle no
-  ;;; --------------------------------------------------------------------------
-
-  (use-package realgud
-    :disabled
-    :after c-mode)
-
-  (use-package realgud-lldb
-    :disabled
-    :after realgud)
-  ;;:ensure (:files (:defaults ("lldb" "lldb/*.el") "realgud-lldb-pkg.el") :host github :repo "realgud/realgud-lldb"))
-
-#+end_src
-
-*** REALGud Keybindings
-#+begin_src emacs-lisp :tangle no
-  ;;; --------------------------------------------------------------------------
-
-  (use-package cc-mode
-    :when (package-installed-p 'realgud)
-    :bind (:map c-mode-map
-  	  ("C-c , j" . realgud:cmd-jump)
-  	  ("C-c , k" . realgud:cmd-kill)
-  	  ("C-c , s" . realgud:cmd-step)
-  	  ("C-c , n" . realgud:cmd-next)
-  	  ("C-c , q" . realgud:cmd-quit)
-  	  ("C-c , F" . realgud:window-bt)
-  	  ("C-c , U" . realgud:cmd-until)
-  	  ("C-c , X" . realgud:cmd-clear)
-  	  ("C-c , !" . realgud:cmd-shell)
-  	  ("C-c , b" . realgud:cmd-break)
-  	  ("C-c , f" . realgud:cmd-finish)
-  	  ("C-c , D" . realgud:cmd-delete)
-  	  ("C-c , +" . realgud:cmd-enable)
-  	  ("C-c , R" . realgud:cmd-restart)
-  	  ("C-c , -" . realgud:cmd-disable)
-  	  ("C-c , B" . realgud:window-brkpt)
-  	  ("C-c , c" . realgud:cmd-continue)
-  	  ("C-c , e" . realgud:cmd-eval-dwim)
-  	  ("C-c , Q" . realgud:cmd-terminate)
-  	  ("C-c , T" . realgud:cmd-backtrace)
-  	  ("C-c , h" . realgud:cmd-until-here)
-  	  ("C-c , u" . realgud:cmd-older-frame)
-  	  ("C-c , 4" . realgud:cmd-goto-loc-hist-4)
-  	  ("C-c , 5" . realgud:cmd-goto-loc-hist-5)
-  	  ("C-c , 6" . realgud:cmd-goto-loc-hist-6)
-  	  ("C-c , 7" . realgud:cmd-goto-loc-hist-7)
-  	  ("C-c , 8" . realgud:cmd-goto-loc-hist-8)
-  	  ("C-c , 9" . realgud:cmd-goto-loc-hist-9)
-  	  ("C-c , d" . realgud:cmd-newer-frame)
-  	  ("C-c , RET" . realgud:cmd-repeat-last)
-  	  ("C-c , E" . realgud:cmd-eval-at-point)
-  	  ("C-c , I" . realgud:cmdbuf-info-describe)
-  	  ("C-c , C-i" . realgud:cmd-info-breakpoints)))
-
-#+end_src
 
 
 * Completion Systems
@@ -3546,7 +3047,7 @@ Consult provides search and navigation commands based on the Emacs completion fu
 
   (use-package consult
     :when (equal completion-handler 'comphand-vertico)
-    :After vertico
+    :after vertico
     :bind
     ([remap switch-to-buffer] . consult-buffer)
     ([remap switch-to-buffer-other-window] . consult-buffer-other-window)
@@ -3695,6 +3196,7 @@ Embark makes it easy to choose a command to run based on what is near point, bot
 #+end_src
 
 
+
 * Software Development
 ** Language Support Packages
 *** Flycheck
@@ -3789,136 +3291,6 @@ Tree-sitter is a parser generator tool and an incremental parsing library. It ca
 
   (use-package forge :after magit :defer t)
   (use-package treemacs-magit :defer t :after treemacs magit)
-
-#+end_src
-
-
-** JavaScript
-*** Typescript
-This is a basic configuration for the TypeScript language so that =.ts= files activate =typescript-ts-mode= when opened.  We're also adding a hook to =typescript-mode-hook= to call =lsp-deferred= so that we activate =lsp-mode= to get LSP features every time we edit TypeScript code.
-
-#+begin_src emacs-lisp :tangle "init.el" 
-  ;;; --------------------------------------------------------------------------
-
-  (when (equal debug-adapter 'debug-adapter-dap-mode)
-    (use-package typescript-ts-mode
-      :after (:any dap-mode dape-mode)
-      :mode "\\.ts\\'"
-      :hook
-      (typescript-ts-mode . lsp-deferred)
-      (js2-mode . lsp-deferred)
-      :bind (:map typescript-mode-map
-  	    ("C-c ." . dap-hydra/body))
-      :config
-      (setq typescript-indent-level 4)
-      (dap-node-setup)))
-
-  (when (equal debug-adapter 'debug-adapter-dape)
-    (use-package typescript-ts-mode
-      :after dape-mode
-      :mode ("\\.ts\\'")
-      :hook
-      (typescript-ts-mode . lsp-deferred)
-      (js2-mode . lsp-deferred)
-      :bind (:map typescript-mode-map
-  	    ("C-c ." . dape-hydra/body))
-      :config
-      (setq typescript-indent-level 4)))
-
-#+end_src
-
-*** NodeJS
-
-#+begin_src emacs-lisp :tangle "init.el" 
-  ;;; --------------------------------------------------------------------------
-
-  (defun mrf/load-js-file-hook ()
-    (js2-mode)
-
-    (when (equal debug-adapter 'debug-adapter-dap-mode)
-      (dap-mode)
-      (dap-firefox-setup))
-
-    (when (equal debug-adapter 'debug-adapter-dape)
-      (dape))
-
-    (highlight-indentation-mode nil)
-    (dap-firefox-setup))
-
-  (use-package nodejs-repl :defer t)
-
-  (defun mrf/nvm-which ()
-    (let ((output (shell-command-to-string "source ~/.nvm/nvm.sh; nvm which")))
-      (cadr (split-string output "[\n]+" t))))
-
-  (setq nodejs-repl-command #'mrf/nvm-which)
-
-#+end_src
-
-*** JavaScript
-#+begin_src emacs-lisp :tangle "init.el" 
-  ;;; --------------------------------------------------------------------------
-
-  (use-package js2-mode
-    :hook (js-mode . js2-minor-mode)
-    :bind (:map js2-mode-map
-  	  ("{" . paredit-open-curly)
-  	  ("}" . paredit-close-curly-and-newline))
-    :mode ("\\.js\\'" "\\.mjs\\'" "\\.json$")
-    :custom (js2-highlight-level 3))
-
-  (use-package ac-js2
-    :after js2-mode
-    :hook (js2-mode . ac-js2-mode))
-
-#+end_src
-
-
-** C/C++
-#+begin_src emacs-lisp :tangle "init.el" 
-  ;;; --------------------------------------------------------------------------
-
-  (defun mrf/load-c-file-hook ()
-    (c-mode)
-    (unless (featurep 'realgud))
-    (use-package realgud)
-    (highlight-indentation-mode nil)
-    (display-fill-column-indicator-mode t))
-
-  (defun code-compile ()
-    "Look for a Makefile and compiles the code with gcc/cpp."
-    (interactive)
-    (unless (file-exists-p "Makefile")
-      (set (make-local-variable 'compile-command)
-        (let ((file (file-name-nondirectory buffer-file-name)))
-  	(format "%s -o %s %s"
-  	  (if  (equal (file-name-extension file) "cpp") "g++" "gcc" )
-  	  (file-name-sans-extension file)
-  	  file)))
-      (compile compile-command)))
-
-  (global-set-key [f9] 'code-compile)
-  (add-to-list 'auto-mode-alist '("\\.c\\'" . mrf/load-c-file-hook))
-#+end_src
-
-*** GameBoy Development
-RGBDS is a compiler that has been around quite a long time (since 1997). It supports Z80 and the LR35902 assembler syntaxes that are used in the development of Game Boy and Game Boy color games.
-
-#+begin_src emacs-lisp :tangle "init.el" 
-  ;;; --------------------------------------------------------------------------
-
-  (use-package z80-mode
-    :when enable-gb-dev
-    :ensure (:host github :repo "SuperDisk/z80-mode"))
-
-  (use-package mwim
-    :when enable-gb-dev
-    :ensure (:host github :repo "alezost/mwim.el"))
-
-  (use-package rgbds-mode
-    :when enable-gb-dev
-    :after mwim
-    :ensure (:host github :repo "japanoise/rgbds-mode"))
 
 #+end_src
 
@@ -4116,6 +3488,125 @@ We use Pyvenv-auto is a package that automatically changes to the Python virtual
 
 #+end_src
 
+** JavaScript
+*** Typescript
+This is a basic configuration for the TypeScript language so that =.ts= files activate =typescript-ts-mode= when opened.  We're also adding a hook to =typescript-mode-hook= to call =lsp-deferred= so that we activate =lsp-mode= to get LSP features every time we edit TypeScript code.
+
+#+begin_src emacs-lisp :tangle "init.el" 
+  ;;; --------------------------------------------------------------------------
+
+  (use-package typescript-mode
+    :defer t
+    :mode "\\.ts\\'"
+    :hook
+    (typescript-mode . lsp-deferred)
+    (js2-mode . lsp-deferred)
+    :config
+    (setq typescript-indent-level 4)
+    (cond
+      ((equal debug-adapter 'debug-adapter-dap-mode)
+        (bind-keys :map typescript-mode-map
+  	("C-c ." . dap-hydra/body))
+        (dap-node-setup))
+      ((equal debug-adapter 'debug-adapter-dape)
+        (bind-keys :map typescript-mode-map
+  	("C-c ." . dape-hydra/body)))))
+
+#+end_src
+
+*** NodeJS
+
+#+begin_src emacs-lisp :tangle "init.el" 
+  ;;; --------------------------------------------------------------------------
+
+  (defun mrf/load-js-file-hook ()
+    (js2-mode)
+
+    (when (equal debug-adapter 'debug-adapter-dap-mode)
+      (dap-mode)
+      (dap-firefox-setup))
+
+    (when (equal debug-adapter 'debug-adapter-dape)
+      (dape))
+
+    (highlight-indentation-mode nil)
+    (dap-firefox-setup))
+
+  (use-package nodejs-repl :defer t)
+
+  (defun mrf/nvm-which ()
+    (let ((output (shell-command-to-string "source ~/.nvm/nvm.sh; nvm which")))
+      (cadr (split-string output "[\n]+" t))))
+
+  (setq nodejs-repl-command #'mrf/nvm-which)
+
+#+end_src
+
+*** JS2-Mode
+#+begin_src emacs-lisp :tangle "init.el" 
+  ;;; --------------------------------------------------------------------------
+
+  (use-package js2-mode
+    :hook (js-mode . js2-minor-mode)
+    :bind (:map js2-mode-map
+  	  ("{" . paredit-open-curly)
+  	  ("}" . paredit-close-curly-and-newline))
+    :mode ("\\.js\\'" "\\.mjs\\'" "\\.json$")
+    :custom (js2-highlight-level 3))
+
+  (use-package ac-js2
+    :after js2-mode
+    :hook (js2-mode . ac-js2-mode))
+
+#+end_src
+
+** C/C++
+#+begin_src emacs-lisp :tangle "init.el" 
+  ;;; --------------------------------------------------------------------------
+
+  (defun mrf/load-c-file-hook ()
+    (c-mode)
+    (unless (featurep 'realgud))
+    (use-package realgud)
+    (highlight-indentation-mode nil)
+    (display-fill-column-indicator-mode t))
+
+  (defun code-compile ()
+    "Look for a Makefile and compiles the code with gcc/cpp."
+    (interactive)
+    (unless (file-exists-p "Makefile")
+      (set (make-local-variable 'compile-command)
+        (let ((file (file-name-nondirectory buffer-file-name)))
+  	(format "%s -o %s %s"
+  	  (if  (equal (file-name-extension file) "cpp") "g++" "gcc" )
+  	  (file-name-sans-extension file)
+  	  file)))
+      (compile compile-command)))
+
+  (global-set-key [f9] 'code-compile)
+  (add-to-list 'auto-mode-alist '("\\.c\\'" . mrf/load-c-file-hook))
+#+end_src
+
+*** GameBoy Development
+RGBDS is a compiler that has been around quite a long time (since 1997). It supports Z80 and the LR35902 assembler syntaxes that are used in the development of Game Boy and Game Boy color games.
+
+#+begin_src emacs-lisp :tangle "init.el" 
+  ;;; --------------------------------------------------------------------------
+
+  (use-package z80-mode
+    :when enable-gb-dev
+    :ensure (:host github :repo "SuperDisk/z80-mode"))
+
+  (use-package mwim
+    :when enable-gb-dev
+    :ensure (:host github :repo "alezost/mwim.el"))
+
+  (use-package rgbds-mode
+    :when enable-gb-dev
+    :after mwim
+    :ensure (:host github :repo "japanoise/rgbds-mode"))
+
+#+end_src
 
 ** Other Languages
 Lesser used or lesser known languages.
@@ -4155,6 +3646,39 @@ Lisp support is handled by SLIME which is the “Superior Lisp Interaction Mode 
 #+end_src
 
 *** Rust
+**** Rustic package
+#+begin_src emacs-lisp
+
+  (use-package rustic
+    :ensure t
+    :bind (:map rustic-mode-map
+            ("M-j" . lsp-ui-imenu)
+            ("M-?" . lsp-find-references)
+            ("C-c C-c l" . flycheck-list-errors)
+            ("C-c C-c a" . lsp-execute-code-action)
+            ("C-c C-c r" . lsp-rename)
+            ("C-c C-c q" . lsp-workspace-restart)
+            ("C-c C-c Q" . lsp-workspace-shutdown)
+            ("C-c C-c s" . lsp-rust-analyzer-status))
+    :config
+    ;; uncomment for less flashiness
+    ;; (setq lsp-eldoc-hook nil)
+    ;; (setq lsp-enable-symbol-highlighting nil)
+    ;; (setq lsp-signature-auto-activate nil)
+
+    ;; comment to disable rustfmt on save
+    (setq rustic-format-on-save t)
+    (add-hook 'rustic-mode-hook 'rk/rustic-mode-hook))
+
+  (defun rk/rustic-mode-hook ()
+    ;; so that run C-c C-c C-r works without having to confirm, but don't try to
+    ;; save rust buffers that are not file visiting. Once
+    ;; https://github.com/brotzeit/rustic/issues/253 has been resolved this should
+    ;; no longer be necessary.
+    (when buffer-file-name
+      (setq-local buffer-save-without-query t))
+    (add-hook 'before-save-hook 'lsp-format-buffer nil t))
+#+end_src
 
 #+begin_src emacs-lisp :tangle "init.el" 
   ;;; --------------------------------------------------------------------------
@@ -4168,7 +3692,6 @@ Lisp support is handled by SLIME which is the “Superior Lisp Interaction Mode 
   		       (prettify-symbols-mode)))
     :config
     (setq rust-format-on-save t))
-
   ; ;(use-package rust-analyzer)
 
   (use-package cargo-mode
@@ -4241,6 +3764,511 @@ Integration of the Go 'guru' analysis tool into Emacs.
   
 #+end_src
 
+** Debug Support
+*** Debug Adapter Protocol for Emacs (<<<DAPE>>>)
+
+Dape is a Debug Adapter Client written in pure Emacs. The debug adapter protocol, much like its more well-known counterpart, the language server protocol, aims to establish a common API for programming tools. However, instead of functionalities such as code completions, it provides a standardized interface for debuggers.
+
+To begin a debugging session, invoke the dape command. In the minibuffer prompt, enter a debug adapter configuration name from dape-configs.
+
+For complete functionality, make sure to enable eldoc-mode in your source buffers and repeat-mode for more pleasant key mappings.
+
+**Features**
+
+- Batteries included support (describe-variable dape-configs)
+- Log breakpoints
+- Conditional breakpoints
+- Variable explorer
+- Variable watch
+- Variable hover with eldoc
+- REPL
+- gdb-mi.el like interface
+- Memory editor with hexl
+- Integration with compile
+- Debug adapter configuration ergonomics
+- No external dependencies outside of core Emacs
+
+**** Example additional options
+
+-----
+*The following source blocks are meant as examples on what can be coded to enable certain features. They are normally NOT tangled.*
+
+***** To not display info and/or buffers on startup:
+#+begin_src emacs-lisp :tangle no
+  (remove-hook 'dape-on-start-hooks 'dape-info)
+  (remove-hook 'dape-on-start-hooks 'dape-repl)
+#+end_src
+
+***** To display info and/or repl buffers on stopped
+#+begin_src emacs-lisp :tangle no
+  (add-hook 'dape-on-stopped-hooks 'dape-info)
+  (add-hook 'dape-on-stopped-hooks 'dape-repl)
+#+end_src
+
+***** By default dape uses gdb keybinding prefix If you do not want to use any prefix, set it to nil.
+#+begin_src emacs-lisp :tangle no
+  (setq dape-key-prefix "\C-x\C-a")
+#+end_src
+
+***** Kill compile buffer on build success:
+#+begin_src emacs-lisp :tangle no
+  (add-hook 'dape-compile-compile-hooks 'kill-buffer)
+#+end_src
+
+***** Save buffers on startup, useful for interpreted languages
+#+begin_src emacs-lisp :tangle no
+  (add-hook 'dape-on-start-hooks
+    (defun dape--save-on-start ()
+      (save-some-buffers t t)))
+#+end_src
+-----
+
+**** DAPE Initialization
+
+Please note that DAP is triggered after loading of various languages (for Emacs startup time).  New languages that use DAPE should also be listed. Don't put just ~prog-mode~ since we want to delay loading until needed be specific languages only.
+
+#+begin_src emacs-lisp :tangle "init.el" 
+  ;;; ------------------------------------------------------------------------
+
+  (use-package dape
+    :when (equal debug-adapter 'debug-adapter-dape)
+    :init
+    (define-dape-hydra)
+    :after (:any python go-mode)
+    ;; To use window configuration like gud (gdb-mi)
+    ;; :init
+    ;; (setq dape-buffer-window-arrangement 'gud)
+    :custom
+    (dape-buffer-window-arrangement 'right)  ;; Info buffers to the right
+    :config
+    (define-dape-hydra)
+    (message "prepare-dape end")
+    (bind-keys :map prog-mode-map
+      ("C-c ." . dape-hydra/body))
+    (mrf/additional-dape-configs))
+  
+#+end_src
+
+**** DAPE for TypeScript
+
+#+begin_src emacs-lisp :tangle "init.el" 
+  ;;; --------------------------------------------------------------------------
+
+  (setq mrf/vscode-js-debug-dir (file-name-concat user-emacs-directory "dape/vscode-js-debug"))
+
+  (defun mrf/install-vscode-js-debug ()
+    "Run installation procedure to install JS debugging support"
+    (interactive)
+    (mkdir mrf/vscode-js-debug-dir t)
+    (let ((default-directory (expand-file-name mrf/vscode-js-debug-dir)))
+
+      (vc-git-clone "https://github.com/microsoft/vscode-js-debug.git" "." nil)
+      (call-process "npm" nil "*snam-install*" t "install")
+      (call-process "npx" nil "*snam-install*" t "gulp" "dapDebugServer")))
+
+#+end_src
+
+****** Run This Only Once!
+
+This is meant to be evaluated and run once. Calling this function will clone the vscode-js-debug framework. This is a DAP-based JavaScript debugger. It debugs Node.js, Chrome, Edge, WebView2, VS Code extensions, and more. It has been the default JavaScript debugger in Visual Studio Code since 1.46, and is gradually rolling out in Visual Studio proper.
+
+#+begin_src emacs-lisp :tangle "init.el" 
+  ;;; --------------------------------------------------------------------------
+
+  ;; (mrf/install-vscode-js-debug)
+
+#+end_src
+
+#+RESULTS:
+: vscode-js-debug installed
+
+**** Additional DAPE Configs
+:Golang:
+#+begin_src emacs-lisp :tangle "init.el" 
+  ;;; ------------------------------------------------------------------------
+  (defun mrf/additional-dape-configs ()
+    "Additional DAPE configruations for various languages."
+
+    (with-eval-after-load
+      (add-to-list 'dape-configs
+        `(delve
+  	 modes (go-mode go-ts-mode)
+  	 command "dlv"
+  	 command-args ("dap" "--listen" "127.0.0.1:55878")
+  	 command-cwd dape-cwd-fn
+  	 host "127.0.0.1"
+  	 port 55878
+  	 :type "debug"	;; needed to set the adapterID correctly as a string type
+  	 :request "launch"
+  	 :cwd dape-cwd-fn
+  	 :program dape-cwd-fn))))
+
+#+end_src
+
+**** DAPE Hydra
+
+Below are all the necessary functions and definitions for Hydra use under DAPE.
+
+***** DAPE Hydra Debug Functions
+
+#+begin_src emacs-lisp :tangle "init.el"  :output silent
+  ;;; --------------------------------------------------------------------------
+
+  (defun mrf/dape-end-debug-session ()
+    "End the debug session."
+    (interactive)
+    (dape-quit))
+
+  (defun mrf/dape-delete-all-debug-sessions ()
+    "End the debug session and delete all breakpoints."
+    (interactive)
+    (dape-breakpoint-remove-all)
+    (mrf/dape-end-debug-session))
+  
+#+end_src
+
+***** DAPE Hydra Definition
+
+#+begin_src emacs-lisp :tangle "init.el"
+
+  ;;; --------------------------------------------------------------------------
+
+  (defun define-dape-hydra ()
+    (defhydra dape-hydra (:color pink :hint nil :foreign-keys run)
+      "
+    ^Stepping^          ^Switch^                 ^Breakpoints^          ^Debug^                     ^Eval
+    ^^^^^^^^----------------------------------------------------------------------------------------------------------------
+    _._: Next           _st_: Thread             _bb_: Toggle           _dd_: Debug                 _ee_: Eval Expression
+    _/_: Step in        _si_: Info               _bd_: Delete           _dw_: Watch dwim
+    _,_: Step out       _sf_: Stack Frame        _ba_: Add              _dx_: end session
+    _c_: Continue       _su_: Up stack frame     _bc_: Set condition    _dX_: end all sessions
+    _r_: Restart frame  _sd_: Down stack frame   _bl_: Set log message  _dp_: Initialize DAPE
+    _Q_: Disconnect     _sR_: Session Repl
+                      _sU_: Info Update"
+      ("n" dape-next)
+      ("i" dape-step-in)
+      ("o" dape-step-out)
+      ("." dape-next)
+      ("/" dape-step-in)
+      ("," dape-step-out)
+      ("c" dape-continue)
+      ("r" dape-restart)
+      ("si" dape-info)
+      ("st" dape-select-thread)
+      ("sf" dape-select-stack)
+      ("su" dape-stack-select-up)
+      ("sU" dape-info-update)
+      ("sd" dape-stack-select-down)
+      ("sR" dape-repl)
+      ("bb" dape-breakpoint-toggle)
+      ("ba" dape--breakpoint-place)
+      ("bd" dape-breakpoint-remove-at-point)
+      ("bc" dape-breakpoint-expression)
+      ("bl" dape-breakpoint-log)
+      ("dd" dape)
+      ("dw" dape-watch-dwim)
+      ("ee" dape-evaluate-expression)
+      ("dx" mrf/dape-end-debug-session)
+      ("dX" mrf/dape-delete-all-debug-sessions)
+      ("dp" dape-prepare)
+      ("x" nil "exit Hydra" :color yellow)
+      ("q" mrf/dape-end-debug-session "quit" :color blue)
+      ("Q" mrf/dape-delete-all-debug-sessions :color red)))
+  
+#+end_src
+
+
+*** Debug Adapter Protocol (<<<DAP>>>)
+
+DAP-Mode is an Emacs client/library for Debug Adapter Protocol is a wire protocol for communication between client and Debug Server. It's similar to the LSP but provides integration with debug server.
+
+The idea behind the Debug Adapter Protocol (DAP) is to abstract the way how the debugging support of development tools communicates with debuggers or runtimes into a protocol. Since it is unrealistic to assume that existing debuggers or runtimes adopt this protocol any time soon, we rather assume that an intermediary component - a so called Debug Adapter - adapts an existing debugger or runtime to the Debug Adapter Protocol.
+
+The Debug Adapter Protocol makes it possible to implement a generic debugger for a development tool that can communicate with different debuggers via Debug Adapters. And Debug Adapters can be re-used across multiple development tools which significantly reduces the effort to support a new debugger in different tools.
+
+#+begin_src emacs-lisp :tangle "init.el" 
+  ;;; --------------------------------------------------------------------------
+  ;;; Debug Adapter Protocol
+  (use-package dap-mode
+    :when (equal debug-adapter 'debug-adapter-dap-mode)
+    :after hydra
+    ;; Uncomment the config below if you want all UI panes to be hidden by default!
+    ;; :custom
+    ;; (lsp-enable-dap-auto-configure nil)
+    :commands dap-debug
+    :custom
+    (dap-auto-configure-features '(sessions locals breakpoints expressions repl controls tooltip))
+    :config
+    (define-dap-hydra)
+    (bind-keys :map prog-mode-map
+      ("C-c ." . dap-hydra/body))
+    (dap-ui-controls-mode)
+    (dap-ui-mode 1))
+
+  (use-package dap-lldb
+    :ensure (:package "dap-lldb" :type git :host github :repo "emacs-lsp/dap-mode")
+    :after dap-mode
+    :defer t)
+
+#+end_src
+
+**** DAP Package for Python :Python:
+
+#+begin_src emacs-lisp :tangle "init.el" 
+  ;;; --------------------------------------------------------------------------
+  ;;; DAP for Python
+
+  (use-package dap-python
+    :ensure (:package "dap-python" :type git :host github :repo "emacs-lsp/dap-mode")
+    :when (equal debug-adapter 'debug-adapter-dap-mode)
+    :after dap-mode
+    :config
+    (setq dap-python-executable "python3") ;; Otherwise it looks for 'python' else error.
+    (setq dap-python-debugger 'debugpy))
+  
+#+end_src
+
+**** DAP Setup for Rust and Go
+
+Something that is needed for Rust and Go debugging.
+
+#+begin_src emacs-lisp :tangle "init.el" 
+
+  (use-package dap-lldb
+    :when (equal debug-adapter 'debug-adapter-dap-mode)
+    :defer t
+    :after dap-mode
+    :ensure (:package "dap-lldb" :type git :host github :repo "emacs-lsp/dap-mode")
+    :custom
+    (dap-lldb-debug-program "~/Developer/command-line-unix/llvm/lldb-build/bin/lldb-dap"))
+
+  (use-package dap-gdb-lldb
+    :ensure (:package "dap-gdb-lldb" :type git :host github :repo "emacs-lsp/dap-mode")
+    :defer t
+    :after dap-lldb
+    :config
+    (dap-gdb-lldb-setup))
+
+
+#+end_src
+
+**** DAP Template for NodeJS
+#+begin_src emacs-lisp :tangle no
+  ;;; --------------------------------------------------------------------------
+  ;;; DAP for NodeJS
+
+  (defun my-setup-dap-node ()
+    "Require dap-node feature and run dap-node-setup if VSCode module isn't already installed"
+    (require 'dap-node)
+    (unless (file-exists-p dap-node-debug-path) (dap-node-setup)))
+
+  (use-package dap-node
+    :when (equal debug-adapter 'debug-adapter-dap-mode)
+    :disabled
+    :hook ((typescript-mode . my-setup-dap-node)
+  	  (js2-mode . my-setup-dap-node))
+    ;;:ensure (:host github :repo "emacs-lsp/dap-mode" :files (:defaults "icons" "dap-mode-pkg.el"))
+    :after dap-mode
+    :config
+    (require 'dap-firefox)
+    (dap-register-debug-template
+      "Launch index.ts"
+      (list :type "node"
+        :request "launch"
+        :program "${workspaceFolder}/index.ts"
+        :dap-compilation "npx tsc index.ts --outdir dist --sourceMap true"
+        :outFiles (list "${workspaceFolder}/dist/**/*.js")
+        :name "Launch index.ts")))
+  ;; (dap-register-debug-template
+  ;;	"Launch index.ts"
+  ;;	(list :type "node"
+  ;;	:request "launch"
+  ;;	:program "${workspaceFolder}/index.ts"
+  ;;	:dap-compilation "npx tsc index.ts --outdir dist --sourceMap true"
+  ;;	:outFiles (list "${workspaceFolder}/dist/**/*.js")
+  ;;	:name "Launch index.ts"))
+#+end_src
+
+**** DAP Templates For Various Languages
+
+#+begin_src emacs-lisp
+
+  (with-eval-after-load 'dap-lldb
+    (dap-register-debug-template
+      "Rust::LLDB Run Configuration"
+      (list :type "lldb"
+        :request "launch"
+        :name "LLDB::Run"
+        :gdbpath "rust-lldb"
+        :target nil
+        :cwd nil)))
+
+  (with-eval-after-load 'dap-python
+    (dap-register-debug-template "Python :: Run file from project directory"
+      (list :type "python"
+        :args ""
+        :cwd nil
+        :module nil
+        :program nil
+        :request "launch"))
+    (dap-register-debug-template "Python :: Run file (buffer)"
+      (list :type "python"
+        :args ""
+        :cwd nil
+        :module nil
+        :program nil
+        :request "launch"
+        :name "Python :: Run file (buffer)")))
+#+end_src
+
+**** DAP Hydra
+
+Below are all the necessary functions and definitions for Hydra use under DAP.
+
+***** DAP Hydra Debug Functions
+#+begin_src emacs-lisp :tangle "init.el" 
+  ;;; --------------------------------------------------------------------------
+  (defun mrf/end-debug-session ()
+    "End the debug session and delete project Python buffers."
+    (interactive)
+    (kill-matching-buffers "\*Python :: Run file [from|\(buffer]*" nil :NO-ASK)
+    (kill-matching-buffers "\*Python: Current File*" nil :NO-ASK)
+    (kill-matching-buffers "\*dap-ui-*" nil :NO-ASK)
+    (dap-disconnect (dap--cur-session)))
+
+  (defun mrf/delete-all-debug-sessions ()
+    "End the debug session and delete project Python buffers and all breakpoints."
+    (interactive)
+    (dap-breakpoint-delete-all)
+    (mrf/end-debug-session))
+
+  (defun mrf/begin-debug-session ()
+    "Begin a debug session with several dap windows enabled."
+    (interactive)
+    (dap-ui-show-many-windows)
+    (dap-debug))
+
+#+end_src
+
+***** DAP Hydra Definition Function
+#+begin_src emacs-lisp :tangle "init.el" 
+  ;;; --------------------------------------------------------------------------
+
+  (defun define-dap-hydra ()
+    (defhydra dap-hydra (:color pink :hint nil :foreign-keys run)
+      "
+    ^Stepping^		^Switch^		 ^Breakpoints^		^Debug^			    ^Eval
+    ^^^^^^^^----------------------------------------------------------------------------------------------------------------
+    _._: Next		_ss_: Session		 _bb_: Toggle		_dd_: Debug		    _ee_: Eval
+    _/_: Step in	_st_: Thread		 _bd_: Delete		_dr_: Debug recent	    _er_: Eval region
+    _,_: Step out	_sf_: Stack frame	 _ba_: Add		_dl_: Debug last	    _es_: Eval thing at point
+    _c_: Continue	_su_: Up stack frame	 _bc_: Set condition	_de_: Edit debug template   _ea_: Add expression.
+    _r_: Restart frame	_sd_: Down stack frame	 _bh_: Set hit count	_ds_: Debug restart
+    _Q_: Disconnect	_sl_: List locals	 _bl_: Set log message	_dx_: end session
+  		      _sb_: List breakpoints			      _dX_: end all sessions
+  		      _sS_: List sessions
+  		      _sR_: Session Repl
+  "
+      ("n" dap-next)
+      ("i" dap-step-in)
+      ("o" dap-step-out)
+      ("." dap-next)
+      ("/" dap-step-in)
+      ("," dap-step-out)
+      ("c" dap-continue)
+      ("r" dap-restart-frame)
+      ("ss" dap-switch-session)
+      ("st" dap-switch-thread)
+      ("sf" dap-switch-stack-frame)
+      ("su" dap-up-stack-frame)
+      ("sd" dap-down-stack-frame)
+      ("sl" dap-ui-locals)
+      ("sb" dap-ui-breakpoints)
+      ("sR" dap-ui-repl)
+      ("sS" dap-ui-sessions)
+      ("bb" dap-breakpoint-toggle)
+      ("ba" dap-breakpoint-add)
+      ("bd" dap-breakpoint-delete)
+      ("bc" dap-breakpoint-condition)
+      ("bh" dap-breakpoint-hit-condition)
+      ("bl" dap-breakpoint-log-message)
+      ("dd" dap-debug)
+      ("dr" dap-debug-recent)
+      ("ds" dap-debug-restart)
+      ("dl" dap-debug-last)
+      ("de" dap-debug-edit-template)
+      ("ee" dap-eval)
+      ("ea" dap-ui-expressions-add)
+      ("er" dap-eval-region)
+      ("es" dap-eval-thing-at-point)
+      ("dx" mrf/dap-end-debug-session)
+      ("dX" mrf/dap-delete-all-debug-sessions)
+      ("x" nil "exit Hydra" :color yellow)
+      ("q" mrf/dap-end-debug-session "quit" :color blue)
+      ("Q" mrf/dap-delete-all-debug-sessions :color red)))
+  
+#+end_src
+
+*** RealGUD (waiting for lldb)
+
+Since Realgud is options (in our configuratrion), we add it's keybindings conditionally. *Note* that these keybindings are still compatible with =dap-mode= keybindings.
+#+begin_src emacs-lisp :tangle no
+  ;;; --------------------------------------------------------------------------
+
+  (use-package realgud
+    :disabled
+    :after c-mode)
+
+  (use-package realgud-lldb
+    :disabled
+    :after realgud)
+  ;;:ensure (:files (:defaults ("lldb" "lldb/*.el") "realgud-lldb-pkg.el") :host github :repo "realgud/realgud-lldb"))
+
+#+end_src
+
+**** REALGud Keybindings
+#+begin_src emacs-lisp :tangle no
+  ;;; --------------------------------------------------------------------------
+
+  (use-package cc-mode
+    :when (package-installed-p 'realgud)
+    :bind (:map c-mode-map
+  	  ("C-c , j" . realgud:cmd-jump)
+  	  ("C-c , k" . realgud:cmd-kill)
+  	  ("C-c , s" . realgud:cmd-step)
+  	  ("C-c , n" . realgud:cmd-next)
+  	  ("C-c , q" . realgud:cmd-quit)
+  	  ("C-c , F" . realgud:window-bt)
+  	  ("C-c , U" . realgud:cmd-until)
+  	  ("C-c , X" . realgud:cmd-clear)
+  	  ("C-c , !" . realgud:cmd-shell)
+  	  ("C-c , b" . realgud:cmd-break)
+  	  ("C-c , f" . realgud:cmd-finish)
+  	  ("C-c , D" . realgud:cmd-delete)
+  	  ("C-c , +" . realgud:cmd-enable)
+  	  ("C-c , R" . realgud:cmd-restart)
+  	  ("C-c , -" . realgud:cmd-disable)
+  	  ("C-c , B" . realgud:window-brkpt)
+  	  ("C-c , c" . realgud:cmd-continue)
+  	  ("C-c , e" . realgud:cmd-eval-dwim)
+  	  ("C-c , Q" . realgud:cmd-terminate)
+  	  ("C-c , T" . realgud:cmd-backtrace)
+  	  ("C-c , h" . realgud:cmd-until-here)
+  	  ("C-c , u" . realgud:cmd-older-frame)
+  	  ("C-c , 4" . realgud:cmd-goto-loc-hist-4)
+  	  ("C-c , 5" . realgud:cmd-goto-loc-hist-5)
+  	  ("C-c , 6" . realgud:cmd-goto-loc-hist-6)
+  	  ("C-c , 7" . realgud:cmd-goto-loc-hist-7)
+  	  ("C-c , 8" . realgud:cmd-goto-loc-hist-8)
+  	  ("C-c , 9" . realgud:cmd-goto-loc-hist-9)
+  	  ("C-c , d" . realgud:cmd-newer-frame)
+  	  ("C-c , RET" . realgud:cmd-repeat-last)
+  	  ("C-c , E" . realgud:cmd-eval-at-point)
+  	  ("C-c , I" . realgud:cmdbuf-info-describe)
+  	  ("C-c , C-i" . realgud:cmd-info-breakpoints)))
+
+#+end_src
+
 
 * Company Mode
 [[http://company-mode.github.io/][Company Mode]] provides a nicer in-buffer completion interface than =completion-at-point= which is more reminiscent of what you would expect from an IDE.  We add a simple configuration to make the keybindings a little more useful (=TAB= now completes the selection and initiates completion at the current location if needed).
@@ -4256,6 +4284,10 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
     :unless (equal custom-ide 'custom-ide-lsp-bridge)
     :after (:any lsp-mode elpy anaconda-mode eglot)
     :bind (:map company-active-map
+  	  ("C-n". company-select-next)
+  	  ("C-p". company-select-previous)
+  	  ("M-<". company-select-first)
+  	  ("M->". company-select-last)
   	  ("<tab>" . company-complete-selection))
     :custom
     (company-minimum-prefix-length 1)
@@ -4614,7 +4646,11 @@ Dired, by default, opens up multiple windows - one for each directory. It would 
 
 
 
-* IRC Client
+* Miscellaneous
+
+The following packages are some additional quality of life features.
+
+** IRC Client
 #+begin_src emacs-lisp :tangle no
   ;;; --------------------------------------------------------------------------
 
@@ -4623,11 +4659,6 @@ Dired, by default, opens up multiple windows - one for each directory. It would 
 
 #+end_src
 
-
-
-* Miscellaneous
-
-The following packages are some additional quality of life features.
 
 ** Helpful Help Commands
 
