@@ -4057,7 +4057,7 @@ Something that is needed for Rust and Go debugging.
   ;;; --------------------------------------------------------------------------
   ;;; DAP for NodeJS
 
-  (defun my-setup-dap-node ()
+  (defun mrf/setup-dap-node ()
     "Require dap-node feature and run dap-node-setup if VSCode module isn't already installed"
     (require 'dap-node)
     (unless (file-exists-p dap-node-debug-path) (dap-node-setup)))
@@ -4065,8 +4065,8 @@ Something that is needed for Rust and Go debugging.
   (use-package dap-node
     :when (equal debug-adapter 'debug-adapter-dap-mode)
     :disabled
-    :hook ((typescript-mode . my-setup-dap-node)
-  	  (js2-mode . my-setup-dap-node))
+    :hook ((typescript-mode . mrf/setup-dap-node)
+  	  (js2-mode . mrf/setup-dap-node))
     ;;:ensure (:host github :repo "emacs-lsp/dap-mode" :files (:defaults "icons" "dap-mode-pkg.el"))
     :after dap-mode
     :config
@@ -4079,14 +4079,7 @@ Something that is needed for Rust and Go debugging.
         :dap-compilation "npx tsc index.ts --outdir dist --sourceMap true"
         :outFiles (list "${workspaceFolder}/dist/**/*.js")
         :name "Launch index.ts")))
-  ;; (dap-register-debug-template
-  ;;	"Launch index.ts"
-  ;;	(list :type "node"
-  ;;	:request "launch"
-  ;;	:program "${workspaceFolder}/index.ts"
-  ;;	:dap-compilation "npx tsc index.ts --outdir dist --sourceMap true"
-  ;;	:outFiles (list "${workspaceFolder}/dist/**/*.js")
-  ;;	:name "Launch index.ts"))
+
 #+end_src
 
 **** DAP Templates For Various Languages
@@ -4128,7 +4121,8 @@ Below are all the necessary functions and definitions for Hydra use under DAP.
 ***** DAP Hydra Debug Functions
 #+begin_src emacs-lisp :tangle "init.el" 
   ;;; --------------------------------------------------------------------------
-  (defun mrf/end-debug-session ()
+
+  (defun mrf/dap-end-debug-session ()
     "End the debug session and delete project Python buffers."
     (interactive)
     (kill-matching-buffers "\*Python :: Run file [from|\(buffer]*" nil :NO-ASK)
@@ -4136,13 +4130,13 @@ Below are all the necessary functions and definitions for Hydra use under DAP.
     (kill-matching-buffers "\*dap-ui-*" nil :NO-ASK)
     (dap-disconnect (dap--cur-session)))
 
-  (defun mrf/delete-all-debug-sessions ()
+  (defun mrf/dap-delete-all-debug-sessions ()
     "End the debug session and delete project Python buffers and all breakpoints."
     (interactive)
     (dap-breakpoint-delete-all)
-    (mrf/end-debug-session))
+    (mrf/dap-end-debug-session))
 
-  (defun mrf/begin-debug-session ()
+  (defun mrf/dap-begin-debug-session ()
     "Begin a debug session with several dap windows enabled."
     (interactive)
     (dap-ui-show-many-windows)
@@ -4438,6 +4432,7 @@ The =eterm-256color= package enhances the output of =term-mode= to enable handli
 
   (use-package eterm-256color
     :hook (term-mode . eterm-256color-mode))
+  
 #+end_src
 
 ** vterm
@@ -4493,22 +4488,11 @@ For more thoughts on Eshell, check out these articles by Pierre Neidhardt:
 #+begin_src emacs-lisp :tangle "init.el" 
   ;;; --------------------------------------------------------------------------
 
-  (defun efs/configure-eshell ()
+  (defun mrf/configure-eshell ()
     ;; Save command history when commands are entered
     (add-hook 'eshell-pre-command-hook 'eshell-save-some-history)
-
     ;; Truncate buffer for performance
     (add-to-list 'eshell-output-filter-functions 'eshell-truncate-buffer)
-
-    ;; Bind some useful keys for evil-mode
-    ;; (bind-keys :map eshell-mode-map
-    ;;	 ("C-r" . eshell-hist-mode)
-    ;;	 ("<home>" . eshell-bol))
-
-    ;; (evil-define-key '(normal insert visual) eshell-mode-map (kbd "C-r") 'counsel-esh-history)
-    ;; (evil-define-key '(normal insert visual) eshell-mode-map (kbd "<home>") 'eshell-bol)
-    ;; (evil-normalize-keymaps)
-
     (setq eshell-history-size	       10000
       eshell-buffer-maximum-lines 10000
       eshell-hist-ignoredups t
@@ -4518,8 +4502,9 @@ For more thoughts on Eshell, check out these articles by Pierre Neidhardt:
     :after eshell)
 
   (use-package eshell
-    :ensure nil
-    :hook (eshell-first-time-mode . efs/configure-eshell)
+    :ensure
+    :defer t
+    :hook (eshell-first-time-mode . mrf/configure-eshell)
     :config
     (with-eval-after-load 'esh-opt
       (setq eshell-destroy-buffer-when-process-dies t)
@@ -4919,9 +4904,10 @@ This is a set of keymaps that do the same things as the popup menu. Both are her
         (bind-keys :map map
   	("M-RET p" . pulsar-pulse-line)
   	("M-RET d" . dashboard-open)
+  	("M-RET S e" . eshell)
   	("M-RET f" . mrf/set-fill-column-interactively)
-  	("M-RET i" . ielm)
-  	("M-RET v" . vterm-other-window)
+  	("M-RET S i" . ielm)
+  	("M-RET S v" . vterm-other-window)
   	("M-RET t" . treemacs)
   	("M-RET |" . global-display-fill-column-indicator-mode)
   	("M-RET T +" . next-theme)
@@ -4968,6 +4954,7 @@ shown. Plus, some keys are mode specific and will only appear when that major mo
   (defun mrf/mmm-update-menu ()
     (interactive)
     (mrf/mmm-handle-context-keys)
+    (which-key-add-key-based-replacements "M-RET S" "shells")
     (which-key-add-key-based-replacements "M-RET T" "theme-keys")
     (which-key-add-key-based-replacements "M-RET P" "python-menu")
     (which-key-add-key-based-replacements "M-RET o" "org-menu")

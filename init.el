@@ -2767,7 +2767,8 @@ capture was not aborted."
       :name "Python :: Run file (buffer)")))
 
 ;;; --------------------------------------------------------------------------
-(defun mrf/end-debug-session ()
+
+(defun mrf/dap-end-debug-session ()
   "End the debug session and delete project Python buffers."
   (interactive)
   (kill-matching-buffers "\*Python :: Run file [from|\(buffer]*" nil :NO-ASK)
@@ -2775,13 +2776,13 @@ capture was not aborted."
   (kill-matching-buffers "\*dap-ui-*" nil :NO-ASK)
   (dap-disconnect (dap--cur-session)))
 
-(defun mrf/delete-all-debug-sessions ()
+(defun mrf/dap-delete-all-debug-sessions ()
   "End the debug session and delete project Python buffers and all breakpoints."
   (interactive)
   (dap-breakpoint-delete-all)
-  (mrf/end-debug-session))
+  (mrf/dap-end-debug-session))
 
-(defun mrf/begin-debug-session ()
+(defun mrf/dap-begin-debug-session ()
   "Begin a debug session with several dap windows enabled."
   (interactive)
   (dap-ui-show-many-windows)
@@ -2969,22 +2970,11 @@ capture was not aborted."
 
 ;;; --------------------------------------------------------------------------
 
-(defun efs/configure-eshell ()
+(defun mrf/configure-eshell ()
   ;; Save command history when commands are entered
   (add-hook 'eshell-pre-command-hook 'eshell-save-some-history)
-
   ;; Truncate buffer for performance
   (add-to-list 'eshell-output-filter-functions 'eshell-truncate-buffer)
-
-  ;; Bind some useful keys for evil-mode
-  ;; (bind-keys :map eshell-mode-map
-  ;;	 ("C-r" . eshell-hist-mode)
-  ;;	 ("<home>" . eshell-bol))
-
-  ;; (evil-define-key '(normal insert visual) eshell-mode-map (kbd "C-r") 'counsel-esh-history)
-  ;; (evil-define-key '(normal insert visual) eshell-mode-map (kbd "<home>") 'eshell-bol)
-  ;; (evil-normalize-keymaps)
-
   (setq eshell-history-size	       10000
     eshell-buffer-maximum-lines 10000
     eshell-hist-ignoredups t
@@ -2994,8 +2984,9 @@ capture was not aborted."
   :after eshell)
 
 (use-package eshell
-  :ensure nil
-  :hook (eshell-first-time-mode . efs/configure-eshell)
+  :ensure
+  :defer t
+  :hook (eshell-first-time-mode . mrf/configure-eshell)
   :config
   (with-eval-after-load 'esh-opt
     (setq eshell-destroy-buffer-when-process-dies t)
@@ -3158,9 +3149,10 @@ capture was not aborted."
       (bind-keys :map map
 	("M-RET p" . pulsar-pulse-line)
 	("M-RET d" . dashboard-open)
+	("M-RET S e" . eshell)
 	("M-RET f" . mrf/set-fill-column-interactively)
-	("M-RET i" . ielm)
-	("M-RET v" . vterm-other-window)
+	("M-RET S i" . ielm)
+	("M-RET S v" . vterm-other-window)
 	("M-RET t" . treemacs)
 	("M-RET |" . global-display-fill-column-indicator-mode)
 	("M-RET T +" . next-theme)
@@ -3198,6 +3190,7 @@ capture was not aborted."
 (defun mrf/mmm-update-menu ()
   (interactive)
   (mrf/mmm-handle-context-keys)
+  (which-key-add-key-based-replacements "M-RET S" "shells")
   (which-key-add-key-based-replacements "M-RET T" "theme-keys")
   (which-key-add-key-based-replacements "M-RET P" "python-menu")
   (which-key-add-key-based-replacements "M-RET o" "org-menu")
