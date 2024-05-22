@@ -2251,19 +2251,6 @@ capture was not aborted."
   :after tree-sitter)
 
 ;;; --------------------------------------------------------------------------
-
-;; (use-package transient
-;;	 :wait t
-;;	 :ensure (:repo "https://github.com/magit/transient" :fetcher github
-;;		:local-repo "transient"
-;;		:files ("*" (:exclude ".git"))))
-
-;; (use-package git-commit
-;;	 :ensure (:fetcher github :repo "magit/magit"
-;;		:files ("lisp/git-commit.el" "lisp/git-commit-pkg.el")
-;;		:old-names (git-commit-mode))
-;;	 :after transient)
-
 (use-package transient :defer t)
 (use-package git-commit :after transient :defer t)
 (use-package magit :after git-commit :defer t)
@@ -3111,6 +3098,9 @@ capture was not aborted."
   (pulsar-face 'pulsar-magenta)
   (pulsar-highlight-face 'pulsar-yellow))
 
+(use-package rainbow-mode
+  :hook (prog-mode . (lambda () (rainbow-mode t))))
+
 (defun mrf/set-fill-column-interactively (num)
   "Asks for the fill column."
   (interactive "nfill-column: ")
@@ -3132,6 +3122,7 @@ capture was not aborted."
 	("M-RET d" . dashboard-open)
 	("M-RET S e" . eshell)
 	("M-RET f" . mrf/set-fill-column-interactively)
+        ("M-RET r" . repeat-mode)
 	("M-RET S i" . ielm)
 	("M-RET S v" . vterm-other-window)
 	("M-RET t" . treemacs)
