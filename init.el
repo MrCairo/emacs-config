@@ -1746,8 +1746,8 @@ capture was not aborted."
 (use-package eglot
   :when (equal custom-ide 'custom-ide-eglot)
   ;; :ensure (:repo "https://github.com/emacs-mirror/emacs" :local-repo "eglot" :branch "master"
-  ;; 		:files ("lisp/progmodes/eglot.el" "doc/emacs/doclicense.texi" "doc/emacs/docstyle.texi"
-  ;; 			  "doc/misc/eglot.texi" "etc/EGLOT-NEWS" (:exclude ".git")))
+  ;;            :files ("lisp/progmodes/eglot.el" "doc/emacs/doclicense.texi" "doc/emacs/docstyle.texi"
+  ;;                      "doc/misc/eglot.texi" "etc/EGLOT-NEWS" (:exclude ".git")))
   :after eldoc track-changes company
   :after (:any (:all company which-key eldoc) (:any jsonrpc python))
   :init
@@ -2536,7 +2536,7 @@ capture was not aborted."
   :hook
   (rust-mode . lsp-deferred)
   (rust-mode . (lambda () (setq indent-tabs-mode nil)
-		       (prettify-symbols-mode)))
+		 (prettify-symbols-mode)))
   :config
   (setq rust-format-on-save t))
 					; ;(use-package rust-analyzer)
@@ -2799,17 +2799,17 @@ capture was not aborted."
 (defun define-dap-hydra ()
   (defhydra dap-hydra (:color pink :hint nil :foreign-keys run)
     "
-  ^Stepping^		^Switch^		 ^Breakpoints^		^Debug^			    ^Eval
+  ^Stepping^            ^Switch^                 ^Breakpoints^          ^Debug^                     ^Eval
   ^^^^^^^^----------------------------------------------------------------------------------------------------------------
-  _._: Next		_ss_: Session		 _bb_: Toggle		_dd_: Debug		    _ee_: Eval
-  _/_: Step in	_st_: Thread		 _bd_: Delete		_dr_: Debug recent	    _er_: Eval region
-  _,_: Step out	_sf_: Stack frame	 _ba_: Add		_dl_: Debug last	    _es_: Eval thing at point
-  _c_: Continue	_su_: Up stack frame	 _bc_: Set condition	_de_: Edit debug template   _ea_: Add expression.
-  _r_: Restart frame	_sd_: Down stack frame	 _bh_: Set hit count	_ds_: Debug restart
-  _Q_: Disconnect	_sl_: List locals	 _bl_: Set log message	_dx_: end session
-		      _sb_: List breakpoints			      _dX_: end all sessions
-		      _sS_: List sessions
-		      _sR_: Session Repl
+  _._: Next            _ss_: Session            _bb_: Toggle           _dd_: Debug                 _ee_: Eval
+  _/_: Step in         _st_: Thread             _bd_: Delete           _dr_: Debug recent          _er_: Eval region
+  _,_: Step out        _sf_: Stack frame        _ba_: Add              _dl_: Debug last            _es_: Eval thing at point
+  _c_: Continue        _su_: Up stack frame     _bc_: Set condition    _de_: Edit debug template   _ea_: Add expression.
+  _r_: Restart frame   _sd_: Down stack frame   _bh_: Set hit count    _ds_: Debug restart
+  _Q_: Disconnect      _sl_: List locals        _bl_: Set log message  _dx_: end session
+                       _sb_: List breakpoints                          _dX_: end all sessions
+                       _sS_: List sessions
+                       _sR_: Session Repl
 "
     ("n" dap-next)
     ("i" dap-step-in)
@@ -2956,7 +2956,7 @@ capture was not aborted."
   (add-hook 'eshell-pre-command-hook 'eshell-save-some-history)
   ;; Truncate buffer for performance
   (add-to-list 'eshell-output-filter-functions 'eshell-truncate-buffer)
-  (setq eshell-history-size	       10000
+  (setq eshell-history-size	10000
     eshell-buffer-maximum-lines 10000
     eshell-hist-ignoredups t
     eshell-scroll-to-bottom-on-input t))
