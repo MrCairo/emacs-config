@@ -455,7 +455,7 @@ font size is computed + 20 of this value."
   :config
   (if (not elpaca-after-init-time)
     (add-hook 'elpaca-after-init-hook
-      (lambda () (run-with-timer 0.05 nil 'mrf/set-diminish)))
+      (lambda () (run-with-timer 0.5 nil 'mrf/set-diminish)))
     (run-with-timer 1.0 nil 'mrf/set-diminsh)))
 
 ;;; --------------------------------------------------------------------------
@@ -593,6 +593,8 @@ font size is computed + 20 of this value."
   (define-key yas-minor-mode-map (kbd "<tab>") nil)
   (add-to-list #'yas-snippet-dirs (expand-file-name "Snippets" custom-docs-dir))
   (yas-reload-all)
+  (add-hook 'prog-mode-hook 'yas-minor-mode)
+  (add-hook 'text-mode-hook 'yas-minor-mode)
   (setq yas-prompt-functions '(yas-ido-prompt))
   (defun help/yas-after-exit-snippet-hook-fn ()
     (prettify-symbols-mode))
@@ -636,8 +638,17 @@ font size is computed + 20 of this value."
   (setq vundo-glyph-alist vundo-unicode-symbols))
 
 ;;; --------------------------------------------------------------------------
-;; Full-featured undo-tree handling. Look to Vundo for something a little
-;; simpler.
+
+(defun mrf/undo-tree-hook ()
+  (set-frame-width (selected-frame) 20))
+
+(defun undo-tree-split-side-by-side (original-function &rest args)
+  "Split undo-tree side-by-side"
+  (let ((split-height-threshold nil)
+	 (split-width-threshold 0))
+    (apply original-function args)))
+
+;;; --------------------------------------------------------------------------
 
 ;;
 ;; Sometimes, when behind a firewall, the undo-tree package triggers elpaca
@@ -647,35 +658,24 @@ font size is computed + 20 of this value."
 ;; page altogether.
 ;;
 (when (equal undo-handler 'undo-handler-undo-tree)
-  (defun mrf/undo-tree-hook ()
-    (set-frame-width (selected-frame) 20))
-
-  (defun undo-tree-split-side-by-side (original-function &rest args)
-    "Split undo-tree side-by-side"
-    (let ((split-height-threshold nil)
-	   (split-width-threshold 0))
-      (apply original-function args)))
-
   (use-package undo-tree
-    ;; :hook (undo-tree-visualizer-mode-hook . mrf/undo-tree-hook)
     :init
-    (setq undo-tree-visualizer-timestamps t   
-      undo-tree-visualizer-diff nil
+    (setq undo-tree-visualizer-timestamps nil
+      undo-tree-visualizer-diff t
       undo-tree-enable-undo-in-region t
       ;; 10X bump of the undo limits to avoid issues with premature
       ;; Emacs GC which truncages the undo history very aggresively
       undo-limit 800000
       undo-strong-limit 12000000
       undo-outer-limit 120000000)
+    :diminish untree
     :config
     (global-undo-tree-mode)
     (advice-add 'undo-tree-visualize :around #'undo-tree-split-side-by-side)
     (bind-keys :map undo-tree-visualizer-mode-map
       ("RET" . undo-tree-visualizer-quit)
       ("C-g" . undo-tree-visualizer-abort))
-    ;; This prevents the *.~undo-tree~ files from being persisted.
-    (with-eval-after-load 'undo-tree
-      (setq undo-tree-auto-save-history nil))))
+    (setq undo-tree-auto-save-history nil)))
 
 ;;; --------------------------------------------------------------------------
 
@@ -1452,7 +1452,7 @@ capture was not aborted."
 
 (use-package org-roam
   ;; :demand t  ;; Ensure org-roam is loaded by default
-  :disabled
+  :defer t
   :init
   (setq org-roam-v2-ack t)
   (make-directory (expand-file-name "org-roam-notes" user-emacs-directory) t)
@@ -1462,7 +1462,7 @@ capture was not aborted."
   :custom
   (org-roam-directory (expand-file-name "org-roam-notes" user-emacs-directory))
   (org-roam-completion-everywhere t)
-  :bind (("C-c n l" . org-roam-buffer-toggle)
+  :bind ( ("C-c n l" . org-roam-buffer-toggle)
 	  ("C-c n f" . org-roam-node-find)
 	  ("C-c n i" . org-roam-node-insert)
 	  ("C-c n I" . mrf/org-roam-node-insert-immediate)
@@ -1490,7 +1490,12 @@ capture was not aborted."
 (defun mrf/define-denote-keymap ()
   (interactive)
   ;; Denote DOES NOT define any key bindings.  This is for the user to
-  ;; decide.  For example:
+  ;; decide.
+  ;; Just in case, unbind some org-roam keys so it doesn't get loaded
+  ;; unintentionally. These are some that show up in the which-key menu:
+  (unbind-key "C-c n f")
+  (unbind-key "C-c n l")
+  (unbind-key "C-c n p")
   (let ((map global-map))
     (define-key map (kbd "C-c n n") #'denote)
     (define-key map (kbd "C-c n c") #'denote-region) ; "contents" mnemonic
@@ -1530,7 +1535,7 @@ capture was not aborted."
   :custom
   (denote-directory (expand-file-name "notes" user-emacs-directory))
   (denote-save-buffers nil)
-  (denote-known-keywords '("emacs" "philosophy" "politics" "economics"))
+  ;; (denote-known-keywords '("emacs" "philosophy" "politics" "economics"))
   (denote-infer-keywords t)
   (denote-sort-keywords t)
   (denote-file-type nil) ; Org is the default, set others here
@@ -1744,7 +1749,7 @@ capture was not aborted."
   ;; 		:files ("lisp/progmodes/eglot.el" "doc/emacs/doclicense.texi" "doc/emacs/docstyle.texi"
   ;; 			  "doc/misc/eglot.texi" "etc/EGLOT-NEWS" (:exclude ".git")))
   :after eldoc track-changes company
-  :after (:any company which-key eldoc jsonrpc python)
+  :after (:any (:all company which-key eldoc) (:any jsonrpc python))
   :init
   (setq company-backends
     (cons 'company-capf
@@ -1753,6 +1758,7 @@ capture was not aborted."
   (lisp-mode . eglot-ensure)
   (python-mode . eglot-ensure)
   (go-mode . eglot-ensure)
+  (rust-mode . eglot-ensure)
   ;; (c-mode . eglot-ensure)
   ;; (c++-mode . eglot-ensure)
   ;; (prog-mode . eglot-ensure)
@@ -1767,19 +1773,11 @@ capture was not aborted."
   ;; to get our themes loading properly, load it here if not already loaded.
   (unless theme-did-load
     (mrf/load-theme-from-selector))
-  ;; (add-hook 'eglot-managed-mode-hook #'eldoc-box-hover-at-point-mode t)
   (add-to-list 'eglot-stay-out-of 'flymake)
-  ;; (add-to-list 'eglot-server-programs '((c-mode c++-mode) "clangd"))
-  (add-to-list 'eglot-server-programs '(python-mode . ("pylsp")))  
-  (setq-default eglot-workspace-configuration
-    '((:gopls .
-  	((staticcheck . t)
-  	  (matcher . "CaseSensitive")))))
-  (setq-default eglot-workspace-configuration
-    '((:pylsp . (:configurationSources ["flake8"]
-  		  :plugins (:pycodestyle (:enabled nil)
-  			     :mccabe (:enabled nil)
-  			     :flake8 (:enabled t)))))))
+  (if (featurep 'company) ;; Company should be loaded.
+    (bind-keys :map eglot-mode-map
+      ("<tab>" . company-indent-or-complete-common))
+    (message "Eglot: Company was expected to be loaded but wasn't.")))
 
 ;;; --------------------------------------------------------------------------
 ;;; Language Server Protocol
@@ -1801,27 +1799,32 @@ capture was not aborted."
   :init
   (setq lsp-keymap-prefix "C-c l")  ;; Or 'C-l', 's-l'
   :config
+  (if (featurep 'company)
+    (bind-keys :map lsp-mode-map
+      ("<tab>" . company-indent-or-complete-common)))
+  (mrf/define-rust-lsp-values)
   (lsp-enable-which-key-integration t))
 
 (use-package lsp-ui
   :when (equal custom-ide 'custom-ide-lsp)
   :after lsp
-  :config (setq lsp-ui-sideline-enable t
-	    lsp-ui-sideline-show-hover t
-	    lsp-ui-sideline-delay 0.5
-	    lsp-ui-sideline-ignore-duplicates t
-	    lsp-ui-doc-delay 3
-	    lsp-ui-doc-position 'top
-	    lsp-ui-doc-alignment 'frame
-	    lsp-ui-doc-header nil
-	    lsp-ui-doc-show-with-cursor t
-	    lsp-ui-doc-include-signature t
-	    lsp-ui-doc-use-childframe t)
+  :custom
+  (lsp-ui-sideline-enable t)
+  (lsp-ui-sideline-show-hover t)
+  (lsp-ui-sideline-delay 0.5)
+  (lsp-ui-sideline-ignore-duplicates t)
+  (lsp-ui-peek-always-show t)
+  (lsp-ui-doc-delay 3)
+  (lsp-ui-doc-position 'bottom)
+  ;;(lsp-ui-doc-position 'top)
+  (lsp-ui-doc-alignment 'frame)
+  (lsp-ui-doc-header nil)
+  (lsp-ui-doc-show-with-cursor t)
+  (lsp-ui-doc-include-signature t)
+  (lsp-ui-doc-use-childframe t)
   :commands lsp-ui-mode
   :bind (:map lsp-ui-mode-map
 	  ("C-c l d" . lsp-ui-doc-focus-frame))
-  :custom
-  (lsp-ui-doc-position 'bottom)
   :hook (lsp-mode . lsp-ui-mode))
 
 (use-package lsp-treemacs
@@ -1836,6 +1839,22 @@ capture was not aborted."
   :when (and (equal custom-ide 'custom-ide-lsp)
 	  (equal completion-handler 'comphand-ivy-counsel))
   :after lsp ivy)
+
+(defun mrf/define-rust-lsp-values ()
+  (setq-default lsp-rust-analyzer-cargo-watch-command "clippy")
+  (setq-default lsp-eldoc-render-all t)
+  (setq-default lsp-idle-delay 0.6)
+  ;; enable / disable the hints as you prefer:
+  (setq-default lsp-inlay-hint-enable t)
+  ;; These are optional configurations. See
+  ;; https://emacs-lsp.github.io/lsp-mode/page/lsp-rust-analyzer/#lsp-rust-analyzer-display-chaining-hints
+  ;; for a full list
+  (setq-default lsp-rust-analyzer-display-lifetime-elision-hints-enable "skip_trivial")
+  (setq-default lsp-rust-analyzer-display-chaining-hints t)
+  (setq-default lsp-rust-analyzer-display-lifetime-elision-hints-use-parameter-names nil)
+  (setq-default lsp-rust-analyzer-display-closure-return-type-hints t)
+  (setq-default lsp-rust-analyzer-display-parameter-hints nil)
+  (setq-default lsp-rust-analyzer-display-reborrow-hints nil))
 
 ;;; --------------------------------------------------------------------------
 
@@ -1864,6 +1883,9 @@ capture was not aborted."
   (which-key-add-key-based-replacements "C-c g g" "find-defitions")
   (use-package pyvenv-auto)
   :hook
+  (if (featurep 'company)
+    (bind-keys :map anaconda-mode-map
+      ("<tab>" . company-indent-or-complete-common)))
   (python-mode-hook . anaconda-eldoc-mode))
 
 ;;; --------------------------------------------------------------------------
@@ -1892,307 +1914,10 @@ capture was not aborted."
   (which-key-add-key-based-replacements "C-c g o" "find-defitions-other-window")
   (which-key-add-key-based-replacements "C-c g g" "find-defitions")
   (which-key-add-key-based-replacements "C-c g ?" "eldoc-definition")
+  (if (featurep 'company)
+    (bind-keys :map elpy-mode-map
+	("<tab>" . company-indent-or-complete-common)))
   (elpy-enable))
-
-;;; ------------------------------------------------------------------------
-(defun mrf/additional-dape-configs ()
-  "This does assume that this is called AFTER dape has been loaded."
-  
-  (add-to-list 'dape-configs
-    `(delve
-       modes (go-mode go-ts-mode)
-       command "dlv"
-       command-args ("dap" "--listen" "127.0.0.1:55878")
-       command-cwd dape-cwd-fn
-       host "127.0.0.1"
-       port 55878
-       :type "debug"	;; needed to set the adapterID correctly as a string type
-       :request "launch"
-       :cwd dape-cwd-fn
-       :program dape-cwd-fn)))
-
-;;; ------------------------------------------------------------------------
-
-(use-package dape
-  :when (equal debug-adapter 'debug-adapter-dape)
-  :init
-  (define-dape-hydra)
-  :after (:any python go-mode)
-  ;; To use window configuration like gud (gdb-mi)
-  ;; :init
-  ;; (setq dape-buffer-window-arrangement 'gud)
-  :custom
-  (dape-buffer-window-arrangement 'right)  ;; Info buffers to the right
-  :config
-  (define-dape-hydra)
-  (message "prepare-dape end")
-  (bind-keys :map prog-mode-map
-    ("C-c ." . dape-hydra/body))
-  (mrf/additional-dape-configs))
-
-;; (defun mrf/prepare-dape ()
-;;   (message "prepare-dape 1 of 4")
-;;   (when (equal debug-adapter 'debug-adapter-dape)
-;;     (message "prepare-date 2 of 4")
-;;     ))
-
-;;; --------------------------------------------------------------------------
-
-(setq mrf/vscode-js-debug-dir (file-name-concat user-emacs-directory "dape/vscode-js-debug"))
-
-(defun mrf/install-vscode-js-debug ()
-  "Run installation procedure to install JS debugging support"
-  (interactive)
-  (mkdir mrf/vscode-js-debug-dir t)
-  (let ((default-directory (expand-file-name mrf/vscode-js-debug-dir)))
-
-    (vc-git-clone "https://github.com/microsoft/vscode-js-debug.git" "." nil)
-    (call-process "npm" nil "*snam-install*" t "install")
-    (call-process "npx" nil "*snam-install*" t "gulp" "dapDebugServer")))
-
-;;; --------------------------------------------------------------------------
-
-;; (mrf/install-vscode-js-debug)
-
-;;; --------------------------------------------------------------------------
-
-(defun mrf/dape-end-debug-session ()
-  "End the debug session."
-  (interactive)
-  (dape-quit))
-
-(defun mrf/dape-delete-all-debug-sessions ()
-  "End the debug session and delete all breakpoints."
-  (interactive)
-  (dape-breakpoint-remove-all)
-  (mrf/dape-end-debug-session))
-
-;;; --------------------------------------------------------------------------
-
-(defun define-dape-hydra ()
-  (defhydra dape-hydra (:color pink :hint nil :foreign-keys run)
-    "
-  ^Stepping^          ^Switch^                 ^Breakpoints^          ^Debug^                     ^Eval
-  ^^^^^^^^----------------------------------------------------------------------------------------------------------------
-  _._: Next           _st_: Thread             _bb_: Toggle           _dd_: Debug                 _ee_: Eval Expression
-  _/_: Step in        _si_: Info               _bd_: Delete           _dw_: Watch dwim
-  _,_: Step out       _sf_: Stack Frame        _ba_: Add              _dx_: end session
-  _c_: Continue       _su_: Up stack frame     _bc_: Set condition    _dX_: end all sessions
-  _r_: Restart frame  _sd_: Down stack frame   _bl_: Set log message  _dp_: Initialize DAPE
-  _Q_: Disconnect     _sR_: Session Repl
-                    _sU_: Info Update"
-    ("n" dape-next)
-    ("i" dape-step-in)
-    ("o" dape-step-out)
-    ("." dape-next)
-    ("/" dape-step-in)
-    ("," dape-step-out)
-    ("c" dape-continue)
-    ("r" dape-restart)
-    ("si" dape-info)
-    ("st" dape-select-thread)
-    ("sf" dape-select-stack)
-    ("su" dape-stack-select-up)
-    ("sU" dape-info-update)
-    ("sd" dape-stack-select-down)
-    ("sR" dape-repl)
-    ("bb" dape-breakpoint-toggle)
-    ("ba" dape--breakpoint-place)
-    ("bd" dape-breakpoint-remove-at-point)
-    ("bc" dape-breakpoint-expression)
-    ("bl" dape-breakpoint-log)
-    ("dd" dape)
-    ("dw" dape-watch-dwim)
-    ("ee" dape-evaluate-expression)
-    ("dx" mrf/dape-end-debug-session)
-    ("dX" mrf/dape-delete-all-debug-sessions)
-    ("dp" dape-prepare)
-    ("x" nil "exit Hydra" :color yellow)
-    ("q" mrf/dape-end-debug-session "quit" :color blue)
-    ("Q" mrf/dape-delete-all-debug-sessions :color red)))
-
-;;; --------------------------------------------------------------------------
-;;; Debug Adapter Protocol
-(use-package dap-mode
-  :when (equal debug-adapter 'debug-adapter-dap-mode)
-  :after hydra
-  ;; Uncomment the config below if you want all UI panes to be hidden by default!
-  ;; :custom
-  ;; (lsp-enable-dap-auto-configure nil)
-  :commands dap-debug
-  :custom
-  (dap-auto-configure-features '(sessions locals breakpoints expressions repl controls tooltip))
-  :config
-  (define-dap-hydra)
-  (bind-keys :map prog-mode-map
-    ("C-c ." . dap-hydra/body))
-  (dap-ui-mode 1))
-
-;;; --------------------------------------------------------------------------
-
-(setq dap-lldb-debug-program
-  "/Users/strider/Developer/command-line-unix/llvm/lldb-build/bin/lldb-dap")
-
-(defun mrf/populate-lldb-start-file-args (conf)
-  "Populate CONF with the required arguments."
-  (-> conf
-    (dap--put-if-absent :dap-server-path dap-lldb-debug-program)
-    (dap--put-if-absent :type "lldb-dap")
-    (dap--put-if-absent :cwd default-directory)
-    (dap--put-if-absent :program (funcall dap-lldb-debugged-program-function))
-    (dap--put-if-absent :name "LLDB Debug")))
-
-(use-package dap-cpptools
-  :when (equal debug-adapter 'debug-adapter-dap-mode)
-  :disabled
-  :after dap-mode
-  ;;:ensure (:host github :repo "emacs-lsp/dap-mode")
-  :config
-  (use-package dap-lldb
-    :disabled
-    ;;:ensure (:host github :repo "emacs-lsp/dap-mode")
-    :after dap-mode
-    :config
-    (dap-register-debug-provider "lldb-dap" 'mrf/populate-lldb-start-file-args)
-    (dap-register-debug-template "LLDB DAP :: Run from project directory"
-      (list :type "lldb-dap"
-	:name "LLDB using DAP"
-	:program "a.out"
-	:request "launch"))))
-
-;;; --------------------------------------------------------------------------
-;;; DAP for Python
-
-
-(use-package dap-python
-  :ensure (:package "dap-python" :type git :host github :repo "emacs-lsp/dap-mode")
-  :when (equal debug-adapter 'debug-adapter-dap-mode)
-  ;;:ensure (:host github :repo "emacs-lsp/dap-mode")
-  :after dap-mode
-  :config
-  (setq dap-python-executable "python3") ;; Otherwise it looks for 'python' else error.
-  (setq dap-python-debugger 'debugpy)
-  (dap-register-debug-template "Python :: Run file from project directory"
-    (list :type "python"
-      :args ""
-      :cwd nil
-      :module nil
-      :program nil
-      :request "launch"))
-  (dap-register-debug-template "Python :: Run file (buffer)"
-    (list :type "python"
-      :args ""
-      :cwd nil
-      :module nil
-      :program nil
-      :request "launch"
-      :name "Python :: Run file (buffer)")))
-
-(use-package dap-lldb
-  :defer t
-  :ensure (:package "dap-lldb" :type git :host github :repo "emacs-lsp/dap-mode")
-  :custom
-  (dap-lldb-debug-program "~/Developer/command-line-unix/llvm/lldb-build/bin/lldb-dap"))
-
-(use-package dap-cpptools
-  :ensure (:package "dap-cpptools" :type git :host github :repo "emacs-lsp/dap-mode")
-  :when (equal debug-adapter 'debug-adapter-dap-mode)
-  ;;:ensure (:host github :repo "emacs-lsp/dap-mode")
-  :after dap-mode
-  :custom
-   ;; Make sure that terminal programs open a term for I/O in an Emacs buffer
-  (dap-default-terminal-kind "integrated")
-  :config
-  (dap-register-debug-template "Rust::CppTools Run Configuration"
-    (list :type "cppdbg"
-      :request "launch"
-      :name "Rust::Run"
-      :MIMode "gdb"
-      :miDebuggerPath "rust-gdb"
-      :environment []
-      :program "${workspaceFolder}/target/debug/hello / replace with binary"
-      :cwd "${workspaceFolder}"
-      :console "external"
-      :dap-compilation "cargo build"
-      :dap-compilation-dir "${workspaceFolder}"))
-  (dap-auto-configure-mode +1)
-  (dap-cpptools-setup))
-
-;;; --------------------------------------------------------------------------
-(defun mrf/end-debug-session ()
-  "End the debug session and delete project Python buffers."
-  (interactive)
-  (kill-matching-buffers "\*Python :: Run file [from|\(buffer]*" nil :NO-ASK)
-  (kill-matching-buffers "\*Python: Current File*" nil :NO-ASK)
-  (kill-matching-buffers "\*dap-ui-*" nil :NO-ASK)
-  (dap-disconnect (dap--cur-session)))
-
-(defun mrf/delete-all-debug-sessions ()
-  "End the debug session and delete project Python buffers and all breakpoints."
-  (interactive)
-  (dap-breakpoint-delete-all)
-  (mrf/end-debug-session))
-
-(defun mrf/begin-debug-session ()
-  "Begin a debug session with several dap windows enabled."
-  (interactive)
-  (dap-ui-show-many-windows)
-  (dap-debug))
-
-;;; --------------------------------------------------------------------------
-
-(defun define-dap-hydra ()
-  (defhydra dap-hydra (:color pink :hint nil :foreign-keys run)
-    "
-  ^Stepping^		^Switch^		 ^Breakpoints^		^Debug^			    ^Eval
-  ^^^^^^^^----------------------------------------------------------------------------------------------------------------
-  _._: Next		_ss_: Session		 _bb_: Toggle		_dd_: Debug		    _ee_: Eval
-  _/_: Step in	_st_: Thread		 _bd_: Delete		_dr_: Debug recent	    _er_: Eval region
-  _,_: Step out	_sf_: Stack frame	 _ba_: Add		_dl_: Debug last	    _es_: Eval thing at point
-  _c_: Continue	_su_: Up stack frame	 _bc_: Set condition	_de_: Edit debug template   _ea_: Add expression.
-  _r_: Restart frame	_sd_: Down stack frame	 _bh_: Set hit count	_ds_: Debug restart
-  _Q_: Disconnect	_sl_: List locals	 _bl_: Set log message	_dx_: end session
-		      _sb_: List breakpoints			      _dX_: end all sessions
-		      _sS_: List sessions
-		      _sR_: Session Repl
-"
-    ("n" dap-next)
-    ("i" dap-step-in)
-    ("o" dap-step-out)
-    ("." dap-next)
-    ("/" dap-step-in)
-    ("," dap-step-out)
-    ("c" dap-continue)
-    ("r" dap-restart-frame)
-    ("ss" dap-switch-session)
-    ("st" dap-switch-thread)
-    ("sf" dap-switch-stack-frame)
-    ("su" dap-up-stack-frame)
-    ("sd" dap-down-stack-frame)
-    ("sl" dap-ui-locals)
-    ("sb" dap-ui-breakpoints)
-    ("sR" dap-ui-repl)
-    ("sS" dap-ui-sessions)
-    ("bb" dap-breakpoint-toggle)
-    ("ba" dap-breakpoint-add)
-    ("bd" dap-breakpoint-delete)
-    ("bc" dap-breakpoint-condition)
-    ("bh" dap-breakpoint-hit-condition)
-    ("bl" dap-breakpoint-log-message)
-    ("dd" dap-debug)
-    ("dr" dap-debug-recent)
-    ("ds" dap-debug-restart)
-    ("dl" dap-debug-last)
-    ("de" dap-debug-edit-template)
-    ("ee" dap-eval)
-    ("ea" dap-ui-expressions-add)
-    ("er" dap-eval-region)
-    ("es" dap-eval-thing-at-point)
-    ("dx" mrf/dap-end-debug-session)
-    ("dX" mrf/dap-delete-all-debug-sessions)
-    ("x" nil "exit Hydra" :color yellow)
-    ("q" mrf/dap-end-debug-session "quit" :color blue)
-    ("Q" mrf/dap-delete-all-debug-sessions :color red)))
 
 (use-package prescient)
 
@@ -2356,7 +2081,7 @@ capture was not aborted."
 
 (use-package consult
   :when (equal completion-handler 'comphand-vertico)
-  :After vertico
+  :after vertico
   :bind
   ([remap switch-to-buffer] . consult-buffer)
   ([remap switch-to-buffer-other-window] . consult-buffer-other-window)
@@ -2552,109 +2277,6 @@ capture was not aborted."
 
 ;;; --------------------------------------------------------------------------
 
-(when (equal debug-adapter 'debug-adapter-dap-mode)
-  (use-package typescript-ts-mode
-    :after (:any dap-mode dape-mode)
-    :mode "\\.ts\\'"
-    :hook
-    (typescript-ts-mode . lsp-deferred)
-    (js2-mode . lsp-deferred)
-    :bind (:map typescript-mode-map
-	    ("C-c ." . dap-hydra/body))
-    :config
-    (setq typescript-indent-level 4)
-    (dap-node-setup)))
-
-(when (equal debug-adapter 'debug-adapter-dape)
-  (use-package typescript-ts-mode
-    :after dape-mode
-    :mode ("\\.ts\\'")
-    :hook
-    (typescript-ts-mode . lsp-deferred)
-    (js2-mode . lsp-deferred)
-    :bind (:map typescript-mode-map
-	    ("C-c ." . dape-hydra/body))
-    :config
-    (setq typescript-indent-level 4)))
-
-;;; --------------------------------------------------------------------------
-
-(defun mrf/load-js-file-hook ()
-  (js2-mode)
-
-  (when (equal debug-adapter 'debug-adapter-dap-mode)
-    (dap-mode)
-    (dap-firefox-setup))
-
-  (when (equal debug-adapter 'debug-adapter-dape)
-    (dape))
-
-  (highlight-indentation-mode nil)
-  (dap-firefox-setup))
-
-(use-package nodejs-repl :defer t)
-
-(defun mrf/nvm-which ()
-  (let ((output (shell-command-to-string "source ~/.nvm/nvm.sh; nvm which")))
-    (cadr (split-string output "[\n]+" t))))
-
-(setq nodejs-repl-command #'mrf/nvm-which)
-
-;;; --------------------------------------------------------------------------
-
-(use-package js2-mode
-  :hook (js-mode . js2-minor-mode)
-  :bind (:map js2-mode-map
-	  ("{" . paredit-open-curly)
-	  ("}" . paredit-close-curly-and-newline))
-  :mode ("\\.js\\'" "\\.mjs\\'" "\\.json$")
-  :custom (js2-highlight-level 3))
-
-(use-package ac-js2
-  :after js2-mode
-  :hook (js2-mode . ac-js2-mode))
-
-;;; --------------------------------------------------------------------------
-
-(defun mrf/load-c-file-hook ()
-  (c-mode)
-  (unless (featurep 'realgud))
-  (use-package realgud)
-  (highlight-indentation-mode nil)
-  (display-fill-column-indicator-mode t))
-
-(defun code-compile ()
-  "Look for a Makefile and compiles the code with gcc/cpp."
-  (interactive)
-  (unless (file-exists-p "Makefile")
-    (set (make-local-variable 'compile-command)
-      (let ((file (file-name-nondirectory buffer-file-name)))
-	(format "%s -o %s %s"
-	  (if  (equal (file-name-extension file) "cpp") "g++" "gcc" )
-	  (file-name-sans-extension file)
-	  file)))
-    (compile compile-command)))
-
-(global-set-key [f9] 'code-compile)
-(add-to-list 'auto-mode-alist '("\\.c\\'" . mrf/load-c-file-hook))
-
-;;; --------------------------------------------------------------------------
-
-(use-package z80-mode
-  :when enable-gb-dev
-  :ensure (:host github :repo "SuperDisk/z80-mode"))
-
-(use-package mwim
-  :when enable-gb-dev
-  :ensure (:host github :repo "alezost/mwim.el"))
-
-(use-package rgbds-mode
-  :when enable-gb-dev
-  :after mwim
-  :ensure (:host github :repo "japanoise/rgbds-mode"))
-
-;;; --------------------------------------------------------------------------
-
 (defun mrf/set-custom-ide-python-keymaps ()
   (cond
     ((equal custom-ide 'custom-ide-lsp)
@@ -2782,26 +2404,146 @@ capture was not aborted."
 
 ;;; --------------------------------------------------------------------------
 
-(use-package slime
-  :mode ("\\.lisp\\'" . slime-mode)
+(use-package typescript-mode
+  :defer t
+  :mode "\\.ts\\'"
+  :hook
+  (typescript-mode . lsp-deferred)
+  (js2-mode . lsp-deferred)
   :config
-  (setq inferior-lisp-program "/opt/homebrew/bin/sbcl"))
+  (setq typescript-indent-level 4)
+  (cond
+    ((equal debug-adapter 'debug-adapter-dap-mode)
+      (bind-keys :map typescript-mode-map
+	("C-c ." . dap-hydra/body))
+      (dap-node-setup))
+    ((equal debug-adapter 'debug-adapter-dape)
+      (bind-keys :map typescript-mode-map
+	("C-c ." . dape-hydra/body)))))
+
+;;; --------------------------------------------------------------------------
+
+(defun mrf/load-js-file-hook ()
+  (js2-mode)
+
+  (when (equal debug-adapter 'debug-adapter-dap-mode)
+    (dap-mode)
+    (dap-firefox-setup))
+
+  (when (equal debug-adapter 'debug-adapter-dape)
+    (dape))
+
+  (highlight-indentation-mode nil)
+  (dap-firefox-setup))
+
+(use-package nodejs-repl :defer t)
+
+(defun mrf/nvm-which ()
+  (let ((output (shell-command-to-string "source ~/.nvm/nvm.sh; nvm which")))
+    (cadr (split-string output "[\n]+" t))))
+
+(setq nodejs-repl-command #'mrf/nvm-which)
+
+;;; --------------------------------------------------------------------------
+
+(use-package js2-mode
+  :hook (js-mode . js2-minor-mode)
+  :bind (:map js2-mode-map
+	  ("{" . paredit-open-curly)
+	  ("}" . paredit-close-curly-and-newline))
+  :mode ("\\.js\\'" "\\.mjs\\'" "\\.json$")
+  :custom (js2-highlight-level 3))
+
+(use-package ac-js2
+  :after js2-mode
+  :hook (js2-mode . ac-js2-mode))
+
+;;; --------------------------------------------------------------------------
+
+(defun mrf/load-c-file-hook ()
+  (c-mode)
+  (unless (featurep 'realgud))
+  (use-package realgud)
+  (highlight-indentation-mode nil)
+  (display-fill-column-indicator-mode t))
+
+(defun code-compile ()
+  "Look for a Makefile and compiles the code with gcc/cpp."
+  (interactive)
+  (unless (file-exists-p "Makefile")
+    (set (make-local-variable 'compile-command)
+      (let ((file (file-name-nondirectory buffer-file-name)))
+	(format "%s -o %s %s"
+	  (if  (equal (file-name-extension file) "cpp") "g++" "gcc" )
+	  (file-name-sans-extension file)
+	  file)))
+    (compile compile-command)))
+
+(global-set-key [f9] 'code-compile)
+(add-to-list 'auto-mode-alist '("\\.c\\'" . mrf/load-c-file-hook))
+
+;;; --------------------------------------------------------------------------
+
+(use-package z80-mode
+  :when enable-gb-dev
+  :ensure (:host github :repo "SuperDisk/z80-mode"))
+
+(use-package mwim
+  :when enable-gb-dev
+  :ensure (:host github :repo "alezost/mwim.el"))
+
+(use-package rgbds-mode
+  :when enable-gb-dev
+  :after mwim
+  :ensure (:host github :repo "japanoise/rgbds-mode"))
+
+(use-package rustic
+  :ensure t
+  :bind (:map rustic-mode-map
+          ("M-j" . lsp-ui-imenu)
+          ("M-?" . lsp-find-references)
+          ("C-c C-c l" . flycheck-list-errors)
+          ("C-c C-c a" . lsp-execute-code-action)
+          ("C-c C-c r" . lsp-rename)
+          ("C-c C-c q" . lsp-workspace-restart)
+          ("C-c C-c Q" . lsp-workspace-shutdown)
+          ("C-c C-c s" . lsp-rust-analyzer-status))
+  :config
+  ;; uncomment for less flashiness
+  ;; (setq lsp-eldoc-hook nil)
+  ;; (setq lsp-enable-symbol-highlighting nil)
+  ;; (setq lsp-signature-auto-activate nil)
+
+  ;; comment to disable rustfmt on save
+  (setq rustic-format-on-save t)
+  (add-hook 'rustic-mode-hook 'rk/rustic-mode-hook))
+
+(defun rk/rustic-mode-hook ()
+  ;; so that run C-c C-c C-r works without having to confirm, but don't try to
+  ;; save rust buffers that are not file visiting. Once
+  ;; https://github.com/brotzeit/rustic/issues/253 has been resolved this should
+  ;; no longer be necessary.
+  (when buffer-file-name
+    (setq-local buffer-save-without-query t))
+  (add-hook 'before-save-hook 'lsp-format-buffer nil t))
 
 ;;; --------------------------------------------------------------------------
 
 ;; (use-package graphql-mode)
 (use-package rust-mode
-  :disabled
+  :defer t
   :init (setq rust-mode-treesitter-derive t)
-  :hook (rust-mode . (lambda ()
-		       (setq indent-tabs-mode nil)
+  :hook
+  (rust-mode . lsp-deferred)
+  (rust-mode . (lambda () (setq indent-tabs-mode nil)
 		       (prettify-symbols-mode)))
   :config
   (setq rust-format-on-save t))
-
-; ;(use-package rust-analyzer)
+					; ;(use-package rust-analyzer)
 
 (use-package cargo-mode
+  :defer t
+  :after rust-mode
   :ensure (:fetcher github :repo "ayrat555/cargo-mode"
 	    :files ("*.el" "*.el.in" "dir" "*.info" "*.texi"
 		     "*.texinfo" "doc/dir" "doc/*.info" "doc/*.texi"
@@ -2814,7 +2556,6 @@ capture was not aborted."
 
 (defun eglot-format-buffer-on-save ()
   (add-hook 'before-save-hook #'eglot-format-buffer -10 t))
-(add-hook 'go-mode-hook #'eglot-format-buffer-on-save)
 
 (use-package go-mode
   :mode ("\\.go\\'" . go-mode)
@@ -2822,7 +2563,8 @@ capture was not aborted."
   (eglot-format-buffer-on-save)
   (cond
     ((equal custom-ide 'custom-ide-eglot)
-      (add-hook 'go-mode-hook 'eglot-ensure))
+      (add-hook 'go-mode-hook 'eglot-ensure)
+      (add-hook 'go-mode-hook #'eglot-format-buffer-on-save))
     ((equal custom-ide 'custom-ide-lsp)
       (add-hook 'go-mode-hook 'lsp-deferred))))
 
@@ -2841,40 +2583,287 @@ capture was not aborted."
 
 ;;; --------------------------------------------------------------------------
 
-(use-package company
-  ;; Don't use lsp-bridge with company as lsp-bridge already provides the same
-  ;; features. They actually collide.
-  :unless (equal custom-ide 'custom-ide-lsp-bridge)
-  :after (:any lsp-mode elpy anaconda-mode eglot)
-  :bind (:map company-active-map
-	  ("<tab>" . company-complete-selection))
-  :custom
-  (company-minimum-prefix-length 1)
-  (company-idle-delay 0.0)
+(use-package slime
+  :defer t
+  :mode ("\\.lisp\\'" . slime-mode)
   :config
-  (global-company-mode 1)
-  (cond
-    ((equal custom-ide 'custom-ide-eglot)
-      (bind-keys :map eglot-mode-map
-	("<tab>" . company-indent-or-complete-common)))
-    ((equal custom-ide 'custom-ide-lsp)
-      (bind-keys :map lsp-mode-map
-	("<tab>" . company-indent-or-complete-common)))
-    ((equal custom-ide 'custom-ide-elpy)
-      (bind-keys :map elpy-mode-map
-	("<tab>" . company-indent-or-complete-common)))
-    ((equal custom-ide 'custom-ide-anaconda)
-      (bind-keys :map anaconda-mode-map
-	("<tab>" . company-indent-or-complete-common)))))
+  (setq inferior-lisp-program "/opt/homebrew/bin/sbcl"))
 
-;; IMPORTANT:
-;; Don't use company at all if lsp-bridge is active.
-;; lsp-bridge already provides similar functionality.
+;;; ------------------------------------------------------------------------
 
-;; :config
-;; (add-to-list 'company-backends 'company-yasnippet))
+(use-package dape
+  :when (equal debug-adapter 'debug-adapter-dape)
+  :init
+  (define-dape-hydra)
+  :after (:any python go-mode)
+  ;; To use window configuration like gud (gdb-mi)
+  ;; :init
+  ;; (setq dape-buffer-window-arrangement 'gud)
+  :custom
+  (dape-buffer-window-arrangement 'right)  ;; Info buffers to the right
+  :config
+  (define-dape-hydra)
+  (message "prepare-dape end")
+  (bind-keys :map prog-mode-map
+    ("C-c ." . dape-hydra/body))
+  (mrf/additional-dape-configs))
 
 ;;; --------------------------------------------------------------------------
+
+(setq mrf/vscode-js-debug-dir (file-name-concat user-emacs-directory "dape/vscode-js-debug"))
+
+(defun mrf/install-vscode-js-debug ()
+  "Run installation procedure to install JS debugging support"
+  (interactive)
+  (mkdir mrf/vscode-js-debug-dir t)
+  (let ((default-directory (expand-file-name mrf/vscode-js-debug-dir)))
+
+    (vc-git-clone "https://github.com/microsoft/vscode-js-debug.git" "." nil)
+    (call-process "npm" nil "*snam-install*" t "install")
+    (call-process "npx" nil "*snam-install*" t "gulp" "dapDebugServer")))
+
+;;; --------------------------------------------------------------------------
+
+;; (mrf/install-vscode-js-debug)
+
+;;; ------------------------------------------------------------------------
+(defun mrf/additional-dape-configs ()
+  "Additional DAPE configruations for various languages."
+
+  (with-eval-after-load
+    (add-to-list 'dape-configs
+      `(delve
+	 modes (go-mode go-ts-mode)
+	 command "dlv"
+	 command-args ("dap" "--listen" "127.0.0.1:55878")
+	 command-cwd dape-cwd-fn
+	 host "127.0.0.1"
+	 port 55878
+	 :type "debug"	;; needed to set the adapterID correctly as a string type
+	 :request "launch"
+	 :cwd dape-cwd-fn
+	 :program dape-cwd-fn))))
+
+;;; --------------------------------------------------------------------------
+
+(defun mrf/dape-end-debug-session ()
+  "End the debug session."
+  (interactive)
+  (dape-quit))
+
+(defun mrf/dape-delete-all-debug-sessions ()
+  "End the debug session and delete all breakpoints."
+  (interactive)
+  (dape-breakpoint-remove-all)
+  (mrf/dape-end-debug-session))
+
+;;; --------------------------------------------------------------------------
+
+(defun define-dape-hydra ()
+  (defhydra dape-hydra (:color pink :hint nil :foreign-keys run)
+    "
+  ^Stepping^          ^Switch^                 ^Breakpoints^          ^Debug^                     ^Eval
+  ^^^^^^^^----------------------------------------------------------------------------------------------------------------
+  _._: Next           _st_: Thread             _bb_: Toggle           _dd_: Debug                 _ee_: Eval Expression
+  _/_: Step in        _si_: Info               _bd_: Delete           _dw_: Watch dwim
+  _,_: Step out       _sf_: Stack Frame        _ba_: Add              _dx_: end session
+  _c_: Continue       _su_: Up stack frame     _bc_: Set condition    _dX_: end all sessions
+  _r_: Restart frame  _sd_: Down stack frame   _bl_: Set log message  _dp_: Initialize DAPE
+  _Q_: Disconnect     _sR_: Session Repl
+                    _sU_: Info Update"
+    ("n" dape-next)
+    ("i" dape-step-in)
+    ("o" dape-step-out)
+    ("." dape-next)
+    ("/" dape-step-in)
+    ("," dape-step-out)
+    ("c" dape-continue)
+    ("r" dape-restart)
+    ("si" dape-info)
+    ("st" dape-select-thread)
+    ("sf" dape-select-stack)
+    ("su" dape-stack-select-up)
+    ("sU" dape-info-update)
+    ("sd" dape-stack-select-down)
+    ("sR" dape-repl)
+    ("bb" dape-breakpoint-toggle)
+    ("ba" dape--breakpoint-place)
+    ("bd" dape-breakpoint-remove-at-point)
+    ("bc" dape-breakpoint-expression)
+    ("bl" dape-breakpoint-log)
+    ("dd" dape)
+    ("dw" dape-watch-dwim)
+    ("ee" dape-evaluate-expression)
+    ("dx" mrf/dape-end-debug-session)
+    ("dX" mrf/dape-delete-all-debug-sessions)
+    ("dp" dape-prepare)
+    ("x" nil "exit Hydra" :color yellow)
+    ("q" mrf/dape-end-debug-session "quit" :color blue)
+    ("Q" mrf/dape-delete-all-debug-sessions :color red)))
+
+;;; --------------------------------------------------------------------------
+;;; Debug Adapter Protocol
+(use-package dap-mode
+  :when (equal debug-adapter 'debug-adapter-dap-mode)
+  :after hydra
+  ;; Uncomment the config below if you want all UI panes to be hidden by default!
+  ;; :custom
+  ;; (lsp-enable-dap-auto-configure nil)
+  :commands dap-debug
+  :custom
+  (dap-auto-configure-features '(sessions locals breakpoints expressions repl controls tooltip))
+  :config
+  (define-dap-hydra)
+  (bind-keys :map prog-mode-map
+    ("C-c ." . dap-hydra/body))
+  (dap-ui-controls-mode)
+  (dap-ui-mode 1))
+
+;;; --------------------------------------------------------------------------
+;;; DAP for Python
+
+(use-package dap-python
+  :ensure (:package "dap-python" :type git :host github :repo "emacs-lsp/dap-mode")
+  :when (equal debug-adapter 'debug-adapter-dap-mode)
+  :after dap-mode
+  :config
+  (setq dap-python-executable "python3") ;; Otherwise it looks for 'python' else error.
+  (setq dap-python-debugger 'debugpy))
+
+(use-package dap-lldb
+  :when (equal debug-adapter 'debug-adapter-dap-mode)
+  :defer t
+  :after dap-mode
+  :ensure (:package "dap-lldb" :type git :host github :repo "emacs-lsp/dap-mode")
+  :custom
+  (dap-lldb-debug-program "~/Developer/command-line-unix/llvm/lldb-build/bin/lldb-dap"))
+
+(use-package dap-gdb-lldb
+  :ensure (:package "dap-gdb-lldb" :type git :host github :repo "emacs-lsp/dap-mode")
+  :defer t
+  :after dap-lldb
+  :config
+  (dap-gdb-lldb-setup))
+
+(with-eval-after-load 'dap-lldb
+  (dap-register-debug-template
+    "Rust::LLDB Run Configuration"
+    (list :type "lldb"
+      :request "launch"
+      :name "LLDB::Run"
+      :gdbpath "rust-lldb"
+      :target nil
+      :cwd nil)))
+
+(with-eval-after-load 'dap-python
+  (dap-register-debug-template "Python :: Run file from project directory"
+    (list :type "python"
+      :args ""
+      :cwd nil
+      :module nil
+      :program nil
+      :request "launch"))
+  (dap-register-debug-template "Python :: Run file (buffer)"
+    (list :type "python"
+      :args ""
+      :cwd nil
+      :module nil
+      :program nil
+      :request "launch"
+      :name "Python :: Run file (buffer)")))
+
+;;; --------------------------------------------------------------------------
+
+(defun mrf/dap-end-debug-session ()
+  "End the debug session and delete project Python buffers."
+  (interactive)
+  (kill-matching-buffers "\*Python :: Run file [from|\(buffer]*" nil :NO-ASK)
+  (kill-matching-buffers "\*Python: Current File*" nil :NO-ASK)
+  (kill-matching-buffers "\*dap-ui-*" nil :NO-ASK)
+  (dap-disconnect (dap--cur-session)))
+
+(defun mrf/dap-delete-all-debug-sessions ()
+  "End the debug session and delete project Python buffers and all breakpoints."
+  (interactive)
+  (dap-breakpoint-delete-all)
+  (mrf/dap-end-debug-session))
+
+(defun mrf/dap-begin-debug-session ()
+  "Begin a debug session with several dap windows enabled."
+  (interactive)
+  (dap-ui-show-many-windows)
+  (dap-debug))
+
+;;; --------------------------------------------------------------------------
+
+(defun define-dap-hydra ()
+  (defhydra dap-hydra (:color pink :hint nil :foreign-keys run)
+    "
+  ^Stepping^		^Switch^		 ^Breakpoints^		^Debug^			    ^Eval
+  ^^^^^^^^----------------------------------------------------------------------------------------------------------------
+  _._: Next		_ss_: Session		 _bb_: Toggle		_dd_: Debug		    _ee_: Eval
+  _/_: Step in	_st_: Thread		 _bd_: Delete		_dr_: Debug recent	    _er_: Eval region
+  _,_: Step out	_sf_: Stack frame	 _ba_: Add		_dl_: Debug last	    _es_: Eval thing at point
+  _c_: Continue	_su_: Up stack frame	 _bc_: Set condition	_de_: Edit debug template   _ea_: Add expression.
+  _r_: Restart frame	_sd_: Down stack frame	 _bh_: Set hit count	_ds_: Debug restart
+  _Q_: Disconnect	_sl_: List locals	 _bl_: Set log message	_dx_: end session
+		      _sb_: List breakpoints			      _dX_: end all sessions
+		      _sS_: List sessions
+		      _sR_: Session Repl
+"
+    ("n" dap-next)
+    ("i" dap-step-in)
+    ("o" dap-step-out)
+    ("." dap-next)
+    ("/" dap-step-in)
+    ("," dap-step-out)
+    ("c" dap-continue)
+    ("r" dap-restart-frame)
+    ("ss" dap-switch-session)
+    ("st" dap-switch-thread)
+    ("sf" dap-switch-stack-frame)
+    ("su" dap-up-stack-frame)
+    ("sd" dap-down-stack-frame)
+    ("sl" dap-ui-locals)
+    ("sb" dap-ui-breakpoints)
+    ("sR" dap-ui-repl)
+    ("sS" dap-ui-sessions)
+    ("bb" dap-breakpoint-toggle)
+    ("ba" dap-breakpoint-add)
+    ("bd" dap-breakpoint-delete)
+    ("bc" dap-breakpoint-condition)
+    ("bh" dap-breakpoint-hit-condition)
+    ("bl" dap-breakpoint-log-message)
+    ("dd" dap-debug)
+    ("dr" dap-debug-recent)
+    ("ds" dap-debug-restart)
+    ("dl" dap-debug-last)
+    ("de" dap-debug-edit-template)
+    ("ee" dap-eval)
+    ("ea" dap-ui-expressions-add)
+    ("er" dap-eval-region)
+    ("es" dap-eval-thing-at-point)
+    ("dx" mrf/dap-end-debug-session)
+    ("dX" mrf/dap-delete-all-debug-sessions)
+    ("x" nil "exit Hydra" :color yellow)
+    ("q" mrf/dap-end-debug-session "quit" :color blue)
+    ("Q" mrf/dap-delete-all-debug-sessions :color red)))
+
+;;; --------------------------------------------------------------------------
+
+;; Don't use lsp-bridge with company as lsp-bridge already provides the same
+;; features. They actually collide.
+
+(use-package company
+  :unless (equal custom-ide 'custom-ide-lsp-bridge)
+  :custom
+  (company-minimum-prefix-length 2)
+  (company-idle-delay 0.2)
+  :config
+  (global-company-mode +1))
+
+;;; --------------------------------------------------------------------------
+
 (use-package company-box
   :after company
   :diminish cb
@@ -2891,7 +2880,7 @@ capture was not aborted."
 
 (use-package company-anaconda
   :when (equal custom-ide 'custom-ide-anaconda)
-  :after anaconda
+  :after anaconda company
   :hook (python-mode . anaconda-mode)
   :config
   (eval-after-load "company"
@@ -2962,22 +2951,11 @@ capture was not aborted."
 
 ;;; --------------------------------------------------------------------------
 
-(defun efs/configure-eshell ()
+(defun mrf/configure-eshell ()
   ;; Save command history when commands are entered
   (add-hook 'eshell-pre-command-hook 'eshell-save-some-history)
-
   ;; Truncate buffer for performance
   (add-to-list 'eshell-output-filter-functions 'eshell-truncate-buffer)
-
-  ;; Bind some useful keys for evil-mode
-  ;; (bind-keys :map eshell-mode-map
-  ;;	 ("C-r" . eshell-hist-mode)
-  ;;	 ("<home>" . eshell-bol))
-
-  ;; (evil-define-key '(normal insert visual) eshell-mode-map (kbd "C-r") 'counsel-esh-history)
-  ;; (evil-define-key '(normal insert visual) eshell-mode-map (kbd "<home>") 'eshell-bol)
-  ;; (evil-normalize-keymaps)
-
   (setq eshell-history-size	       10000
     eshell-buffer-maximum-lines 10000
     eshell-hist-ignoredups t
@@ -2987,8 +2965,9 @@ capture was not aborted."
   :after eshell)
 
 (use-package eshell
-  :ensure nil
-  :hook (eshell-first-time-mode . efs/configure-eshell)
+  :ensure
+  :defer t
+  :hook (eshell-first-time-mode . mrf/configure-eshell)
   :config
   (with-eval-after-load 'esh-opt
     (setq eshell-destroy-buffer-when-process-dies t)
@@ -3151,9 +3130,10 @@ capture was not aborted."
       (bind-keys :map map
 	("M-RET p" . pulsar-pulse-line)
 	("M-RET d" . dashboard-open)
+	("M-RET S e" . eshell)
 	("M-RET f" . mrf/set-fill-column-interactively)
-	("M-RET i" . ielm)
-	("M-RET v" . vterm-other-window)
+	("M-RET S i" . ielm)
+	("M-RET S v" . vterm-other-window)
 	("M-RET t" . treemacs)
 	("M-RET |" . global-display-fill-column-indicator-mode)
 	("M-RET T +" . next-theme)
@@ -3191,6 +3171,7 @@ capture was not aborted."
 (defun mrf/mmm-update-menu ()
   (interactive)
   (mrf/mmm-handle-context-keys)
+  (which-key-add-key-based-replacements "M-RET S" "shells")
   (which-key-add-key-based-replacements "M-RET T" "theme-keys")
   (which-key-add-key-based-replacements "M-RET P" "python-menu")
   (which-key-add-key-based-replacements "M-RET o" "org-menu")

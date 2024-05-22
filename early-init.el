@@ -14,6 +14,7 @@
 (setq package-archives
   '(( "gnu-elpa" . "https://elpa.gnu.org/packages/")
      ( "nongnu" . "https://elpa.nongnu.org/nongnu/")
+     ( "gnu-dev" . "https://elpa.gnu.org/devel/")
      ( "melpa" . "https://melpa.org/packages/")
      ( "org" . "https://orgmode.org/elpa/")
      ( "melpa-stable" . "https://stable.melpa.org/packages/")))
@@ -22,10 +23,11 @@
 (setq package-archive-priorities
   '(
      ( "org" . 99 )
-     ( "melpa" . 40 )
-     ( "gnu-elpa" . 30 )
-     ( "melpa-stable" . 20 )
+     ( "gnu-elpa" . 50 )
+     ( "melpa-stable" . 40 )
+     ( "melpa" . 30 )
      ( "nongnu" . 10)
+     ( "gnu-dev" . 20 )
      ))
 
 (setq gnutls-algorithm-priority "NORMAL:-VERS-TLS1.3") ;; w/o this Emacs freezes when refreshing ELPA
