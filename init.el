@@ -455,7 +455,7 @@ font size is computed + 20 of this value."
   :config
   (if (not elpaca-after-init-time)
     (add-hook 'elpaca-after-init-hook
-      (lambda () (run-with-timer 0.05 nil 'mrf/set-diminish)))
+      (lambda () (run-with-timer 0.5 nil 'mrf/set-diminish)))
     (run-with-timer 1.0 nil 'mrf/set-diminsh)))
 
 ;;; --------------------------------------------------------------------------
@@ -668,7 +668,7 @@ font size is computed + 20 of this value."
       undo-limit 800000
       undo-strong-limit 12000000
       undo-outer-limit 120000000)
-    :diminish undo-tree-mode
+    :diminish untree
     :config
     (global-undo-tree-mode)
     (advice-add 'undo-tree-visualize :around #'undo-tree-split-side-by-side)
@@ -1452,7 +1452,7 @@ capture was not aborted."
 
 (use-package org-roam
   ;; :demand t  ;; Ensure org-roam is loaded by default
-  :disabled
+  :defer t
   :init
   (setq org-roam-v2-ack t)
   (make-directory (expand-file-name "org-roam-notes" user-emacs-directory) t)
@@ -1462,7 +1462,7 @@ capture was not aborted."
   :custom
   (org-roam-directory (expand-file-name "org-roam-notes" user-emacs-directory))
   (org-roam-completion-everywhere t)
-  :bind (("C-c n l" . org-roam-buffer-toggle)
+  :bind ( ("C-c n l" . org-roam-buffer-toggle)
 	  ("C-c n f" . org-roam-node-find)
 	  ("C-c n i" . org-roam-node-insert)
 	  ("C-c n I" . mrf/org-roam-node-insert-immediate)
@@ -1490,7 +1490,12 @@ capture was not aborted."
 (defun mrf/define-denote-keymap ()
   (interactive)
   ;; Denote DOES NOT define any key bindings.  This is for the user to
-  ;; decide.  For example:
+  ;; decide.
+  ;; Just in case, unbind some org-roam keys so it doesn't get loaded
+  ;; unintentionally. These are some that show up in the which-key menu:
+  (unbind-key "C-c n f")
+  (unbind-key "C-c n l")
+  (unbind-key "C-c n p")
   (let ((map global-map))
     (define-key map (kbd "C-c n n") #'denote)
     (define-key map (kbd "C-c n c") #'denote-region) ; "contents" mnemonic
@@ -1530,7 +1535,7 @@ capture was not aborted."
   :custom
   (denote-directory (expand-file-name "notes" user-emacs-directory))
   (denote-save-buffers nil)
-  (denote-known-keywords '("emacs" "philosophy" "politics" "economics"))
+  ;; (denote-known-keywords '("emacs" "philosophy" "politics" "economics"))
   (denote-infer-keywords t)
   (denote-sort-keywords t)
   (denote-file-type nil) ; Org is the default, set others here
@@ -1744,7 +1749,7 @@ capture was not aborted."
   ;; 		:files ("lisp/progmodes/eglot.el" "doc/emacs/doclicense.texi" "doc/emacs/docstyle.texi"
   ;; 			  "doc/misc/eglot.texi" "etc/EGLOT-NEWS" (:exclude ".git")))
   :after eldoc track-changes company
-  :after (:any company which-key eldoc jsonrpc python)
+  :after (:any (:all company which-key eldoc) (:any jsonrpc python))
   :init
   (setq company-backends
     (cons 'company-capf
@@ -1753,6 +1758,7 @@ capture was not aborted."
   (lisp-mode . eglot-ensure)
   (python-mode . eglot-ensure)
   (go-mode . eglot-ensure)
+  (rust-mode . eglot-ensure)
   ;; (c-mode . eglot-ensure)
   ;; (c++-mode . eglot-ensure)
   ;; (prog-mode . eglot-ensure)
@@ -1767,19 +1773,11 @@ capture was not aborted."
   ;; to get our themes loading properly, load it here if not already loaded.
   (unless theme-did-load
     (mrf/load-theme-from-selector))
-  ;; (add-hook 'eglot-managed-mode-hook #'eldoc-box-hover-at-point-mode t)
   (add-to-list 'eglot-stay-out-of 'flymake)
-  ;; (add-to-list 'eglot-server-programs '((c-mode c++-mode) "clangd"))
-  (add-to-list 'eglot-server-programs '(python-mode . ("pylsp")))  
-  (setq-default eglot-workspace-configuration
-    '((:gopls .
-  	((staticcheck . t)
-  	  (matcher . "CaseSensitive")))))
-  (setq-default eglot-workspace-configuration
-    '((:pylsp . (:configurationSources ["flake8"]
-  		  :plugins (:pycodestyle (:enabled nil)
-  			     :mccabe (:enabled nil)
-  			     :flake8 (:enabled t)))))))
+  (if (featurep 'company) ;; Company should be loaded.
+    (bind-keys :map eglot-mode-map
+      ("<tab>" . company-indent-or-complete-common))
+    (message "Eglot: Company was expected to be loaded but wasn't.")))
 
 ;;; --------------------------------------------------------------------------
 ;;; Language Server Protocol
@@ -1801,6 +1799,9 @@ capture was not aborted."
   :init
   (setq lsp-keymap-prefix "C-c l")  ;; Or 'C-l', 's-l'
   :config
+  (if (featurep 'company)
+    (bind-keys :map lsp-mode-map
+      ("<tab>" . company-indent-or-complete-common)))
   (mrf/define-rust-lsp-values)
   (lsp-enable-which-key-integration t))
 
@@ -1882,6 +1883,9 @@ capture was not aborted."
   (which-key-add-key-based-replacements "C-c g g" "find-defitions")
   (use-package pyvenv-auto)
   :hook
+  (if (featurep 'company)
+    (bind-keys :map anaconda-mode-map
+      ("<tab>" . company-indent-or-complete-common)))
   (python-mode-hook . anaconda-eldoc-mode))
 
 ;;; --------------------------------------------------------------------------
@@ -1910,6 +1914,9 @@ capture was not aborted."
   (which-key-add-key-based-replacements "C-c g o" "find-defitions-other-window")
   (which-key-add-key-based-replacements "C-c g g" "find-defitions")
   (which-key-add-key-based-replacements "C-c g ?" "eldoc-definition")
+  (if (featurep 'company)
+    (bind-keys :map elpy-mode-map
+	("<tab>" . company-indent-or-complete-common)))
   (elpy-enable))
 
 (use-package prescient)
@@ -2490,13 +2497,6 @@ capture was not aborted."
   :after mwim
   :ensure (:host github :repo "japanoise/rgbds-mode"))
 
-;;; --------------------------------------------------------------------------
-
-(use-package slime
-  :mode ("\\.lisp\\'" . slime-mode)
-  :config
-  (setq inferior-lisp-program "/opt/homebrew/bin/sbcl"))
-
 (use-package rustic
   :ensure t
   :bind (:map rustic-mode-map
@@ -2531,16 +2531,19 @@ capture was not aborted."
 
 ;; (use-package graphql-mode)
 (use-package rust-mode
-  :disabled
+  :defer t
   :init (setq rust-mode-treesitter-derive t)
-  :hook (rust-mode . (lambda ()
-		       (setq indent-tabs-mode nil)
+  :hook
+  (rust-mode . lsp-deferred)
+  (rust-mode . (lambda () (setq indent-tabs-mode nil)
 		       (prettify-symbols-mode)))
   :config
   (setq rust-format-on-save t))
-; ;(use-package rust-analyzer)
+					; ;(use-package rust-analyzer)
 
 (use-package cargo-mode
+  :defer t
+  :after rust-mode
   :ensure (:fetcher github :repo "ayrat555/cargo-mode"
 	    :files ("*.el" "*.el.in" "dir" "*.info" "*.texi"
 		     "*.texinfo" "doc/dir" "doc/*.info" "doc/*.texi"
@@ -2553,7 +2556,6 @@ capture was not aborted."
 
 (defun eglot-format-buffer-on-save ()
   (add-hook 'before-save-hook #'eglot-format-buffer -10 t))
-(add-hook 'go-mode-hook #'eglot-format-buffer-on-save)
 
 (use-package go-mode
   :mode ("\\.go\\'" . go-mode)
@@ -2561,7 +2563,8 @@ capture was not aborted."
   (eglot-format-buffer-on-save)
   (cond
     ((equal custom-ide 'custom-ide-eglot)
-      (add-hook 'go-mode-hook 'eglot-ensure))
+      (add-hook 'go-mode-hook 'eglot-ensure)
+      (add-hook 'go-mode-hook #'eglot-format-buffer-on-save))
     ((equal custom-ide 'custom-ide-lsp)
       (add-hook 'go-mode-hook 'lsp-deferred))))
 
@@ -2577,6 +2580,14 @@ capture was not aborted."
 (use-package go-guru
   :after go-mode
   :hook (go-mode . go-guru-hl-identifier-mode))
+
+;;; --------------------------------------------------------------------------
+
+(use-package slime
+  :defer t
+  :mode ("\\.lisp\\'" . slime-mode)
+  :config
+  (setq inferior-lisp-program "/opt/homebrew/bin/sbcl"))
 
 ;;; ------------------------------------------------------------------------
 
@@ -2707,11 +2718,6 @@ capture was not aborted."
     ("C-c ." . dap-hydra/body))
   (dap-ui-controls-mode)
   (dap-ui-mode 1))
-
-(use-package dap-lldb
-  :ensure (:package "dap-lldb" :type git :host github :repo "emacs-lsp/dap-mode")
-  :after dap-mode
-  :defer t)
 
 ;;; --------------------------------------------------------------------------
 ;;; DAP for Python
@@ -2845,44 +2851,19 @@ capture was not aborted."
 
 ;;; --------------------------------------------------------------------------
 
+;; Don't use lsp-bridge with company as lsp-bridge already provides the same
+;; features. They actually collide.
+
 (use-package company
-  ;; Don't use lsp-bridge with company as lsp-bridge already provides the same
-  ;; features. They actually collide.
   :unless (equal custom-ide 'custom-ide-lsp-bridge)
-  :after (:any lsp-mode elpy anaconda-mode eglot)
-  :bind (:map company-active-map
-	  ("C-n". company-select-next)
-	  ("C-p". company-select-previous)
-	  ("M-<". company-select-first)
-	  ("M->". company-select-last)
-	  ("<tab>" . company-complete-selection))
   :custom
-  (company-minimum-prefix-length 1)
-  (company-idle-delay 0.0)
+  (company-minimum-prefix-length 2)
+  (company-idle-delay 0.2)
   :config
-  (global-company-mode 1)
-  (cond
-    ((equal custom-ide 'custom-ide-eglot)
-      (bind-keys :map eglot-mode-map
-	("<tab>" . company-indent-or-complete-common)))
-    ((equal custom-ide 'custom-ide-lsp)
-      (bind-keys :map lsp-mode-map
-	("<tab>" . company-indent-or-complete-common)))
-    ((equal custom-ide 'custom-ide-elpy)
-      (bind-keys :map elpy-mode-map
-	("<tab>" . company-indent-or-complete-common)))
-    ((equal custom-ide 'custom-ide-anaconda)
-      (bind-keys :map anaconda-mode-map
-	("<tab>" . company-indent-or-complete-common)))))
-
-;; IMPORTANT:
-;; Don't use company at all if lsp-bridge is active.
-;; lsp-bridge already provides similar functionality.
-
-;; :config
-;; (add-to-list 'company-backends 'company-yasnippet))
+  (global-company-mode +1))
 
 ;;; --------------------------------------------------------------------------
+
 (use-package company-box
   :after company
   :diminish cb
@@ -2899,7 +2880,7 @@ capture was not aborted."
 
 (use-package company-anaconda
   :when (equal custom-ide 'custom-ide-anaconda)
-  :after anaconda
+  :after anaconda company
   :hook (python-mode . anaconda-mode)
   :config
   (eval-after-load "company"
