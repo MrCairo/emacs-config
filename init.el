@@ -338,7 +338,7 @@ font size is computed + 20 of this value."
 
 ;; Use shell path
 
-(defun set-exec-path-from-shell-PATH ()
+(defun mrf/set-exec-path-from-shell-PATH ()
    ;;; Set up Emacs' `exec-path' and PATH environment variable to match"
    ;;; that used by the user's shell.
    ;;; This is particularly useful under Mac OS X and macOS, where GUI
@@ -795,27 +795,27 @@ font size is computed + 20 of this value."
   (message (format "Custom theme is %S" loaded-theme)))
 
 ;; Quick Helper Functions
-(defun next-theme ()
+(defun mrf/next-theme ()
   "Go to the next theme in the list."
   (interactive)
   (mrf/load-theme-from-selector 1))
 
-(defun previous-theme ()
+(defun mrf/previous-theme ()
   "Go to the next theme in the list."
   (interactive)
   (mrf/load-theme-from-selector -1))
 
-(defun which-theme ()
+(defun mrf/which-theme ()
   "Go to the next theme in the list."
   (interactive)
   (mrf/print-custom-theme-name))
 
 ;; Go to NEXT theme
-(global-set-key (kbd "C-c C-=") 'next-theme)
+(global-set-key (kbd "C-c C-=") 'mrf/next-theme)
 ;; Go to PREVIOUS theme
-(global-set-key (kbd "C-c C--") 'previous-theme)
+(global-set-key (kbd "C-c C--") 'mrf/previous-theme)
 ;; Print current theme
-(global-set-key (kbd "C-c C-?") 'which-theme)
+(global-set-key (kbd "C-c C-?") 'mrf/which-theme)
 
 ;;; --------------------------------------------------------------------------
 
@@ -1064,20 +1064,20 @@ font size is computed + 20 of this value."
 ;;; --------------------------------------------------------------------------
 ;; Some alternate keys below....
 
-(bind-keys ("C-c 1". use-small-display-font)
-  ("C-c 2". use-medium-display-font)
-  ("C-c 3". use-large-display-font)
-  ("C-c 4". use-x-large-display-font))
+(bind-keys ("C-c 1". mrf/use-small-display-font)
+  ("C-c 2". mrf/use-medium-display-font)
+  ("C-c 3". mrf/use-large-display-font)
+  ("C-c 4". mrf/use-x-large-display-font))
 
 (let ((map global-map))
   (define-key map (kbd "C-S-c 1")
-    (lambda () (interactive) (use-small-display-font t)))
+    (lambda () (interactive) (mrf/use-small-display-font t)))
   (define-key map (kbd "C-S-c 2")
-    (lambda () (interactive) (use-medium-display-font t)))
+    (lambda () (interactive) (mrf/use-medium-display-font t)))
   (define-key map (kbd "C-S-c 3")
-    (lambda () (interactive) (use-large-display-font t)))
+    (lambda () (interactive) (mrf/use-large-display-font t)))
   (define-key map (kbd "C-S-c 4")
-    (lambda () (interactive) (use-x-large-display-font t))))
+    (lambda () (interactive) (mrf/use-x-large-display-font t))))
 
 ;;; --------------------------------------------------------------------------
 ;; Frame support functions
@@ -1095,25 +1095,25 @@ font size is computed + 20 of this value."
 
 ;;; --------------------------------------------------------------------------
 
-(defun use-small-display-font (&optional force-recenter)
+(defun mrf/use-small-display-font (&optional force-recenter)
   (interactive)
   (mrf/set-frame-font 0)
   (mrf/should-recenter force-recenter))
 
 
-(defun use-medium-display-font (&optional force-recenter)
+(defun mrf/use-medium-display-font (&optional force-recenter)
   (interactive)
   (mrf/set-frame-font 1)
   (mrf/should-recenter force-recenter))
 
 
-(defun use-large-display-font (&optional force-recenter)
+(defun mrf/use-large-display-font (&optional force-recenter)
   (interactive)
   (mrf/set-frame-font 2)
   (mrf/should-recenter force-recenter))
 
 
-(defun use-x-large-display-font (&optional force-recenter)
+(defun mrf/use-x-large-display-font (&optional force-recenter)
   (interactive)
   (mrf/set-frame-font 3)
   (mrf/should-recenter force-recenter))
@@ -2446,7 +2446,7 @@ capture was not aborted."
   (cond
     ((equal debug-adapter 'debug-adapter-dap-mode)
       (unless (featurep 'dap-mode) (dap-mode)) ;; Load if not loaded.
-      (define-dap-hydra))
+      (mrf/define-dap-hydra))
     ((equal debug-adapter 'debug-adapter-dape)
       ;; dape should load as part of (use-package .... :after python)
       (message "dape should be auto-loading for Python.")))
@@ -2710,7 +2710,7 @@ capture was not aborted."
 (use-package dape
   :when (equal debug-adapter 'debug-adapter-dape)
   :init
-  (define-dape-hydra)
+  (mrf/define-dape-hydra)
   :after (:any python go-mode)
   ;; To use window configuration like gud (gdb-mi)
   ;; :init
@@ -2718,7 +2718,7 @@ capture was not aborted."
   :custom
   (dape-buffer-window-arrangement 'right)  ;; Info buffers to the right
   :config
-  (define-dape-hydra)
+  (mrf/define-dape-hydra)
   (message "prepare-dape end")
   (bind-keys :map prog-mode-map
     ("C-c ." . dape-hydra/body))
@@ -2775,7 +2775,7 @@ capture was not aborted."
 
 ;;; --------------------------------------------------------------------------
 
-(defun define-dape-hydra ()
+(defun mrf/define-dape-hydra ()
   (defhydra dape-hydra (:color pink :hint nil :foreign-keys run)
     "
   ^Stepping^          ^Switch^                 ^Breakpoints^          ^Debug^                     ^Eval
@@ -2831,7 +2831,7 @@ capture was not aborted."
   :config
   (require 'dap-lldb)
   (require 'dap-gdb-lldb)
-  (define-dap-hydra)
+  (mrf/define-dap-hydra)
   (bind-keys :map prog-mode-map
     ("C-c ." . dap-hydra/body))
   (dap-ui-controls-mode)
@@ -2932,7 +2932,7 @@ capture was not aborted."
 
 ;;; --------------------------------------------------------------------------
 
-(defun define-dap-hydra ()
+(defun mrf/define-dap-hydra ()
   (defhydra dap-hydra (:color pink :hint nil :foreign-keys run)
     "
   ^Stepping^            ^Switch^                 ^Breakpoints^          ^Debug^                     ^Eval
@@ -3287,9 +3287,9 @@ capture was not aborted."
         ("M-RET S v" . vterm-other-window)
         ("M-RET t" . treemacs)
         ("M-RET |" . global-display-fill-column-indicator-mode)
-        ("M-RET T +" . next-theme)
-        ("M-RET T -" . previous-theme)
-        ("M-RET T ?" . which-theme)
+        ("M-RET T +" . mrf/next-theme)
+        ("M-RET T -" . mrf/previous-theme)
+        ("M-RET T ?" . mrf/which-theme)
         ("M-RET ?" . eldoc-box-help-at-point))
       map)
     "mmm-keys-minor-mode keymap.")
