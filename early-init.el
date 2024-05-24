@@ -42,15 +42,15 @@
   (lambda ()
     (setq startup-time-message
       (format "Emacs read in %.2f seconds with %d garbage collections."
-	(float-time (time-subtract after-init-time before-init-time))
-	gcs-done))
+      (float-time (time-subtract after-init-time before-init-time))
+      gcs-done))
     (message startup-time-message)))
 
 ;; (use-package gcmh
 ;;   :diminish gcmh-mode
 ;;   :config
 ;;   (setq gcmh-idle-delay 5
-;;     gcmh-high-cons-threshold (* 16 1024 1024))	 ; 16mb
+;;     gcmh-high-cons-threshold (* 16 1024 1024))      ; 16mb
 ;;   (gcmh-mode 1))
 
 (add-hook 'emacs-startup-hook
