@@ -150,11 +150,12 @@ The Dashboard will be in the *dashboard* buffer and can also be opened using
   :type 'boolean
   :group 'mrf-custom-toggles)
 
-(defcustom enable-frameset-restore nil
+;; Keep as defvar until the frameset save/restore process works better.
+(defvar enable-frameset-restore nil
   "Set to t to enable restoring the last Emacs window size and position
-   upon startup."
-  :type 'boolean
-  :group 'mrf-custom-toggles)
+   upon startup.")
+  ;; :type 'boolean
+  ;; :group 'mrf-custom-toggles)
 
 ;;; --------------------------------------------------------------------------
 
@@ -242,16 +243,16 @@ configurable but has a host of great feaures that just work."
 ;;; Theming related
 
 (defcustom theme-list '("palenight-deeper-blue"
-			 "ef-symbiosis"
-			 "ef-maris-light"
-			 "ef-maris-dark"
-			 "ef-kassio"
-			 "ef-bio"
-			 "sanityinc-tomorrow-bright"
-			 "ef-melissa-dark"
-			 "darktooth-dark"
-			 "material"
-			 "tron-legacy")
+                       "ef-symbiosis"
+                       "ef-maris-light"
+                       "ef-maris-dark"
+                       "ef-kassio"
+                       "ef-bio"
+                       "sanityinc-tomorrow-bright"
+                       "ef-melissa-dark"
+                       "darktooth-dark"
+                       "material"
+                       "tron-legacy")
 
   "My personal list of themes to cycle through indexed by `theme-selector'.
 If additional themes are added, they must be previously installed."
@@ -380,6 +381,7 @@ font size is computed + 20 of this value."
   (write-region "" nil custom-file))
 ;; (add-hook 'elpaca-after-init-hook (lambda () (load custom-file 'noerror 'nomessage)))
 (load custom-file 'noerror 'nomessage)
+(setq enable-frameset-restore nil) ;; FORCE UNTIL FRAMESET RESTORE IS DONE
 
 ;;; --------------------------------------------------------------------------
 
@@ -440,24 +442,24 @@ font size is computed + 20 of this value."
     (desktop-save-frameset)
     (with-temp-file (expand-file-name "saved-frameset.el" user-emacs-directory)
       (insert
-	(format "(setq desktop-saved-frameset %S)" desktop-saved-frameset)))))
+      (format "(setq desktop-saved-frameset %S)" desktop-saved-frameset)))))
 
 (add-hook 'kill-emacs-hook 'mrf/save-desktop-frameset)
 
 ;;; --------------------------------------------------------------------------
  
 (defun mrf/restore-desktop-frameset ()
-  (unless (daemonp)
+  (unless (and (daemonp) (not enable-frameset-restore))
     (let
       ((file (expand-file-name "saved-frameset.el" user-emacs-directory)))
       (desktop-save-mode 0)
       (when (f-exists? file) (load file)
-	(desktop-restore-frameset)
-	(when (featurep 'spacious-padding)
-	  (when spacious-padding-mode
-	    (spacious-padding-mode 0)
-	    (spacious-padding-mode 1)))))
-	))
+      (desktop-restore-frameset)
+      (when (featurep 'spacious-padding)
+        (when spacious-padding-mode
+          (spacious-padding-mode 0)
+          (spacious-padding-mode 1)))))
+      ))
 
 ;; Allow access from emacsclient
 (add-hook 'elpaca-after-init-hook
@@ -473,12 +475,12 @@ font size is computed + 20 of this value."
 
 (use-package f
   :ensure ( :package "f" :source "MELPA" :protocol https :inherit t
-	    :depth 1 :fetcher github :repo "rejeep/f.el"
-	    :files ("*.el" "*.el.in" "dir" "*.info" "*.texi" "*.texinfo"
-		     "doc/dir" "doc/*.info" "doc/*.texi" "doc/*.texinfo"
-		     "lisp/*.el" (:exclude ".dir-locals.el" "test.el"
-				   "tests.el" "*-test.el" "*-tests.el"
-				   "LICENSE" "README*" "*-pkg.el"))))
+          :depth 1 :fetcher github :repo "rejeep/f.el"
+          :files ("*.el" "*.el.in" "dir" "*.info" "*.texi" "*.texinfo"
+                   "doc/dir" "doc/*.info" "doc/*.texi" "doc/*.texinfo"
+                   "lisp/*.el" (:exclude ".dir-locals.el" "test.el"
+                                 "tests.el" "*-test.el" "*-tests.el"
+                                 "LICENSE" "README*" "*-pkg.el"))))
 
 ;;; --------------------------------------------------------------------------
 
@@ -1017,8 +1019,10 @@ font size is computed + 20 of this value."
     (when (display-graphic-p)
       (mrf/update-face-attribute)
       (unless (daemonp)
-	(when enable-frameset-restore
-	  (mrf/restore-desktop-frameset))))))
+	(if enable-frameset-restore
+          (mrf/restore-desktop-frameset)
+	  (mrf/frame-recenter)))
+      )))
 
 ;;; --------------------------------------------------------------------------
 
@@ -1125,9 +1129,9 @@ font size is computed + 20 of this value."
   (add-hook 'elpaca-after-init-hook
     (lambda ()
       (progn
-  	(mrf/update-face-attribute)
-  	(unless (daemonp)
-  	  (unless enable-frameset-restore (mrf/frame-recenter))))
+      (mrf/update-face-attribute)
+      (unless (daemonp)
+        (unless enable-frameset-restore (mrf/frame-recenter))))
       )))
 
 ;;; --------------------------------------------------------------------------
@@ -1983,8 +1987,8 @@ capture was not aborted."
 (use-package lsp-bridge
   :when (equal custom-ide 'custom-ide-lsp-bridge)
   :ensure ( :host github :repo "manateelazycat/lsp-bridge"
-	    :files (:defaults "*.el" "*.py" "acm" "core" "langserver"
-		     "multiserver" "resources") :build (:not compile))
+          :files (:defaults "*.el" "*.py" "acm" "core" "langserver"
+                   "multiserver" "resources") :build (:not compile))
   :custom
   (lsp-bridge-python-lsp-server "pylsp")
   :config
@@ -3210,9 +3214,9 @@ capture was not aborted."
 
 (use-package buffer-move
   :bind (("C-S-<up>"     . buf-move-up)
-	  ("C-S-<down>"  . buf-move-down)
-	  ("C-S-<left>"  . buf-move-left)
-	  ("C-S-<right>" . buf-move-right)))
+        ("C-S-<down>"  . buf-move-down)
+        ("C-S-<left>"  . buf-move-left)
+        ("C-S-<right>" . buf-move-right)))
 
 ;;; --------------------------------------------------------------------------
 
