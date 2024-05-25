@@ -242,16 +242,16 @@ configurable but has a host of great feaures that just work."
 ;;; Theming related
 
 (defcustom theme-list '("palenight-deeper-blue"
-			 "ef-symbiosis"
-			 "ef-maris-light"
-			 "ef-maris-dark"
-			 "ef-kassio"
-			 "ef-bio"
-			 "sanityinc-tomorrow-bright"
-			 "ef-melissa-dark"
-			 "darktooth-dark"
-			 "material"
-			 "tron-legacy")
+                       "ef-symbiosis"
+                       "ef-maris-light"
+                       "ef-maris-dark"
+                       "ef-kassio"
+                       "ef-bio"
+                       "sanityinc-tomorrow-bright"
+                       "ef-melissa-dark"
+                       "darktooth-dark"
+                       "material"
+                       "tron-legacy")
 
   "My personal list of themes to cycle through indexed by `theme-selector'.
 If additional themes are added, they must be previously installed."
@@ -440,24 +440,25 @@ font size is computed + 20 of this value."
     (desktop-save-frameset)
     (with-temp-file (expand-file-name "saved-frameset.el" user-emacs-directory)
       (insert
-	(format "(setq desktop-saved-frameset %S)" desktop-saved-frameset)))))
+      (format "(setq desktop-saved-frameset %S)" desktop-saved-frameset)))))
 
-(add-hook 'kill-emacs-hook 'mrf/save-desktop-frameset)
+(when enable-frameset-restore
+  (add-hook 'kill-emacs-hook 'mrf/save-desktop-frameset))
 
 ;;; --------------------------------------------------------------------------
  
 (defun mrf/restore-desktop-frameset ()
-  (unless (daemonp)
+  (unless (and (daemonp) (not enable-frameset-restore))
     (let
       ((file (expand-file-name "saved-frameset.el" user-emacs-directory)))
       (desktop-save-mode 0)
       (when (f-exists? file) (load file)
-	(desktop-restore-frameset)
-	(when (featurep 'spacious-padding)
-	  (when spacious-padding-mode
-	    (spacious-padding-mode 0)
-	    (spacious-padding-mode 1)))))
-	))
+      (desktop-restore-frameset)
+      (when (featurep 'spacious-padding)
+        (when spacious-padding-mode
+          (spacious-padding-mode 0)
+          (spacious-padding-mode 1)))))
+      ))
 
 ;; Allow access from emacsclient
 (add-hook 'elpaca-after-init-hook
@@ -473,12 +474,12 @@ font size is computed + 20 of this value."
 
 (use-package f
   :ensure ( :package "f" :source "MELPA" :protocol https :inherit t
-	    :depth 1 :fetcher github :repo "rejeep/f.el"
-	    :files ("*.el" "*.el.in" "dir" "*.info" "*.texi" "*.texinfo"
-		     "doc/dir" "doc/*.info" "doc/*.texi" "doc/*.texinfo"
-		     "lisp/*.el" (:exclude ".dir-locals.el" "test.el"
-				   "tests.el" "*-test.el" "*-tests.el"
-				   "LICENSE" "README*" "*-pkg.el"))))
+          :depth 1 :fetcher github :repo "rejeep/f.el"
+          :files ("*.el" "*.el.in" "dir" "*.info" "*.texi" "*.texinfo"
+                   "doc/dir" "doc/*.info" "doc/*.texi" "doc/*.texinfo"
+                   "lisp/*.el" (:exclude ".dir-locals.el" "test.el"
+                                 "tests.el" "*-test.el" "*-tests.el"
+                                 "LICENSE" "README*" "*-pkg.el"))))
 
 ;;; --------------------------------------------------------------------------
 
@@ -1017,8 +1018,8 @@ font size is computed + 20 of this value."
     (when (display-graphic-p)
       (mrf/update-face-attribute)
       (unless (daemonp)
-	(when enable-frameset-restore
-	  (mrf/restore-desktop-frameset))))))
+      (when enable-frameset-restore
+        (mrf/restore-desktop-frameset))))))
 
 ;;; --------------------------------------------------------------------------
 
@@ -1125,9 +1126,9 @@ font size is computed + 20 of this value."
   (add-hook 'elpaca-after-init-hook
     (lambda ()
       (progn
-  	(mrf/update-face-attribute)
-  	(unless (daemonp)
-  	  (unless enable-frameset-restore (mrf/frame-recenter))))
+      (mrf/update-face-attribute)
+      (unless (daemonp)
+        (unless enable-frameset-restore (mrf/frame-recenter))))
       )))
 
 ;;; --------------------------------------------------------------------------
@@ -1153,7 +1154,7 @@ font size is computed + 20 of this value."
 
 ;;; --------------------------------------------------------------------------
 
-(use-package faces :ensure nil)
+(use-package faces :ensure t)
 (defun mrf/org-font-setup ()
   "Setup org mode fonts."
 
@@ -1394,8 +1395,8 @@ font size is computed + 20 of this value."
                    window-divider-first-pixel
                    window-divider-last-pixel))
     (face-spec-reset-face face)
-    (set-face-foreground face (face-attribute 'default :background nil)))
-  (set-face-background 'fringe (face-attribute 'default :background nil))
+    (set-face-foreground face (face-attribute 'default :background 'unspecified)))
+  (set-face-background 'fringe (face-attribute 'default :background 'unspecified))
   (setq
     ;; Edit settings
     org-auto-align-tags nil
@@ -1983,8 +1984,8 @@ capture was not aborted."
 (use-package lsp-bridge
   :when (equal custom-ide 'custom-ide-lsp-bridge)
   :ensure ( :host github :repo "manateelazycat/lsp-bridge"
-	    :files (:defaults "*.el" "*.py" "acm" "core" "langserver"
-		     "multiserver" "resources") :build (:not compile))
+          :files (:defaults "*.el" "*.py" "acm" "core" "langserver"
+                   "multiserver" "resources") :build (:not compile))
   :custom
   (lsp-bridge-python-lsp-server "pylsp")
   :config
@@ -1998,11 +1999,12 @@ capture was not aborted."
 ;;; --------------------------------------------------------------------------
 
 (use-package anaconda-mode
+  :disabled
   :when (equal custom-ide 'custom-ide-anaconda)
   :bind (:map python-mode-map
-        ("C-c g o" . anaconda-mode-find-definitions-other-frame)
-        ("C-c g g" . anaconda-mode-find-definitions)
-        ("C-c C-x" . next-error))
+	  ("C-c g o" . anaconda-mode-find-definitions-other-frame)
+	  ("C-c g g" . anaconda-mode-find-definitions)
+	  ("C-c C-x" . next-error))
   :config
   (which-key-add-key-based-replacements "C-c g o" "find-defitions-other-window")
   (which-key-add-key-based-replacements "C-c g g" "find-defitions")
@@ -2010,7 +2012,7 @@ capture was not aborted."
   :hook
   (if (featurep 'company)
     (bind-keys :map anaconda-mode-map
-      ("<tab>" . company-indent-or-complete-common)))
+	("<tab>" . company-indent-or-complete-common)))
   (python-mode-hook . anaconda-eldoc-mode))
 
 ;;; --------------------------------------------------------------------------
@@ -2697,6 +2699,10 @@ capture was not aborted."
   :after go-mode
   :hook (go-mode . go-guru-hl-identifier-mode))
 
+(use-package go-projectile
+  :after go-mode
+  :when (equal custom-project-handler 'custom-project-projectile))
+
 ;;; --------------------------------------------------------------------------
 
 (use-package slime
@@ -2848,6 +2854,21 @@ capture was not aborted."
   (setq dap-python-executable "python3") ;; Otherwise it looks for 'python' else error.
   (setq dap-python-debugger 'debugpy))
 
+;;; --------------------------------------------------------------------------
+
+(use-package dap-go
+  :ensure (:package "dap-go" :type git :host github :repo "emacs-lsp/dap-mode")
+  :when (equal debug-adapter 'debug-adapter-dap-mode)
+  :defer t
+  :after go-mode)
+
+(use-package dap-dlv-go
+  :ensure (:package "dap-dlv-go" :type git :host github :repo "emacs-lsp/dap-mode")
+  :when (equal debug-adapter 'debug-adapter-dap-mode)
+  :defer t
+  :after go-mode)
+
+;;; --------------------------------------------------------------------------
 (use-package dap-lldb
   :when (equal debug-adapter 'debug-adapter-dap-mode)
   :defer t
@@ -2878,8 +2899,8 @@ capture was not aborted."
   :defer t
   :after dap-mode
   :ensure (:package "dap-cpptools" :source nil :protocol https :inherit t :depth 1 :type git :host github :repo "emacs-lsp/dap-mode"))
-  ;; :config
-  ;; (dap-cpptools-setup))
+;; :config
+;; (dap-cpptools-setup))
 
 (with-eval-after-load 'dap-lldb
   (dap-register-debug-template
@@ -3210,9 +3231,9 @@ capture was not aborted."
 
 (use-package buffer-move
   :bind (("C-S-<up>"     . buf-move-up)
-	  ("C-S-<down>"  . buf-move-down)
-	  ("C-S-<left>"  . buf-move-left)
-	  ("C-S-<right>" . buf-move-right)))
+        ("C-S-<down>"  . buf-move-down)
+        ("C-S-<left>"  . buf-move-left)
+        ("C-S-<right>" . buf-move-right)))
 
 ;;; --------------------------------------------------------------------------
 

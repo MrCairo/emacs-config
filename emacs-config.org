@@ -715,12 +715,13 @@ These functions will save and restore Emacs framework. These are normally called
         (insert
         (format "(setq desktop-saved-frameset %S)" desktop-saved-frameset)))))
 
-  (add-hook 'kill-emacs-hook 'mrf/save-desktop-frameset)
+  (when enable-frameset-restore
+    (add-hook 'kill-emacs-hook 'mrf/save-desktop-frameset))
 
   ;;; --------------------------------------------------------------------------
    
   (defun mrf/restore-desktop-frameset ()
-    (unless (daemonp)
+    (unless (and (daemonp) (not enable-frameset-restore))
       (let
         ((file (expand-file-name "saved-frameset.el" user-emacs-directory)))
         (desktop-save-mode 0)
@@ -1761,7 +1762,7 @@ This function sets up the fonts faces that are used within org-mode.
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
 
-  (use-package faces :ensure nil)
+  (use-package faces :ensure t)
   (defun mrf/org-font-setup ()
     "Setup org mode fonts."
 
@@ -2030,8 +2031,8 @@ This section contains the basic configuration for =org-mode= plus the configurat
                      window-divider-first-pixel
                      window-divider-last-pixel))
       (face-spec-reset-face face)
-      (set-face-foreground face (face-attribute 'default :background nil)))
-    (set-face-background 'fringe (face-attribute 'default :background nil))
+      (set-face-foreground face (face-attribute 'default :background 'unspecified)))
+    (set-face-background 'fringe (face-attribute 'default :background 'unspecified))
     (setq
       ;; Edit settings
       org-auto-align-tags nil
@@ -2919,11 +2920,12 @@ Anaconda-mode provides Code navigation, documentation lookup and completion for 
   ;;; --------------------------------------------------------------------------
 
   (use-package anaconda-mode
+    :disabled
     :when (equal custom-ide 'custom-ide-anaconda)
     :bind (:map python-mode-map
-          ("C-c g o" . anaconda-mode-find-definitions-other-frame)
-          ("C-c g g" . anaconda-mode-find-definitions)
-          ("C-c C-x" . next-error))
+	  ("C-c g o" . anaconda-mode-find-definitions-other-frame)
+	  ("C-c g g" . anaconda-mode-find-definitions)
+	  ("C-c C-x" . next-error))
     :config
     (which-key-add-key-based-replacements "C-c g o" "find-defitions-other-window")
     (which-key-add-key-based-replacements "C-c g g" "find-defitions")
@@ -2931,7 +2933,7 @@ Anaconda-mode provides Code navigation, documentation lookup and completion for 
     :hook
     (if (featurep 'company)
       (bind-keys :map anaconda-mode-map
-        ("<tab>" . company-indent-or-complete-common)))
+	("<tab>" . company-indent-or-complete-common)))
     (python-mode-hook . anaconda-eldoc-mode))
 
 #+end_src
@@ -3865,7 +3867,7 @@ Rust is blazingly fast and memory-efficient: with no runtime or garbage collecto
 
 #+end_src
 
-** Go!
+** Golang
 **** Important!
 Make sure that =gopls= and =dlv= are installed. gopls is the Go! (or golang)  language server - like LSP. =dlv= is the =golang= debugger.
 
@@ -3926,6 +3928,21 @@ Integration of the Go 'guru' analysis tool into Emacs.
     :hook (go-mode . go-guru-hl-identifier-mode))
   
 #+end_src
+
+*** go-projectile
+
+Go Projectile is a set of Go language related add-ons for the Emacs Projectile mode.
+
+#+begin_src emacs-lisp
+
+  (use-package go-projectile
+    :after go-mode
+    :when (equal custom-project-handler 'custom-project-projectile))
+
+#+end_src
+
+*** go-dlv
+
 
 ** Other Languages
 Lesser used or lesser known languages.
@@ -4227,12 +4244,31 @@ The Debug Adapter Protocol makes it possible to implement a generic debugger for
   
 #+end_src
 
-**** DAP Setup for Rust and Go :Rust:Go:
+**** DAP Setup for Go :Go:Golang:
 
 Something that is needed for Rust and Go debugging.
 
 #+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
+  
+  (use-package dap-go
+    :ensure (:package "dap-go" :type git :host github :repo "emacs-lsp/dap-mode")
+    :when (equal debug-adapter 'debug-adapter-dap-mode)
+    :defer t
+    :after go-mode)
 
+  (use-package dap-dlv-go
+    :ensure (:package "dap-dlv-go" :type git :host github :repo "emacs-lsp/dap-mode")
+    :when (equal debug-adapter 'debug-adapter-dap-mode)
+    :defer t
+    :after go-mode)
+
+#+end_src
+
+**** DAP LLDB Support
+
+#+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
   (use-package dap-lldb
     :when (equal debug-adapter 'debug-adapter-dap-mode)
     :defer t
@@ -4263,9 +4299,8 @@ Something that is needed for Rust and Go debugging.
     :defer t
     :after dap-mode
     :ensure (:package "dap-cpptools" :source nil :protocol https :inherit t :depth 1 :type git :host github :repo "emacs-lsp/dap-mode"))
-    ;; :config
-    ;; (dap-cpptools-setup))
-
+  ;; :config
+  ;; (dap-cpptools-setup))
 #+end_src
 
 **** DAP Template for NodeJS
