@@ -3414,6 +3414,19 @@ capture was not aborted."
   ;; (add-hook 'inferior-emacs-lisp-mode 'dashboard-open) ;; IELM open?
   (add-hook 'lisp-interaction-mode-hook 'dashboard-open))
 
+(defun mrf/cleanup-when-exiting ()
+  (let ((backdir (format "%s/config-backup" working-files-directory)))
+    (make-directory backdir t)
+    ;; Backup init.el
+    (copy-file
+      (expand-file-name "init.el" emacs-config-directory)
+      (expand-file-name "init-backup.el" backdir) t)
+    (copy-file
+      (expand-file-name "emacs-config.org" emacs-config-directory)
+      (expand-file-name "emacs-config-backup.org" backdir) t)))
+
+(add-hook 'kill-emacs-hook #'mrf/cleanup-when-exiting)
+
 ;;; --------------------------------------------------------------------------
 
 ;;; init.el ends here.
