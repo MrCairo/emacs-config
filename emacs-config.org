@@ -11,6 +11,9 @@ This ORG file will configure the * init.el * file based upon all of the * emacs-
 
 The goal of this Emacs configuration is to make an Emacs configuration that has a good collection of popular options. So far, the following collections of options are included here:
 
+
+| Language 
+
 - Landging Screen Options ::
   + Dashboard
   + IELM (Integrated Emacs Lisp Mode)
@@ -505,7 +508,7 @@ This is a curated selection of themes that I personally like. Most of them are d
     :type 'string
     :group 'mrf-custom-fonts)
 
-  (defcustom variable-pitch-font-family "SF Pro"
+  (defcustom variable-pitch-font-family "Helvetica Neue"
     "The font family used as the default proportional font."
     :type 'string
     :group 'mrf-custom-fonts)
@@ -560,6 +563,61 @@ This is a curated selection of themes that I personally like. Most of them are d
   (defvar custom-default-mono-font-size 170
     "Storage for the current mono-spaced font height.")
 
+#+end_src
+
+*** Verify Default variable-pitch Font
+
+Look for a proportional font that is available on the OS. If the actual default font isn't available, find another that will work instead.
+
+#+begin_src emacs-lisp
+
+  (defun mrf/validate-variable-pitch-font ()
+    (let* ((variable-pitch-font
+             (cond
+  	     ((x-list-fonts variable-pitch-font-family) variable-pitch-font-family)
+  	     ((x-list-fonts "SF Pro")           "SF Pro")
+  	     ((x-list-fonts "DejaVu Sans")      "DejaVu Sans")
+  	     ((x-list-fonts "Ubuntu")           "Ubuntu")
+  	     ((x-list-fonts "Helvetica")        "Helvetica")
+               ((x-list-fonts "Source Sans Pro")  "Source Sans Pro")
+               ((x-list-fonts "Lucida Grande")    "Lucida Grande")
+               ((x-list-fonts "Verdana")          "Verdana")
+               ((x-family-fonts "Sans Serif")     "Sans Serif")
+               (nil (warn "Cannot find a Sans Serif Font.  Install Source Sans Pro.")))))
+      (if variable-pitch-font
+        (when (not (equal variable-pitch-font variable-pitch-font-family))
+  	(setq variable-pitch-font-family variable-pitch-font))
+        (message "---- Can't find a variable-pitch font to use.")))
+
+    (message (format ">>> variable-pitch font is %s" variable-pitch-font-family)))
+
+#+end_src
+
+
+*** Verify Default monospace / default font
+
+Look for a proportional font that is available on the OS. If the actual default font isn't available, find another that will work instead.
+
+#+begin_src emacs-lisp
+
+  (defun mrf/validate-monospace-font ()
+    (let* ((monospace-font
+             (cond
+  	     ((x-list-fonts mono-spaced-font-family) mono-spaced-font-family)
+  	     ((x-list-fonts "Fira Code Retina")  "Fira Code Retina")
+  	     ((x-list-fonts "Fira Code")         "Fira Code")
+  	     ((x-list-fonts "Source Code Pro")   "Source Code Pro")
+  	     ((x-list-fonts "Ubuntu Monospaced") "Ubuntu Monospaced")
+               ((x-family-fonts "Monospaced")      "Monospaced")
+               (nil (warn "Cannot find a monospaced Font.  Install Source Code Pro.")))))
+      (if monospace-font
+        (when (not (equal monospace-font variable-pitch-font-family))
+  	(setq mono-spaced-font-family monospace-font)
+  	(setq default-font-family monospace-font))
+        (message "---- Can't find a monospace font to use.")))
+
+    (message (format ">>> monospace font is %s" mono-spaced-font-family)))
+  
 #+end_src
 
 
@@ -626,6 +684,11 @@ By default, the =user-emacs-directory= points to the .emacs.d* directory from wh
   (load custom-file 'noerror 'nomessage)
   (setq enable-frameset-restore nil) ;; FORCE UNTIL FRAMESET RESTORE IS DONE
 
+  ;; ensure that the loaded font values are supported by this OS. If not, try
+  ;; to correct them.
+  (mrf/validate-variable-pitch-font)
+  (mrf/validate-monospace-font)
+
 #+end_src
 
 ** Additional Search Paths
@@ -669,6 +732,9 @@ This directory is expected to be in the ~emacs-config-direcory~ dir. This can be
                                    "requirements.txt"
                                    "Gemfile"
                                    "package.json"))
+
+  (defconst *is-a-mac* (eq system-type 'darwin))
+
 
 #+end_src
 
@@ -1833,7 +1899,7 @@ This function sets up the fonts faces that are used within org-mode.
                      (org-level-6 . 0.90)
                      (org-level-7 . 0.90)
                      (org-level-8 . 0.90)))
-      (set-face-attribute (car face) nil :font "SF Pro" :weight 'regular
+      (set-face-attribute (car face) nil :font "Helvetica Neue" :weight 'regular
         :height (cdr face))))
 #+end_src
 
@@ -2085,11 +2151,27 @@ To execute or export code in =org-mode= code blocks, you'll need to set up =org-
   (with-eval-after-load 'org
     (org-babel-do-load-languages
       'org-babel-load-languages
-      '((emacs-lisp . t)
-         (js . t)
-         (shell . t)
-         (python . t)))
-
+      (seq-filter
+        (lambda (pair)
+  	(locate-library (concat "ob-" (symbol-name (car pair)))))
+        '((emacs-lisp . t)
+  	 (ditaa . t)
+  	 (dot . t)
+  	 (emacs-lisp . t)
+  	 (gnuplot . t)
+  	 (haskell . nil)
+  	 (latex . t)
+  	 (ledger . t)
+  	 (ocaml . nil)
+  	 (octave . t)
+  	 (plantuml . t)
+  	 (python . t)
+  	 (ruby . t)
+  	 (screen . nil)
+  	 (sh . t) ;; obsolete
+  	 (shell . t)
+  	 (sql . t)
+  	 (sqlite . t))))
     (push '("conf-unix" . conf-unix) org-src-lang-modes))
 #+end_src
 
