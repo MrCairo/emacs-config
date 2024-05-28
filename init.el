@@ -720,6 +720,15 @@ font size is computed + 20 of this value."
   ;;:ensure (:host github :repo "deb0ch/emacs-winum")
   :config (winum-mode))
 
+(use-package jinx
+  :ensure (:host github :repo "minad/jinx")
+  ;;:hook (emacs-startup . global-jinx-mode)
+  :bind (("C-c C-$" . jinx-correct)
+         ("C-x C-$" . jinx-languages))
+  :config
+  (dolist (hook '(text-mode-hook prog-mode-hook org-mode-hook))
+    (add-hook hook #'jinx-mode)))
+
 
 
 ;;; --------------------------------------------------------------------------
@@ -1403,6 +1412,7 @@ font size is computed + 20 of this value."
   (org-image-actual-width '(300))
   :bind (:map org-mode-map
           ("C-c e" . org-edit-src-code))
+  :mode ("\\.org\\'" . org-mode)
   :config
   (setq org-hide-emphasis-markers nil)
   ;; Save Org buffers after refiling!
@@ -2418,6 +2428,8 @@ capture was not aborted."
   (add-hook 'before-save-hook #'lsp-format-buffer t t)
   (add-hook 'before-save-hook #'lsp-organize-imports t t))
 
+;;; --------------------------------------------------------------------------
+
 (use-package tree-sitter
   :defer t
   :after (:any python python-mode lisp-mode)
@@ -2441,6 +2453,14 @@ capture was not aborted."
   :after tree-sitter)
 
 ;;; --------------------------------------------------------------------------
+
+(use-package treesit-auto
+  :demand t
+  :config
+  (global-treesit-auto-mode))
+
+;;; --------------------------------------------------------------------------
+
 (use-package transient :defer t)
 (use-package git-commit :after transient :defer t)
 (use-package magit :after git-commit :defer t)
@@ -2739,13 +2759,19 @@ capture was not aborted."
   (add-hook 'before-save-hook #'eglot-format-buffer -10 t))
 
 (use-package go-mode
+  :defer t
   :mode ("\\.go\\'" . go-mode)
+  :custom
+  (compile-command "go build -v && go test -v && go vet")
+  :bind (:map go-mode-map
+	  ("C-c C-c" . 'compile))
   :config
   (eglot-format-buffer-on-save)
+  (define-key (current-local-map) "\C-c\C-c" 'compile)
   (cond
     ((equal custom-ide 'custom-ide-eglot)
       (add-hook 'go-mode-hook 'eglot-ensure)
-      (add-hook 'go-mode-hook #'eglot-format-buffer-on-save))
+      (add-hook 'go-mode-hook #'elot-format-buffer-on-save))
     ((equal custom-ide 'custom-ide-lsp)
       (add-hook 'go-mode-hook 'lsp-deferred))))
 
@@ -3343,6 +3369,7 @@ capture was not aborted."
   (defvar mmm-keys-minor-mode-map
     (let ((map (make-sparse-keymap)))
       (bind-keys :map map
+	("M-RET $" . jinx-correct)
         ("M-RET p" . pulsar-pulse-line)
         ("M-RET d" . dashboard-open)
         ("M-RET S e" . eshell)
@@ -3420,10 +3447,10 @@ capture was not aborted."
     ;; Backup init.el
     (copy-file
       (expand-file-name "init.el" emacs-config-directory)
-      (expand-file-name "init-backup.el" backdir) t)
-    (copy-file
-      (expand-file-name "emacs-config.org" emacs-config-directory)
-      (expand-file-name "emacs-config-backup.org" backdir) t)))
+      (expand-file-name "init.el" backdir) t)))
+    ;; (copy-file
+    ;;   (expand-file-name "emacs-config.org" emacs-config-directory)
+    ;;   (expand-file-name "emacs-config.org" backdir) t)))
 
 (add-hook 'kill-emacs-hook #'mrf/cleanup-when-exiting)
 
