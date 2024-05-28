@@ -7,14 +7,12 @@
 
 * Welcome!
 
-This ORG file will configure the * init.el * file based upon all of the * emacs-lisp * source blocks. The emacs-lisp source blocks are defined in an organized order. While these blocks cn generally be moved around, there are some order dependencies. So it's generally best that this order be preserved to prevent any compile-time issues.
+This ORG file will configure the  ~init.el~  file based upon all of the =emacs-lisp= source blocks. The =emacs-lisp= source blocks are defined in an organized order. While these blocks can generally be moved around, there are some order dependencies. So it's generally best that this order be preserved to prevent any compile-time issues.
 
 The goal of this Emacs configuration is to make an Emacs configuration that has a good collection of popular options. So far, the following collections of options are included here:
 
 
-| Language 
-
-- Landging Screen Options ::
+- Landing Screen Options ::
   + Dashboard
   + IELM (Integrated Emacs Lisp Mode)
   + Default *scratch* buffer
@@ -25,16 +23,16 @@ The goal of this Emacs configuration is to make an Emacs configuration that has 
   + Corfu
 
 - Undo Handlers
-  + Vundo
+  + =Vundo=
   + Undo-tree
     
 - Debug Adapters
   + DAPE
   + DAP
 
-- Integrated Develpment Environments
-  + Elpy
-  + Eglot
+- Integrated Development Environments
+  + =Elpy=
+  + =Eglot=
   + Stand-alone LSP
   + LSP Bridge (experimental)
   + Anaconda-mode for Python
@@ -47,7 +45,7 @@ The goal of this Emacs configuration is to make an Emacs configuration that has 
   + Several popular themes that are easy to cycle between and also good on the eyes.
     
 - Other Optional Features
-  + GameBoy Development Packages
+  + Game Boy Development Packages
   + Neo Tree
   + Golden Ratio
   + Embark
@@ -58,9 +56,9 @@ The goal of this Emacs configuration is to make an Emacs configuration that has 
 
 --------------------------------------------------------------------------------
 
-- This config requires Emacs 29.1+
+- This configuration requires Emacs 29.1+
 
-- While this configuration includes support for several languages - and I mean support for syntax highlighting and, to some extent, debugging - this configuration caters to be a Python develpment environment.
+- While this configuration includes support for several languages - and I mean support for syntax highlighting and, to some extent, debugging - this configuration caters to be a Python development environment.
 
 - The C/C++ debugger for these type of programs are done via LSP/LLDB and [[RealGUD][RealGUD]]. The chosen =debug-adapter= custom variable doesn't apply. The reason for this is that the DAP/LSP/LLDB interaction doesn't work properly on my =Apple Silicon= mac. Until GDB supports =ARM= instruction sets then this (=RealGUD=) will remain as the only best way to support a more integrated debugging experience.
 
@@ -68,7 +66,7 @@ The goal of this Emacs configuration is to make an Emacs configuration that has 
 
 - If auto-tangling doesn't work because of a problem in the generated ~init.el~ file, then tangling can be done manually by either using ~(C-c C-v t)~ or by calling the =org-babel-tangle= M-x command.
 
-- When starting this Configuration for the very first time, set the =use-package-always-ensure= variable to =t=. This will force all packages to be installed even if deferred. Make sure to set this value back to =nil= after everything is loaded otherwize Emacs startup time will be impacted. This can be found in the [[Bootstrap straight][Bootstrap straight]] section.
+- When starting this Configuration for the very first time, set the =use-package-always-ensure= variable to =t=. This will force all packages to be installed even if deferred. Make sure to set this value back to =nil= after everything is loaded otherwise Emacs startup time will be impacted. This can be found in the [[Bootstrap straight][Bootstrap straight]] section.
 
 - Take a look a the [[Custom enable flags][Custom Variables]] and [[Customization groups][Groups]] section to see what options exist. It's important to note that these variables need to be adhered to. Another thing to note is that the various =enable*= flags are not used as =:if= option in =use-package= statement. Instead, a lisp conditional statement is used so that the package is actually never loaded or installed. This improves overall startup performance.
   
@@ -1208,6 +1206,27 @@ Window numbers for Emacs: Navigate your windows and frames using numbers. This i
 
 #+end_src
 
+** Jinx
+
+Jinx is a fast just-in-time spell-checker for Emacs. Jinx highlights misspelled words in the text of the visible portion of the buffer. For efficiency, Jinx highlights misspellings lazily, recognizes window boundaries and text folding, if any. For example, when unfolding or scrolling, only the newly visible part of the text is checked if it has not been checked before. Each misspelling can be corrected from a list of dictionary words presented as a completion mnu.
+
+*Important*
+Jinx requires the library ~libenchant~ or ~enchant~ installed. This can be done via the [[https://github.com/AbiWord/enchant][enchant github]] site, through ~brew~ on macOS or the package management system of the OS.
+
+#+begin_src emacs-lisp
+
+  (use-package jinx
+    :ensure (:host github :repo "minad/jinx")
+    ;;:hook (emacs-startup . global-jinx-mode)
+    :bind (("C-c C-$" . jinx-correct)
+           ("C-x C-$" . jinx-languages))
+    :config
+    (dolist (hook '(text-mode-hook prog-mode-hook org-mode-hook))
+      (add-hook hook #'jinx-mode)))
+
+
+#+end_src
+
 ** Local packages
 
 These are packages located in the ~"lisp"~ directory within the emacs-config-directory.
@@ -2051,6 +2070,7 @@ This section contains the basic configuration for =org-mode= plus the configurat
     (org-image-actual-width '(300))
     :bind (:map org-mode-map
             ("C-c e" . org-edit-src-code))
+    :mode ("\\.org\\'" . org-mode)
     :config
     (setq org-hide-emphasis-markers nil)
     ;; Save Org buffers after refiling!
@@ -2172,6 +2192,7 @@ To execute or export code in =org-mode= code blocks, you'll need to set up =org-
   	 (sql . t)
   	 (sqlite . t))))
     (push '("conf-unix" . conf-unix) org-src-lang-modes))
+  
 #+end_src
 
 ** Structure Templates
@@ -2734,7 +2755,7 @@ Denote’s file-naming scheme is not limited to “notes”. It can be used for 
 
 
 
-* Integrated Dev Environments
+* Integrated Development Environments
 The following are configured for Python development and provide an IDE type experience.  It's worth noting that Eglot/LSP can be configured for other languages. The others are Python specific. Use the =configure= system to select which one is used (=Mrf Custom Selection=).
 *** Features
 - context-sensitive code completion
@@ -3502,6 +3523,10 @@ Tree-sitter is a parser generator tool and an incremental parsing library. It ca
 - Robust enough to provide useful results even in the presence of syntax errors
 - Dependency-free so that the runtime library (which is written in pure C) can be embedded in any application
 
+**** Treesit-support functions
+
+Some functions that are used during the initialization of tree-sitter.
+
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
 
@@ -3511,6 +3536,13 @@ Tree-sitter is a parser generator tool and an incremental parsing library. It ca
   (defun lsp-go-install-save-hooks ()
     (add-hook 'before-save-hook #'lsp-format-buffer t t)
     (add-hook 'before-save-hook #'lsp-organize-imports t t))
+  
+#+end_src
+
+**** The main Tree-sitter setup
+
+#+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
 
   (use-package tree-sitter
     :defer t
@@ -3533,14 +3565,29 @@ Tree-sitter is a parser generator tool and an incremental parsing library. It ca
 
   (use-package tree-sitter-langs
     :after tree-sitter)
+#+end_src
+
+**** Treesit-auto
+
+If a tree-sitter grammer is available and installed, use it instead of the corresponding default mode.  Conversely, when a tree-sitter grammar is not available and a fallback major mode is available/specified, use it instead.
+
+#+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
+
+  (use-package treesit-auto
+    :demand t
+    :config
+    (global-treesit-auto-mode))
 
 #+end_src
 
 *** Magit
-[[https://magit.vc/][Magit]] is the one of the best Git interface implementations .  Common Git operations are easy to execute quickly using Magit's command panel system.
+[[https://magit.vc/][
+Magit]] is the one of the best Git interface implementations .  Common Git operations are easy to execute quickly using Magit's command panel system.
 
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
+
   (use-package transient :defer t)
   (use-package git-commit :after transient :defer t)
   (use-package magit :after git-commit :defer t)
@@ -3950,7 +3997,7 @@ Rust is blazingly fast and memory-efficient: with no runtime or garbage collecto
 
 #+end_src
 
-** Go!
+** Golang
 **** Important!
 Make sure that =gopls= and =dlv= are installed. gopls is the Go! (or golang)  language server - like LSP. =dlv= is the =golang= debugger.
 
@@ -3962,6 +4009,7 @@ Make sure that =gopls= and =dlv= are installed. gopls is the Go! (or golang)  la
 
 #+end_src
 
+
 *** Main go-mode config
 
 #+begin_src emacs-lisp
@@ -3971,13 +4019,19 @@ Make sure that =gopls= and =dlv= are installed. gopls is the Go! (or golang)  la
     (add-hook 'before-save-hook #'eglot-format-buffer -10 t))
 
   (use-package go-mode
+    :defer t
     :mode ("\\.go\\'" . go-mode)
+    :custom
+    (compile-command "go build -v && go test -v && go vet")
+    :bind (:map go-mode-map
+  	  ("C-c C-c" . 'compile))
     :config
     (eglot-format-buffer-on-save)
+    (define-key (current-local-map) "\C-c\C-c" 'compile)
     (cond
       ((equal custom-ide 'custom-ide-eglot)
         (add-hook 'go-mode-hook 'eglot-ensure)
-        (add-hook 'go-mode-hook #'eglot-format-buffer-on-save))
+        (add-hook 'go-mode-hook #'elot-format-buffer-on-save))
       ((equal custom-ide 'custom-ide-lsp)
         (add-hook 'go-mode-hook 'lsp-deferred))))
   
@@ -3998,6 +4052,7 @@ for variable, functions and current argument position of function.
     (set-face-attribute 'eldoc-highlight-function-argument nil
       :underline t :foreground "green"
       :weight 'bold))
+  
 #+end_src
 
 *** go-guru config
@@ -5173,6 +5228,7 @@ This is a set of keymaps that do the same things as the popup menu. Both are her
     (defvar mmm-keys-minor-mode-map
       (let ((map (make-sparse-keymap)))
         (bind-keys :map map
+  	("M-RET $" . jinx-correct)
           ("M-RET p" . pulsar-pulse-line)
           ("M-RET d" . dashboard-open)
           ("M-RET S e" . eshell)
@@ -5199,7 +5255,7 @@ This is a set of keymaps that do the same things as the popup menu. Both are her
 
 #+end_src
 
-*** Mmm Context-Aware Keys and Descriptions
+*** MmM Context-Aware Keys and Descriptions
 
 For those menus that would normally show up as either =prefix= or =lambda=, given them a better description via the which-key replacement function. This is run via the ~which-key-inhibit-display-hook~ hook which is run just before the which-key popup is
 shown. Plus, some keys are mode specific and will only appear when that major mode is active.
@@ -5271,10 +5327,10 @@ shown. Plus, some keys are mode specific and will only appear when that major mo
       ;; Backup init.el
       (copy-file
         (expand-file-name "init.el" emacs-config-directory)
-        (expand-file-name "init.el" backdir) t)
-      (copy-file
-        (expand-file-name "emacs-config.org" emacs-config-directory)
-        (expand-file-name "emacs-config.org" backdir) +1)))
+        (expand-file-name "init.el" backdir) t)))
+      ;; (copy-file
+      ;;   (expand-file-name "emacs-config.org" emacs-config-directory)
+      ;;   (expand-file-name "emacs-config.org" backdir) t)))
 
   (add-hook 'kill-emacs-hook #'mrf/cleanup-when-exiting)
 
@@ -5320,3 +5376,7 @@ The standard =lisp= footer that should appear at the end of every =lisp= source 
   ;;; init.el ends here.
 
 #+end_src
+
+# Local Variables:
+# jinx-local-words: "Elpaca Flycheck Treesit el init"
+# End:
