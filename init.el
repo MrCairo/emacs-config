@@ -280,7 +280,7 @@ If additional themes are added, they must be previously installed."
   :type 'string
   :group 'mrf-custom-fonts)
 
-(defcustom variable-pitch-font-family "SF Pro"
+(defcustom variable-pitch-font-family "Helvetica Neue"
   "The font family used as the default proportional font."
   :type 'string
   :group 'mrf-custom-fonts)
@@ -335,6 +335,44 @@ font size is computed + 20 of this value."
 (defvar custom-default-mono-font-size 170
   "Storage for the current mono-spaced font height.")
 
+(defun mrf/validate-variable-pitch-font ()
+  (let* ((variable-pitch-font
+           (cond
+	     ((x-list-fonts variable-pitch-font-family) variable-pitch-font-family)
+	     ((x-list-fonts "SF Pro")           "SF Pro")
+	     ((x-list-fonts "DejaVu Sans")      "DejaVu Sans")
+	     ((x-list-fonts "Ubuntu")           "Ubuntu")
+	     ((x-list-fonts "Helvetica")        "Helvetica")
+             ((x-list-fonts "Source Sans Pro")  "Source Sans Pro")
+             ((x-list-fonts "Lucida Grande")    "Lucida Grande")
+             ((x-list-fonts "Verdana")          "Verdana")
+             ((x-family-fonts "Sans Serif")     "Sans Serif")
+             (nil (warn "Cannot find a Sans Serif Font.  Install Source Sans Pro.")))))
+    (if variable-pitch-font
+      (when (not (equal variable-pitch-font variable-pitch-font-family))
+	(setq variable-pitch-font-family variable-pitch-font))
+      (message "---- Can't find a variable-pitch font to use.")))
+
+  (message (format ">>> variable-pitch font is %s" variable-pitch-font-family)))
+
+(defun mrf/validate-monospace-font ()
+  (let* ((monospace-font
+           (cond
+	     ((x-list-fonts mono-spaced-font-family) mono-spaced-font-family)
+	     ((x-list-fonts "Fira Code Retina")  "Fira Code Retina")
+	     ((x-list-fonts "Fira Code")         "Fira Code")
+	     ((x-list-fonts "Source Code Pro")   "Source Code Pro")
+	     ((x-list-fonts "Ubuntu Monospaced") "Ubuntu Monospaced")
+             ((x-family-fonts "Monospaced")      "Monospaced")
+             (nil (warn "Cannot find a monospaced Font.  Install Source Code Pro.")))))
+    (if monospace-font
+      (when (not (equal monospace-font variable-pitch-font-family))
+	(setq mono-spaced-font-family monospace-font)
+	(setq default-font-family monospace-font))
+      (message "---- Can't find a monospace font to use.")))
+
+  (message (format ">>> monospace font is %s" mono-spaced-font-family)))
+
 ;;; --------------------------------------------------------------------------
 
 ;; Use shell path
@@ -383,6 +421,11 @@ font size is computed + 20 of this value."
 (load custom-file 'noerror 'nomessage)
 (setq enable-frameset-restore nil) ;; FORCE UNTIL FRAMESET RESTORE IS DONE
 
+;; ensure that the loaded font values are supported by this OS. If not, try
+;; to correct them.
+(mrf/validate-variable-pitch-font)
+(mrf/validate-monospace-font)
+
 ;;; --------------------------------------------------------------------------
 
 (add-to-list 'load-path (expand-file-name "lisp" emacs-config-directory))
@@ -412,6 +455,8 @@ font size is computed + 20 of this value."
                                  "requirements.txt"
                                  "Gemfile"
                                  "package.json"))
+
+(defconst *is-a-mac* (eq system-type 'darwin))
 
 ;;; --------------------------------------------------------------------------
 (setq savehist-file (expand-file-name "savehist" user-emacs-directory))
@@ -1225,7 +1270,7 @@ font size is computed + 20 of this value."
                    (org-level-6 . 0.90)
                    (org-level-7 . 0.90)
                    (org-level-8 . 0.90)))
-    (set-face-attribute (car face) nil :font "SF Pro" :weight 'regular
+    (set-face-attribute (car face) nil :font "Helvetica Neue" :weight 'regular
       :height (cdr face))))
 
 ;; -----------------------------------------------------------------
@@ -1437,11 +1482,27 @@ font size is computed + 20 of this value."
 (with-eval-after-load 'org
   (org-babel-do-load-languages
     'org-babel-load-languages
-    '((emacs-lisp . t)
-       (js . t)
-       (shell . t)
-       (python . t)))
-
+    (seq-filter
+      (lambda (pair)
+	(locate-library (concat "ob-" (symbol-name (car pair)))))
+      '((emacs-lisp . t)
+	 (ditaa . t)
+	 (dot . t)
+	 (emacs-lisp . t)
+	 (gnuplot . t)
+	 (haskell . nil)
+	 (latex . t)
+	 (ledger . t)
+	 (ocaml . nil)
+	 (octave . t)
+	 (plantuml . t)
+	 (python . t)
+	 (ruby . t)
+	 (screen . nil)
+	 (sh . t) ;; obsolete
+	 (shell . t)
+	 (sql . t)
+	 (sqlite . t))))
   (push '("conf-unix" . conf-unix) org-src-lang-modes))
 
 ;;; --------------------------------------------------------------------------
@@ -3352,6 +3413,19 @@ capture was not aborted."
 (if dashboard-landing-screen
   ;; (add-hook 'inferior-emacs-lisp-mode 'dashboard-open) ;; IELM open?
   (add-hook 'lisp-interaction-mode-hook 'dashboard-open))
+
+(defun mrf/cleanup-when-exiting ()
+  (let ((backdir (format "%s/config-backup" working-files-directory)))
+    (make-directory backdir t)
+    ;; Backup init.el
+    (copy-file
+      (expand-file-name "init.el" emacs-config-directory)
+      (expand-file-name "init-backup.el" backdir) t)
+    (copy-file
+      (expand-file-name "emacs-config.org" emacs-config-directory)
+      (expand-file-name "emacs-config-backup.org" backdir) t)))
+
+(add-hook 'kill-emacs-hook #'mrf/cleanup-when-exiting)
 
 ;;; --------------------------------------------------------------------------
 
