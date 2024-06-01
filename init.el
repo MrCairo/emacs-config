@@ -11,6 +11,8 @@
 ;; (setq debug-on-error t)
 ;;
 
+;;; --------------------------------------------------------------------------
+
 (defvar elpaca-installer-version 0.7)
 (defvar elpaca-directory (expand-file-name "elpaca/" user-emacs-directory))
 (defvar elpaca-builds-directory (expand-file-name "builds/" elpaca-directory))
@@ -335,7 +337,9 @@ font size is computed + 20 of this value."
 (defvar custom-default-mono-font-size 170
   "Storage for the current mono-spaced font height.")
 
-(defun mrf/validate-variable-pitch-font ()
+;;; --------------------------------------------------------------------------
+
+(defun mifi/validate-variable-pitch-font ()
   (let* ((variable-pitch-font
            (cond
 	     ((x-list-fonts variable-pitch-font-family) variable-pitch-font-family)
@@ -355,7 +359,9 @@ font size is computed + 20 of this value."
 
   (message (format ">>> variable-pitch font is %s" variable-pitch-font-family)))
 
-(defun mrf/validate-monospace-font ()
+;;; --------------------------------------------------------------------------
+
+(defun mifi/validate-monospace-font ()
   (let* ((monospace-font
            (cond
 	     ((x-list-fonts mono-spaced-font-family) mono-spaced-font-family)
@@ -372,29 +378,6 @@ font size is computed + 20 of this value."
       (message "---- Can't find a monospace font to use.")))
 
   (message (format ">>> monospace font is %s" mono-spaced-font-family)))
-
-;;; --------------------------------------------------------------------------
-
-;; Use shell path
-
-(defun set-exec-path-from-shell-PATH ()
-   ;;; Set up Emacs' `exec-path' and PATH environment variable to match"
-   ;;; that used by the user's shell.
-   ;;; This is particularly useful under Mac OS X and macOS, where GUI
-   ;;; apps are not started from a shell."
-  (interactive)
-  (let ((path-from-shell (replace-regexp-in-string "[ \t\n]*$" ""
-                           (shell-command-to-string "$SHELL --login -c 'echo $PATH'"))))
-    (setenv "PATH" path-from-shell)
-    (setq exec-path (split-string path-from-shell path-separator))
-    (add-to-list 'exec-path "/opt/homebrew/bin")
-    (add-to-list 'exec-path "/usr/local/bin")
-    (add-to-list 'exec-path "/opt/homebrew/opt/openjdk/bin")
-    (add-to-list 'exec-path "/opt/homebrew/opt/node@20/bin/node")
-    (setq-default insert-directory-program "gls"
-      dired-use-ls-dired t
-      ;; Needed to fix an issue on Mac which causes dired to fail
-      dired-listing-switches "-al --group-directories-first")))
 
 ;;; --------------------------------------------------------------------------
 ;;; Set a variable that represents the actual emacs configuration directory.
@@ -423,8 +406,8 @@ font size is computed + 20 of this value."
 
 ;; ensure that the loaded font values are supported by this OS. If not, try
 ;; to correct them.
-(mrf/validate-variable-pitch-font)
-(mrf/validate-monospace-font)
+(mifi/validate-variable-pitch-font)
+(mifi/validate-monospace-font)
 
 ;;; --------------------------------------------------------------------------
 
@@ -449,14 +432,13 @@ font size is computed + 20 of this value."
   lisp-indent-offset '2     ;; emacs lisp tab size
   visible-bell t             ;; Set up the visible bell
   truncate-lines 1           ;; long lines of text do not wrap
+  sentence-end-double-space nil
   fill-column 80             ;; Default line limit for fills
   ;; Triggers project for directories with any of the following files:
   project-vc-extra-root-markers '(".dir-locals.el"
                                  "requirements.txt"
                                  "Gemfile"
                                  "package.json"))
-
-(defconst *is-a-mac* (eq system-type 'darwin))
 
 ;;; --------------------------------------------------------------------------
 (setq savehist-file (expand-file-name "savehist" user-emacs-directory))
@@ -471,8 +453,12 @@ font size is computed + 20 of this value."
 
 ;;; --------------------------------------------------------------------------
 ;; (global-display-line-numbers-mode 1) ;; Line numbers appear everywhere
+;; A cool mode to revert a window configuration
+(winner-mode 1)
+
+;; Change "yes" or "no" responses to just require "y" or "n"
+(fset 'yes-or-no-p 'y-or-n-p)
 (save-place-mode 1)                  ;; Remember where we were last editing a file.
-(show-paren-mode 1)
 (column-number-mode 1)
 (tool-bar-mode -1)                   ;; Hide the toolbar
 (global-prettify-symbols-mode 1)     ;; Display pretty symbols (i.e. λ = lambda)
@@ -481,19 +467,37 @@ font size is computed + 20 of this value."
 
 ;;; --------------------------------------------------------------------------
 
-(defun mrf/save-desktop-frameset ()
+;; Used to highlight matching delimiters '( { [ ] } )
+(use-package paren
+  :ensure nil    ;; built-in
+  :custom
+  show-paren-delay 0.1
+  show-paren-highlight-openparen t
+  show-paren-when-point-inside-paren t
+  show-paren-when-point-in-periphery t
+  show-paren-context-when-offscreen t
+  :config
+  (show-paren-mode 1))
+
+(setq register-preview-delay 0) ;; Show registers ASAP
+(set-register ?C (cons 'file (concat emacs-config-directory "/emacs-config.org")))
+
+;;; --------------------------------------------------------------------------
+
+(defun mifi/save-desktop-frameset ()
   (unless (daemonp)
     (desktop-save-mode 0)
     (desktop-save-frameset)
     (with-temp-file (expand-file-name "saved-frameset.el" user-emacs-directory)
-      (insert
-      (format "(setq desktop-saved-frameset %S)" desktop-saved-frameset)))))
+      (insert (format
+                "(setq desktop-saved-frameset %S)"
+                desktop-saved-frameset)))))
 
-(add-hook 'kill-emacs-hook 'mrf/save-desktop-frameset)
+(add-hook 'kill-emacs-hook 'mifi/save-desktop-frameset)
 
 ;;; --------------------------------------------------------------------------
  
-(defun mrf/restore-desktop-frameset ()
+(defun mifi/restore-desktop-frameset ()
   (unless (and (daemonp) (not enable-frameset-restore))
     (let
       ((file (expand-file-name "saved-frameset.el" user-emacs-directory)))
@@ -506,6 +510,7 @@ font size is computed + 20 of this value."
           (spacious-padding-mode 1)))))
       ))
 
+;;; --------------------------------------------------------------------------
 ;; Allow access from emacsclient
 (add-hook 'elpaca-after-init-hook
   (lambda ()
@@ -535,7 +540,7 @@ font size is computed + 20 of this value."
 
 ;;; --------------------------------------------------------------------------
 
-(defun mrf/set-diminish ()
+(defun mifi/set-diminish ()
   (when (equal custom-project-handler 'custom-project-projectile)
     (diminish 'projectile-mode "PrM"))
   (diminish 'anaconda-mode)
@@ -552,17 +557,22 @@ font size is computed + 20 of this value."
   :config
   (if (not elpaca-after-init-time)
     (add-hook 'elpaca-after-init-hook
-      (lambda () (run-with-timer 0.5 nil 'mrf/set-diminish)))
-    (run-with-timer 1.0 nil 'mrf/set-diminsh)))
+      (lambda () (run-with-timer 0.5 nil 'mifi/set-diminish)))
+    (run-with-timer 1.0 nil 'mifi/set-diminsh)))
 
 ;;; --------------------------------------------------------------------------
 
 (use-package which-key
   :diminish which-key-mode
-  :custom (which-key-idle-delay 1)
+  :custom
+  (which-key-idle-delay 1)
+  (which-key-prefix-prefix "◉ ")
+  (which-key-sort-order 'which-key-key-order-alpha)
+  (which-key-min-display-lines 3)
+  (which-key-max-display-columns nil)
   :config
   (which-key-mode)
-  (which-key-setup-side-window-right))
+  (which-key-setup-minibuffer))
 
 ;;; --------------------------------------------------------------------------
 
@@ -603,13 +613,14 @@ font size is computed + 20 of this value."
 ;;; --------------------------------------------------------------------------
 
 ;; Macintosh specific configurations.
+(when *is-a-mac*
+  (setq mac-command-modifier       'meta
+        mac-option-modifier         nil
+        mac-control-modifier       'control
+        mac-right-command-modifier 'super
+        mac-right-control-modifier 'hyper)
 
-(defconst *is-a-mac* (eq system-type 'darwin))
-(when (eq system-type 'darwin)
-  (setq mac-option-key-is-meta nil
-    mac-command-key-is-meta t
-    mac-command-modifier 'meta
-    mac-option-modifier 'super))
+  (global-set-key (kbd "<escape>") 'keyboard-escape-quit))
 
 ;;; --------------------------------------------------------------------------
 
@@ -656,7 +667,7 @@ font size is computed + 20 of this value."
   ;; So, to get our themes loading properly, load it here if not already
   ;; loaded.
   (unless theme-did-load
-    (mrf/load-theme-from-selector)))
+    (mifi/load-theme-from-selector)))
 
 (use-package eldoc-box
   :after eldoc
@@ -720,6 +731,7 @@ font size is computed + 20 of this value."
   ;;:ensure (:host github :repo "deb0ch/emacs-winum")
   :config (winum-mode))
 
+;;; --------------------------------------------------------------------------
 (use-package jinx
   :ensure (:host github :repo "minad/jinx")
   ;;:hook (emacs-startup . global-jinx-mode)
@@ -729,7 +741,7 @@ font size is computed + 20 of this value."
   (dolist (hook '(text-mode-hook prog-mode-hook org-mode-hook))
     (add-hook hook #'jinx-mode)))
 
-
+;;; --------------------------------------------------------------------------
 
 ;;; --------------------------------------------------------------------------
 
@@ -745,7 +757,7 @@ font size is computed + 20 of this value."
 
 ;;; --------------------------------------------------------------------------
 
-(defun mrf/undo-tree-hook ()
+(defun mifi/undo-tree-hook ()
   (set-frame-width (selected-frame) 20))
 
 (defun undo-tree-split-side-by-side (original-function &rest args)
@@ -786,7 +798,7 @@ font size is computed + 20 of this value."
 ;;; --------------------------------------------------------------------------
 
 ;;
-;; 1. The function `mrf/load-theme-from-selector' is called from the
+;; 1. The function `mifi/load-theme-from-selector' is called from the
 ;;    "C-= =" Keybinding (just search for it).
 ;;
 ;; 2. Once the new theme is loaded via the `theme-selector', the previous
@@ -794,7 +806,7 @@ font size is computed + 20 of this value."
 ;;    `disable-theme-functions' hook are called (defined in the load-theme.el
 ;;    package).
 ;;
-;; 3. The function `mrf/cycle-theme-selector' is called by the hook. This
+;; 3. The function `mifi/cycle-theme-selector' is called by the hook. This
 ;;    function increments the theme-selector by 1, cycling the value to 0
 ;;    if beyond the `theme-list' bounds.
 ;;
@@ -806,7 +818,7 @@ font size is computed + 20 of this value."
 
 ;;; --------------------------------------------------------------------------
 
-(defun mrf/cycle-theme-selector (&rest theme)
+(defun mifi/cycle-theme-selector (&rest theme)
   "Cycle the `theme-selector' by 1, resetting to 0 if beyond array bounds."
   (interactive)
   (when (not (eq theme-cycle-step nil))
@@ -821,15 +833,15 @@ font size is computed + 20 of this value."
 
 ;; This is used to trigger the cycling of the theme-selector
 ;; It is called when a theme is disabled. The theme is disabled from the
-;; `mrf/load-theme-from-selector' function.
-(add-hook 'disable-theme-functions #'mrf/cycle-theme-selector)
+;; `mifi/load-theme-from-selector' function.
+(add-hook 'disable-theme-functions #'mifi/cycle-theme-selector)
 
 ;;; --------------------------------------------------------------------------
 
 (defvar theme-did-load nil
   "Set to true if the last Theme was loaded.")
 
-(defun mrf/load-theme-from-selector (&optional step)
+(defun mifi/load-theme-from-selector (&optional step)
   "Load the theme in `theme-list' indexed by `theme-selector'."
   (interactive)
   (setq theme-cycle-step nil)
@@ -842,10 +854,12 @@ font size is computed + 20 of this value."
   (setq loaded-theme (nth theme-selector theme-list))
   (setq theme-did-load (load-theme (intern loaded-theme) t))
   (when (featurep 'org)
-    (mrf/org-font-setup))
+    (mifi/org-font-setup))
   (set-face-foreground 'line-number "SkyBlue4"))
 
-(defun mrf/print-custom-theme-name ()
+;;; --------------------------------------------------------------------------
+
+(defun mifi/print-custom-theme-name ()
   "Print the current loaded theme from the `theme-list' on the modeline."
   (interactive)
   (message (format "Custom theme is %S" loaded-theme)))
@@ -854,17 +868,17 @@ font size is computed + 20 of this value."
 (defun next-theme ()
   "Go to the next theme in the list."
   (interactive)
-  (mrf/load-theme-from-selector 1))
+  (mifi/load-theme-from-selector 1))
 
 (defun previous-theme ()
   "Go to the next theme in the list."
   (interactive)
-  (mrf/load-theme-from-selector -1))
+  (mifi/load-theme-from-selector -1))
 
 (defun which-theme ()
   "Go to the next theme in the list."
   (interactive)
-  (mrf/print-custom-theme-name))
+  (mifi/print-custom-theme-name))
 
 ;; Go to NEXT theme
 (global-set-key (kbd "C-c C-=") 'next-theme)
@@ -875,7 +889,7 @@ font size is computed + 20 of this value."
 
 ;;; --------------------------------------------------------------------------
 
-(defun mrf/org-theme-override-values ()
+(defun mifi/org-theme-override-values ()
   (defface org-block-begin-line
     '((t (:underline "#1D2C39" :foreground "SlateGray" :background "#1D2C39")))
     "Face used for the line delimiting the begin of source blocks.")
@@ -894,37 +908,37 @@ font size is computed + 20 of this value."
 
 ;;; --------------------------------------------------------------------------
 
-(defun mrf/customize-modus-theme ()
+(defun mifi/customize-modus-theme ()
   (when (featurep 'org)
-    (mrf/org-font-setup))
+    (mifi/org-font-setup))
   (setq modus-themes-common-palette-overrides
     '((bg-mode-line-active bg-blue-intense)
        (fg-mode-line-active fg-main)
        (border-mode-line-active blue-intense))))
 
-(add-hook 'elpaca-after-init-hook 'mrf/customize-modus-theme)
+(add-hook 'elpaca-after-init-hook 'mifi/customize-modus-theme)
 
-(defun mrf/customize-ef-theme ()
+(defun mifi/customize-ef-theme ()
   (defface ef-themes-fixed-pitch
     '((t (:background "#242635" :extend t :font "Courier New")))
     "Face used for the source block background.")
   (when (featurep 'org)
-    (mrf/org-font-setup))
+    (mifi/org-font-setup))
   (setq ef-themes-common-palette-override
     '( (bg-mode-line bg-blue-intense)
        (fg-mode-line fg-main)
        (border-mode-line-active blue-intense))))
-;;(add-hook 'org-load-hook 'mrf/customize-ef-theme)
-(add-hook 'elpaca-after-init-hook 'mrf/customize-ef-theme)
+;;(add-hook 'org-load-hook 'mifi/customize-ef-theme)
+(add-hook 'elpaca-after-init-hook 'mifi/customize-ef-theme)
 
 ;;; --------------------------------------------------------------------------
 
 (add-to-list 'custom-theme-load-path (expand-file-name "Themes" custom-docs-dir))
 
-(mrf/org-theme-override-values)
+(mifi/org-theme-override-values)
 (use-package tron-legacy-theme :defer t)
-(use-package ef-themes :init (mrf/customize-ef-theme) :defer t)
-(use-package modus-themes :init (mrf/customize-modus-theme) :defer t)
+(use-package ef-themes :init (mifi/customize-ef-theme) :defer t)
+(use-package modus-themes :init (mifi/customize-modus-theme) :defer t)
 (use-package material-theme :defer t)
 (use-package color-theme-modern :defer t)
 (use-package color-theme-sanityinc-tomorrow :defer t)
@@ -933,27 +947,27 @@ font size is computed + 20 of this value."
 (use-package zenburn-theme :defer t)
 
 ;;; --------------------------------------------------------------------------
-;; (add-hook 'emacs-startup-hook #'(mrf/load-theme-from-selector))
-;; (mrf/load-theme-from-selector)
+;; (add-hook 'emacs-startup-hook #'(mifi/load-theme-from-selector))
+;; (mifi/load-theme-from-selector)
 ;; For terminal mode we choose Material theme
 
-(defun mrf/load-terminal-theme ()
+(defun mifi/load-terminal-theme ()
   (load-theme (intern default-terminal-theme) t))
 
 (if (not (display-graphic-p))
-  (add-hook 'elpaca-after-init-hook 'mrf/load-terminal-theme)
+  (add-hook 'elpaca-after-init-hook 'mifi/load-terminal-theme)
   ;;else
   (progn
     (if (not elpaca-after-init-time)
       (add-hook 'elpaca-after-init-hook
       (lambda ()
         (unless theme-did-load
-          (mrf/load-theme-from-selector))))
+          (mifi/load-theme-from-selector))))
       ;; else
       (add-hook 'window-setup-hook
       (lambda ()
         (unless theme-did-load
-          (mrf/load-theme-from-selector))))
+          (mifi/load-theme-from-selector))))
       )))
 
 ;;; --------------------------------------------------------------------------
@@ -961,36 +975,45 @@ font size is computed + 20 of this value."
 ;; Frame (view) setup including fonts.
 ;; You will most likely need to adjust this font size for your system!
 
-(setq-default mrf/small-font-size 150)
-(setq-default mrf/small-mono-font-size 150)
-(setq-default mrf/small-variable-font-size 170)
+(setq-default mifi/small-font-size 150)
+(setq-default mifi/small-mono-font-size 150)
+(setq-default mifi/small-variable-font-size 170)
 
-(setq-default mrf/medium-font-size 170)
-(setq-default mrf/medium-mono-font-size 170)
-(setq-default mrf/medium-variable-font-size 190)
+(setq-default mifi/medium-font-size 170)
+(setq-default mifi/medium-mono-font-size 170)
+(setq-default mifi/medium-variable-font-size 190)
 
-(setq-default mrf/large-font-size 190)
-(setq-default mrf/large-mono-font-size 190)
-(setq-default mrf/large-variable-font-size 210)
+(setq-default mifi/large-font-size 190)
+(setq-default mifi/large-mono-font-size 190)
+(setq-default mifi/large-variable-font-size 210)
 
-(setq-default mrf/x-large-font-size 220)
-(setq-default mrf/x-large-mono-font-size 220)
-(setq-default mrf/x-large-variable-font-size 240)
+(setq-default mifi/x-large-font-size 220)
+(setq-default mifi/x-large-mono-font-size 220)
+(setq-default mifi/x-large-variable-font-size 240)
 
-;; (setq-default custom-default-font-size mrf/medium-font-size)
-(setq-default mrf/default-variable-font-size (+ custom-default-font-size 20))
-;; (setq-default mrf/set-frame-maximized t)  ;; or f
+;; (setq-default custom-default-font-size mifi/medium-font-size)
+(setq-default mifi/default-variable-font-size (+ custom-default-font-size 20))
+;; (setq-default mifi/set-frame-maximized t)  ;; or f
 
 ;; Make frame transparency overridable
-;; (setq-default mrf/frame-transparency '(90 . 90))
+;; (setq-default mifi/frame-transparency '(90 . 90))
 
 (setq frame-resize-pixelwise t)
 
 ;;; --------------------------------------------------------------------------
 
+(use-package mixed-pitch
+  :defer t
+  :custom
+  (mixed-pitch-set-height t)
+  :config
+  (dolist (face '(org-date org-priority org-special-keyword org-tag))
+    (add-to-list 'mixed-pitch-fixed-pitch-faces face)))
+
+;;; --------------------------------------------------------------------------
 ;; Functions to set the frame size
 
-(defun mrf/frame-recenter (&optional frame)
+(defun mifi/frame-recenter (&optional frame)
   "Center FRAME on the screen.  FRAME can be a frame name, a terminal name,
   or a frame.  If FRAME is omitted or nil, use currently selected frame."
   (interactive)
@@ -999,54 +1022,48 @@ font size is computed + 20 of this value."
     (progn
       (let ((width (nth 3 (assq 'geometry (car (display-monitor-attributes-list)))))
              (height (nth 4 (assq 'geometry (car (display-monitor-attributes-list))))))
-        (cond (( > width 3000) (mrf/update-large-display))
-          (( > width 2000) (mrf/update-built-in-display))
-          (t (mrf/set-frame-alpha-maximized)))
-        ))
-    ))
+        (cond (( > width 3000) (mifi/update-large-display))
+          (( > width 2000) (mifi/update-built-in-display))
+          (t (mifi/set-frame-alpha-maximized)))))))
 
-(defun mrf/update-large-display ()
+(defun mifi/update-large-display ()
   (modify-frame-parameters
     frame '((user-position . t)
              (top . 0.0)
              (left . 0.70)
              (width . (text-pixels . 2800))
-             (height . (text-pixels . 1650))) ;; 1800
-    ))
+             (height . (text-pixels . 1650))))) ;; 1800
 
-(defun mrf/update-built-in-display ()
+(defun mifi/update-built-in-display ()
   (modify-frame-parameters
     frame '((user-position . t)
              (top . 0.0)
              (left . 0.90)
              (width . (text-pixels . 1800))
-             (height . (text-pixels . 1170)));; 1329
-    ))
-
+             (height . (text-pixels . 1170))))) ;; 1329
 
 ;; Set frame transparency
-(defun mrf/set-frame-alpha-maximized ()
+(defun mifi/set-frame-alpha-maximized ()
   "Function to set the alpha and also maximize the frame."
-  ;; (set-frame-parameter (selected-frame) 'alpha mrf/frame-transparency)
+  ;; (set-frame-parameter (selected-frame) 'alpha mifi/frame-transparency)
   (set-frame-parameter (selected-frame) 'fullscreen 'maximized)
   (add-to-list 'default-frame-alist '(fullscreen . maximized)))
 
 ;; default window width and height
-(defun mrf/custom-set-frame-size ()
+(defun mifi/custom-set-frame-size ()
   "Simple function to set the default frame width/height."
-  ;; (set-frame-parameter (selected-frame) 'alpha mrf/frame-transparency)
+  ;; (set-frame-parameter (selected-frame) 'alpha mifi/frame-transparency)
   (setq swidth (nth 3 (assq 'geometry (car (display-monitor-attributes-list)))))
   (setq sheight (nth 4 (assq 'geometry (car (display-monitor-attributes-list)))))
 
   (add-to-list 'default-frame-alist '(fullscreen . maximized))
-  (unless enable-frameset-restore (mrf/frame-recenter))
-  )
+  (unless enable-frameset-restore (mifi/frame-recenter)))
 
 ;;; --------------------------------------------------------------------------
 
 ;; Default fonts
 
-(defun mrf/update-face-attribute ()
+(defun mifi/update-face-attribute ()
   "Set the font faces."
   ;; ====================================
   (set-face-attribute 'default nil
@@ -1071,53 +1088,53 @@ font size is computed + 20 of this value."
 (add-hook 'emacs-startup-hook
   (lambda ()
     (when (display-graphic-p)
-      (mrf/update-face-attribute)
+      (mifi/update-face-attribute)
       (unless (daemonp)
 	(if enable-frameset-restore
-          (mrf/restore-desktop-frameset)
-	  (mrf/frame-recenter)))
+          (mifi/restore-desktop-frameset)
+	  (mifi/frame-recenter)))
       )))
 
 ;;; --------------------------------------------------------------------------
 
-(defun mrf/default-font-height-change ()
+(defun mifi/default-font-height-change ()
   (setq-default custom-default-font-size (face-attribute 'default :height))
-  (mrf/update-face-attribute)
-  (unless enable-frameset-restore (mrf/frame-recenter)))
+  (mifi/update-face-attribute)
+  (unless enable-frameset-restore (mifi/frame-recenter)))
 
-(add-hook 'after-setting-font-hook 'mrf/default-font-height-change)
+(add-hook 'after-setting-font-hook 'mifi/default-font-height-change)
 
 ;;; --------------------------------------------------------------------------
 ;; Frame font selection
 
-(defvar mrf/font-size-slot 1)
+(defvar mifi/font-size-slot 1)
 
-(defun mrf/update-font-size ()
+(defun mifi/update-font-size ()
   (cond
-    ((equal mrf/font-size-slot 3)
-      (setq custom-default-font-size mrf/x-large-font-size
-            custom-default-mono-font-size mrf/x-large-mono-font-size
-            mrf/default-variable-font-size (+ custom-default-font-size 20)
-            mrf/font-size-slot 2)
-      (mrf/update-face-attribute))
-    ((equal mrf/font-size-slot 2)
-      (setq custom-default-font-size mrf/large-font-size
-            custom-default-mono-font-size mrf/large-mono-font-size
-            mrf/default-variable-font-size (+ custom-default-font-size 20)
-            mrf/font-size-slot 1)
-      (mrf/update-face-attribute))
-    ((equal mrf/font-size-slot 1)
-      (setq custom-default-font-size mrf/medium-font-size
-            custom-default-mono-font-size mrf/medium-mono-font-size
-            mrf/default-variable-font-size (+ custom-default-font-size 20)
-            mrf/font-size-slot 0)
-      (mrf/update-face-attribute))
-    ((equal mrf/font-size-slot 0)
-      (setq custom-default-font-size mrf/small-font-size
-            custom-default-mono-font-size mrf/small-mono-font-size
-            mrf/default-variable-font-size (+ custom-default-font-size 20)
-            mrf/font-size-slot 3)
-      (mrf/update-face-attribute))))
+    ((equal mifi/font-size-slot 3)
+      (setq custom-default-font-size mifi/x-large-font-size
+            custom-default-mono-font-size mifi/x-large-mono-font-size
+            mifi/default-variable-font-size (+ custom-default-font-size 20)
+            mifi/font-size-slot 2)
+      (mifi/update-face-attribute))
+    ((equal mifi/font-size-slot 2)
+      (setq custom-default-font-size mifi/large-font-size
+            custom-default-mono-font-size mifi/large-mono-font-size
+            mifi/default-variable-font-size (+ custom-default-font-size 20)
+            mifi/font-size-slot 1)
+      (mifi/update-face-attribute))
+    ((equal mifi/font-size-slot 1)
+      (setq custom-default-font-size mifi/medium-font-size
+            custom-default-mono-font-size mifi/medium-mono-font-size
+            mifi/default-variable-font-size (+ custom-default-font-size 20)
+            mifi/font-size-slot 0)
+      (mifi/update-face-attribute))
+    ((equal mifi/font-size-slot 0)
+      (setq custom-default-font-size mifi/small-font-size
+            custom-default-mono-font-size mifi/small-mono-font-size
+            mifi/default-variable-font-size (+ custom-default-font-size 20)
+            mifi/font-size-slot 3)
+      (mifi/update-face-attribute))))
 
 ;;; --------------------------------------------------------------------------
 ;; Some alternate keys below....
@@ -1140,41 +1157,41 @@ font size is computed + 20 of this value."
 ;;; --------------------------------------------------------------------------
 ;; Frame support functions
 
-(defun mrf/set-frame-font (slot)
-  (setq mrf/font-size-slot slot)
-  (mrf/update-font-size)
-  (unless enable-frameset-restore (mrf/frame-recenter)))
+(defun mifi/set-frame-font (slot)
+  (setq mifi/font-size-slot slot)
+  (mifi/update-font-size)
+  (unless enable-frameset-restore (mifi/frame-recenter)))
 
-(defun mrf/should-recenter (&optional force-recenter)
+(defun mifi/should-recenter (&optional force-recenter)
   (if force-recenter
-    (mrf/frame-recenter)
+    (mifi/frame-recenter)
     ;;else
-    (unless enable-frameset-restore (mrf/frame-recenter))))
+    (unless enable-frameset-restore (mifi/frame-recenter))))
 
 ;;; --------------------------------------------------------------------------
 
 (defun use-small-display-font (&optional force-recenter)
   (interactive)
-  (mrf/set-frame-font 0)
-  (mrf/should-recenter force-recenter))
+  (mifi/set-frame-font 0)
+  (mifi/should-recenter force-recenter))
 
 
 (defun use-medium-display-font (&optional force-recenter)
   (interactive)
-  (mrf/set-frame-font 1)
-  (mrf/should-recenter force-recenter))
+  (mifi/set-frame-font 1)
+  (mifi/should-recenter force-recenter))
 
 
 (defun use-large-display-font (&optional force-recenter)
   (interactive)
-  (mrf/set-frame-font 2)
-  (mrf/should-recenter force-recenter))
+  (mifi/set-frame-font 2)
+  (mifi/should-recenter force-recenter))
 
 
 (defun use-x-large-display-font (&optional force-recenter)
   (interactive)
-  (mrf/set-frame-font 3)
-  (mrf/should-recenter force-recenter))
+  (mifi/set-frame-font 3)
+  (mifi/should-recenter force-recenter))
 
 
 ;; This is done so that the Emacs window is sized early in the init phase along with the default font size.
@@ -1183,9 +1200,9 @@ font size is computed + 20 of this value."
   (add-hook 'elpaca-after-init-hook
     (lambda ()
       (progn
-      (mrf/update-face-attribute)
+      (mifi/update-face-attribute)
       (unless (daemonp)
-        (unless enable-frameset-restore (mrf/frame-recenter))))
+        (unless enable-frameset-restore (mifi/frame-recenter))))
       )))
 
 ;;; --------------------------------------------------------------------------
@@ -1212,7 +1229,7 @@ font size is computed + 20 of this value."
 ;;; --------------------------------------------------------------------------
 
 (use-package faces :ensure nil)
-(defun mrf/org-font-setup ()
+(defun mifi/org-font-setup ()
   "Setup org mode fonts."
 
   (font-lock-add-keywords
@@ -1282,19 +1299,19 @@ font size is computed + 20 of this value."
     (set-face-attribute (car face) nil :font "Helvetica Neue" :weight 'regular
       :height (cdr face))))
 
-;; -----------------------------------------------------------------
+;;; --------------------------------------------------------------------------
 
-(defun mrf/org-mode-visual-fill ()
+(defun mifi/org-mode-visual-fill ()
   (interactive)
   (setq visual-fill-column-width custom-org-fill-column
     visual-fill-column-center-text enable-org-fill-column-centering)
   (visual-fill-column-mode 1))
 
-(defun mrf/org-mode-setup ()
+(defun mifi/org-mode-setup ()
   (org-indent-mode)
   (variable-pitch-mode 1)
   (visual-line-mode 1)
-  (mrf/org-mode-visual-fill)
+  (mifi/org-mode-visual-fill)
   (font-lock-add-keywords nil
     '(("^_\\{5,\\}"    0 '(:foreground "green" :weight bold))))
   (setq org-ellipsis " ▾")
@@ -1314,7 +1331,7 @@ font size is computed + 20 of this value."
 
 ;;; --------------------------------------------------------------------------
 
-(defun mrf/org-setup-agenda ()
+(defun mifi/org-setup-agenda ()
   (setq org-agenda-custom-commands
     '(("d" "Dashboard"
         ((agenda "" ((org-deadline-warning-days 7)))
@@ -1361,11 +1378,11 @@ font size is computed + 20 of this value."
            (todo "CANC"
              ((org-agenda-overriding-header "Cancelled Projects")
                (org-agenda-files org-agenda-files)))))))
-  ) ;; mrf/org-setup-agenda
+  ) ;; mifi/org-setup-agenda
 
 ;;; --------------------------------------------------------------------------
 
-(defun mrf/org-setup-capture-templates ()
+(defun mifi/org-setup-capture-templates ()
   (setq org-capture-templates
     `(("t" "Tasks / Projects")
        ("tt" "Task" entry (file+olp "~/Projects/Code/emacs-from-scratch/OrgFiles/Tasks.org" "Inbox")
@@ -1395,14 +1412,29 @@ font size is computed + 20 of this value."
                                  "Weight")
        "| %U | %^{Weight} | %^{Notes} |" :kill-buffer t))))
 
+(defun mifi/org-setup-todos ()
+  (setq org-todo-keywords '((type
+                              "TODO(t)" "WAITING(h)" "INPROG-TODO(i)" "WORK(w)"
+                              "STUDY(s)" "SOMEDAY" "READ(r)" "PROJ(p)"
+                              "CONTACT(c)" "|" "DONE(d)" "CANCELLED(C@)")))
+
+  (setq org-todo-keyword-faces
+    '(("TODO"  :inherit (region org-todo) :foreground "DarkOrange1" :weight bold)
+       ("WORK"  :inherit (org-todo region) :foreground "DarkOrange1" :weight bold)
+       ("READ"  :inherit (org-todo region) :foreground "MediumPurple2" :weight bold)
+       ("PROJ"  :inherit (org-todo region) :foreground "orange3" :weight bold)
+       ("STUDY" :inherit (region org-todo) :foreground "plum3"   :weight bold)
+       ("DONE" . "SeaGreen4"))))
+
 ;;; --------------------------------------------------------------------------
 
 (use-package org
+  :pin gnu-elpa
   :preface
-  (mrf/org-theme-override-values)
+  (mifi/org-theme-override-values)
   :commands (org-capture org-agenda)
   :defer t
-  :hook (org-mode . mrf/org-mode-setup)
+  :hook (org-mode . mifi/org-mode-setup)
   :custom
   (org-startup-indented t)
   (org-pretty-entities t)
@@ -1431,61 +1463,46 @@ font size is computed + 20 of this value."
        ("note" . ?n)
        ("idea" . ?i)))
   ;; Configure custom agenda views
-  (mrf/org-setup-agenda)
-  (mrf/org-setup-capture-templates)
-  (mrf/org-font-setup)
+  (mifi/org-setup-agenda)
+  (mifi/org-setup-capture-templates)
+  (mifi/org-font-setup)
+  (mifi/org-setup-todos)
   (yas-global-mode t)
   (define-key global-map (kbd "C-c j")
     (lambda () (interactive) (org-capture nil "jj"))))
 
 ;;; --------------------------------------------------------------------------
 
-(use-package org-modern
-  :when (display-graphic-p)
-  :after org
-  :hook (org-mode . org-modern-mode)
-  :config
-  ;; Add frame borders and window dividers
-  (modify-all-frames-parameters
-    '((right-divider-width . 40)
-       (internal-border-width . 40)))
-  (dolist (face '(window-divider
-                   window-divider-first-pixel
-                   window-divider-last-pixel))
-    (face-spec-reset-face face)
-    (set-face-foreground face (face-attribute 'default :background nil)))
-  (set-face-background 'fringe (face-attribute 'default :background nil))
-  (setq
-    ;; Edit settings
-    org-auto-align-tags nil
-    org-tags-column 0
-    org-catch-invisible-edits 'show-and-error
-    org-special-ctrl-a/e t
-    org-insert-heading-respect-content t
+  (use-package org-superstar
+    :after org
+    :custom
+    (org-superstar-leading-bullet " ")
+    (org-superstar-special-todo-items t)
+    (org-superstar-todo-bullet-alist '( ("TODO" . 9744)
+  				      ("INPROG-TODO" . 9744)
+  				      ("HW" . 9744)
+  				      ("STUDY" . 9744)
+  				      ("SOMEDAY" . 9744)
+  				      ("READ" . 9744)
+  				      ("PROJ" . 9744)
+  				      ("CONTACT" . 9744)
+  				      ("DONE" . 9745)))
+    ;; (org-superstar-headline-bullets-list '("✪" "✫" "✦" "✧" "✸" "✺"))
+    :hook (org-mode . org-superstar-mode))
 
-    ;; Org styling, hide markup etc.
-    org-hide-emphasis-markers nil
-    org-pretty-entities t
-    org-ellipsis "…"
+  (use-package org-appear
+    :init
+    (setq org-hide-emphasis-markers t)
+    (setq org-appear-autoemphasis t) ;; Enable org-appear on emphasis
+    (setq org-appear-autolinks t) ;; Enable on links
+    (setq org-appear-autosubmarkers t) ;; Enable on sub and superscript
+    :commands (org-appear-mode)
+    :hook (or-mode . org-appear-mode))
 
-    ;; Agenda styling
-    org-agenda-tags-column 0
-    org-agenda-block-separator ?─
-    org-agenda-time-grid
-    '((daily today require-timed)
-       (800 1000 1200 1400 1600 1800 2000)
-       " ┄┄┄┄┄ " "┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄")
-    org-agenda-current-time-string
-    "◀── now ─────────────────────────────────────────────────")
-  (global-org-modern-mode))
-
-;;; --------------------------------------------------------------------------
-
-(use-package org-superstar
-  :after org
-  :custom
-  (org-superstar-headline-bullets-list '("✪" "✫" "✦" "✧" "✸" "✺"))
-  :hook (org-mode . org-superstar-mode))
+;; Automatically change bullet type when indenting
+;; Ex: indenting a + makes the bullet a *.
+(setq org-list-demote-modify-bullet
+'(("+" ・ "*"）（"*" ・ "-"）（"-" . "+")))
 
 ;;; --------------------------------------------------------------------------
 
@@ -1524,157 +1541,8 @@ font size is computed + 20 of this value."
   (add-to-list 'org-structure-template-alist '("py" . "src python")))
 
 ;;; --------------------------------------------------------------------------
-(use-package emacsql :demand t :ensure t :after org)
-(use-package emacsql-sqlite :demand t :ensure t :after org)
 
-;;; --------------------------------------------------------------------------
-;; The buffer you put this code in must have lexical-binding set to t!
-;; See the final configuration at the end for more details.
-
-(defun mrf/org-roam-filter-by-tag (tag-name)
-  (lambda (node)
-    (member tag-name (org-roam-node-tags node))))
-
-(defun mrf/org-roam-list-notes-by-tag (tag-name)
-  (mapcar #'org-roam-node-file
-    (seq-filter
-      (mrf/org-roam-filter-by-tag tag-name)
-      (org-roam-node-list))))
-
-(defun mrf/org-roam-refresh-agenda-list ()
-  (interactive)
-  (setq org-agenda-files (mrf/org-roam-list-notes-by-tag "Project")))
-
-;; Build the agenda list the first time for the session
-
-;;; --------------------------------------------------------------------------
-
-(defun mrf/org-roam-project-finalize-hook ()
-  "Adds the captured project file to `org-agenda-files' if the
-capture was not aborted."
-  ;; Remove the hook since it was added temporarily
-  (remove-hook 'org-capture-after-finalize-hook #'mrf/org-roam-project-finalize-hook)
-
-  ;; Add project file to the agenda list if the capture was confirmed
-  (unless org-note-abort
-    (with-current-buffer (org-capture-get :buffer)
-      (add-to-list 'org-agenda-files (buffer-file-name)))))
-
-(defun mrf/org-roam-find-project ()
-  (interactive)
-  ;; Add the project file to the agenda after capture is finished
-  (add-hook 'org-capture-after-finalize-hook #'mrf/org-roam-project-finalize-hook)
-
-  ;; Select a project file to open, creating it if necessary
-  (org-roam-node-find
-    nil
-    nil
-    (mrf/org-roam-filter-by-tag "Project")
-    :templates
-    '(("p" "project" plain "* Goals\n\n%?\n\n* Tasks\n\n** TODO Add initial tasks\n\n* Dates\n\n"
-      :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n#+category: ${title}\n#+filetags: Project")
-      :unnarrowed t))))
-
-;; (global-set-key (kbd "C-c n p") #'mrf/org-roam-find-project)
-
-;;; --------------------------------------------------------------------------
-
-(defun mrf/org-roam-capture-inbox ()
-  (interactive)
-  (org-roam-capture- :node (org-roam-node-create)
-    :templates '(("i" "inbox" plain "* %?"
-                 :if-new (file+head "Inbox.org" "#+title: Inbox\n")))))
-
-(defun mrf/org-roam-node-insert-immediate (arg &rest args)
-  (interactive "P")
-  (let ((args (push arg args))
-       (org-roam-capture-templates
-         (list (append (car org-roam-capture-templates)
-                 '(:immediate-finish t)))))
-    (apply #'org-roam-node-insert args)))
-
-;;; --------------------------------------------------------------------------
-
-(defun mrf/org-roam-capture-task ()
-  (interactive)
-  ;; Add the project file to the agenda after capture is finished
-  (add-hook 'org-capture-after-finalize-hook #'mrf/org-roam-project-finalize-hook)
-
-  ;; Capture the new task, creating the project file if necessary
-  (org-roam-capture- :node (org-roam-node-read nil
-                           (mrf/org-roam-filter-by-tag "Project"))
-    :templates '(("p" "project" plain "** TODO %?"
-                 :if-new
-                 (file+head+olp "%<%Y%m%d%H%M%S>-${slug}.org"
-                   "#+title: ${title}\n#+category: ${title}\n#+filetags: Project"
-                   ("Tasks"))))))
-
-;;; --------------------------------------------------------------------------
-
-(defun mrf/org-roam-copy-todo-to-today ()
-  (interactive)
-  (let ((org-refile-keep t) ;; Set this to nil to delete the original!
-       (org-roam-dailies-capture-templates
-         '(("t" "tasks" entry "%?"
-             :if-new (file+head+olp "%<%Y-%m-%d>.org" "#+title: %<%Y-%m-%d>\n" ("Tasks")))))
-       (org-after-refile-insert-hook #'save-buffer)
-       today-file pos)
-    (save-window-excursion
-      (org-roam-dailies--capture (current-time) t)
-      (setq today-file (buffer-file-name))
-      (setq pos (point)))
-
-    ;; Only refile if the target file is different than the current file
-    (unless (equal (file-truename today-file)
-            (file-truename (buffer-file-name)))
-      (org-refile nil nil (list "Tasks" today-file nil pos)))))
-
-(use-package toc-org
-  :after org markdown-mode
-  :hook
-  (org-mode . toc-org-mode)
-  (markdown-mode-hook . toc-org-mode)
-  :bind (:map markdown-mode-map
-        ("C-c C-o" . toc-org-markdown-follow-thing-at-point)))
-
-(use-package org-roam
-  ;; :demand t  ;; Ensure org-roam is loaded by default
-  :defer t
-  :init
-  (setq org-roam-v2-ack t)
-  (make-directory (expand-file-name "org-roam-notes" user-emacs-directory) t)
-  :ensure t
-  :commands (org-roam-node-find org-roam-node-insert org-roam-capture-templates)
-  ;; :after org
-  :custom
-  (org-roam-directory (expand-file-name "org-roam-notes" user-emacs-directory))
-  (org-roam-completion-everywhere t)
-  :bind ( ("C-c n l" . org-roam-buffer-toggle)
-        ("C-c n f" . org-roam-node-find)
-        ("C-c n i" . org-roam-node-insert)
-        ("C-c n I" . mrf/org-roam-node-insert-immediate)
-        ("C-c n p" . mrf/org-roam-find-project)
-        ("C-c n t" . mrf/org-roam-capture-task)
-        ("C-c n b" . mrf/org-roam-capture-inbox)
-        :map org-mode-map
-        ("C-M-i" . completion-at-point)
-        :map org-roam-dailies-map
-        ("Y" . org-roam-dailies-capture-yesterday)
-        ("T" . org-roam-dailies-capture-tomorrow))
-  :bind-keymap
-  ("C-c n d" . org-roam-dailies-map)
-  :config
-  (require 'org-roam-dailies) ;; Ensure the keymap is available
-  (mrf/org-roam-refresh-agenda-list)
-  (add-to-list 'org-after-todo-state-change-hook
-    (lambda ()
-      (when (equal org-state "DONE")
-      (mrf/org-roam-copy-todo-to-today))))
-  (org-roam-db-autosync-mode))
-
-;;; --------------------------------------------------------------------------
-
-(defun mrf/define-denote-keymap ()
+(defun mifi/define-denote-keymap ()
   (interactive)
   ;; Denote DOES NOT define any key bindings.  This is for the user to
   ;; decide.
@@ -1713,7 +1581,7 @@ capture was not aborted."
     (define-key map (kbd "C-c C-d C-k") #'denote-dired-rename-marked-files-with-keywords)
     (define-key map (kbd "C-c C-d C-R") #'denote-dired-rename-marked-files-using-front-matter))
 
-  (if (mrf/minor-mode-is-active 'which-key-mode)
+  (if (mifi/minor-mode-is-active 'which-key-mode)
     (which-key-add-key-based-replacements "C-c n f" "denote-find")))
 
 ;;; --------------------------------------------------------------------------
@@ -1742,7 +1610,7 @@ capture was not aborted."
   (add-hook 'dired-mode-hook #'denote-dired-mode-in-directories)
   (denote-rename-buffer-mode 1)
 
-  (mrf/define-denote-keymap) ;; Define the keymap for Denote.
+  (mifi/define-denote-keymap) ;; Define the keymap for Denote.
 
   (with-eval-after-load 'org-capture
     (setq denote-org-capture-specifiers "%l\n%i\n%?")
@@ -1903,12 +1771,12 @@ capture was not aborted."
   (dashboard-setup-startup-hook))
 
 ;;; --------------------------------------------------------------------------
-  ;;; Emacs Polyglot is the Emacs LSP client that stays out of your way:
+;;; Emacs Polyglot is the Emacs LSP client that stays out of your way:
 
-(defvar mrf/clangd-path (executable-find "clangd")
+(defvar mifi/clangd-path (executable-find "clangd")
   "Clangd executable path.")
 
-(defun mrf/projectile-proj-find-function (dir)
+(defun mifi/projectile-proj-find-function (dir)
   "Find the project `DIR' function for Projectile.
   Thanks @wyuenho on GitHub"
   (let ((root (projectile-project-root dir)))
@@ -1918,7 +1786,7 @@ capture was not aborted."
   :defer t
   :config
   (unless theme-did-load
-    (mrf/load-theme-from-selector)))
+    (mifi/load-theme-from-selector)))
 
 ;;; ------------------------------------------------------------------------
 (use-package jsonrpc
@@ -1928,7 +1796,9 @@ capture was not aborted."
   ;; yet, go ahead and try. This could prevent a startup without the theme
   ;; properly loaded.
   (unless theme-did-load
-    (mrf/load-theme-from-selector)))
+    (mifi/load-theme-from-selector)))
+
+;;; --------------------------------------------------------------------------
 
 (use-package eglot
   :when (equal custom-ide 'custom-ide-eglot)
@@ -1959,7 +1829,7 @@ capture was not aborted."
   ;; theme loading mechanism. Our theme could fail to load because of this.  So,
   ;; to get our themes loading properly, load it here if not already loaded.
   (unless theme-did-load
-    (mrf/load-theme-from-selector))
+    (mifi/load-theme-from-selector))
   (add-to-list 'eglot-stay-out-of 'flymake)
   (if (featurep 'company) ;; Company should be loaded.
     (bind-keys :map eglot-mode-map
@@ -1975,14 +1845,14 @@ capture was not aborted."
 (use-package lsp-mode
   :when (equal custom-ide 'custom-ide-lsp)
   :commands (lsp lsp-deferred)
-  :hook (lsp-mode . mrf/lsp-mode-setup)
+  :hook (lsp-mode . mifi/lsp-mode-setup)
   :init
   (setq lsp-keymap-prefix "C-c l")  ;; Or 'C-l', 's-l'
   :config
   (if (featurep 'company)
     (bind-keys :map lsp-mode-map
       ("<tab>" . company-indent-or-complete-common)))
-  (mrf/define-rust-lsp-values)
+  (mifi/define-rust-lsp-values)
   (lsp-enable-which-key-integration t))
 
 ;;; --------------------------------------------------------------------------
@@ -2029,7 +1899,7 @@ capture was not aborted."
 ;;; --------------------------------------------------------------------------
 ;;; LSP mode setup hook
 
-(defun mrf/lsp-mode-setup ()
+(defun mifi/lsp-mode-setup ()
   "Custom LSP setup function."
   (add-hook 'lsp-after-open-hook 'lsp-enable-imenu)
   (when (equal custom-ide 'custom-ide-lsp)
@@ -2037,7 +1907,9 @@ capture was not aborted."
     (setq lsp-clangd-binary-path "/usr/bin/clangd")'
     (lsp-headerline-breadcrumb-mode)))
 
-(defun mrf/define-rust-lsp-values ()
+;;; --------------------------------------------------------------------------
+
+(defun mifi/define-rust-lsp-values ()
   (setq-default lsp-rust-analyzer-cargo-watch-command "clippy")
   (setq-default lsp-eldoc-render-all t)
   (setq-default lsp-idle-delay 0.6)
@@ -2118,6 +1990,8 @@ capture was not aborted."
     (bind-keys :map elpy-mode-map
       ("<tab>" . company-indent-or-complete-common)))
   (elpy-enable))
+
+;;; --------------------------------------------------------------------------
 
 (use-package prescient)
 
@@ -2239,6 +2113,51 @@ capture was not aborted."
                corfu-auto nil)
       (corfu-mode))))
 
+;;; --------------------------------------------------------------------------
+;; Add extensions
+(use-package cape
+  :when (equal completion-handler 'comphand-corfu)
+  :after corfu
+  ;; Bind dedicated completion commands
+  ;; Alternative prefix keys: C-c p, M-p, M-+, ...
+  :bind ( ("C-c C-p p" . completion-at-point) ;; capf
+          ("C-c C-p t" . complete-tag)        ;; etags
+          ("C-c C-p d" . cape-dabbrev)        ;; or dabbrev-completion
+          ("C-c C-p h" . cape-history)
+          ("C-c C-p f" . cape-file)
+          ("C-c C-p k" . cape-keyword)
+          ("C-c C-p s" . cape-elisp-symbol)
+          ("C-c C-p e" . cape-elisp-block)
+          ("C-c C-p a" . cape-abbrev)
+          ("C-c C-p l" . cape-line)
+          ("C-c C-p w" . cape-dict)
+          ("C-c C-p :" . cape-emoji)
+          ("C-c C-p \\" . cape-tex)
+          ("C-c C-p _" . cape-tex)
+          ("C-c C-p ^" . cape-tex)
+          ("C-c C-p &" . cape-sgml)
+          ("C-c C-p r" . cape-rfc1345))
+  :init
+  ;; Add to the global default value of `completion-at-point-functions' which is
+  ;; used by `completion-at-point'.  The order of the functions matters, the
+  ;; first function returning a result wins.  Note that the list of buffer-local
+  ;; completion functions takes precedence over the global list.
+  (add-hook 'completion-at-point-functions #'cape-dabbrev)
+  (add-hook 'completion-at-point-functions #'cape-file)
+  (add-hook 'completion-at-point-functions #'cape-elisp-block)
+  ;;(add-hook 'completion-at-point-functions #'cape-history)
+  ;;(add-hook 'completion-at-point-functions #'cape-keyword)
+  ;;(add-hook 'completion-at-point-functions #'cape-tex)
+  ;;(add-hook 'completion-at-point-functions #'cape-sgml)
+  ;;(add-hook 'completion-at-point-functions #'cape-rfc1345)
+  ;;(add-hook 'completion-at-point-functions #'cape-abbrev)
+  ;;(add-hook 'completion-at-point-functions #'cape-dict)
+  ;;(add-hook 'completion-at-point-functions #'cape-elisp-symbol)
+  ;;(add-hook 'completion-at-point-functions #'cape-line)
+  )
+
+;;; --------------------------------------------------------------------------
+
 (use-package corfu-prescient
   :when (equal completion-handler 'comphand-corfu)
   :after (corfu prescient))
@@ -2275,9 +2194,13 @@ capture was not aborted."
   :config
   (marginalia-mode t))
 
+;;; --------------------------------------------------------------------------
+
 (use-package all-the-icons-completion
   :after (marginalia all-the-icons)
   :hook (marginalia-mode . all-the-icons-completion-marginalia-setup))
+
+;;; --------------------------------------------------------------------------
 
 (use-package consult
   :when (equal completion-handler 'comphand-vertico)
@@ -2421,7 +2344,7 @@ capture was not aborted."
 
 ;;; --------------------------------------------------------------------------
 
-(defun mrf/tree-sitter-setup ()
+(defun mifi/tree-sitter-setup ()
   (tree-sitter-hl-mode t))
 
 (defun lsp-go-install-save-hooks ()
@@ -2442,7 +2365,7 @@ capture was not aborted."
     ((equal custom-ide 'custom-ide-lsp)
       (add-hook 'go-mode-hook 'lsp-deferred)))
   :hook
-  (tree-sitter-after-on . mrf/tree-sitter-setup)
+  (tree-sitter-after-on . mifi/tree-sitter-setup)
   (typescript-mode . lsp-deferred)
   ;; (c-mode . lsp-deferred)
   ;; (c++-mode . lsp-deferred)
@@ -2474,7 +2397,7 @@ capture was not aborted."
 
 ;;; --------------------------------------------------------------------------
 
-(defun mrf/set-custom-ide-python-keymaps ()
+(defun mifi/set-custom-ide-python-keymaps ()
   (cond
     ((equal custom-ide 'custom-ide-lsp)
       (bind-keys :map python-mode-map
@@ -2507,15 +2430,15 @@ capture was not aborted."
 
 ;;; --------------------------------------------------------------------------
 
-(defun mrf/load-python-file-hook ()
+(defun mifi/load-python-file-hook ()
   (python-mode)
   (when (equal custom-ide 'custom-ide-anaconda)
     (anaconda-mode 1))
-  (message ">>> mrf/load-python-file-hook")
+  (message ">>> mifi/load-python-file-hook")
   (setq highlight-indentation-mode -1)
   (setq display-fill-column-indicator-mode t))
 
-(defun mrf/before-save ()
+(defun mifi/before-save ()
   "Force the check of the current python file being saved."
   (when (eq major-mode 'python-mode) ;; Python Only
     (flycheck-mode 0)
@@ -2524,8 +2447,8 @@ capture was not aborted."
 
 ;; Enable DAP or DAPE, Eglot or LSP modes
 ;; This function should only be called ONCE during python-mode startup.
-(defun mrf/enable-python-features ()
-  (message ">>> mrf/enable-python-features")
+(defun mifi/enable-python-features ()
+  (message ">>> mifi/enable-python-features")
   ;; _____________________________
   ;; check for which debug adapter
   (cond
@@ -2543,21 +2466,21 @@ capture was not aborted."
     ((equal custom-ide 'custom-ide-lsp)
       (lsp-deferred))))
 
-(defun mrf/python-mode-triggered ()
+(defun mifi/python-mode-triggered ()
   ;; (eldoc-box-hover-at-point-mode t) ;; Using Mitch Key for this
-  (mrf/enable-python-features)
-  (mrf/set-custom-ide-python-keymaps)
+  (mifi/enable-python-features)
+  (mifi/set-custom-ide-python-keymaps)
   (unless (featurep 'yasnippet)
     (yas-global-mode t))
-  (add-hook 'before-save-hook 'mrf/before-save)
+  (add-hook 'before-save-hook 'mifi/before-save)
   (set-fill-column 80))
 
 ;;; --------------------------------------------------------------------------
 
-(add-to-list 'auto-mode-alist '("\\.py\\'" . mrf/load-python-file-hook))
+(add-to-list 'auto-mode-alist '("\\.py\\'" . mifi/load-python-file-hook))
 
 (use-package python-mode
-  :hook (python-mode . mrf/python-mode-triggered))
+  :hook (python-mode . mifi/python-mode-triggered))
 
 (use-package blacken :after python) ;Format Python file upon save.
 
@@ -2622,7 +2545,7 @@ capture was not aborted."
 
 ;;; --------------------------------------------------------------------------
 
-(defun mrf/load-js-file-hook ()
+(defun mifi/load-js-file-hook ()
   (js2-mode)
 
   (when (equal debug-adapter 'debug-adapter-dap-mode)
@@ -2637,11 +2560,11 @@ capture was not aborted."
 
 (use-package nodejs-repl :defer t)
 
-(defun mrf/nvm-which ()
+(defun mifi/nvm-which ()
   (let ((output (shell-command-to-string "source ~/.nvm/nvm.sh; nvm which")))
     (cadr (split-string output "[\n]+" t))))
 
-(setq nodejs-repl-command #'mrf/nvm-which)
+(setq nodejs-repl-command #'mifi/nvm-which)
 
 ;;; --------------------------------------------------------------------------
 
@@ -2659,7 +2582,7 @@ capture was not aborted."
 
 ;;; --------------------------------------------------------------------------
 
-(defun mrf/load-c-file-hook ()
+(defun mifi/load-c-file-hook ()
   (c-mode)
   (unless (featurep 'realgud))
   (use-package realgud)
@@ -2679,7 +2602,7 @@ capture was not aborted."
     (compile compile-command)))
 
 (global-set-key [f9] 'code-compile)
-(add-to-list 'auto-mode-alist '("\\.c\\'" . mrf/load-c-file-hook))
+(add-to-list 'auto-mode-alist '("\\.c\\'" . mifi/load-c-file-hook))
 
 ;;; --------------------------------------------------------------------------
 
@@ -2695,6 +2618,8 @@ capture was not aborted."
   :when enable-gb-dev
   :after mwim
   :ensure (:host github :repo "japanoise/rgbds-mode"))
+
+;;; --------------------------------------------------------------------------
 
 (use-package rustic
   :ensure t
@@ -2742,6 +2667,8 @@ capture was not aborted."
 (use-package rust-playground :ensure t :after rust-mode)
 (use-package toml-mode :ensure t :after rust-mode)
 
+;;; --------------------------------------------------------------------------
+
 (use-package cargo-mode
   :defer t
   :after rust-mode
@@ -2775,6 +2702,8 @@ capture was not aborted."
     ((equal custom-ide 'custom-ide-lsp)
       (add-hook 'go-mode-hook 'lsp-deferred))))
 
+;;; --------------------------------------------------------------------------
+
 (use-package go-eldoc
   :after go-mode
   :hook (go-mode . go-eldoc-setup)
@@ -2783,6 +2712,8 @@ capture was not aborted."
   (set-face-attribute 'eldoc-highlight-function-argument nil
     :underline t :foreground "green"
     :weight 'bold))
+
+;;; --------------------------------------------------------------------------
 
 (use-package go-guru
   :after go-mode
@@ -2813,17 +2744,17 @@ capture was not aborted."
   (message "prepare-dape end")
   (bind-keys :map prog-mode-map
     ("C-c ." . dape-hydra/body))
-  (mrf/additional-dape-configs))
+  (mifi/additional-dape-configs))
 
 ;;; --------------------------------------------------------------------------
 
-(setq mrf/vscode-js-debug-dir (file-name-concat user-emacs-directory "dape/vscode-js-debug"))
+(setq mifi/vscode-js-debug-dir (file-name-concat user-emacs-directory "dape/vscode-js-debug"))
 
-(defun mrf/install-vscode-js-debug ()
+(defun mifi/install-vscode-js-debug ()
   "Run installation procedure to install JS debugging support"
   (interactive)
-  (mkdir mrf/vscode-js-debug-dir t)
-  (let ((default-directory (expand-file-name mrf/vscode-js-debug-dir)))
+  (mkdir mifi/vscode-js-debug-dir t)
+  (let ((default-directory (expand-file-name mifi/vscode-js-debug-dir)))
 
     (vc-git-clone "https://github.com/microsoft/vscode-js-debug.git" "." nil)
     (call-process "npm" nil "*snam-install*" t "install")
@@ -2831,10 +2762,10 @@ capture was not aborted."
 
 ;;; --------------------------------------------------------------------------
 
-;; (mrf/install-vscode-js-debug)
+;; (mifi/install-vscode-js-debug)
 
 ;;; ------------------------------------------------------------------------
-(defun mrf/additional-dape-configs ()
+(defun mifi/additional-dape-configs ()
   "Additional DAPE configruations for various languages."
 
   (with-eval-after-load
@@ -2853,16 +2784,16 @@ capture was not aborted."
 
 ;;; --------------------------------------------------------------------------
 
-(defun mrf/dape-end-debug-session ()
+(defun mifi/dape-end-debug-session ()
   "End the debug session."
   (interactive)
   (dape-quit))
 
-(defun mrf/dape-delete-all-debug-sessions ()
+(defun mifi/dape-delete-all-debug-sessions ()
   "End the debug session and delete all breakpoints."
   (interactive)
   (dape-breakpoint-remove-all)
-  (mrf/dape-end-debug-session))
+  (mifi/dape-end-debug-session))
 
 ;;; --------------------------------------------------------------------------
 
@@ -2901,12 +2832,12 @@ capture was not aborted."
     ("dd" dape)
     ("dw" dape-watch-dwim)
     ("ee" dape-evaluate-expression)
-    ("dx" mrf/dape-end-debug-session)
-    ("dX" mrf/dape-delete-all-debug-sessions)
+    ("dx" mifi/dape-end-debug-session)
+    ("dX" mifi/dape-delete-all-debug-sessions)
     ("dp" dape-prepare)
     ("x" nil "exit Hydra" :color yellow)
-    ("q" mrf/dape-end-debug-session "quit" :color blue)
-    ("Q" mrf/dape-delete-all-debug-sessions :color red)))
+    ("q" mifi/dape-end-debug-session "quit" :color blue)
+    ("Q" mifi/dape-delete-all-debug-sessions :color red)))
 
 ;;; --------------------------------------------------------------------------
 ;;; Debug Adapter Protocol
@@ -2938,6 +2869,8 @@ capture was not aborted."
   :config
   (setq dap-python-executable "python3") ;; Otherwise it looks for 'python' else error.
   (setq dap-python-debugger 'debugpy))
+
+;;; --------------------------------------------------------------------------
 
 (use-package dap-lldb
   :when (equal debug-adapter 'debug-adapter-dap-mode)
@@ -2972,6 +2905,8 @@ capture was not aborted."
   ;; :config
   ;; (dap-cpptools-setup))
 
+;;; --------------------------------------------------------------------------
+
 (with-eval-after-load 'dap-lldb
   (dap-register-debug-template
     "Rust::LLDB Run Configuration"
@@ -3001,7 +2936,7 @@ capture was not aborted."
 
 ;;; --------------------------------------------------------------------------
 
-(defun mrf/dap-end-debug-session ()
+(defun mifi/dap-end-debug-session ()
   "End the debug session and delete project Python buffers."
   (interactive)
   (kill-matching-buffers "\*Python :: Run file [from|\(buffer]*" nil :NO-ASK)
@@ -3009,13 +2944,13 @@ capture was not aborted."
   (kill-matching-buffers "\*dap-ui-*" nil :NO-ASK)
   (dap-disconnect (dap--cur-session)))
 
-(defun mrf/dap-delete-all-debug-sessions ()
+(defun mifi/dap-delete-all-debug-sessions ()
   "End the debug session and delete project Python buffers and all breakpoints."
   (interactive)
   (dap-breakpoint-delete-all)
-  (mrf/dap-end-debug-session))
+  (mifi/dap-end-debug-session))
 
-(defun mrf/dap-begin-debug-session ()
+(defun mifi/dap-begin-debug-session ()
   "Begin a debug session with several dap windows enabled."
   (interactive)
   (dap-ui-show-many-windows)
@@ -3070,11 +3005,11 @@ capture was not aborted."
     ("ea" dap-ui-expressions-add)
     ("er" dap-eval-region)
     ("es" dap-eval-thing-at-point)
-    ("dx" mrf/dap-end-debug-session)
-    ("dX" mrf/dap-delete-all-debug-sessions)
+    ("dx" mifi/dap-end-debug-session)
+    ("dX" mifi/dap-delete-all-debug-sessions)
     ("x" nil "exit Hydra" :color yellow)
-    ("q" mrf/dap-end-debug-session "quit" :color blue)
-    ("Q" mrf/dap-delete-all-debug-sessions :color red)))
+    ("q" mifi/dap-end-debug-session "quit" :color blue)
+    ("Q" mifi/dap-delete-all-debug-sessions :color red)))
 
 ;;; --------------------------------------------------------------------------
 
@@ -3135,6 +3070,8 @@ capture was not aborted."
     (setq projectile-completion-system 'ivy)
     (counsel-projectile-mode)))
 
+;;; --------------------------------------------------------------------------
+
 (defun project-find-go-module (dir)
   (when-let ((root (locate-dominating-file dir "go.mod")))
     (cons 'go-module root)))
@@ -3178,7 +3115,7 @@ capture was not aborted."
 
 ;;; --------------------------------------------------------------------------
 
-(defun mrf/configure-eshell ()
+(defun mifi/configure-eshell ()
   ;; Save command history when commands are entered
   (add-hook 'eshell-pre-command-hook 'eshell-save-some-history)
   ;; Truncate buffer for performance
@@ -3194,7 +3131,7 @@ capture was not aborted."
 (use-package eshell
   :ensure
   :defer t
-  :hook (eshell-first-time-mode . mrf/configure-eshell)
+  :hook (eshell-first-time-mode . mifi/configure-eshell)
   :config
   (with-eval-after-load 'esh-opt
     (setq eshell-destroy-buffer-when-process-dies t)
@@ -3203,9 +3140,12 @@ capture was not aborted."
 
 ;;; --------------------------------------------------------------------------
 
-;; Prefer g-prefixed coreutils version of standard utilities when available
+  ;; Prefer g-prefixed coreutils version of standard utilities when available
 (let ((gls (executable-find "gls")))
-  (when gls (setq insert-directory-program gls)))
+  (when gls (setq-default insert-directory-program gls
+	      dired-use-ls-dired t
+              ;; Needed to fix an issue on Mac which causes dired to fail
+              dired-listing-switches "-al --group-directories-first")))
 
 (use-package all-the-icons-dired
   :after dired
@@ -3226,7 +3166,7 @@ capture was not aborted."
 ;;; --------------------------------------------------------------------------
 ;; Single Window dired - don't continually open new buffers
 
-(defun mrf/dired-single-keymap-init ()
+(defun mifi/dired-single-keymap-init ()
   "Bunch of stuff to run for dired, either immediately or when it's
    loaded."
   (define-key dired-mode-map
@@ -3239,7 +3179,7 @@ capture was not aborted."
 (use-package dired-single
   :after dired
   :config
-  (mrf/dired-single-keymap-init))
+  (mifi/dired-single-keymap-init))
 
 ;;; --------------------------------------------------------------------------
 ;; helpful package
@@ -3346,26 +3286,33 @@ capture was not aborted."
   (pulsar-face 'pulsar-magenta)
   (pulsar-highlight-face 'pulsar-yellow))
 
+;;; --------------------------------------------------------------------------
+
 (use-package rainbow-mode
   :hook (prog-mode . (lambda () (rainbow-mode t))))
+
+;;; --------------------------------------------------------------------------
 
 (use-package highlight-defined
   :hook (emacs-lisp-mode . highlight-defined-mode))
 
-(defun mrf/set-fill-column-interactively (num)
+;;; --------------------------------------------------------------------------
+
+(defun mifi/set-fill-column-interactively (num)
   "Asks for the fill column."
   (interactive "nfill-column: ")
   (set-fill-column num))
 
-(defun mrf/set-org-fill-column-interactively (num)
+(defun mifi/set-org-fill-column-interactively (num)
   "Asks for the fill column for Org mode."
   (interactive "norg-fill-column: ")
   (setq custom-org-fill-column num)
-  (mrf/org-mode-visual-fill)
+  (mifi/org-mode-visual-fill)
   (redraw-display))
 
 ;;; --------------------------------------------------------------------------
-(defun mrf/define-mmm-minor-mode-map ()
+
+(defun mifi/define-mmm-minor-mode-map ()
   (defvar mmm-keys-minor-mode-map
     (let ((map (make-sparse-keymap)))
       (bind-keys :map map
@@ -3373,7 +3320,7 @@ capture was not aborted."
         ("M-RET p" . pulsar-pulse-line)
         ("M-RET d" . dashboard-open)
         ("M-RET S e" . eshell)
-        ("M-RET f" . mrf/set-fill-column-interactively)
+        ("M-RET f" . mifi/set-fill-column-interactively)
         ("M-RET r" . repeat-mode)
         ("M-RET S i" . ielm)
         ("M-RET S v" . vterm-other-window)
@@ -3391,10 +3338,12 @@ capture was not aborted."
     :init-value t
     :lighter " mmm-keys"))
 
-(mrf/define-mmm-minor-mode-map)
+(mifi/define-mmm-minor-mode-map)
 (mmm-keys-minor-mode 1)
 
-(defun mrf/mmm-handle-context-keys ()
+;;; --------------------------------------------------------------------------
+
+(defun mifi/mmm-handle-context-keys ()
   "Enable or Disable keys based upon featurep context."
   (let ((map mmm-keys-minor-mode-map))
     (unbind-key "M-RET o f" map)
@@ -3405,15 +3354,15 @@ capture was not aborted."
       ((equal major-mode 'org-mode)
       (bind-keys :map map
         ("M-RET M-RET" . org-insert-heading)
-        ("M-RET o f" . mrf/set-org-fill-column-interactively)
+        ("M-RET o f" . mifi/set-org-fill-column-interactively)
         ("M-RET o l" . org-toggle-link-display)))
       ((equal major-mode 'python-mode)
       (bind-keys :map map
         ("M-RET P" . 'pydoc-at-point))))))
 
-(defun mrf/mmm-update-menu ()
+(defun mifi/mmm-update-menu ()
   (interactive)
-  (mrf/mmm-handle-context-keys)
+  (mifi/mmm-handle-context-keys)
   (which-key-add-key-based-replacements "M-RET S" "shells")
   (which-key-add-key-based-replacements "M-RET T" "theme-keys")
   (which-key-add-key-based-replacements "M-RET P" "python-menu")
@@ -3422,7 +3371,7 @@ capture was not aborted."
   (which-key-add-key-based-replacements "M-RET f" "set-fill-column")
   (which-key-add-key-based-replacements "M-RET" "Mitch's Menu"))
 
-(add-hook 'which-key-inhibit-display-hook 'mrf/mmm-update-menu)
+(add-hook 'which-key-inhibit-display-hook 'mifi/mmm-update-menu)
 
 ;;; --------------------------------------------------------------------------
 
@@ -3434,14 +3383,19 @@ capture was not aborted."
   (lambda ()
     (setq-default initial-scratch-message
       (format
-      ";; Hello, World and Happy hacking %s!\n%s\n\n" user-login-name
-      ";; Press M-RET (Meta-RET) to open Mitch's Context Aware Menu"))))
+	";; Hello, World and Happy hacking %s!\n%s\n\n" user-login-name
+	";; Press M-RET (Meta-RET) to open Mitch's Context Aware Menu"))
+    (when dashboard-landing-screen (dashboard-open))))
 
-(if dashboard-landing-screen
+(when dashboard-landing-screen
   ;; (add-hook 'inferior-emacs-lisp-mode 'dashboard-open) ;; IELM open?
-  (add-hook 'lisp-interaction-mode-hook 'dashboard-open))
+  (add-hook 'elpaca-after-init-hook
+	(lambda ()
+	  (add-hook 'lisp-interaction-mode-hook #'dashboard-open))))
 
-(defun mrf/cleanup-when-exiting ()
+;;; --------------------------------------------------------------------------
+
+(defun mifi/cleanup-when-exiting ()
   (let ((backdir (format "%s/config-backup" working-files-directory)))
     (make-directory backdir t)
     ;; Backup init.el
@@ -3452,7 +3406,34 @@ capture was not aborted."
     ;;   (expand-file-name "emacs-config.org" emacs-config-directory)
     ;;   (expand-file-name "emacs-config.org" backdir) t)))
 
-(add-hook 'kill-emacs-hook #'mrf/cleanup-when-exiting)
+(add-hook 'kill-emacs-hook #'mifi/cleanup-when-exiting)
+
+;;; --------------------------------------------------------------------------
+;; Ignore Line Numbers for the following modes:
+
+;; Line #'s appear everywhere if global-display-line-numbers-mode is set
+;; ... except for when in these modes
+(when (equal global-display-line-numbers-mode t)
+  (dolist (mode '( dashboard-mode-hook
+                   helpful-mode-hook
+                   eshell-mode-hook
+                   eww-mode-hook
+                   help-mode-hook
+                   org-mode-hook
+                   shell-mode-hook
+                   term-mode-hook
+                   treemacs-mode-hook
+                   vterm-mode-hook))
+    (add-hook mode (lambda () (display-line-numbers-mode 0)))))
+
+;;; --------------------------------------------------------------------------
+;; Supress common annoying warning.
+;; These can still be found in the  *Warnings* buffer
+(setq warning-suppress-types '((package reinitialization)
+                                (package-initialize)
+                                (package)
+                                (use-package)
+                                (python-mode)))
 
 ;;; --------------------------------------------------------------------------
 

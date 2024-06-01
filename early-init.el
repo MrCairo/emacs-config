@@ -57,4 +57,30 @@
   (lambda ()
     (setq gc-cons-percentage 0.1))) ;; Default value for `gc-cons-percentage'
 
+;;; --------------------------------------------------------------------------
+(defconst *is-a-mac* (eq system-type 'darwin))
+
+(defun mifi/setup-exec-path ()
+     ;;; Set up Emacs' `exec-path' and PATH environment variable to match"
+     ;;; that used by the user's shell.
+     ;;; This is particularly useful under Mac OS X and macOS, where GUI
+     ;;; apps are not started from a shell."
+  (interactive)
+  (setq exec-path '( "/Users/strider/.cargo/bin"
+  		     "/Users/strider/.local/bin"
+  		     "/opt/homebrew/bin" "/opt/homebrew/sbin"
+  		     "/usr/bin" "/bin" "/usr/sbin" "/sbin"
+  		     "/usr/local/bin" "/opt/local/bin"
+  		     "/Library/Frameworks/Python.framework/Versions/Current/bin"))
+
+  (let ((path-from-exec-path (string-join exec-path path-separator)))
+    (setenv "PATH" path-from-exec-path)))
+
+(setq browse-url-firefox-program
+  "/Applications/Firefox.app/Contents/MacOS/firefox")
+(setq browse-url-chrome-program
+  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome")
+
+(add-hook 'before-init-hook #'mifi/setup-exec-path)
+
 ;;; early-init.el ends here.

@@ -2,7 +2,7 @@
 #+author: Mitch Fisher
 #+date: 2024-05-11
 #+OPTIONS: toc:nil h:4
-#+STARTUP: showeverything
+#+STARTUP: showall
 #+PROPERTY: header-args:emacs-lisp :tangle ./init.el :results silent :exports code :mkdirp yes
 
 * Welcome!
@@ -11,7 +11,7 @@ This ORG file will configure the  ~init.el~  file based upon all of the =emacs-l
 
 The goal of this Emacs configuration is to make an Emacs configuration that has a good collection of popular options. So far, the following collections of options are included here:
 
-
+:feature-overview:
 - Landing Screen Options ::
   + Dashboard
   + IELM (Integrated Emacs Lisp Mode)
@@ -50,6 +50,7 @@ The goal of this Emacs configuration is to make an Emacs configuration that has 
   + Golden Ratio
   + Embark
   + Customizable Menu (MmM)
+:END:
 
 
 * README:
@@ -124,6 +125,7 @@ The goal of this Emacs configuration is to make an Emacs configuration that has 
     use-package-always-ensure nil
     use-package-always-demand nil
     use-package-always-defer nil)
+  
 #+end_src
 
 ** Calculate startup time
@@ -154,6 +156,40 @@ The goal of this Emacs configuration is to make an Emacs configuration that has 
       (setq gc-cons-percentage 0.1))) ;; Default value for `gc-cons-percentage'
 
 #+end_src
+
+** Establish PATH
+
+Because in macOS, Emacs could be started outside of a shell (like an application on the Dock), this code is used to migrate the <current user's shell path to Emacs ~exec-path~.
+
+#+begin_src emacs-lisp :tangle "early-init.el"
+  ;;; --------------------------------------------------------------------------
+  (defconst *is-a-mac* (eq system-type 'darwin))
+
+  (defun mifi/setup-exec-path ()
+       ;;; Set up Emacs' `exec-path' and PATH environment variable to match"
+       ;;; that used by the user's shell.
+       ;;; This is particularly useful under Mac OS X and macOS, where GUI
+       ;;; apps are not started from a shell."
+    (interactive)
+    (setq exec-path '( "/Users/strider/.cargo/bin"
+                     "/Users/strider/.local/bin"
+                     "/opt/homebrew/bin" "/opt/homebrew/sbin"
+                     "/usr/bin" "/bin" "/usr/sbin" "/sbin"
+                     "/usr/local/bin" "/opt/local/bin"
+                     "/Library/Frameworks/Python.framework/Versions/Current/bin"))
+
+    (let ((path-from-exec-path (string-join exec-path path-separator)))
+      (setenv "PATH" path-from-exec-path)))
+
+  (setq browse-url-firefox-program
+    "/Applications/Firefox.app/Contents/MacOS/firefox")
+  (setq browse-url-chrome-program
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome")
+
+  (add-hook 'before-init-hook #'mifi/setup-exec-path)
+
+#+end_src
+
 
 #+begin_src emacs-lisp :tangle "early-init.el" 
   ;;; early-init.el ends here.
@@ -187,6 +223,7 @@ This is the standard format of a =lisp= header that should appear for all =lisp=
 
 Elpaca is an elisp package manager. It allows users to find, install, update, and remove third-party packages for Emacs. It is a replacement for the built-in Emacs package manager, package.el.
 
+:Elpaca-Features:
 Elpaca:
 
 - Installs packages asynchronously, in parallel for fast, non-blocking installations.
@@ -194,9 +231,11 @@ Elpaca:
 - Downloads packages from their sources for convenient elisp development.
 - Supports thousands of elisp packages out of the box (MELPA, NonGNU/GNU ELPA, Org/org-contrib).
 - Makes it easy for users to create their own ELPAs.
+:END:
 
 #+begin_src emacs-lisp
-
+  ;;; --------------------------------------------------------------------------
+  
   (defvar elpaca-installer-version 0.7)
   (defvar elpaca-directory (expand-file-name "elpaca/" user-emacs-directory))
   (defvar elpaca-builds-directory (expand-file-name "builds/" elpaca-directory))
@@ -246,7 +285,7 @@ Elpaca:
 #+end_src
 
 
-* Custom Groups and Variables
+* Customizable Variables
 
 Set various variables to =t= to turn on a specific feature or =nil= to disable it. Changing any of these values will require a restart of ~emacs~ since these values are inspected only during startup.
 
@@ -286,7 +325,7 @@ These are the groups used by this Emacs config for customization.
 ** File Locations and Variables
 
 #+begin_src emacs-lisp
-      ;;; --------------------------------------------------------------------------
+  ;;; --------------------------------------------------------------------------
 
   (defcustom dashboard-landing-screen t
     "If set to t, the `dashboard' package will be displayed once emacs has
@@ -462,6 +501,7 @@ These are features that basically have multiple-choice options instead of being 
 #+end_src
 
 ** Theme Specific Values
+
 This is a curated selection of themes that I personally like. Most of them are dark mode but there are a few light versions. New themes can be added here or done via the =customize= interface. If a new theme is added to this list, it's important to ensure that the theme is actually included (see [[Color Theming][Color Theming]] section)
 
 #+begin_src emacs-lisp
@@ -568,15 +608,16 @@ This is a curated selection of themes that I personally like. Most of them are d
 Look for a proportional font that is available on the OS. If the actual default font isn't available, find another that will work instead.
 
 #+begin_src emacs-lisp
-
-  (defun mrf/validate-variable-pitch-font ()
+  ;;; --------------------------------------------------------------------------
+  
+  (defun mifi/validate-variable-pitch-font ()
     (let* ((variable-pitch-font
              (cond
-  	     ((x-list-fonts variable-pitch-font-family) variable-pitch-font-family)
-  	     ((x-list-fonts "SF Pro")           "SF Pro")
-  	     ((x-list-fonts "DejaVu Sans")      "DejaVu Sans")
-  	     ((x-list-fonts "Ubuntu")           "Ubuntu")
-  	     ((x-list-fonts "Helvetica")        "Helvetica")
+             ((x-list-fonts variable-pitch-font-family) variable-pitch-font-family)
+             ((x-list-fonts "SF Pro")           "SF Pro")
+             ((x-list-fonts "DejaVu Sans")      "DejaVu Sans")
+             ((x-list-fonts "Ubuntu")           "Ubuntu")
+             ((x-list-fonts "Helvetica")        "Helvetica")
                ((x-list-fonts "Source Sans Pro")  "Source Sans Pro")
                ((x-list-fonts "Lucida Grande")    "Lucida Grande")
                ((x-list-fonts "Verdana")          "Verdana")
@@ -584,7 +625,7 @@ Look for a proportional font that is available on the OS. If the actual default 
                (nil (warn "Cannot find a Sans Serif Font.  Install Source Sans Pro.")))))
       (if variable-pitch-font
         (when (not (equal variable-pitch-font variable-pitch-font-family))
-  	(setq variable-pitch-font-family variable-pitch-font))
+        (setq variable-pitch-font-family variable-pitch-font))
         (message "---- Can't find a variable-pitch font to use.")))
 
     (message (format ">>> variable-pitch font is %s" variable-pitch-font-family)))
@@ -596,60 +637,32 @@ Look for a proportional font that is available on the OS. If the actual default 
 Look for a proportional font that is available on the OS. If the actual default font isn't available, find another that will work instead.
 
 #+begin_src emacs-lisp
-
-  (defun mrf/validate-monospace-font ()
+  ;;; --------------------------------------------------------------------------
+  
+  (defun mifi/validate-monospace-font ()
     (let* ((monospace-font
              (cond
-  	     ((x-list-fonts mono-spaced-font-family) mono-spaced-font-family)
-  	     ((x-list-fonts "Fira Code Retina")  "Fira Code Retina")
-  	     ((x-list-fonts "Fira Code")         "Fira Code")
-  	     ((x-list-fonts "Source Code Pro")   "Source Code Pro")
-  	     ((x-list-fonts "Ubuntu Monospaced") "Ubuntu Monospaced")
+             ((x-list-fonts mono-spaced-font-family) mono-spaced-font-family)
+             ((x-list-fonts "Fira Code Retina")  "Fira Code Retina")
+             ((x-list-fonts "Fira Code")         "Fira Code")
+             ((x-list-fonts "Source Code Pro")   "Source Code Pro")
+             ((x-list-fonts "Ubuntu Monospaced") "Ubuntu Monospaced")
                ((x-family-fonts "Monospaced")      "Monospaced")
                (nil (warn "Cannot find a monospaced Font.  Install Source Code Pro.")))))
       (if monospace-font
         (when (not (equal monospace-font variable-pitch-font-family))
-  	(setq mono-spaced-font-family monospace-font)
-  	(setq default-font-family monospace-font))
+        (setq mono-spaced-font-family monospace-font)
+        (setq default-font-family monospace-font))
         (message "---- Can't find a monospace font to use.")))
 
     (message (format ">>> monospace font is %s" mono-spaced-font-family)))
-  
+
 #+end_src
 
 
-* Global Configuration
+* General Configuration
 
 Setup initial paths, global values and settings, and Emacs working directories.
-
-** Use Shell Path
-Because in macOS, Emacs could be started outside of a shell (like an application on the Dock), this code is used to migrate the <current user's shell path to Emacs ~exec-path~.
-
-#+begin_src emacs-lisp
-  ;;; --------------------------------------------------------------------------
-
-  ;; Use shell path
-
-  (defun set-exec-path-from-shell-PATH ()
-     ;;; Set up Emacs' `exec-path' and PATH environment variable to match"
-     ;;; that used by the user's shell.
-     ;;; This is particularly useful under Mac OS X and macOS, where GUI
-     ;;; apps are not started from a shell."
-    (interactive)
-    (let ((path-from-shell (replace-regexp-in-string "[ \t\n]*$" ""
-                             (shell-command-to-string "$SHELL --login -c 'echo $PATH'"))))
-      (setenv "PATH" path-from-shell)
-      (setq exec-path (split-string path-from-shell path-separator))
-      (add-to-list 'exec-path "/opt/homebrew/bin")
-      (add-to-list 'exec-path "/usr/local/bin")
-      (add-to-list 'exec-path "/opt/homebrew/opt/openjdk/bin")
-      (add-to-list 'exec-path "/opt/homebrew/opt/node@20/bin/node")
-      (setq-default insert-directory-program "gls"
-        dired-use-ls-dired t
-        ;; Needed to fix an issue on Mac which causes dired to fail
-        dired-listing-switches "-al --group-directories-first")))
-
-#+end_src
 
 ** Emacs/User Config Directory
 
@@ -683,8 +696,8 @@ By default, the =user-emacs-directory= points to the .emacs.d* directory from wh
 
   ;; ensure that the loaded font values are supported by this OS. If not, try
   ;; to correct them.
-  (mrf/validate-variable-pitch-font)
-  (mrf/validate-monospace-font)
+  (mifi/validate-variable-pitch-font)
+  (mifi/validate-monospace-font)
 
 #+end_src
 
@@ -701,7 +714,9 @@ This directory is expected to be in the ~emacs-config-direcory~ dir. This can be
 
 #+end_src
 
-** Global default variables
+** Better Defaults
+
+These are global variables that effect the behavior of Emacs in general.
 
 #+begin_src emacs-lisp
 
@@ -723,6 +738,7 @@ This directory is expected to be in the ~emacs-config-direcory~ dir. This can be
     lisp-indent-offset '2     ;; emacs lisp tab size
     visible-bell t             ;; Set up the visible bell
     truncate-lines 1           ;; long lines of text do not wrap
+    sentence-end-double-space nil
     fill-column 80             ;; Default line limit for fills
     ;; Triggers project for directories with any of the following files:
     project-vc-extra-root-markers '(".dir-locals.el"
@@ -730,13 +746,12 @@ This directory is expected to be in the ~emacs-config-direcory~ dir. This can be
                                    "Gemfile"
                                    "package.json"))
 
-  (defconst *is-a-mac* (eq system-type 'darwin))
-
-
 #+end_src
 
-** Globally enabled/disabled modes
-*** Save History
+** Save History
+
+Keeps a persistent history file across Emacs restarts. It's also saved into the ~user-emacs-directory~ so it's not tied to a specific Emacs installation.
+
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
   (setq savehist-file (expand-file-name "savehist" user-emacs-directory))
@@ -751,12 +766,19 @@ This directory is expected to be in the ~emacs-config-direcory~ dir. This can be
 
 #+end_src
 
+** Better Modes
+
+Calls to mode functions that effect various Emacs behavior.
 
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
   ;; (global-display-line-numbers-mode 1) ;; Line numbers appear everywhere
+  ;; A cool mode to revert a window configuration
+  (winner-mode 1)
+
+  ;; Change "yes" or "no" responses to just require "y" or "n"
+  (fset 'yes-or-no-p 'y-or-n-p)
   (save-place-mode 1)                  ;; Remember where we were last editing a file.
-  (show-paren-mode 1)
   (column-number-mode 1)
   (tool-bar-mode -1)                   ;; Hide the toolbar
   (global-prettify-symbols-mode 1)     ;; Display pretty symbols (i.e. λ = lambda)
@@ -765,26 +787,56 @@ This directory is expected to be in the ~emacs-config-direcory~ dir. This can be
 
 #+end_src
 
-*** Save / Restore Frameset
+*** Configure 'paren' mode
+
+#+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
+
+  ;; Used to highlight matching delimiters '( { [ ] } )
+  (use-package paren
+    :ensure nil    ;; built-in
+    :custom
+    show-paren-delay 0.1
+    show-paren-highlight-openparen t
+    show-paren-when-point-inside-paren t
+    show-paren-when-point-in-periphery t
+    show-paren-context-when-offscreen t
+    :config
+    (show-paren-mode 1))
+
+#+end_src
+
+
+** Save / Restore Frameset
+** Some Common Registers
+
+#+begin_src emacs-lisp
+
+  (setq register-preview-delay 0) ;; Show registers ASAP
+  (set-register ?C (cons 'file (concat emacs-config-directory "/emacs-config.org")))
+
+#+end_src
+
 
 These functions will save and restore Emacs framework. These are normally called when starting and exiting Emacs.
 
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
 
-  (defun mrf/save-desktop-frameset ()
+  (defun mifi/save-desktop-frameset ()
     (unless (daemonp)
       (desktop-save-mode 0)
       (desktop-save-frameset)
       (with-temp-file (expand-file-name "saved-frameset.el" user-emacs-directory)
-        (insert
-        (format "(setq desktop-saved-frameset %S)" desktop-saved-frameset)))))
+        (insert (format
+                  "(setq desktop-saved-frameset %S)"
+                  desktop-saved-frameset)))))
 
-  (add-hook 'kill-emacs-hook 'mrf/save-desktop-frameset)
+  (add-hook 'kill-emacs-hook 'mifi/save-desktop-frameset)
 
   ;;; --------------------------------------------------------------------------
    
-  (defun mrf/restore-desktop-frameset ()
+  (defun mifi/restore-desktop-frameset ()
     (unless (and (daemonp) (not enable-frameset-restore))
       (let
         ((file (expand-file-name "saved-frameset.el" user-emacs-directory)))
@@ -802,7 +854,7 @@ These functions will save and restore Emacs framework. These are normally called
 ** Emacs in server mode
 
 #+begin_src emacs-lisp
-
+  ;;; --------------------------------------------------------------------------
   ;; Allow access from emacsclient
   (add-hook 'elpaca-after-init-hook
     (lambda ()
@@ -859,7 +911,7 @@ The Hydra is vanquished once Hercules, any binding that isn't the Hydra's head, 
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
 
-  (defun mrf/set-diminish ()
+  (defun mifi/set-diminish ()
     (when (equal custom-project-handler 'custom-project-projectile)
       (diminish 'projectile-mode "PrM"))
     (diminish 'anaconda-mode)
@@ -876,8 +928,8 @@ The Hydra is vanquished once Hercules, any binding that isn't the Hydra's head, 
     :config
     (if (not elpaca-after-init-time)
       (add-hook 'elpaca-after-init-hook
-        (lambda () (run-with-timer 0.5 nil 'mrf/set-diminish)))
-      (run-with-timer 1.0 nil 'mrf/set-diminsh)))
+        (lambda () (run-with-timer 0.5 nil 'mifi/set-diminish)))
+      (run-with-timer 1.0 nil 'mifi/set-diminsh)))
 
 
 #+end_src
@@ -890,10 +942,15 @@ The Hydra is vanquished once Hercules, any binding that isn't the Hydra's head, 
 
   (use-package which-key
     :diminish which-key-mode
-    :custom (which-key-idle-delay 1)
+    :custom
+    (which-key-idle-delay 1)
+    (which-key-prefix-prefix "◉ ")
+    (which-key-sort-order 'which-key-key-order-alpha)
+    (which-key-min-display-lines 3)
+    (which-key-max-display-columns nil)
     :config
     (which-key-mode)
-    (which-key-setup-side-window-right))
+    (which-key-setup-minibuffer))
 
 #+end_src
 
@@ -964,13 +1021,14 @@ We use [[https://github.com/joostkremers/visual-fill-column][visual-fill-column]
   ;;; --------------------------------------------------------------------------
 
   ;; Macintosh specific configurations.
+  (when *is-a-mac*
+    (setq mac-command-modifier       'meta
+          mac-option-modifier         nil
+          mac-control-modifier       'control
+          mac-right-command-modifier 'super
+          mac-right-control-modifier 'hyper)
 
-  (defconst *is-a-mac* (eq system-type 'darwin))
-  (when (eq system-type 'darwin)
-    (setq mac-option-key-is-meta nil
-      mac-command-key-is-meta t
-      mac-command-modifier 'meta
-      mac-option-modifier 'super))
+    (global-set-key (kbd "<escape>") 'keyboard-escape-quit))
 
 #+end_src
 
@@ -1041,7 +1099,7 @@ We use [[https://github.com/joostkremers/visual-fill-column][visual-fill-column]
 This package displays ElDoc documentations in a childframe. The childframe is selectable and scrollable with mouse, even though the cursor is hidden.
 
 #+begin_src emacs-lisp
-    ;;; --------------------------------------------------------------------------
+  ;;; --------------------------------------------------------------------------
 
   ;; prevent (emacs) eldoc loaded before Elpaca activation warning.
   ;; (Warning only displayed during first Elpaca installation)
@@ -1058,7 +1116,7 @@ This package displays ElDoc documentations in a childframe. The childframe is se
     ;; So, to get our themes loading properly, load it here if not already
     ;; loaded.
     (unless theme-did-load
-      (mrf/load-theme-from-selector)))
+      (mifi/load-theme-from-selector)))
 
   (use-package eldoc-box
     :after eldoc
@@ -1214,7 +1272,7 @@ Jinx is a fast just-in-time spell-checker for Emacs. Jinx highlights misspelled 
 Jinx requires the library ~libenchant~ or ~enchant~ installed. This can be done via the [[https://github.com/AbiWord/enchant][enchant github]] site, through ~brew~ on macOS or the package management system of the OS.
 
 #+begin_src emacs-lisp
-
+  ;;; --------------------------------------------------------------------------
   (use-package jinx
     :ensure (:host github :repo "minad/jinx")
     ;;:hook (emacs-startup . global-jinx-mode)
@@ -1232,7 +1290,8 @@ Jinx requires the library ~libenchant~ or ~enchant~ installed. This can be done 
 These are packages located in the ~"lisp"~ directory within the emacs-config-directory.
 
 #+begin_src emacs-lisp
-
+  ;;; --------------------------------------------------------------------------
+  
 #+end_src
 
 
@@ -1266,7 +1325,7 @@ Instead of treating undo/redo as a linear sequence of changes, undo-tree-mode tr
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
 
-  (defun mrf/undo-tree-hook ()
+  (defun mifi/undo-tree-hook ()
     (set-frame-width (selected-frame) 20))
 
   (defun undo-tree-split-side-by-side (original-function &rest args)
@@ -1311,15 +1370,16 @@ Instead of treating undo/redo as a linear sequence of changes, undo-tree-mode tr
 
 
 
-* Theme List and Selection
+* Visuals
+** Theme List and Selection
 
-This bit of code contains a list of themes that I like personally and then allows them to be switched between themselves. The index of ~theme-selector~ is what is set in order to access a theme via the ~mrf/load-theme-from-selector()~ function.
+This bit of code contains a list of themes that I like personally and then allows them to be switched between themselves. The index of ~theme-selector~ is what is set in order to access a theme via the ~mifi/load-theme-from-selector()~ function.
 
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
 
   ;;
-  ;; 1. The function `mrf/load-theme-from-selector' is called from the
+  ;; 1. The function `mifi/load-theme-from-selector' is called from the
   ;;    "C-= =" Keybinding (just search for it).
   ;;
   ;; 2. Once the new theme is loaded via the `theme-selector', the previous
@@ -1327,7 +1387,7 @@ This bit of code contains a list of themes that I like personally and then allow
   ;;    `disable-theme-functions' hook are called (defined in the load-theme.el
   ;;    package).
   ;;
-  ;; 3. The function `mrf/cycle-theme-selector' is called by the hook. This
+  ;; 3. The function `mifi/cycle-theme-selector' is called by the hook. This
   ;;    function increments the theme-selector by 1, cycling the value to 0
   ;;    if beyond the `theme-list' bounds.
   ;;
@@ -1339,14 +1399,14 @@ This bit of code contains a list of themes that I like personally and then allow
 
 #+end_src
 
-** Cycle Theme Function
+*** Cycle Theme Function
 
 This is the main function that allows cycling (up or down) through the list of themes defined in the ~theme-list~.  This function is normally called by the ~disable-theme-functions~ hook. Before calling this function, set the variable ~theme-cycle-step~ to either a 1 or -1 depending upon which direction in the ~theme-list~ array to select the next element from. The resulting index will cycle to the end or the beginning of the list if the computed index goes beyond element 0 or the length of ~theme-list~. The parameter theme is passed to this function when a theme becomes disabled (via the ~disable-theme~ function) and represents the theme that has become disabled.
 
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
 
-  (defun mrf/cycle-theme-selector (&rest theme)
+  (defun mifi/cycle-theme-selector (&rest theme)
     "Cycle the `theme-selector' by 1, resetting to 0 if beyond array bounds."
     (interactive)
     (when (not (eq theme-cycle-step nil))
@@ -1361,12 +1421,12 @@ This is the main function that allows cycling (up or down) through the list of t
 
   ;; This is used to trigger the cycling of the theme-selector
   ;; It is called when a theme is disabled. The theme is disabled from the
-  ;; `mrf/load-theme-from-selector' function.
-  (add-hook 'disable-theme-functions #'mrf/cycle-theme-selector)
+  ;; `mifi/load-theme-from-selector' function.
+  (add-hook 'disable-theme-functions #'mifi/cycle-theme-selector)
 
 #+end_src
 
-** Load Theme Function
+*** Load Theme Function
 
 This function simply loads the theme from the theme-list indexed by the ~theme-selector~ variable. Note the advice for ~load-theme~ that deactivates the current theme before activating the new theme. This is done to reset all the colors, a clean slate, before the new theme is activated.
 
@@ -1376,7 +1436,7 @@ This function simply loads the theme from the theme-list indexed by the ~theme-s
   (defvar theme-did-load nil
     "Set to true if the last Theme was loaded.")
 
-  (defun mrf/load-theme-from-selector (&optional step)
+  (defun mifi/load-theme-from-selector (&optional step)
     "Load the theme in `theme-list' indexed by `theme-selector'."
     (interactive)
     (setq theme-cycle-step nil)
@@ -1389,16 +1449,17 @@ This function simply loads the theme from the theme-list indexed by the ~theme-s
     (setq loaded-theme (nth theme-selector theme-list))
     (setq theme-did-load (load-theme (intern loaded-theme) t))
     (when (featurep 'org)
-      (mrf/org-font-setup))
+      (mifi/org-font-setup))
     (set-face-foreground 'line-number "SkyBlue4"))
 
 #+end_src
 
-** Theme selection helper functions.
+*** Theme selection helper functions.
 
 #+begin_src emacs-lisp
-
-  (defun mrf/print-custom-theme-name ()
+  ;;; --------------------------------------------------------------------------
+  
+  (defun mifi/print-custom-theme-name ()
     "Print the current loaded theme from the `theme-list' on the modeline."
     (interactive)
     (message (format "Custom theme is %S" loaded-theme)))
@@ -1407,17 +1468,17 @@ This function simply loads the theme from the theme-list indexed by the ~theme-s
   (defun next-theme ()
     "Go to the next theme in the list."
     (interactive)
-    (mrf/load-theme-from-selector 1))
+    (mifi/load-theme-from-selector 1))
 
   (defun previous-theme ()
     "Go to the next theme in the list."
     (interactive)
-    (mrf/load-theme-from-selector -1))
+    (mifi/load-theme-from-selector -1))
 
   (defun which-theme ()
     "Go to the next theme in the list."
     (interactive)
-    (mrf/print-custom-theme-name))
+    (mifi/print-custom-theme-name))
 
   ;; Go to NEXT theme
   (global-set-key (kbd "C-c C-=") 'next-theme)
@@ -1427,12 +1488,12 @@ This function simply loads the theme from the theme-list indexed by the ~theme-s
   (global-set-key (kbd "C-c C-?") 'which-theme)
 #+end_src
 
-** Theme Override Values
+*** Theme Override Values
 
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
 
-  (defun mrf/org-theme-override-values ()
+  (defun mifi/org-theme-override-values ()
     (defface org-block-begin-line
       '((t (:underline "#1D2C39" :foreground "SlateGray" :background "#1D2C39")))
       "Face used for the line delimiting the begin of source blocks.")
@@ -1451,32 +1512,32 @@ This function simply loads the theme from the theme-list indexed by the ~theme-s
 
   ;;; --------------------------------------------------------------------------
 
-  (defun mrf/customize-modus-theme ()
+  (defun mifi/customize-modus-theme ()
     (when (featurep 'org)
-      (mrf/org-font-setup))
+      (mifi/org-font-setup))
     (setq modus-themes-common-palette-overrides
       '((bg-mode-line-active bg-blue-intense)
          (fg-mode-line-active fg-main)
          (border-mode-line-active blue-intense))))
 
-  (add-hook 'elpaca-after-init-hook 'mrf/customize-modus-theme)
+  (add-hook 'elpaca-after-init-hook 'mifi/customize-modus-theme)
 
-  (defun mrf/customize-ef-theme ()
+  (defun mifi/customize-ef-theme ()
     (defface ef-themes-fixed-pitch
       '((t (:background "#242635" :extend t :font "Courier New")))
       "Face used for the source block background.")
     (when (featurep 'org)
-      (mrf/org-font-setup))
+      (mifi/org-font-setup))
     (setq ef-themes-common-palette-override
       '( (bg-mode-line bg-blue-intense)
          (fg-mode-line fg-main)
          (border-mode-line-active blue-intense))))
-  ;;(add-hook 'org-load-hook 'mrf/customize-ef-theme)
-  (add-hook 'elpaca-after-init-hook 'mrf/customize-ef-theme)
+  ;;(add-hook 'org-load-hook 'mifi/customize-ef-theme)
+  (add-hook 'elpaca-after-init-hook 'mifi/customize-ef-theme)
 
 #+end_src
 
-** Color Theming
+*** Color Theming
 
 <<<Color Theming>>> as a curated list of theming packages.
 *Note:* If new themes are added in the ~theme-list~ custom variable then they must be included here along with any customizations.
@@ -1486,10 +1547,10 @@ This function simply loads the theme from the theme-list indexed by the ~theme-s
 
   (add-to-list 'custom-theme-load-path (expand-file-name "Themes" custom-docs-dir))
 
-  (mrf/org-theme-override-values)
+  (mifi/org-theme-override-values)
   (use-package tron-legacy-theme :defer t)
-  (use-package ef-themes :init (mrf/customize-ef-theme) :defer t)
-  (use-package modus-themes :init (mrf/customize-modus-theme) :defer t)
+  (use-package ef-themes :init (mifi/customize-ef-theme) :defer t)
+  (use-package modus-themes :init (mifi/customize-modus-theme) :defer t)
   (use-package material-theme :defer t)
   (use-package color-theme-modern :defer t)
   (use-package color-theme-sanityinc-tomorrow :defer t)
@@ -1499,42 +1560,41 @@ This function simply loads the theme from the theme-list indexed by the ~theme-s
 
 #+end_src
 
-** Selected theme
+*** Selected theme
 This includes the theme to use in both graphical and non-graphical.
 
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
-  ;; (add-hook 'emacs-startup-hook #'(mrf/load-theme-from-selector))
-  ;; (mrf/load-theme-from-selector)
+  ;; (add-hook 'emacs-startup-hook #'(mifi/load-theme-from-selector))
+  ;; (mifi/load-theme-from-selector)
   ;; For terminal mode we choose Material theme
 
-  (defun mrf/load-terminal-theme ()
+  (defun mifi/load-terminal-theme ()
     (load-theme (intern default-terminal-theme) t))
 
   (if (not (display-graphic-p))
-    (add-hook 'elpaca-after-init-hook 'mrf/load-terminal-theme)
+    (add-hook 'elpaca-after-init-hook 'mifi/load-terminal-theme)
     ;;else
     (progn
       (if (not elpaca-after-init-time)
         (add-hook 'elpaca-after-init-hook
         (lambda ()
           (unless theme-did-load
-            (mrf/load-theme-from-selector))))
+            (mifi/load-theme-from-selector))))
         ;; else
         (add-hook 'window-setup-hook
         (lambda ()
           (unless theme-did-load
-            (mrf/load-theme-from-selector))))
+            (mifi/load-theme-from-selector))))
         )))
 
 #+end_src
 
-
-* Frame and Font Setup
+** Frame and Font Setup
 
 It's nice to know that Emacs is somewhat working. To help this along, we set the Frame (window size fonts) early in the loading process.
 
-** Define the various font size constants
+*** Define the various font size constants
 
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
@@ -1542,40 +1602,58 @@ It's nice to know that Emacs is somewhat working. To help this along, we set the
   ;; Frame (view) setup including fonts.
   ;; You will most likely need to adjust this font size for your system!
 
-  (setq-default mrf/small-font-size 150)
-  (setq-default mrf/small-mono-font-size 150)
-  (setq-default mrf/small-variable-font-size 170)
+  (setq-default mifi/small-font-size 150)
+  (setq-default mifi/small-mono-font-size 150)
+  (setq-default mifi/small-variable-font-size 170)
 
-  (setq-default mrf/medium-font-size 170)
-  (setq-default mrf/medium-mono-font-size 170)
-  (setq-default mrf/medium-variable-font-size 190)
+  (setq-default mifi/medium-font-size 170)
+  (setq-default mifi/medium-mono-font-size 170)
+  (setq-default mifi/medium-variable-font-size 190)
 
-  (setq-default mrf/large-font-size 190)
-  (setq-default mrf/large-mono-font-size 190)
-  (setq-default mrf/large-variable-font-size 210)
+  (setq-default mifi/large-font-size 190)
+  (setq-default mifi/large-mono-font-size 190)
+  (setq-default mifi/large-variable-font-size 210)
 
-  (setq-default mrf/x-large-font-size 220)
-  (setq-default mrf/x-large-mono-font-size 220)
-  (setq-default mrf/x-large-variable-font-size 240)
+  (setq-default mifi/x-large-font-size 220)
+  (setq-default mifi/x-large-mono-font-size 220)
+  (setq-default mifi/x-large-variable-font-size 240)
 
-  ;; (setq-default custom-default-font-size mrf/medium-font-size)
-  (setq-default mrf/default-variable-font-size (+ custom-default-font-size 20))
-  ;; (setq-default mrf/set-frame-maximized t)  ;; or f
+  ;; (setq-default custom-default-font-size mifi/medium-font-size)
+  (setq-default mifi/default-variable-font-size (+ custom-default-font-size 20))
+  ;; (setq-default mifi/set-frame-maximized t)  ;; or f
 
   ;; Make frame transparency overridable
-  ;; (setq-default mrf/frame-transparency '(90 . 90))
+  ;; (setq-default mifi/frame-transparency '(90 . 90))
 
   (setq frame-resize-pixelwise t)
 
 #+end_src
 
-** Functions to set the frame size
+*** mixed-pitch
+
+A better version of variable-pitch mode. This keeps certain faces (defined in mixed-pitch-fixed-pitch-faces) fixed-pitch.
+
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
 
+  (use-package mixed-pitch
+    :defer t
+    :custom
+    (mixed-pitch-set-height t)
+    :config
+    (dolist (face '(org-date org-priority org-special-keyword org-tag))
+      (add-to-list 'mixed-pitch-fixed-pitch-faces face)))
+    
+#+end_src
+
+
+*** Functions to set the frame size
+
+#+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
   ;; Functions to set the frame size
 
-  (defun mrf/frame-recenter (&optional frame)
+  (defun mifi/frame-recenter (&optional frame)
     "Center FRAME on the screen.  FRAME can be a frame name, a terminal name,
     or a frame.  If FRAME is omitted or nil, use currently selected frame."
     (interactive)
@@ -1584,59 +1662,53 @@ It's nice to know that Emacs is somewhat working. To help this along, we set the
       (progn
         (let ((width (nth 3 (assq 'geometry (car (display-monitor-attributes-list)))))
                (height (nth 4 (assq 'geometry (car (display-monitor-attributes-list))))))
-          (cond (( > width 3000) (mrf/update-large-display))
-            (( > width 2000) (mrf/update-built-in-display))
-            (t (mrf/set-frame-alpha-maximized)))
-          ))
-      ))
+          (cond (( > width 3000) (mifi/update-large-display))
+            (( > width 2000) (mifi/update-built-in-display))
+            (t (mifi/set-frame-alpha-maximized)))))))
 
-  (defun mrf/update-large-display ()
+  (defun mifi/update-large-display ()
     (modify-frame-parameters
       frame '((user-position . t)
                (top . 0.0)
                (left . 0.70)
                (width . (text-pixels . 2800))
-               (height . (text-pixels . 1650))) ;; 1800
-      ))
+               (height . (text-pixels . 1650))))) ;; 1800
 
-  (defun mrf/update-built-in-display ()
+  (defun mifi/update-built-in-display ()
     (modify-frame-parameters
       frame '((user-position . t)
                (top . 0.0)
                (left . 0.90)
                (width . (text-pixels . 1800))
-               (height . (text-pixels . 1170)));; 1329
-      ))
-
+               (height . (text-pixels . 1170))))) ;; 1329
 
   ;; Set frame transparency
-  (defun mrf/set-frame-alpha-maximized ()
+  (defun mifi/set-frame-alpha-maximized ()
     "Function to set the alpha and also maximize the frame."
-    ;; (set-frame-parameter (selected-frame) 'alpha mrf/frame-transparency)
+    ;; (set-frame-parameter (selected-frame) 'alpha mifi/frame-transparency)
     (set-frame-parameter (selected-frame) 'fullscreen 'maximized)
     (add-to-list 'default-frame-alist '(fullscreen . maximized)))
 
   ;; default window width and height
-  (defun mrf/custom-set-frame-size ()
+  (defun mifi/custom-set-frame-size ()
     "Simple function to set the default frame width/height."
-    ;; (set-frame-parameter (selected-frame) 'alpha mrf/frame-transparency)
+    ;; (set-frame-parameter (selected-frame) 'alpha mifi/frame-transparency)
     (setq swidth (nth 3 (assq 'geometry (car (display-monitor-attributes-list)))))
     (setq sheight (nth 4 (assq 'geometry (car (display-monitor-attributes-list)))))
 
     (add-to-list 'default-frame-alist '(fullscreen . maximized))
-    (unless enable-frameset-restore (mrf/frame-recenter))
-    )
+    (unless enable-frameset-restore (mifi/frame-recenter)))
 
 #+end_src
 
-** Default fonts and sizes
+*** Default fonts and sizes
 
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
 
   ;; Default fonts
 
-  (defun mrf/update-face-attribute ()
+  (defun mifi/update-face-attribute ()
     "Set the font faces."
     ;; ====================================
     (set-face-attribute 'default nil
@@ -1661,71 +1733,71 @@ It's nice to know that Emacs is somewhat working. To help this along, we set the
   (add-hook 'emacs-startup-hook
     (lambda ()
       (when (display-graphic-p)
-        (mrf/update-face-attribute)
+        (mifi/update-face-attribute)
         (unless (daemonp)
-  	(if enable-frameset-restore
-            (mrf/restore-desktop-frameset)
-  	  (mrf/frame-recenter)))
+        (if enable-frameset-restore
+            (mifi/restore-desktop-frameset)
+          (mifi/frame-recenter)))
         )))
 
 #+end_src
 
-** Track Slected Front Size
+*** Track Slected Front Size
 
 The functions in the list =after-setting-font-hook= are called whenever the frame's font changes. In order to save this value, we capture it and store it in the =custom-default-font-size= custom variable. This variable is saved whenver Emacs exists. Then, when Emacs is started again, the default and fixed-pitch font height values are set to =custom-default-font-size=. The variable pitch font is computed as ~(+ custom-default-font-size 20)~
 
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
 
-  (defun mrf/default-font-height-change ()
+  (defun mifi/default-font-height-change ()
     (setq-default custom-default-font-size (face-attribute 'default :height))
-    (mrf/update-face-attribute)
-    (unless enable-frameset-restore (mrf/frame-recenter)))
+    (mifi/update-face-attribute)
+    (unless enable-frameset-restore (mifi/frame-recenter)))
 
-  (add-hook 'after-setting-font-hook 'mrf/default-font-height-change)
+  (add-hook 'after-setting-font-hook 'mifi/default-font-height-change)
 
 #+end_src
 
-** Helper to up the font size for a higher-res monitor.
-*** Frame font selection
+*** Helper to up the font size for a higher-res monitor.
+**** Frame font selection
 This little function toggles between a larger font size and the default font size.
 
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
   ;; Frame font selection
 
-  (defvar mrf/font-size-slot 1)
+  (defvar mifi/font-size-slot 1)
 
-  (defun mrf/update-font-size ()
+  (defun mifi/update-font-size ()
     (cond
-      ((equal mrf/font-size-slot 3)
-        (setq custom-default-font-size mrf/x-large-font-size
-              custom-default-mono-font-size mrf/x-large-mono-font-size
-              mrf/default-variable-font-size (+ custom-default-font-size 20)
-              mrf/font-size-slot 2)
-        (mrf/update-face-attribute))
-      ((equal mrf/font-size-slot 2)
-        (setq custom-default-font-size mrf/large-font-size
-              custom-default-mono-font-size mrf/large-mono-font-size
-              mrf/default-variable-font-size (+ custom-default-font-size 20)
-              mrf/font-size-slot 1)
-        (mrf/update-face-attribute))
-      ((equal mrf/font-size-slot 1)
-        (setq custom-default-font-size mrf/medium-font-size
-              custom-default-mono-font-size mrf/medium-mono-font-size
-              mrf/default-variable-font-size (+ custom-default-font-size 20)
-              mrf/font-size-slot 0)
-        (mrf/update-face-attribute))
-      ((equal mrf/font-size-slot 0)
-        (setq custom-default-font-size mrf/small-font-size
-              custom-default-mono-font-size mrf/small-mono-font-size
-              mrf/default-variable-font-size (+ custom-default-font-size 20)
-              mrf/font-size-slot 3)
-        (mrf/update-face-attribute))))
+      ((equal mifi/font-size-slot 3)
+        (setq custom-default-font-size mifi/x-large-font-size
+              custom-default-mono-font-size mifi/x-large-mono-font-size
+              mifi/default-variable-font-size (+ custom-default-font-size 20)
+              mifi/font-size-slot 2)
+        (mifi/update-face-attribute))
+      ((equal mifi/font-size-slot 2)
+        (setq custom-default-font-size mifi/large-font-size
+              custom-default-mono-font-size mifi/large-mono-font-size
+              mifi/default-variable-font-size (+ custom-default-font-size 20)
+              mifi/font-size-slot 1)
+        (mifi/update-face-attribute))
+      ((equal mifi/font-size-slot 1)
+        (setq custom-default-font-size mifi/medium-font-size
+              custom-default-mono-font-size mifi/medium-mono-font-size
+              mifi/default-variable-font-size (+ custom-default-font-size 20)
+              mifi/font-size-slot 0)
+        (mifi/update-face-attribute))
+      ((equal mifi/font-size-slot 0)
+        (setq custom-default-font-size mifi/small-font-size
+              custom-default-mono-font-size mifi/small-mono-font-size
+              mifi/default-variable-font-size (+ custom-default-font-size 20)
+              mifi/font-size-slot 3)
+        (mifi/update-face-attribute))))
 
 #+end_src
 
-**** Resolution Key Bindings
+***** Resolution Key Bindings
 Some key kindings to switch to different screen resolutions.
 
 #+begin_src emacs-lisp
@@ -1749,48 +1821,48 @@ Some key kindings to switch to different screen resolutions.
 
 #+end_src
 
-**** Frame support functions
+***** Frame support functions
 These functions are used to configure the main frame font size. Based upon a monitor's size, it may be necessary to make the font larger or smaller.
 
 #+begin_src emacs-lisp
-    ;;; --------------------------------------------------------------------------
+  ;;; --------------------------------------------------------------------------
   ;; Frame support functions
 
-  (defun mrf/set-frame-font (slot)
-    (setq mrf/font-size-slot slot)
-    (mrf/update-font-size)
-    (unless enable-frameset-restore (mrf/frame-recenter)))
+  (defun mifi/set-frame-font (slot)
+    (setq mifi/font-size-slot slot)
+    (mifi/update-font-size)
+    (unless enable-frameset-restore (mifi/frame-recenter)))
 
-  (defun mrf/should-recenter (&optional force-recenter)
+  (defun mifi/should-recenter (&optional force-recenter)
     (if force-recenter
-      (mrf/frame-recenter)
+      (mifi/frame-recenter)
       ;;else
-      (unless enable-frameset-restore (mrf/frame-recenter))))
+      (unless enable-frameset-restore (mifi/frame-recenter))))
 
   ;;; --------------------------------------------------------------------------
 
   (defun use-small-display-font (&optional force-recenter)
     (interactive)
-    (mrf/set-frame-font 0)
-    (mrf/should-recenter force-recenter))
+    (mifi/set-frame-font 0)
+    (mifi/should-recenter force-recenter))
 
 
   (defun use-medium-display-font (&optional force-recenter)
     (interactive)
-    (mrf/set-frame-font 1)
-    (mrf/should-recenter force-recenter))
+    (mifi/set-frame-font 1)
+    (mifi/should-recenter force-recenter))
 
 
   (defun use-large-display-font (&optional force-recenter)
     (interactive)
-    (mrf/set-frame-font 2)
-    (mrf/should-recenter force-recenter))
+    (mifi/set-frame-font 2)
+    (mifi/should-recenter force-recenter))
 
 
   (defun use-x-large-display-font (&optional force-recenter)
     (interactive)
-    (mrf/set-frame-font 3)
-    (mrf/should-recenter force-recenter))
+    (mifi/set-frame-font 3)
+    (mifi/should-recenter force-recenter))
 
 
   ;; This is done so that the Emacs window is sized early in the init phase along with the default font size.
@@ -1799,14 +1871,14 @@ These functions are used to configure the main frame font size. Based upon a mon
     (add-hook 'elpaca-after-init-hook
       (lambda ()
         (progn
-        (mrf/update-face-attribute)
+        (mifi/update-face-attribute)
         (unless (daemonp)
-          (unless enable-frameset-restore (mrf/frame-recenter))))
+          (unless enable-frameset-restore (mifi/frame-recenter))))
         )))
 
 #+end_src
 
-** Window, mode-line, +more padding
+*** Window, mode-line, +more padding
 
 This package provides a global minor mode to increase the spacing/padding of Emacs windows and frames. The idea is to make editing and reading feel more comfortable.
 
@@ -1838,7 +1910,7 @@ This package provides a global minor mode to increase the spacing/padding of Ema
 
 Org Mode is one of the hallmark features of Emacs.  It is a rich document editor, project planner, task and time tracker, blogging engine, and literate coding utility all wrapped up in one package [[https://orgmode.org/][Orgmode]].
 
-The =mrf/org-font-setup= function configures various text faces to tweak the sizes of headings and use variable width fonts in most cases so that it looks more like we're editing a document in =org-mode=.  We switch back to fixed width (monospace) fonts for code blocks and tables so that they display correctly.
+The =mifi/org-font-setup= function configures various text faces to tweak the sizes of headings and use variable width fonts in most cases so that it looks more like we're editing a document in =org-mode=.  We switch back to fixed width (monospace) fonts for code blocks and tables so that they display correctly.
 
 *NOTE:* Most of the code below has been taken from the [[https://systemcrafters.net][System Crafters]] site run by David Wilson. Please visit that site for lots of great stuff!
 
@@ -1850,7 +1922,7 @@ This function sets up the fonts faces that are used within org-mode.
   ;;; --------------------------------------------------------------------------
 
   (use-package faces :ensure nil)
-  (defun mrf/org-font-setup ()
+  (defun mifi/org-font-setup ()
     "Setup org mode fonts."
 
     (font-lock-add-keywords
@@ -1926,19 +1998,19 @@ This function sets up the fonts faces that are used within org-mode.
 This section contains the basic configuration for =org-mode= plus the configuration for Org agendas and capture templates.
 
 #+begin_src emacs-lisp
-  ;; -----------------------------------------------------------------
+  ;;; --------------------------------------------------------------------------
 
-  (defun mrf/org-mode-visual-fill ()
+  (defun mifi/org-mode-visual-fill ()
     (interactive)
     (setq visual-fill-column-width custom-org-fill-column
       visual-fill-column-center-text enable-org-fill-column-centering)
     (visual-fill-column-mode 1))
 
-  (defun mrf/org-mode-setup ()
+  (defun mifi/org-mode-setup ()
     (org-indent-mode)
     (variable-pitch-mode 1)
     (visual-line-mode 1)
-    (mrf/org-mode-visual-fill)
+    (mifi/org-mode-visual-fill)
     (font-lock-add-keywords nil
       '(("^_\\{5,\\}"    0 '(:foreground "green" :weight bold))))
     (setq org-ellipsis " ▾")
@@ -1963,7 +2035,7 @@ This section contains the basic configuration for =org-mode= plus the configurat
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
 
-  (defun mrf/org-setup-agenda ()
+  (defun mifi/org-setup-agenda ()
     (setq org-agenda-custom-commands
       '(("d" "Dashboard"
           ((agenda "" ((org-deadline-warning-days 7)))
@@ -2010,7 +2082,7 @@ This section contains the basic configuration for =org-mode= plus the configurat
              (todo "CANC"
                ((org-agenda-overriding-header "Cancelled Projects")
                  (org-agenda-files org-agenda-files)))))))
-    ) ;; mrf/org-setup-agenda
+    ) ;; mifi/org-setup-agenda
 
 #+end_src
 
@@ -2019,7 +2091,7 @@ This section contains the basic configuration for =org-mode= plus the configurat
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
 
-  (defun mrf/org-setup-capture-templates ()
+  (defun mifi/org-setup-capture-templates ()
     (setq org-capture-templates
       `(("t" "Tasks / Projects")
          ("tt" "Task" entry (file+olp "~/Projects/Code/emacs-from-scratch/OrgFiles/Tasks.org" "Inbox")
@@ -2051,16 +2123,37 @@ This section contains the basic configuration for =org-mode= plus the configurat
 
 #+end_src
 
+**** Todos
+
+#+begin_src emacs-lisp
+
+  (defun mifi/org-setup-todos ()
+    (setq org-todo-keywords '((type
+                                "TODO(t)" "WAITING(h)" "INPROG-TODO(i)" "WORK(w)"
+                                "STUDY(s)" "SOMEDAY" "READ(r)" "PROJ(p)"
+                                "CONTACT(c)" "|" "DONE(d)" "CANCELLED(C@)")))
+
+    (setq org-todo-keyword-faces
+      '(("TODO"  :inherit (region org-todo) :foreground "DarkOrange1" :weight bold)
+         ("WORK"  :inherit (org-todo region) :foreground "DarkOrange1" :weight bold)
+         ("READ"  :inherit (org-todo region) :foreground "MediumPurple2" :weight bold)
+         ("PROJ"  :inherit (org-todo region) :foreground "orange3" :weight bold)
+         ("STUDY" :inherit (region org-todo) :foreground "plum3"   :weight bold)
+         ("DONE" . "SeaGreen4"))))
+
+#+end_src
+
 ** The main 'Org' package
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
 
   (use-package org
+    :pin gnu-elpa
     :preface
-    (mrf/org-theme-override-values)
+    (mifi/org-theme-override-values)
     :commands (org-capture org-agenda)
     :defer t
-    :hook (org-mode . mrf/org-mode-setup)
+    :hook (org-mode . mifi/org-mode-setup)
     :custom
     (org-startup-indented t)
     (org-pretty-entities t)
@@ -2089,9 +2182,10 @@ This section contains the basic configuration for =org-mode= plus the configurat
          ("note" . ?n)
          ("idea" . ?i)))
     ;; Configure custom agenda views
-    (mrf/org-setup-agenda)
-    (mrf/org-setup-capture-templates)
-    (mrf/org-font-setup)
+    (mifi/org-setup-agenda)
+    (mifi/org-setup-capture-templates)
+    (mifi/org-font-setup)
+    (mifi/org-setup-todos)
     (yas-global-mode t)
     (define-key global-map (kbd "C-c j")
       (lambda () (interactive) (org-capture nil "jj"))))
@@ -2101,63 +2195,42 @@ This section contains the basic configuration for =org-mode= plus the configurat
 #+RESULTS:
 : #s(hash-table size 65 test eql rehash-size 1.5 rehash-threshold 0.8125 data (:use-package (26172 1876 296393 0) :use-package-secs (0 0 907 0) :preface (26171 64968 44297 0) :init (26171 64968 44286 0) :init-secs (0 0 28 0) :preface-secs (0 0 265 0) :config (26171 64988 735976 0) :config-secs (0 0 361702 0)))
 
-** Org Modern
-
-#+begin_src emacs-lisp
-  ;;; --------------------------------------------------------------------------
-
-  (use-package org-modern
-    :when (display-graphic-p)
-    :after org
-    :hook (org-mode . org-modern-mode)
-    :config
-    ;; Add frame borders and window dividers
-    (modify-all-frames-parameters
-      '((right-divider-width . 40)
-         (internal-border-width . 40)))
-    (dolist (face '(window-divider
-                     window-divider-first-pixel
-                     window-divider-last-pixel))
-      (face-spec-reset-face face)
-      (set-face-foreground face (face-attribute 'default :background nil)))
-    (set-face-background 'fringe (face-attribute 'default :background nil))
-    (setq
-      ;; Edit settings
-      org-auto-align-tags nil
-      org-tags-column 0
-      org-catch-invisible-edits 'show-and-error
-      org-special-ctrl-a/e t
-      org-insert-heading-respect-content t
-
-      ;; Org styling, hide markup etc.
-      org-hide-emphasis-markers nil
-      org-pretty-entities t
-      org-ellipsis "…"
-
-      ;; Agenda styling
-      org-agenda-tags-column 0
-      org-agenda-block-separator ?─
-      org-agenda-time-grid
-      '((daily today require-timed)
-         (800 1000 1200 1400 1600 1800 2000)
-         " ┄┄┄┄┄ " "┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄")
-      org-agenda-current-time-string
-      "◀── now ─────────────────────────────────────────────────")
-    (global-org-modern-mode))
-
-#+end_src
-
 ** Better Bullets
 [[https://github.com/sabof/org-bullets][org-bullets]] replaces the heading stars in =org-mode= buffers with nicer looking characters that you can control.  Another option for this is [[https://github.com/integral-dw/org-superstar-mode][org-superstar-mode]].
 
 #+begin_src emacs-lisp
-  ;;; --------------------------------------------------------------------------
+    ;;; --------------------------------------------------------------------------
 
-  (use-package org-superstar
-    :after org
-    :custom
-    (org-superstar-headline-bullets-list '("✪" "✫" "✦" "✧" "✸" "✺"))
-    :hook (org-mode . org-superstar-mode))
+    (use-package org-superstar
+      :after org
+      :custom
+      (org-superstar-leading-bullet " ")
+      (org-superstar-special-todo-items t)
+      (org-superstar-todo-bullet-alist '( ("TODO" . 9744)
+                                      ("INPROG-TODO" . 9744)
+                                      ("HW" . 9744)
+                                      ("STUDY" . 9744)
+                                      ("SOMEDAY" . 9744)
+                                      ("READ" . 9744)
+                                      ("PROJ" . 9744)
+                                      ("CONTACT" . 9744)
+                                      ("DONE" . 9745)))
+      ;; (org-superstar-headline-bullets-list '("✪" "✫" "✦" "✧" "✸" "✺"))
+      :hook (org-mode . org-superstar-mode))
+
+    (use-package org-appear
+      :init
+      (setq org-hide-emphasis-markers t)
+      (setq org-appear-autoemphasis t) ;; Enable org-appear on emphasis
+      (setq org-appear-autolinks t) ;; Enable on links
+      (setq org-appear-autosubmarkers t) ;; Enable on sub and superscript
+      :commands (org-appear-mode)
+      :hook (or-mode . org-appear-mode))
+
+  ;; Automatically change bullet type when indenting
+  ;; Ex: indenting a + makes the bullet a *.
+  (setq org-list-demote-modify-bullet
+  '(("+" ・ "*"）（"*" ・ "-"）（"-" . "+")))
 
 #+end_src
 
@@ -2172,25 +2245,25 @@ To execute or export code in =org-mode= code blocks, you'll need to set up =org-
       'org-babel-load-languages
       (seq-filter
         (lambda (pair)
-  	(locate-library (concat "ob-" (symbol-name (car pair)))))
+        (locate-library (concat "ob-" (symbol-name (car pair)))))
         '((emacs-lisp . t)
-  	 (ditaa . t)
-  	 (dot . t)
-  	 (emacs-lisp . t)
-  	 (gnuplot . t)
-  	 (haskell . nil)
-  	 (latex . t)
-  	 (ledger . t)
-  	 (ocaml . nil)
-  	 (octave . t)
-  	 (plantuml . t)
-  	 (python . t)
-  	 (ruby . t)
-  	 (screen . nil)
-  	 (sh . t) ;; obsolete
-  	 (shell . t)
-  	 (sql . t)
-  	 (sqlite . t))))
+         (ditaa . t)
+         (dot . t)
+         (emacs-lisp . t)
+         (gnuplot . t)
+         (haskell . nil)
+         (latex . t)
+         (ledger . t)
+         (ocaml . nil)
+         (octave . t)
+         (plantuml . t)
+         (python . t)
+         (ruby . t)
+         (screen . nil)
+         (sh . t) ;; obsolete
+         (shell . t)
+         (sql . t)
+         (sqlite . t))))
     (push '("conf-unix" . conf-unix) org-src-lang-modes))
   
 #+end_src
@@ -2198,7 +2271,7 @@ To execute or export code in =org-mode= code blocks, you'll need to set up =org-
 ** Structure Templates
 Org Mode's structure templates feature enables you to quickly insert code blocks into your Org files in combination with =org-tempo= by typing =<= followed by the template name like =el= or =py= and then press =TAB=.  For example, to insert an empty =emacs-lisp= block below, you can type =<el= and press =TAB= to expand into such a block.  You can add more =src= block templates below by copying one of the lines and changing the two strings at the end, the first to be the template name and the second to contain the name of the language as it is known by Org Babel.
 
-This snippet adds a hook to =org-mode= buffers so that =mrf/org-babel-tangle-config= gets executed each time such a buffer gets saved.  This function checks to see if the file being saved is the Emacs.org file you're looking at right now, and if so, automatically exports the configuration here to the associated output files.
+This snippet adds a hook to =org-mode= buffers so that =mifi/org-babel-tangle-config= gets executed each time such a buffer gets saved.  This function checks to see if the file being saved is the Emacs.org file you're looking at right now, and if so, automatically exports the configuration here to the associated output files.
 
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
@@ -2234,7 +2307,7 @@ Org Roam solves these problems by making it easy to create topic-focused Org Fil
 
 *** Some required pacakages 
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   ;;; --------------------------------------------------------------------------
   (use-package emacsql :demand t :ensure t :after org)
   (use-package emacsql-sqlite :demand t :ensure t :after org)
@@ -2248,24 +2321,24 @@ Typically you won’t want to pull in all of your Org Roam notes, so we’ll onl
 
 Here is a snippet that will find all the notes with a specific tag and then set your org-agenda-list with the corresponding note files.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   ;;; --------------------------------------------------------------------------
   ;; The buffer you put this code in must have lexical-binding set to t!
   ;; See the final configuration at the end for more details.
 
-  (defun mrf/org-roam-filter-by-tag (tag-name)
+  (defun mifi/org-roam-filter-by-tag (tag-name)
     (lambda (node)
       (member tag-name (org-roam-node-tags node))))
 
-  (defun mrf/org-roam-list-notes-by-tag (tag-name)
+  (defun mifi/org-roam-list-notes-by-tag (tag-name)
     (mapcar #'org-roam-node-file
       (seq-filter
-        (mrf/org-roam-filter-by-tag tag-name)
+        (mifi/org-roam-filter-by-tag tag-name)
         (org-roam-node-list))))
 
-  (defun mrf/org-roam-refresh-agenda-list ()
+  (defun mifi/org-roam-refresh-agenda-list ()
     (interactive)
-    (setq org-agenda-files (mrf/org-roam-list-notes-by-tag "Project")))
+    (setq org-agenda-files (mifi/org-roam-list-notes-by-tag "Project")))
 
   ;; Build the agenda list the first time for the session
 #+end_src
@@ -2279,36 +2352,36 @@ One added benefit is that we can override the set of capture templates that get 
 
 This means that we can automatically create a new note with our project capture template if the note doesn’t already exist!
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   ;;; --------------------------------------------------------------------------
 
-  (defun mrf/org-roam-project-finalize-hook ()
+  (defun mifi/org-roam-project-finalize-hook ()
     "Adds the captured project file to `org-agenda-files' if the
   capture was not aborted."
     ;; Remove the hook since it was added temporarily
-    (remove-hook 'org-capture-after-finalize-hook #'mrf/org-roam-project-finalize-hook)
+    (remove-hook 'org-capture-after-finalize-hook #'mifi/org-roam-project-finalize-hook)
 
     ;; Add project file to the agenda list if the capture was confirmed
     (unless org-note-abort
       (with-current-buffer (org-capture-get :buffer)
         (add-to-list 'org-agenda-files (buffer-file-name)))))
 
-  (defun mrf/org-roam-find-project ()
+  (defun mifi/org-roam-find-project ()
     (interactive)
     ;; Add the project file to the agenda after capture is finished
-    (add-hook 'org-capture-after-finalize-hook #'mrf/org-roam-project-finalize-hook)
+    (add-hook 'org-capture-after-finalize-hook #'mifi/org-roam-project-finalize-hook)
 
     ;; Select a project file to open, creating it if necessary
     (org-roam-node-find
       nil
       nil
-      (mrf/org-roam-filter-by-tag "Project")
+      (mifi/org-roam-filter-by-tag "Project")
       :templates
       '(("p" "project" plain "* Goals\n\n%?\n\n* Tasks\n\n** TODO Add initial tasks\n\n* Dates\n\n"
         :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n#+category: ${title}\n#+filetags: Project")
         :unnarrowed t))))
 
-  ;; (global-set-key (kbd "C-c n p") #'mrf/org-roam-find-project)
+  ;; (global-set-key (kbd "C-c n p") #'mifi/org-roam-find-project)
   
 #+end_src
 
@@ -2316,10 +2389,10 @@ This means that we can automatically create a new note with our project capture 
 If you want to quickly capture new notes and tasks with a single keybinding into a place that you can review later, we can use org-roam-capture- to capture to a single-specific file like Inbox.org!
 
 Even though this file won’t have the timestamped filename, it will still be treated as a node in your Org Roam notes.
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   ;;; --------------------------------------------------------------------------
 
-  (defun mrf/org-roam-capture-inbox ()
+  (defun mifi/org-roam-capture-inbox ()
     (interactive)
     (org-roam-capture- :node (org-roam-node-create)
       :templates '(("i" "inbox" plain "* %?"
@@ -2329,9 +2402,10 @@ Even though this file won’t have the timestamped filename, it will still be tr
 
 *** Insert a node immediately
 
-#+begin_src emacs-lisp
-
-  (defun mrf/org-roam-node-insert-immediate (arg &rest args)
+#+begin_src emacs-lisp :tangle no
+  ;;; --------------------------------------------------------------------------
+  
+  (defun mifi/org-roam-node-insert-immediate (arg &rest args)
     (interactive "P")
     (let ((args (push arg args))
          (org-roam-capture-templates
@@ -2345,17 +2419,17 @@ If you’ve set up project note files like we mentioned earlier, you can set up 
 
 Much like the example before, we can either select a project that exists or automatically create a project note when it doesn’t exist yet.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   ;;; --------------------------------------------------------------------------
 
-  (defun mrf/org-roam-capture-task ()
+  (defun mifi/org-roam-capture-task ()
     (interactive)
     ;; Add the project file to the agenda after capture is finished
-    (add-hook 'org-capture-after-finalize-hook #'mrf/org-roam-project-finalize-hook)
+    (add-hook 'org-capture-after-finalize-hook #'mifi/org-roam-project-finalize-hook)
 
     ;; Capture the new task, creating the project file if necessary
     (org-roam-capture- :node (org-roam-node-read nil
-                             (mrf/org-roam-filter-by-tag "Project"))
+                             (mifi/org-roam-filter-by-tag "Project"))
       :templates '(("p" "project" plain "** TODO %?"
                    :if-new
                    (file+head+olp "%<%Y%m%d%H%M%S>-${slug}.org"
@@ -2366,10 +2440,10 @@ Much like the example before, we can either select a project that exists or auto
 *** Todo
 The following snippet sets up a hook for all Org task state changes and then copies the completed (DONE) entry to today’s note file
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   ;;; --------------------------------------------------------------------------
 
-  (defun mrf/org-roam-copy-todo-to-today ()
+  (defun mifi/org-roam-copy-todo-to-today ()
     (interactive)
     (let ((org-refile-keep t) ;; Set this to nil to delete the original!
          (org-roam-dailies-capture-templates
@@ -2390,8 +2464,9 @@ The following snippet sets up a hook for all Org task state changes and then cop
 #+end_src
 
 *** Table-of-contents
-#+begin_src emacs-lisp
-
+#+begin_src emacs-lisp :tangle no
+  ;;; --------------------------------------------------------------------------
+  
   (use-package toc-org
     :after org markdown-mode
     :hook
@@ -2404,8 +2479,9 @@ The following snippet sets up a hook for all Org task state changes and then cop
 
 *** Main Org-roam Configuration
 
-#+begin_src emacs-lisp
-
+#+begin_src emacs-lisp :tangle no
+  ;;; --------------------------------------------------------------------------
+  
   (use-package org-roam
     ;; :demand t  ;; Ensure org-roam is loaded by default
     :defer t
@@ -2421,10 +2497,10 @@ The following snippet sets up a hook for all Org task state changes and then cop
     :bind ( ("C-c n l" . org-roam-buffer-toggle)
           ("C-c n f" . org-roam-node-find)
           ("C-c n i" . org-roam-node-insert)
-          ("C-c n I" . mrf/org-roam-node-insert-immediate)
-          ("C-c n p" . mrf/org-roam-find-project)
-          ("C-c n t" . mrf/org-roam-capture-task)
-          ("C-c n b" . mrf/org-roam-capture-inbox)
+          ("C-c n I" . mifi/org-roam-node-insert-immediate)
+          ("C-c n p" . mifi/org-roam-find-project)
+          ("C-c n t" . mifi/org-roam-capture-task)
+          ("C-c n b" . mifi/org-roam-capture-inbox)
           :map org-mode-map
           ("C-M-i" . completion-at-point)
           :map org-roam-dailies-map
@@ -2434,11 +2510,11 @@ The following snippet sets up a hook for all Org task state changes and then cop
     ("C-c n d" . org-roam-dailies-map)
     :config
     (require 'org-roam-dailies) ;; Ensure the keymap is available
-    (mrf/org-roam-refresh-agenda-list)
+    (mifi/org-roam-refresh-agenda-list)
     (add-to-list 'org-after-todo-state-change-hook
       (lambda ()
         (when (equal org-state "DONE")
-        (mrf/org-roam-copy-todo-to-today))))
+        (mifi/org-roam-copy-todo-to-today))))
     (org-roam-db-autosync-mode))
 
 #+end_src
@@ -2450,6 +2526,7 @@ Org-transclusion lets you insert a copy of text content via a file link or ID li
 *This is experimental for me and will only enable it when testing.*
 
 #+begin_src emacs-lisp :tangle no
+  ;;; --------------------------------------------------------------------------
 
   (use-package org-transclusion
     :after org
@@ -2473,7 +2550,7 @@ Denote’s file-naming scheme is not limited to “notes”. It can be used for 
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
 
-  (defun mrf/define-denote-keymap ()
+  (defun mifi/define-denote-keymap ()
     (interactive)
     ;; Denote DOES NOT define any key bindings.  This is for the user to
     ;; decide.
@@ -2512,7 +2589,7 @@ Denote’s file-naming scheme is not limited to “notes”. It can be used for 
       (define-key map (kbd "C-c C-d C-k") #'denote-dired-rename-marked-files-with-keywords)
       (define-key map (kbd "C-c C-d C-R") #'denote-dired-rename-marked-files-using-front-matter))
 
-    (if (mrf/minor-mode-is-active 'which-key-mode)
+    (if (mifi/minor-mode-is-active 'which-key-mode)
       (which-key-add-key-based-replacements "C-c n f" "denote-find")))
 
 #+end_src
@@ -2546,7 +2623,7 @@ Denote’s file-naming scheme is not limited to “notes”. It can be used for 
     (add-hook 'dired-mode-hook #'denote-dired-mode-in-directories)
     (denote-rename-buffer-mode 1)
 
-    (mrf/define-denote-keymap) ;; Define the keymap for Denote.
+    (mifi/define-denote-keymap) ;; Define the keymap for Denote.
 
     (with-eval-after-load 'org-capture
       (setq denote-org-capture-specifiers "%l\n%i\n%?")
@@ -2726,12 +2803,14 @@ Denote’s file-naming scheme is not limited to “notes”. It can be used for 
 ***** ='official= which displays the official emacs logo
 ***** ='logo= which displays an alternative emacs logo
 ***** =1, 2 or 3= which displays one of the text banners
-***** ~"path/to/your/image.gif"~, ~"path/to/your/image.png"~ or ~"path/to/your/text.txt"~  which displays whatever gif/image/text you would prefer
+***** ~"path/to/your/image.gif"~,
+~"path/to/your/image.png"~ or
+~"path/to/your/text.txt"~  which displays whatever gif/image/text you would prefer
 ***** a cons of '("path/to/your/image.png" . "path/to/your/text.txt")
 
 ** Dashboard Setup
 #+begin_src emacs-lisp
-    ;;; --------------------------------------------------------------------------
+  ;;; --------------------------------------------------------------------------
 
   (use-package dashboard
     :custom
@@ -2756,7 +2835,9 @@ Denote’s file-naming scheme is not limited to “notes”. It can be used for 
 
 
 * Integrated Development Environments
+
 The following are configured for Python development and provide an IDE type experience.  It's worth noting that Eglot/LSP can be configured for other languages. The others are Python specific. Use the =configure= system to select which one is used (=Mrf Custom Selection=).
+
 *** Features
 - context-sensitive code completion
 - jump to definitions
@@ -2770,13 +2851,13 @@ The following are configured for Python development and provide an IDE type expe
 <<<Eglot>>> is the Emacs client for the Language Server Protocol (LSP). Eglot provides infrastructure and a set of commands for enriching the source code editing capabilities of Emacs via LSP. Eglot itself is completely language-agnostic, but it can support any programming language for which there is a language server and an Emacs major mode.
 
 #+begin_src emacs-lisp
-    ;;; --------------------------------------------------------------------------
-    ;;; Emacs Polyglot is the Emacs LSP client that stays out of your way:
+  ;;; --------------------------------------------------------------------------
+  ;;; Emacs Polyglot is the Emacs LSP client that stays out of your way:
 
-  (defvar mrf/clangd-path (executable-find "clangd")
+  (defvar mifi/clangd-path (executable-find "clangd")
     "Clangd executable path.")
 
-  (defun mrf/projectile-proj-find-function (dir)
+  (defun mifi/projectile-proj-find-function (dir)
     "Find the project `DIR' function for Projectile.
     Thanks @wyuenho on GitHub"
     (let ((root (projectile-project-root dir)))
@@ -2786,7 +2867,7 @@ The following are configured for Python development and provide an IDE type expe
     :defer t
     :config
     (unless theme-did-load
-      (mrf/load-theme-from-selector)))
+      (mifi/load-theme-from-selector)))
 
 #+end_src
 
@@ -2803,14 +2884,15 @@ The JSON-RPC protocol is used to communicate with many different types of server
     ;; yet, go ahead and try. This could prevent a startup without the theme
     ;; properly loaded.
     (unless theme-did-load
-      (mrf/load-theme-from-selector)))
+      (mifi/load-theme-from-selector)))
 
 #+end_src
 
 *** Eglot Setup
 
 #+begin_src emacs-lisp
-
+  ;;; --------------------------------------------------------------------------
+  
   (use-package eglot
     :when (equal custom-ide 'custom-ide-eglot)
     ;; :ensure (:repo "https://github.com/emacs-mirror/emacs" :local-repo "eglot" :branch "master"
@@ -2840,7 +2922,7 @@ The JSON-RPC protocol is used to communicate with many different types of server
     ;; theme loading mechanism. Our theme could fail to load because of this.  So,
     ;; to get our themes loading properly, load it here if not already loaded.
     (unless theme-did-load
-      (mrf/load-theme-from-selector))
+      (mifi/load-theme-from-selector))
     (add-to-list 'eglot-stay-out-of 'flymake)
     (if (featurep 'company) ;; Company should be loaded.
       (bind-keys :map eglot-mode-map
@@ -2869,14 +2951,14 @@ Client for Language Server Protocol (v3.14). lsp-mode aims to provide IDE-like e
   (use-package lsp-mode
     :when (equal custom-ide 'custom-ide-lsp)
     :commands (lsp lsp-deferred)
-    :hook (lsp-mode . mrf/lsp-mode-setup)
+    :hook (lsp-mode . mifi/lsp-mode-setup)
     :init
     (setq lsp-keymap-prefix "C-c l")  ;; Or 'C-l', 's-l'
     :config
     (if (featurep 'company)
       (bind-keys :map lsp-mode-map
         ("<tab>" . company-indent-or-complete-common)))
-    (mrf/define-rust-lsp-values)
+    (mifi/define-rust-lsp-values)
     (lsp-enable-which-key-integration t))
   
 #+end_src
@@ -2943,7 +3025,7 @@ This function is called from the lsp-mode-hook when enering or leaving LSP mode.
   ;;; --------------------------------------------------------------------------
   ;;; LSP mode setup hook
 
-  (defun mrf/lsp-mode-setup ()
+  (defun mifi/lsp-mode-setup ()
     "Custom LSP setup function."
     (add-hook 'lsp-after-open-hook 'lsp-enable-imenu)
     (when (equal custom-ide 'custom-ide-lsp)
@@ -2956,8 +3038,9 @@ This function is called from the lsp-mode-hook when enering or leaving LSP mode.
 *** LSP configuration for Rust
 
 #+begin_src emacs-lisp
-
-  (defun mrf/define-rust-lsp-values ()
+  ;;; --------------------------------------------------------------------------
+  
+  (defun mifi/define-rust-lsp-values ()
     (setq-default lsp-rust-analyzer-cargo-watch-command "clippy")
     (setq-default lsp-eldoc-render-all t)
     (setq-default lsp-idle-delay 0.6)
@@ -2972,7 +3055,7 @@ This function is called from the lsp-mode-hook when enering or leaving LSP mode.
     (setq-default lsp-rust-analyzer-display-closure-return-type-hints t)
     (setq-default lsp-rust-analyzer-display-parameter-hints nil)
     (setq-default lsp-rust-analyzer-display-reborrow-hints nil))
-  
+
 #+end_src
 
 ** LSP Bridge
@@ -3020,6 +3103,13 @@ Advantages of lsp-bridge:
 ** Anaconda-mode
 
 Anaconda-mode provides Code navigation, documentation lookup and completion for Python.
+*Note* To use this package, you need to install =setuptools=
+
+#+begin_src example
+
+  pip3 install setuptools
+  
+#+end_src
 
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
@@ -3043,7 +3133,15 @@ Anaconda-mode provides Code navigation, documentation lookup and completion for 
 #+end_src
 
 ** ELPY
+
 Elpy is an Emacs package to bring powerful Python editing to Emacs.  It combines and configures a number of other packages, both written in Emacs Lisp as well as Python.  Elpy is fully documented at [[https://elpy.readthedocs.io/en/latest/index.html][read the docs]].
+
+Once installed, Elpy will automatically provide code completion, syntax error highlighting and code hinting (in the modeline) for python files. Elpy offers a lot of features, but the following keybindings should be enough to get started:
+
+C-c C-c evaluates the current python script (or region if something is selected) in an interactive python shell. The python shell is automatically displayed aside of your script.
+C-RET evaluates the current statement (current line plus the following nested lines).
+C-c C-z switches between your script and the interactive shell.
+C-c C-d displays documentation for the thing under cursor. The documentation will pop in a different buffer, that can be closed with q.
 
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
@@ -3095,9 +3193,10 @@ As compared to other packages which accomplish similar tasks, including IDO, Ivy
 TL;DR prescient.el: simple but effective sorting and filtering for Emacs.
 
 #+begin_src emacs-lisp
-
-  (use-package prescient)
+  ;;; --------------------------------------------------------------------------
   
+  (use-package prescient)
+
 #+end_src
 
 ** Orderless
@@ -3267,10 +3366,59 @@ Counsel takes this further, providing versions of common Emacs commands that are
   
 #+end_src
 
+*** Cape Configuration
+
+#+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
+  ;; Add extensions
+  (use-package cape
+    :when (equal completion-handler 'comphand-corfu)
+    :after corfu
+    ;; Bind dedicated completion commands
+    ;; Alternative prefix keys: C-c p, M-p, M-+, ...
+    :bind ( ("C-c C-p p" . completion-at-point) ;; capf
+            ("C-c C-p t" . complete-tag)        ;; etags
+            ("C-c C-p d" . cape-dabbrev)        ;; or dabbrev-completion
+            ("C-c C-p h" . cape-history)
+            ("C-c C-p f" . cape-file)
+            ("C-c C-p k" . cape-keyword)
+            ("C-c C-p s" . cape-elisp-symbol)
+            ("C-c C-p e" . cape-elisp-block)
+            ("C-c C-p a" . cape-abbrev)
+            ("C-c C-p l" . cape-line)
+            ("C-c C-p w" . cape-dict)
+            ("C-c C-p :" . cape-emoji)
+            ("C-c C-p \\" . cape-tex)
+            ("C-c C-p _" . cape-tex)
+            ("C-c C-p ^" . cape-tex)
+            ("C-c C-p &" . cape-sgml)
+            ("C-c C-p r" . cape-rfc1345))
+    :init
+    ;; Add to the global default value of `completion-at-point-functions' which is
+    ;; used by `completion-at-point'.  The order of the functions matters, the
+    ;; first function returning a result wins.  Note that the list of buffer-local
+    ;; completion functions takes precedence over the global list.
+    (add-hook 'completion-at-point-functions #'cape-dabbrev)
+    (add-hook 'completion-at-point-functions #'cape-file)
+    (add-hook 'completion-at-point-functions #'cape-elisp-block)
+    ;;(add-hook 'completion-at-point-functions #'cape-history)
+    ;;(add-hook 'completion-at-point-functions #'cape-keyword)
+    ;;(add-hook 'completion-at-point-functions #'cape-tex)
+    ;;(add-hook 'completion-at-point-functions #'cape-sgml)
+    ;;(add-hook 'completion-at-point-functions #'cape-rfc1345)
+    ;;(add-hook 'completion-at-point-functions #'cape-abbrev)
+    ;;(add-hook 'completion-at-point-functions #'cape-dict)
+    ;;(add-hook 'completion-at-point-functions #'cape-elisp-symbol)
+    ;;(add-hook 'completion-at-point-functions #'cape-line)
+    )
+
+#+end_src
+
 *** Corfu-prescient
 
 #+begin_src emacs-lisp
-
+  ;;; --------------------------------------------------------------------------
+  
   (use-package corfu-prescient
     :when (equal completion-handler 'comphand-corfu)
     :after (corfu prescient))
@@ -3326,6 +3474,7 @@ Marginalia are marks or annotations placed at the margin of the page of a book o
 *** Icons for Marginalia
 
 #+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
 
   (use-package all-the-icons-completion
     :after (marginalia all-the-icons)
@@ -3338,6 +3487,7 @@ Marginalia are marks or annotations placed at the margin of the page of a book o
 Consult provides search and navigation commands based on the Emacs completion function completing-read. Completion allows you to quickly select an item from a list of candidates. Consult offers asynchronous and interactive consult-grep and  consult-ripgrep commands, and the line-based search command consult-line. Furthermore Consult provides an advanced buffer switching command consult-buffer to switch between buffers, recently opened files, bookmarks and buffer-like candidates from other sources. Some of the Consult commands are enhanced versions of built-in Emacs commands.
 
 #+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
 
   (use-package consult
     :when (equal completion-handler 'comphand-vertico)
@@ -3498,7 +3648,7 @@ Embark makes it easy to choose a command to run based on what is near point, bot
 This is more support for a language rather than a langage itself
 
 #+begin_src emacs-lisp
-    ;;; --------------------------------------------------------------------------
+  ;;; --------------------------------------------------------------------------
 
   (use-package flycheck
     :unless (equal custom-ide 'custom-ide-elpy)
@@ -3530,7 +3680,7 @@ Some functions that are used during the initialization of tree-sitter.
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
 
-  (defun mrf/tree-sitter-setup ()
+  (defun mifi/tree-sitter-setup ()
     (tree-sitter-hl-mode t))
 
   (defun lsp-go-install-save-hooks ()
@@ -3556,7 +3706,7 @@ Some functions that are used during the initialization of tree-sitter.
       ((equal custom-ide 'custom-ide-lsp)
         (add-hook 'go-mode-hook 'lsp-deferred)))
     :hook
-    (tree-sitter-after-on . mrf/tree-sitter-setup)
+    (tree-sitter-after-on . mifi/tree-sitter-setup)
     (typescript-mode . lsp-deferred)
     ;; (c-mode . lsp-deferred)
     ;; (c++-mode . lsp-deferred)
@@ -3633,7 +3783,7 @@ The following are keymaps that are used by by the custom-ide and for python-mode
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
 
-  (defun mrf/set-custom-ide-python-keymaps ()
+  (defun mifi/set-custom-ide-python-keymaps ()
     (cond
       ((equal custom-ide 'custom-ide-lsp)
         (bind-keys :map python-mode-map
@@ -3674,15 +3824,15 @@ These functions are used during python intialization or file loading. This is wh
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
 
-  (defun mrf/load-python-file-hook ()
+  (defun mifi/load-python-file-hook ()
     (python-mode)
     (when (equal custom-ide 'custom-ide-anaconda)
       (anaconda-mode 1))
-    (message ">>> mrf/load-python-file-hook")
+    (message ">>> mifi/load-python-file-hook")
     (setq highlight-indentation-mode -1)
     (setq display-fill-column-indicator-mode t))
 
-  (defun mrf/before-save ()
+  (defun mifi/before-save ()
     "Force the check of the current python file being saved."
     (when (eq major-mode 'python-mode) ;; Python Only
       (flycheck-mode 0)
@@ -3691,8 +3841,8 @@ These functions are used during python intialization or file loading. This is wh
 
   ;; Enable DAP or DAPE, Eglot or LSP modes
   ;; This function should only be called ONCE during python-mode startup.
-  (defun mrf/enable-python-features ()
-    (message ">>> mrf/enable-python-features")
+  (defun mifi/enable-python-features ()
+    (message ">>> mifi/enable-python-features")
     ;; _____________________________
     ;; check for which debug adapter
     (cond
@@ -3710,13 +3860,13 @@ These functions are used during python intialization or file loading. This is wh
       ((equal custom-ide 'custom-ide-lsp)
         (lsp-deferred))))
 
-  (defun mrf/python-mode-triggered ()
+  (defun mifi/python-mode-triggered ()
     ;; (eldoc-box-hover-at-point-mode t) ;; Using Mitch Key for this
-    (mrf/enable-python-features)
-    (mrf/set-custom-ide-python-keymaps)
+    (mifi/enable-python-features)
+    (mifi/set-custom-ide-python-keymaps)
     (unless (featurep 'yasnippet)
       (yas-global-mode t))
-    (add-hook 'before-save-hook 'mrf/before-save)
+    (add-hook 'before-save-hook 'mifi/before-save)
     (set-fill-column 80))
 
 #+end_src
@@ -3728,10 +3878,10 @@ This is the primary Python setup that is triggered by the first load of the Pyth
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
 
-  (add-to-list 'auto-mode-alist '("\\.py\\'" . mrf/load-python-file-hook))
+  (add-to-list 'auto-mode-alist '("\\.py\\'" . mifi/load-python-file-hook))
 
   (use-package python-mode
-    :hook (python-mode . mrf/python-mode-triggered))
+    :hook (python-mode . mifi/python-mode-triggered))
 
   (use-package blacken :after python) ;Format Python file upon save.
 
@@ -3830,7 +3980,7 @@ This is a basic configuration for the TypeScript language so that =.ts= files ac
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
 
-  (defun mrf/load-js-file-hook ()
+  (defun mifi/load-js-file-hook ()
     (js2-mode)
 
     (when (equal debug-adapter 'debug-adapter-dap-mode)
@@ -3845,11 +3995,11 @@ This is a basic configuration for the TypeScript language so that =.ts= files ac
 
   (use-package nodejs-repl :defer t)
 
-  (defun mrf/nvm-which ()
+  (defun mifi/nvm-which ()
     (let ((output (shell-command-to-string "source ~/.nvm/nvm.sh; nvm which")))
       (cadr (split-string output "[\n]+" t))))
 
-  (setq nodejs-repl-command #'mrf/nvm-which)
+  (setq nodejs-repl-command #'mifi/nvm-which)
 
 #+end_src
 
@@ -3875,7 +4025,7 @@ This is a basic configuration for the TypeScript language so that =.ts= files ac
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
 
-  (defun mrf/load-c-file-hook ()
+  (defun mifi/load-c-file-hook ()
     (c-mode)
     (unless (featurep 'realgud))
     (use-package realgud)
@@ -3895,7 +4045,7 @@ This is a basic configuration for the TypeScript language so that =.ts= files ac
       (compile compile-command)))
 
   (global-set-key [f9] 'code-compile)
-  (add-to-list 'auto-mode-alist '("\\.c\\'" . mrf/load-c-file-hook))
+  (add-to-list 'auto-mode-alist '("\\.c\\'" . mifi/load-c-file-hook))
 #+end_src
 
 *** GameBoy Development
@@ -3926,6 +4076,7 @@ Rust is blazingly fast and memory-efficient: with no runtime or garbage collecto
 *** Rustic package configuration
 
 #+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
 
   (use-package rustic
     :ensure t
@@ -3983,6 +4134,7 @@ Rust is blazingly fast and memory-efficient: with no runtime or garbage collecto
 *** Cargo-mode configuration
 
 #+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
 
   (use-package cargo-mode
     :defer t
@@ -4013,7 +4165,7 @@ Make sure that =gopls= and =dlv= are installed. gopls is the Go! (or golang)  la
 *** Main go-mode config
 
 #+begin_src emacs-lisp
-    ;;; --------------------------------------------------------------------------
+  ;;; --------------------------------------------------------------------------
 
   (defun eglot-format-buffer-on-save ()
     (add-hook 'before-save-hook #'eglot-format-buffer -10 t))
@@ -4024,7 +4176,7 @@ Make sure that =gopls= and =dlv= are installed. gopls is the Go! (or golang)  la
     :custom
     (compile-command "go build -v && go test -v && go vet")
     :bind (:map go-mode-map
-  	  ("C-c C-c" . 'compile))
+          ("C-c C-c" . 'compile))
     :config
     (eglot-format-buffer-on-save)
     (define-key (current-local-map) "\C-c\C-c" 'compile)
@@ -4043,6 +4195,7 @@ Make sure that =gopls= and =dlv= are installed. gopls is the Go! (or golang)  la
 for variable, functions and current argument position of function.
 
 #+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
 
   (use-package go-eldoc
     :after go-mode
@@ -4060,6 +4213,7 @@ for variable, functions and current argument position of function.
 Integration of the Go 'guru' analysis tool into Emacs.
 
 #+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
 
   (use-package go-guru
     :after go-mode
@@ -4188,7 +4342,7 @@ Please note that DAP is triggered after loading of various languages (for Emacs 
     (message "prepare-dape end")
     (bind-keys :map prog-mode-map
       ("C-c ." . dape-hydra/body))
-    (mrf/additional-dape-configs))
+    (mifi/additional-dape-configs))
   
 #+end_src
 
@@ -4197,13 +4351,13 @@ Please note that DAP is triggered after loading of various languages (for Emacs 
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
 
-  (setq mrf/vscode-js-debug-dir (file-name-concat user-emacs-directory "dape/vscode-js-debug"))
+  (setq mifi/vscode-js-debug-dir (file-name-concat user-emacs-directory "dape/vscode-js-debug"))
 
-  (defun mrf/install-vscode-js-debug ()
+  (defun mifi/install-vscode-js-debug ()
     "Run installation procedure to install JS debugging support"
     (interactive)
-    (mkdir mrf/vscode-js-debug-dir t)
-    (let ((default-directory (expand-file-name mrf/vscode-js-debug-dir)))
+    (mkdir mifi/vscode-js-debug-dir t)
+    (let ((default-directory (expand-file-name mifi/vscode-js-debug-dir)))
 
       (vc-git-clone "https://github.com/microsoft/vscode-js-debug.git" "." nil)
       (call-process "npm" nil "*snam-install*" t "install")
@@ -4218,7 +4372,7 @@ This is meant to be evaluated and run once. Calling this function will clone the
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
 
-  ;; (mrf/install-vscode-js-debug)
+  ;; (mifi/install-vscode-js-debug)
 
 #+end_src
 
@@ -4229,7 +4383,7 @@ This is meant to be evaluated and run once. Calling this function will clone the
 :Golang:
 #+begin_src emacs-lisp
   ;;; ------------------------------------------------------------------------
-  (defun mrf/additional-dape-configs ()
+  (defun mifi/additional-dape-configs ()
     "Additional DAPE configruations for various languages."
 
     (with-eval-after-load
@@ -4257,23 +4411,22 @@ Below are all the necessary functions and definitions for Hydra use under DAPE.
 #+begin_src emacs-lisp :output silent
   ;;; --------------------------------------------------------------------------
 
-  (defun mrf/dape-end-debug-session ()
+  (defun mifi/dape-end-debug-session ()
     "End the debug session."
     (interactive)
     (dape-quit))
 
-  (defun mrf/dape-delete-all-debug-sessions ()
+  (defun mifi/dape-delete-all-debug-sessions ()
     "End the debug session and delete all breakpoints."
     (interactive)
     (dape-breakpoint-remove-all)
-    (mrf/dape-end-debug-session))
+    (mifi/dape-end-debug-session))
   
 #+end_src
 
 ***** DAPE Hydra Definition
 
 #+begin_src emacs-lisp
-
   ;;; --------------------------------------------------------------------------
 
   (defun define-dape-hydra ()
@@ -4311,12 +4464,12 @@ Below are all the necessary functions and definitions for Hydra use under DAPE.
       ("dd" dape)
       ("dw" dape-watch-dwim)
       ("ee" dape-evaluate-expression)
-      ("dx" mrf/dape-end-debug-session)
-      ("dX" mrf/dape-delete-all-debug-sessions)
+      ("dx" mifi/dape-end-debug-session)
+      ("dX" mifi/dape-delete-all-debug-sessions)
       ("dp" dape-prepare)
       ("x" nil "exit Hydra" :color yellow)
-      ("q" mrf/dape-end-debug-session "quit" :color blue)
-      ("Q" mrf/dape-delete-all-debug-sessions :color red)))
+      ("q" mifi/dape-end-debug-session "quit" :color blue)
+      ("Q" mifi/dape-delete-all-debug-sessions :color red)))
   
 #+end_src
 
@@ -4372,6 +4525,7 @@ The Debug Adapter Protocol makes it possible to implement a generic debugger for
 Something that is needed for Rust and Go debugging.
 
 #+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
 
   (use-package dap-lldb
     :when (equal debug-adapter 'debug-adapter-dap-mode)
@@ -4413,7 +4567,7 @@ Something that is needed for Rust and Go debugging.
   ;;; --------------------------------------------------------------------------
   ;;; DAP for NodeJS
 
-  (defun mrf/setup-dap-node ()
+  (defun mifi/setup-dap-node ()
     "Require dap-node feature and run dap-node-setup if VSCode module isn't already installed"
     (require 'dap-node)
     (unless (file-exists-p dap-node-debug-path) (dap-node-setup)))
@@ -4421,8 +4575,8 @@ Something that is needed for Rust and Go debugging.
   (use-package dap-node
     :when (equal debug-adapter 'debug-adapter-dap-mode)
     :disabled
-    :hook ((typescript-mode . mrf/setup-dap-node)
-          (js2-mode . mrf/setup-dap-node))
+    :hook ((typescript-mode . mifi/setup-dap-node)
+          (js2-mode . mifi/setup-dap-node))
     ;;:ensure (:host github :repo "emacs-lsp/dap-mode" :files (:defaults "icons" "dap-mode-pkg.el"))
     :after dap-mode
     :config
@@ -4441,6 +4595,7 @@ Something that is needed for Rust and Go debugging.
 **** DAP Templates For Various Languages :Python:Rust:
 
 #+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
 
   (with-eval-after-load 'dap-lldb
     (dap-register-debug-template
@@ -4479,7 +4634,7 @@ Below are all the necessary functions and definitions for Hydra use under DAP.
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
 
-  (defun mrf/dap-end-debug-session ()
+  (defun mifi/dap-end-debug-session ()
     "End the debug session and delete project Python buffers."
     (interactive)
     (kill-matching-buffers "\*Python :: Run file [from|\(buffer]*" nil :NO-ASK)
@@ -4487,13 +4642,13 @@ Below are all the necessary functions and definitions for Hydra use under DAP.
     (kill-matching-buffers "\*dap-ui-*" nil :NO-ASK)
     (dap-disconnect (dap--cur-session)))
 
-  (defun mrf/dap-delete-all-debug-sessions ()
+  (defun mifi/dap-delete-all-debug-sessions ()
     "End the debug session and delete project Python buffers and all breakpoints."
     (interactive)
     (dap-breakpoint-delete-all)
-    (mrf/dap-end-debug-session))
+    (mifi/dap-end-debug-session))
 
-  (defun mrf/dap-begin-debug-session ()
+  (defun mifi/dap-begin-debug-session ()
     "Begin a debug session with several dap windows enabled."
     (interactive)
     (dap-ui-show-many-windows)
@@ -4552,11 +4707,11 @@ Below are all the necessary functions and definitions for Hydra use under DAP.
       ("ea" dap-ui-expressions-add)
       ("er" dap-eval-region)
       ("es" dap-eval-thing-at-point)
-      ("dx" mrf/dap-end-debug-session)
-      ("dX" mrf/dap-delete-all-debug-sessions)
+      ("dx" mifi/dap-end-debug-session)
+      ("dX" mifi/dap-delete-all-debug-sessions)
       ("x" nil "exit Hydra" :color yellow)
-      ("q" mrf/dap-end-debug-session "quit" :color blue)
-      ("Q" mrf/dap-delete-all-debug-sessions :color red)))
+      ("q" mifi/dap-end-debug-session "quit" :color blue)
+      ("Q" mifi/dap-delete-all-debug-sessions :color red)))
 
 #+end_src
 
@@ -4679,6 +4834,7 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
 This is the default built-in project system. For those not needing the full-featured ~projectile~, this package is generally enough.
 
 #+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
 
   (defun project-find-go-module (dir)
     (when-let ((root (locate-dominating-file dir "go.mod")))
@@ -4794,7 +4950,7 @@ For more thoughts on Eshell, check out these articles by Pierre Neidhardt:
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
 
-  (defun mrf/configure-eshell ()
+  (defun mifi/configure-eshell ()
     ;; Save command history when commands are entered
     (add-hook 'eshell-pre-command-hook 'eshell-save-some-history)
     ;; Truncate buffer for performance
@@ -4810,7 +4966,7 @@ For more thoughts on Eshell, check out these articles by Pierre Neidhardt:
   (use-package eshell
     :ensure
     :defer t
-    :hook (eshell-first-time-mode . mrf/configure-eshell)
+    :hook (eshell-first-time-mode . mifi/configure-eshell)
     :config
     (with-eval-after-load 'esh-opt
       (setq eshell-destroy-buffer-when-process-dies t)
@@ -4887,9 +5043,12 @@ Dired is a built-in file manager for Emacs that does some pretty amazing things!
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
 
-  ;; Prefer g-prefixed coreutils version of standard utilities when available
+    ;; Prefer g-prefixed coreutils version of standard utilities when available
   (let ((gls (executable-find "gls")))
-    (when gls (setq insert-directory-program gls)))
+    (when gls (setq-default insert-directory-program gls
+              dired-use-ls-dired t
+                ;; Needed to fix an issue on Mac which causes dired to fail
+                dired-listing-switches "-al --group-directories-first")))
 
   (use-package all-the-icons-dired
     :after dired
@@ -4909,8 +5068,6 @@ Dired is a built-in file manager for Emacs that does some pretty amazing things!
 
 #+end_src
 
-#+RESULTS:
-: #s(hash-table size 65 test eql rehash-size 1.5 rehash-threshold 0.8125 data (:use-package (26178 33358 905208 0) :use-package-secs (0 0 140 0)))
 
 *** Single Window
 Dired, by default, opens up multiple windows - one for each directory. It would be nice to be able to limit =dired= to use just a single window. [[https://codeberg.org/amano.kenji/dired-single][dired-single]] does just that. We configure =dired-single= to open up a directory while in dired with the =C-<return>=  key combination. This will then open up the directory in the buffer named =*dired*=. Whenever a directory is opened with the =C-<return>= key sequence, that directory will then replace what's currently in the =*dired*= buffer.
@@ -4919,7 +5076,7 @@ Dired, by default, opens up multiple windows - one for each directory. It would 
   ;;; --------------------------------------------------------------------------
   ;; Single Window dired - don't continually open new buffers
 
-  (defun mrf/dired-single-keymap-init ()
+  (defun mifi/dired-single-keymap-init ()
     "Bunch of stuff to run for dired, either immediately or when it's
      loaded."
     (define-key dired-mode-map
@@ -4932,7 +5089,7 @@ Dired, by default, opens up multiple windows - one for each directory. It would 
   (use-package dired-single
     :after dired
     :config
-    (mrf/dired-single-keymap-init))
+    (mifi/dired-single-keymap-init))
 #+end_src
 
 
@@ -5055,11 +5212,11 @@ Here are some helpful functions.
   ;;; --------------------------------------------------------------------------
   ;; Functions to insert the buffer file name at the current cursor position
   ;;
-  (defun mrf/insert-buffer-full-name-at-point ()
+  (defun mifi/insert-buffer-full-name-at-point ()
     (interactive)
     (insert buffer-file-name))
 
-  (defun mrf/insert-buffer-name-at-point ()
+  (defun mifi/insert-buffer-name-at-point ()
     (interactive)
     (insert (file-name-nondirectory (buffer-file-name))))
 
@@ -5116,6 +5273,7 @@ Here are some helpful functions.
 This minor mode sets background color to strings that match color names, e.g. #0000FF is displayed in white with a blue background.
 
 #+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
 
   (use-package rainbow-mode
     :hook (prog-mode . (lambda () (rainbow-mode t))))
@@ -5127,6 +5285,7 @@ This minor mode sets background color to strings that match color names, e.g. #0
 highlight-defined is an Emacs minor mode that highlights defined Emacs Lisp symbols in source code.
 
 #+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
 
   (use-package highlight-defined
     :hook (emacs-lisp-mode . highlight-defined-mode))
@@ -5170,6 +5329,7 @@ Designate any buffer to “popup” status, and it will stay out of your way. Di
 markdown-mode is a major mode for editing Markdown-formatted text. The latest stable version is markdown-mode 2.5, released on Feb 12, 2022. See the release notes for details. markdown-mode is free software, licensed under the GNU GPL, version 3 or later.
 
 #+begin_src emacs-lisp :tangle no
+  ;;; --------------------------------------------------------------------------
 
   (use-package markdown-mode
     :ensure t
@@ -5183,6 +5343,7 @@ markdown-mode is a major mode for editing Markdown-formatted text. The latest st
 Instant Github-flavored Markdown/Org preview using Grip (GitHub Readme Instant Preview).
 
 #+begin_src emacs-lisp :tangle no
+  ;;; --------------------------------------------------------------------------
 
   ;; Use keybindings
   (use-package grip-mode
@@ -5203,17 +5364,18 @@ Mitch's minor mode (or <<<mmm>>>) just defines frequently used hot-keys. It work
 
 *** Mitch's Minor Mode Functions
 #+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
   
-  (defun mrf/set-fill-column-interactively (num)
+  (defun mifi/set-fill-column-interactively (num)
     "Asks for the fill column."
     (interactive "nfill-column: ")
     (set-fill-column num))
 
-  (defun mrf/set-org-fill-column-interactively (num)
+  (defun mifi/set-org-fill-column-interactively (num)
     "Asks for the fill column for Org mode."
     (interactive "norg-fill-column: ")
     (setq custom-org-fill-column num)
-    (mrf/org-mode-visual-fill)
+    (mifi/org-mode-visual-fill)
     (redraw-display))
 
 #+end_src
@@ -5224,15 +5386,16 @@ This is a set of keymaps that do the same things as the popup menu. Both are her
 
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
-  (defun mrf/define-mmm-minor-mode-map ()
+
+  (defun mifi/define-mmm-minor-mode-map ()
     (defvar mmm-keys-minor-mode-map
       (let ((map (make-sparse-keymap)))
         (bind-keys :map map
-  	("M-RET $" . jinx-correct)
+        ("M-RET $" . jinx-correct)
           ("M-RET p" . pulsar-pulse-line)
           ("M-RET d" . dashboard-open)
           ("M-RET S e" . eshell)
-          ("M-RET f" . mrf/set-fill-column-interactively)
+          ("M-RET f" . mifi/set-fill-column-interactively)
           ("M-RET r" . repeat-mode)
           ("M-RET S i" . ielm)
           ("M-RET S v" . vterm-other-window)
@@ -5250,7 +5413,7 @@ This is a set of keymaps that do the same things as the popup menu. Both are her
       :init-value t
       :lighter " mmm-keys"))
 
-  (mrf/define-mmm-minor-mode-map)
+  (mifi/define-mmm-minor-mode-map)
   (mmm-keys-minor-mode 1)
 
 #+end_src
@@ -5261,8 +5424,9 @@ For those menus that would normally show up as either =prefix= or =lambda=, give
 shown. Plus, some keys are mode specific and will only appear when that major mode is active.
 
 #+begin_src emacs-lisp :results output silent
+  ;;; --------------------------------------------------------------------------
 
-  (defun mrf/mmm-handle-context-keys ()
+  (defun mifi/mmm-handle-context-keys ()
     "Enable or Disable keys based upon featurep context."
     (let ((map mmm-keys-minor-mode-map))
       (unbind-key "M-RET o f" map)
@@ -5273,15 +5437,15 @@ shown. Plus, some keys are mode specific and will only appear when that major mo
         ((equal major-mode 'org-mode)
         (bind-keys :map map
           ("M-RET M-RET" . org-insert-heading)
-          ("M-RET o f" . mrf/set-org-fill-column-interactively)
+          ("M-RET o f" . mifi/set-org-fill-column-interactively)
           ("M-RET o l" . org-toggle-link-display)))
         ((equal major-mode 'python-mode)
         (bind-keys :map map
           ("M-RET P" . 'pydoc-at-point))))))
 
-  (defun mrf/mmm-update-menu ()
+  (defun mifi/mmm-update-menu ()
     (interactive)
-    (mrf/mmm-handle-context-keys)
+    (mifi/mmm-handle-context-keys)
     (which-key-add-key-based-replacements "M-RET S" "shells")
     (which-key-add-key-based-replacements "M-RET T" "theme-keys")
     (which-key-add-key-based-replacements "M-RET P" "python-menu")
@@ -5290,7 +5454,7 @@ shown. Plus, some keys are mode specific and will only appear when that major mo
     (which-key-add-key-based-replacements "M-RET f" "set-fill-column")
     (which-key-add-key-based-replacements "M-RET" "Mitch's Menu"))
 
-  (add-hook 'which-key-inhibit-display-hook 'mrf/mmm-update-menu)
+  (add-hook 'which-key-inhibit-display-hook 'mifi/mmm-update-menu)
 
 #+end_src
 
@@ -5308,20 +5472,23 @@ shown. Plus, some keys are mode specific and will only appear when that major mo
       (setq-default initial-scratch-message
         (format
         ";; Hello, World and Happy hacking %s!\n%s\n\n" user-login-name
-        ";; Press M-RET (Meta-RET) to open Mitch's Context Aware Menu"))))
+        ";; Press M-RET (Meta-RET) to open Mitch's Context Aware Menu"))
+      (when dashboard-landing-screen (dashboard-open))))
 
-  (if dashboard-landing-screen
+  (when dashboard-landing-screen
     ;; (add-hook 'inferior-emacs-lisp-mode 'dashboard-open) ;; IELM open?
-    (add-hook 'lisp-interaction-mode-hook 'dashboard-open))
+    (add-hook 'elpaca-after-init-hook
+        (lambda ()
+          (add-hook 'lisp-interaction-mode-hook #'dashboard-open))))
 
 #+end_src
-
 
 ** Exiting and Cleanup
 
 #+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
 
-  (defun mrf/cleanup-when-exiting ()
+  (defun mifi/cleanup-when-exiting ()
     (let ((backdir (format "%s/config-backup" working-files-directory)))
       (make-directory backdir t)
       ;; Backup init.el
@@ -5332,7 +5499,7 @@ shown. Plus, some keys are mode specific and will only appear when that major mo
       ;;   (expand-file-name "emacs-config.org" emacs-config-directory)
       ;;   (expand-file-name "emacs-config.org" backdir) t)))
 
-  (add-hook 'kill-emacs-hook #'mrf/cleanup-when-exiting)
+  (add-hook 'kill-emacs-hook #'mifi/cleanup-when-exiting)
 
 #+end_src
 
@@ -5340,31 +5507,42 @@ shown. Plus, some keys are mode specific and will only appear when that major mo
 * Lastly
 
 ** Ignore Line Number Mode
+
 The following is a list of major mode-hooks variables that are set so that they don't follow the normal global line number mode. If there is any mode that doesn't appear here, more than likely it will have line numbers added. Just add the hook name here to make it so that major mode not have line numbers. This doesn't effect minor modes.
 
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
   ;; Ignore Line Numbers for the following modes:
 
-  ;; Line #'s appear everywhere
+  ;; Line #'s appear everywhere if global-display-line-numbers-mode is set
   ;; ... except for when in these modes
-  (dolist (mode '(dashboard-mode-hook
-                   helpful-mode-hook
-                   eshell-mode-hook
-                   eww-mode-hook
-                   help-mode-hook
-                   org-mode-hook
-                   shell-mode-hook
-                   term-mode-hook
-                   treemacs-mode-hook
-                   vterm-mode-hook))
-    (add-hook mode (lambda () (display-line-numbers-mode 0))))
+  (when (equal global-display-line-numbers-mode t)
+    (dolist (mode '( dashboard-mode-hook
+                     helpful-mode-hook
+                     eshell-mode-hook
+                     eww-mode-hook
+                     help-mode-hook
+                     org-mode-hook
+                     shell-mode-hook
+                     term-mode-hook
+                     treemacs-mode-hook
+                     vterm-mode-hook))
+      (add-hook mode (lambda () (display-line-numbers-mode 0)))))
+  
+#+end_src
 
+** Supress common warnings
+
+#+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
+  ;; Supress common annoying warning.
+  ;; These can still be found in the  *Warnings* buffer
   (setq warning-suppress-types '((package reinitialization)
                                   (package-initialize)
                                   (package)
                                   (use-package)
                                   (python-mode)))
+  
 #+end_src
 
 ** Lispy Footer
