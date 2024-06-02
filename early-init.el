@@ -67,11 +67,11 @@
      ;;; apps are not started from a shell."
   (interactive)
   (setq exec-path '( "/Users/strider/.cargo/bin"
-  		     "/Users/strider/.local/bin"
-  		     "/opt/homebrew/bin" "/opt/homebrew/sbin"
-  		     "/usr/bin" "/bin" "/usr/sbin" "/sbin"
-  		     "/usr/local/bin" "/opt/local/bin"
-  		     "/Library/Frameworks/Python.framework/Versions/Current/bin"))
+                   "/Users/strider/.local/bin"
+                   "/opt/homebrew/bin" "/opt/homebrew/sbin"
+                   "/usr/bin" "/bin" "/usr/sbin" "/sbin"
+                   "/usr/local/bin" "/opt/local/bin"
+                   "/Library/Frameworks/Python.framework/Versions/Current/bin"))
 
   (let ((path-from-exec-path (string-join exec-path path-separator)))
     (setenv "PATH" path-from-exec-path)))

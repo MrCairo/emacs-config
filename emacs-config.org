@@ -52,7 +52,6 @@ The goal of this Emacs configuration is to make an Emacs configuration that has 
   + Customizable Menu (MmM)
 :END:
 
-
 * README:
 
 --------------------------------------------------------------------------------
@@ -402,8 +401,13 @@ Thes values toggle the availability of specific packages. These options are not 
     :type 'boolean
     :group 'mrf-custom-toggles)
 
+  (defcustom enable-thesaurus t
+    "When set to t, enables the Merriam-Webster Thesaurus."
+    :type 'boolean
+    :group 'mrf-custom-toggles)
+
   ;; Keep as defvar until the frameset save/restore process works better.
-  (defvar enable-frameset-restore nil
+  (defvar enable-frameset-restore t
     "Set to t to enable restoring the last Emacs window size and position
      upon startup.")
     ;; :type 'boolean
@@ -687,12 +691,10 @@ By default, the =user-emacs-directory= points to the .emacs.d* directory from wh
 
   ;;; Put any emacs cusomized variables in a special file
   (setq custom-file (expand-file-name "customized-vars.el" user-emacs-directory))
-  ;; create custom file if it does not exists.
-  (unless (file-exists-p custom-file)
+
+  (unless (file-exists-p custom-file) ;; create custom file if it doesn't exists
     (write-region "" nil custom-file))
-  ;; (add-hook 'elpaca-after-init-hook (lambda () (load custom-file 'noerror 'nomessage)))
   (load custom-file 'noerror 'nomessage)
-  (setq enable-frameset-restore nil) ;; FORCE UNTIL FRAMESET RESTORE IS DONE
 
   ;; ensure that the loaded font values are supported by this OS. If not, try
   ;; to correct them.
@@ -806,17 +808,7 @@ Calls to mode functions that effect various Emacs behavior.
 
 #+end_src
 
-
 ** Save / Restore Frameset
-** Some Common Registers
-
-#+begin_src emacs-lisp
-
-  (setq register-preview-delay 0) ;; Show registers ASAP
-  (set-register ?C (cons 'file (concat emacs-config-directory "/emacs-config.org")))
-
-#+end_src
-
 
 These functions will save and restore Emacs framework. These are normally called when starting and exiting Emacs.
 
@@ -837,21 +829,31 @@ These functions will save and restore Emacs framework. These are normally called
   ;;; --------------------------------------------------------------------------
    
   (defun mifi/restore-desktop-frameset ()
-    (unless (and (daemonp) (not enable-frameset-restore))
+    (unless (and (daemonp) (not enable-frameset-<restore))
       (let
         ((file (expand-file-name "saved-frameset.el" user-emacs-directory)))
         (desktop-save-mode 0)
-        (when (f-exists? file) (load file)
+        (when (file-exists-p  file) (load file)
         (desktop-restore-frameset)
         (when (featurep 'spacious-padding)
-          (when spacious-padding-mode
-            (spacious-padding-mode 0)
-            (spacious-padding-mode 1)))))
-        ))
+            (when spacious-padding-mode
+              (spacious-padding-mode 0)
+              (spacious-padding-mode 1)))))))
+
+#+end_src
+
+** Some Common Registers
+These are just some common registers that I have just so I can bookmark files and locations and quckly jump to them.
+
+#+begin_src emacs-lisp
+
+  (setq register-preview-delay 0) ;; Show registers ASAP
+  (set-register ?C (cons 'file (concat emacs-config-directory "emacs-config.org")))
 
 #+end_src
 
 ** Emacs in server mode
+Handle the case of starting the Emacs server when Emacs is started as a foreground or background daemon.
 
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
@@ -872,24 +874,6 @@ These functions will save and restore Emacs framework. These are normally called
 
 These are the common packages that I pretty much use universally in my normal Emacs workflow.
 It excludes packages that can be customized through my =mrf-custom= variables as they are generally in their own section
-
-** F.el
-
-Much inspired by @magnarss excellent s.el and dash.el, f.el is a modern API for working with files and directories in Emacs.
-
-#+begin_src emacs-lisp
-  ;;; --------------------------------------------------------------------------
-
-  (use-package f
-    :ensure ( :package "f" :source "MELPA" :protocol https :inherit t
-            :depth 1 :fetcher github :repo "rejeep/f.el"
-            :files ("*.el" "*.el.in" "dir" "*.info" "*.texi" "*.texinfo"
-                     "doc/dir" "doc/*.info" "doc/*.texi" "doc/*.texinfo"
-                     "lisp/*.el" (:exclude ".dir-locals.el" "test.el"
-                                   "tests.el" "*-test.el" "*-tests.el"
-                                   "LICENSE" "README*" "*-pkg.el"))))
-
-#+end_src
 
 ** Hydra
 
@@ -969,7 +953,6 @@ Multiple cursors for Emacs. This is some pretty crazy functionality, so yes, the
 #+end_src
 
 ** Anzu
-
 anzu.el is an Emacs port of anzu.vim. anzu.el provides a minor mode which displays current match and total matches information in the mode-line in various search modes.
 
 #+begin_src emacs-lisp
@@ -1000,8 +983,7 @@ We use [[https://github.com/joostkremers/visual-fill-column][visual-fill-column]
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
 
-  (use-package visual-fill-column
-    :after org)
+  (use-package visual-fill-column :after org)
 
 #+end_src
 
@@ -1295,11 +1277,9 @@ These are packages located in the ~"lisp"~ directory within the emacs-config-dir
 #+end_src
 
 
-* Undo Systems
-
-*These packages are selected via the =M-x customize= function.*
-
-** Vundo (visual undo)
+* Operational Systems
+** Undo Handlers
+*** Vundo (visual undo)
 
 Vundo displays the undo history as a tree and lets you move in the tree to go back to previous buffer states. To use vundo, type M-x vundo RET in the buffer you want to undo. An undo tree buffer should pop up.
 
@@ -1318,7 +1298,7 @@ Vundo displays the undo history as a tree and lets you move in the tree to go ba
 
 #+end_src
 
-** Undo Tree
+*** Undo Tree
 
 Instead of treating undo/redo as a linear sequence of changes, undo-tree-mode treats undo history as a branching tree of changes, similar to the way Vim handles it. This makes it substantially easier to undo and redo any change, while preserving the entire history of past states. The undo-tree visualizer is particularly helpful in complex cases. An added side bonus is that undo history can in some cases be stored more efficiently, allowing more changes to accumulate before Emacs starts discarding history. Undo history can be saved persistently across sessions with Emacs 24.3 and later. It also sports various other nifty features: storing and restoring past buffer states in registers, a diff view of the changes that will be made by undoing, and probably more besides.
 
@@ -1333,18 +1313,15 @@ Instead of treating undo/redo as a linear sequence of changes, undo-tree-mode tr
     (let ((split-height-threshold nil)
          (split-width-threshold 0))
       (apply original-function args)))
-  
-#+end_src
 
-#+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
 
   ;;
   ;; Sometimes, when behind a firewall, the undo-tree package triggers elpaca
   ;; to queue up the Queue package which then hangs and fails. This happens
-  ;; even if the :unless option is specified in the use-package (only :disabled
+  ;; even if the :unless/:when option is specified in the use-package (only :disabled
   ;; seems to work which isn't what I want). So, we prevent the loading of the
-  ;; page altogether.
+  ;; page altogether unless the undo-handler is set to undo tree.
   ;;
   (when (equal undo-handler 'undo-handler-undo-tree)
     (use-package undo-tree
@@ -1368,6 +1345,777 @@ Instead of treating undo/redo as a linear sequence of changes, undo-tree-mode tr
 
 #+end_src
 
+** Completion Handlers
+Here are a series of completion systems that are available for Emacs.
+
+*** Prescient
+
+prescient.el is a library which sorts and filters lists of candidates, such as appear when you use a package like Ivy or Company. Extension packages such as ivy-prescient.el and company-prescient.el adapt the library for usage with various frameworks.
+
+prescient.el also provides a completion style (prescient) for filtering candidates via Emacs's generic completion, such as in Icomplete, Vertico, and Corfu. These last two have extension packages to correctly set up filtering and sorting.
+
+As compared to other packages which accomplish similar tasks, including IDO, Ivy, Helm, Smex, Flx, Historian, and Company-Statistics, prescient.el aims to be simpler, more predictable, and faster.
+
+TL;DR prescient.el: simple but effective sorting and filtering for Emacs.
+
+#+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
+  
+  (use-package prescient)
+
+#+end_src
+
+*** Orderless
+
+This package provides an orderless completion style that divides the pattern into space-separated components, and matches candidates that match all of the components in any order. Each component can match in any one of several ways: literally, as a regexp, as an initialism, in the flex style, or as multiple word prefixes. By default, regexp and literal matches are enabled.
+
+#+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
+
+  (use-package orderless
+    :when (or (equal completion-handler 'comphand-vertico)
+            (equal completion-handler 'comphand-ivy-counsel))
+    :custom
+    (completion-styles '(orderless basic))
+    (completion-category-overrides '((file (styles basic partial-completion)))))
+
+#+end_src
+
+*** IVY Mode
+
+<<<Ivy>>> is an excellent completion framework for Emacs.  It provides a minimal yet powerful selection menu that appears when you open files, switch buffers, and for many other tasks in Emacs.  Counsel is a customized set of commands to replace `find-file` with `counsel-find-file`, etc which provide useful commands for each of the default completion commands.
+
+#+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
+  ;;; Swiper and IVY mode
+
+  (use-package ivy
+    :when (equal completion-handler 'comphand-ivy-counsel)
+    :bind (("C-s" . swiper)
+            :map ivy-minibuffer-map
+              ;;; ("TAB" . ivy-alt-done)
+            ("C-l" . ivy-alt-done)
+            ("C-j" . ivy-next-line)
+            ("C-k" . ivy-previous-line)
+            :map ivy-switch-buffer-map
+            ("C-k" . ivy-previous-line)
+            ("C-l" . ivy-done)
+            ("C-d" . ivy-switch-buffer-kill)
+            :map ivy-reverse-i-search-map
+            ("C-k" . ivy-previous-line)
+            ("C-d" . ivy-reverse-i-search-kill))
+    :custom
+    (enable-recursive-minibuffers t)
+    (ivy-use-virtual-buffers t)
+    :config
+    (ivy-mode 1)
+    (setq ivy-re-builders-alist '((t . orderless-ivy-re-builder)))
+    (add-to-list 'ivy-highlight-functions-alist
+      '(orderless-ivy-re-builder . orderless-ivy-highlight)))
+
+#+end_src
+
+**** Ivy-rich and ivy-yasnippet
+
+Ivy-rich provides rich transformers for commands from ivy and counsel.
+Ivy-yasnippet lets you preview yasnippet snippets with ivy.
+
+#+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
+
+  (use-package ivy-rich
+    :when (equal completion-handler 'comphand-ivy-counsel)
+    :after ivy
+    :init
+    (ivy-rich-mode 1)
+    :config
+    (setcdr (assq t ivy-format-functions-alist) #'ivy-format-function-line))
+
+  (use-package ivy-yasnippet
+    :when (equal completion-handler 'comphand-ivy-counsel)
+    :after (:any yasnippet ivy))
+  ;; :ensure (:host github :repo "mkcms/ivy-yasnippet"))
+
+#+end_src
+
+**** Swiper
+Swiper is an alternative to isearch that uses Ivy to show an overview of all matches.
+
+#+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
+
+  (use-package swiper
+    :when (equal completion-handler 'comphand-ivy-counsel)
+    :after ivy)
+
+#+end_src
+
+**** Counsel
+
+~ivy-mode~ ensures that any Emacs command using completing-read-function uses ivy for completion.
+Counsel takes this further, providing versions of common Emacs commands that are customised to make the best use of Ivy. For example, ~counsel-find-file~ has some additional keybindings. Pressing =DEL= will move you to the parent directory.
+
+#+begin_src emacs-lisp :results output silent
+  ;;; --------------------------------------------------------------------------
+
+  (use-package counsel
+    :when (equal completion-handler 'comphand-ivy-counsel)
+    :bind ( ("C-M-j" . 'counsel-switch-buffer)
+            ("M-x" . 'counsel-M-x)
+            ("M-g o" . 'counsel-outline)
+            ("C-x C-f" . 'counsel-find-file)
+            ("C-c C-r" . 'ivy-resume)
+            :map minibuffer-local-map
+            ("C-r" . 'counsel-minibuffer-history))
+    :custom
+    (counsel-linux-app-format-function #'counsel-linux-app-format-function-name-only)
+    :config
+    (counsel-mode 1))
+
+#+end_src
+
+**** Ivy Prescient
+~prescient.el~ is a library which sorts and filters lists of candidates, such as appear when you use a package like =Ivy= or =Company=.
+
+#+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
+
+  (use-package ivy-prescient
+    :when (equal completion-handler 'comphand-ivy-counsel)
+    :after (ivy prescient)
+    :custom
+    (prescient-persist-mode t)
+    (ivy-prescient-mode t)
+    (ivy-prescient-enable-filtering t))
+
+#+end_src
+
+*** Corfu
+
+<<<Corfu>>> enhances in-buffer completion with a small completion popup. The current candidates are shown in a popup below or above the point. The candidates can be selected by moving up and down. Corfu is the minimalistic in-buffer completion counterpart of the Vertico minibuffer UI.
+
+#+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
+
+  ;;;; Code Completion
+  (use-package corfu
+    :when (equal completion-handler 'comphand-corfu)
+    ;; Optional customizations
+    :custom
+    (corfu-cycle t)                  ; Allows cycling through candidates
+    (corfu-auto t)                   ; Enable auto completion
+    (corfu-auto-prefix 2)
+    (corfu-auto-delay 0.8)
+    (corfu-popupinfo-delay '(0.5 . 0.2))
+    (corfu-preview-current 'insert) ; insert previewed candidate
+    (corfu-preselect 'prompt)
+    (corfu-on-exact-match nil)       ; Don't auto expand tempel snippets
+    ;; Optionally use TAB for cycling, default is `corfu-complete'.
+    :bind (:map corfu-map
+          ("M-SPC"          . corfu-insert-separator)
+          ("TAB"            . corfu-next)
+          ([tab]            . corfu-next)
+          ("S-TAB"          . corfu-previous)
+          ([backtab]    . corfu-previous)
+          ("S-<return>" . corfu-insert)
+          ("RET"            . nil))
+    :init
+    (global-corfu-mode)
+    (corfu-history-mode)
+    (corfu-popupinfo-mode) ; Popup completion info
+    :config
+    (add-hook 'eshell-mode-hook
+      (lambda () (setq-local corfu-quit-at-boundary t
+                 corfu-quit-no-match t
+                 corfu-auto nil)
+        (corfu-mode))))
+  
+#+end_src
+
+**** Cape Configuration
+
+#+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
+  ;; Add extensions
+  (use-package cape
+    :when (equal completion-handler 'comphand-corfu)
+    :after corfu
+    ;; Bind dedicated completion commands
+    ;; Alternative prefix keys: C-c p, M-p, M-+, ...
+    :bind ( ("C-c C-p p" . completion-at-point) ;; capf
+            ("C-c C-p t" . complete-tag)        ;; etags
+            ("C-c C-p d" . cape-dabbrev)        ;; or dabbrev-completion
+            ("C-c C-p h" . cape-history)
+            ("C-c C-p f" . cape-file)
+            ("C-c C-p k" . cape-keyword)
+            ("C-c C-p s" . cape-elisp-symbol)
+            ("C-c C-p e" . cape-elisp-block)
+            ("C-c C-p a" . cape-abbrev)
+            ("C-c C-p l" . cape-line)
+            ("C-c C-p w" . cape-dict)
+            ("C-c C-p :" . cape-emoji)
+            ("C-c C-p \\" . cape-tex)
+            ("C-c C-p _" . cape-tex)
+            ("C-c C-p ^" . cape-tex)
+            ("C-c C-p &" . cape-sgml)
+            ("C-c C-p r" . cape-rfc1345))
+    :init
+    ;; Add to the global default value of `completion-at-point-functions' which is
+    ;; used by `completion-at-point'.  The order of the functions matters, the
+    ;; first function returning a result wins.  Note that the list of buffer-local
+    ;; completion functions takes precedence over the global list.
+    (add-hook 'completion-at-point-functions #'cape-dabbrev)
+    (add-hook 'completion-at-point-functions #'cape-file)
+    (add-hook 'completion-at-point-functions #'cape-elisp-block)
+    ;;(add-hook 'completion-at-point-functions #'cape-history)
+    ;;(add-hook 'completion-at-point-functions #'cape-keyword)
+    ;;(add-hook 'completion-at-point-functions #'cape-tex)
+    ;;(add-hook 'completion-at-point-functions #'cape-sgml)
+    ;;(add-hook 'completion-at-point-functions #'cape-rfc1345)
+    ;;(add-hook 'completion-at-point-functions #'cape-abbrev)
+    ;;(add-hook 'completion-at-point-functions #'cape-dict)
+    ;;(add-hook 'completion-at-point-functions #'cape-elisp-symbol)
+    ;;(add-hook 'completion-at-point-functions #'cape-line)
+    )
+
+#+end_src
+
+**** Corfu-prescient
+
+#+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
+  
+  (use-package corfu-prescient
+    :when (equal completion-handler 'comphand-corfu)
+    :after (corfu prescient))
+
+#+end_src
+
+*** Vertico
+
+<<<Vertico>>> provides a performant and minimalistic vertical completion UI based on the default completion system. The focus of Vertico is to provide a UI which behaves correctly under all circumstances. By reusing the built-in facilities system, Vertico achieves full compatibility with built-in Emacs completion commands and completion tables.
+
+#+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
+
+  (use-package vertico
+    :when (equal completion-handler 'comphand-vertico)
+    :demand t
+    ;;:wait t
+    ;;:ensure (:repo "minad/vertico" :files (:defaults "extensions/vertico-*.el") :fetcher github)
+    :custom
+    (recentf-mode t)
+    (vertico-count 12)
+    (vertico-cycle nil)
+    (vertico-multiform-mode 1)
+    :config
+    (vertico-mode)
+    ;; :bind ("C-x C-f" . ido-find-file)
+    ;; Clean up file path when typing
+    :hook ((rfn-eshadow-update-overlay . vertico-directory-tidy)
+          ;; Make sure vertico state is saved
+          (minibuffer-setup . vertico-repeat-save)))
+  
+#+end_src
+
+**** Marginalia
+
+Marginalia are marks or annotations placed at the margin of the page of a book or in this case helpful colorful annotations placed at the margin of the  minibuffer for your completion candidates. Marginalia can only add annotations  to the completion candidates. It cannot modify the appearance of the candidates  themselves, which are shown unaltered as supplied by the original command.
+
+#+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
+
+  (use-package marginalia
+    ;; :when (equal completion-handler 'comphand-vertico)
+    ;; :after vertico
+    :custom
+    (marginalia-max-relative-age 0)
+    (marginalia-align 'left)
+    (marginalia-annotators '(marginalia-annotators-heavy marginalia-annotators-light nil))
+    :config
+    (marginalia-mode t))
+  
+#+end_src
+
+**** Icons for Marginalia
+
+#+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
+
+  (use-package all-the-icons-completion
+    :after (marginalia all-the-icons)
+    :hook (marginalia-mode . all-the-icons-completion-marginalia-setup))
+
+#+end_src
+
+**** Consult
+
+Consult provides search and navigation commands based on the Emacs completion function completing-read. Completion allows you to quickly select an item from a list of candidates. Consult offers asynchronous and interactive consult-grep and  consult-ripgrep commands, and the line-based search command consult-line. Furthermore Consult provides an advanced buffer switching command consult-buffer to switch between buffers, recently opened files, bookmarks and buffer-like candidates from other sources. Some of the Consult commands are enhanced versions of built-in Emacs commands.
+
+#+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
+
+  (use-package consult
+    :when (equal completion-handler 'comphand-vertico)
+    :after vertico
+    :bind
+    ([remap switch-to-buffer] . consult-buffer)
+    ([remap switch-to-buffer-other-window] . consult-buffer-other-window)
+    ([remap switch-to-buffer-other-frame] . consult-buffer-other-frame)
+    ([remap project-switch-to-buffer] . consult-project-buffer)
+    ([remap bookmark-jump] . consult-bookmark)
+    ([remap recentf-open] . consult-recent-file)
+    ([remap yank] . nil)
+    ([remap yank-pop] . consult-yank-pop)
+    ([remap goto-line] . consult-goto-line)
+    ("M-g m" . consult-mark)
+    ("M-g M" . consult-global-mark)
+    ("M-g o" . consult-outline)
+    ("M-g i" . consult-imenu)
+    ("M-g I" . consult-imenu-multi)
+    ("M-s l" . consult-line)
+    ("M-s p" . consult-preview)  
+    ("M-s L" . consult-line-multi)
+    ("M-s k" . consult-keep-lines)
+    ("M-s u" . consult-focus-lines)
+    ("M-s r" . consult-ripgrep)
+    ("M-s f" . consult-find)
+    ("M-s F" . consult-locate)
+    ("M-g e" . consult-compile-error)
+    ("M-g f" . consult-flymake)
+    ([remap repeat-complex-command] . consult-complex-command)
+    ("M-s e" . consult-isearch-history)
+    ([remap isearch-edit-string] . consult-isearch-history)
+    ([remap next-matching-history-element] . consult-history)
+    ([remap previous-matching-history-element] . consult-history)
+    ([remap Info-search] . consult-info)
+    :custom
+    (xref-show-xrefs-function 'consult-xref)
+    (xref-show-definitions-function 'consult-xref)
+    :config
+    (setq consult-buffer-sources
+      '(consult--source-hidden-buffer 
+         consult--source-buffer
+         (:name "Ephemeral" :state consult--buffer-state
+         :narrow 109 :category buffer
+         :items ("*Messages*"  "*scratch*" "*vterm*"
+                  "*Async-native-compile-log*" "*dashboard*"))
+         consult--source-modified-buffer
+         consult--source-recent-file)))
+
+#+end_src
+
+**** Vertico support packages
+
+#+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
+
+  (use-package vertico-prescient
+    :when (equal completion-handler 'comphand-vertico)
+    :after vertico prescient)
+  
+#+end_src
+
+vertico-posframe is an vertico extension, which lets vertico use posframe to show its candidate menu.
+
+#+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
+
+  (use-package vertico-posframe
+    :when (equal completion-handler 'comphand-vertico)
+    :after vertico
+    :custom
+    (setq vertico-multiform-commands
+      '((consult-line
+          posframe
+          (vertico-posframe-poshandler . posframe-poshandler-frame-top-center)
+          (vertico-posframe-border-width . 10)
+          ;; NOTE: This is useful when emacs is used in both in X and
+          ;; terminal, for posframe do not work well in terminal, so
+          ;; vertico-buffer-mode will be used as fallback at the
+          ;; moment.
+          (vertico-posframe-fallback-mode . vertico-buffer-mode))
+         (t posframe)))
+    (vertico-multiform-mode 1)
+    (setq vertico-posframe-parameters
+      '((left-fringe . 8)
+         (right-fringe . 8))))
+  
+#+end_src
+
+*** Built-In (Ido)
+Enable the IDO handler everywhere.
+
+#+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
+
+  ;; This has to be evaluated at the end of the init since it's possible that the
+  ;; completion-handler variable will not yet be defined at this point in the
+  ;; init phase using elpaca.
+  (add-hook 'elpaca-after-init-hook
+    (lambda ()
+      (when (equal completion-handler 'comphand-built-in)
+        (ido-everywhere t))))
+
+#+end_src
+
+*** Embark
+
+Embark makes it easy to choose a command to run based on what is near point, both during a minibuffer completion session (in a way familiar to Helm or Counsel users) and in normal buffers. Bind the command  embark-act to a key and it acts like prefix-key for a keymap of actions (commands) relevant to the target around point. With point on an URL in a buffer you can open the URL in a browser or eww or download the file it points to. If while switching buffers you spot an old one, you can kill it right there and continue to select another. Embark comes preconfigured with over a hundred actions for common types of targets such as files, buffers, identifiers, s-expressions, sentences; and it is easy to add more actions and more target types. Embark can also collect all the candidates in a minibuffer to an occur-like buffer or export them to a buffer in a major-mode specific to the type of candidates, such as dired for a set of files, ibuffer for a set of buffers, or customize for a set of variables.
+
+#+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
+
+  (use-package embark
+    :when enable-embark
+    :bind
+    (("C-." . embark-act)         ;; pick some comfortable binding
+      ("C-;" . embark-dwim)        ;; good alternative: M-.
+      ("C-h B" . embark-bindings)) ;; alternative for `describe-bindings'
+
+    :init
+
+    ;; Optionally replace the key help with a completing-read interface
+    (setq prefix-help-command #'embark-prefix-help-command)
+
+    ;; Show the Embark target at point via Eldoc. You may adjust the
+    ;; Eldoc strategy, if you want to see the documentation from
+    ;; multiple providers. Beware that using this can be a little
+    ;; jarring since the message shown in the minibuffer can be more
+    ;; than one line, causing the modeline to move up and down:
+
+    ;; (add-hook 'eldoc-documentation-functions #'embark-eldoc-first-target)
+    ;; (setq eldoc-documentation-strategy #'eldoc-documentation-compose-eagerly)
+
+    :config
+
+    ;; Hide the mode line of the Embark live/completions buffers
+    (add-to-list 'display-buffer-alist
+      '("\\`\\*Embark Collect \\(Live\\|Completions\\)\\*"
+         nil
+         (window-parameters (mode-line-format . none)))))
+
+  ;; Consult users will also want the embark-consult package.
+  (use-package embark-consult
+    :when (equal completion-handler 'comphand-vertico)
+    :defer t
+    ;;:ensure t ; only need to install it, embark loads it after consult if found
+    :hook
+    (embark-collect-mode . consult-preview-at-point-mode))
+
+#+end_src
+
+*** Company Mode
+
+[[http://company-mode.github.io/][Company Mode]] provides a nicer in-buffer completion interface than =completion-at-point= which is more reminiscent of what you would expect from an IDE.  We add a simple configuration to make the keybindings a little more useful (=TAB= now completes the selection and initiates completion at the current location if needed).
+
+We also use [[https://github.com/sebastiencs/company-box][company-box]] to further enhance the look of the completions with icons and better overall presentation.
+
+#+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
+
+  ;; Don't use lsp-bridge with company as lsp-bridge already provides the same
+  ;; features. They actually collide.
+  
+  (use-package company
+    :unless (equal custom-ide 'custom-ide-lsp-bridge)
+    :custom
+    (company-minimum-prefix-length 2)
+    (company-idle-delay 0.2)
+    :config
+    (global-company-mode +1))
+
+#+end_src
+
+
+#+begin_src emacs-lisp :tangle no
+  ;;; --------------------------------------------------------------------------
+
+  ;; Don't use lsp-bridge with company as lsp-bridge already provides the same
+  ;; features. They actually collide.
+
+  (use-package company
+    :unless (equal custom-ide 'custom-ide-lsp-bridge)
+    :bind (:map company-active-map
+            ("C-n". company-select-next)
+            ("C-p". company-select-previous)
+            ("M-<". company-select-first)
+            ("M->". company-select-last)
+            ("<tab>" . company-complete-selection))
+    :custom
+    (company-minimum-prefix-length 2)
+    (company-idle-delay 0.5)
+    :config
+    (global-company-mode +1))
+
+  ;; IMPORTANT:
+  ;; Don't use company at all if lsp-bridge is active.
+  ;; lsp-bridge already provides similar functionality.
+
+  ;; :config
+  ;; (add-to-list 'company-backends 'company-yasnippet))
+
+#+end_src
+
+**** Company Packages
+
+#+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
+
+  (use-package company-box
+    :after company
+    :diminish cb
+    :hook (company-mode . company-box-mode))
+
+  (use-package company-jedi
+    :when  (equal custom-ide 'custom-ide-elpy)
+    :after python company
+    :config
+    (jedi:setup)
+    (defun my/company-jedi-python-mode-hook ()
+      (add-to-list 'company-backends 'company-jedi))
+    (add-hook 'python-mode-hook 'my/company-jedi-python-mode-hook))
+
+  (use-package company-anaconda
+    :when (equal custom-ide 'custom-ide-anaconda)
+    :after anaconda company
+    :hook (python-mode . anaconda-mode)
+    :config
+    (eval-after-load "company"
+      '(add-to-list 'company-backends 'company-anaconda)))
+
+#+end_src
+** Terminals
+*** term-mode
+
+=term-mode= is a built-in terminal emulator in Emacs.  Because it is written in Emacs Lisp, you can start using it immediately with very little configuration.  If you are on Linux or macOS, =term-mode= is a great choice to get started because it supports fairly complex terminal applications (=htop=, =vim=, etc) and works pretty reliably.  However, because it is written in Emacs Lisp, it can be slower than other options like =vterm=.  The speed will only be an issue if you regularly run console apps with a lot of output.
+
+One important thing to understand is =line-mode= versus =char-mode=.  =line-mode= enables you to use normal Emacs keybindings while moving around in the terminal buffer while =char-mode= sends most of your keypresses to the underlying terminal.  While using =term-mode=, you will want to be in =char-mode= for any terminal applications that have their own keybindings.  If you're just in your usual shell, =line-mode= is sufficient and feels more integrated with Emacs.
+
+With =evil-collection= installed, you will automatically switch to =char-mode= when you enter Evil's insert mode (press =i=).  You will automatically be switched back to =line-mode= when you enter Evil's normal mode (press =ESC=).
+
+Run a terminal with =M-x term!=
+
+*Useful key bindings:*
+
+- =C-c C-p= / =C-c C-n= - go back and forward in the buffer's prompts (also =[[= and =]]= with evil-mode)
+- =C-c C-k= - Enter char-mode
+- =C-c C-j= - Return to line-mode
+- If you have =evil-collection= installed, =term-mode= will enter char mode when you use Evil's Insert mode
+
+#+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
+
+  (use-package term+
+    ;;:ensure (:repo "tarao/term-plus-el" :fetcher github)
+    :commands term
+    :config
+    (setq explicit-shell-file-name "bash") ;; Change this to zsh, etc
+    ;;(setq explicit-zsh-args '())          ;; Use 'explicit-<shell>-args for shell-specific args
+
+    ;; Match the default Bash shell prompt.  Update this if you have a custom prompt
+    (setq term-prompt-regexp "^[^#$%>\n]*[#$%>] *"))
+
+#+end_src
+
+*** Better term-mode colors
+
+The =eterm-256color= package enhances the output of =term-mode= to enable handling of a wider range of color codes so that many popular terminal applications look as you would expect them to.  Keep in mind that this package requires =ncurses= to be installed on your machine so that it has access to the =tic= program.  Most Linux distributions come with this program installed already so you may not have to do anything extra to use it.
+
+#+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
+
+  (use-package eterm-256color
+    :hook (term-mode . eterm-256color-mode))
+  
+#+end_src
+
+*** vterm
+
+[[https://github.com/akermu/emacs-libvterm/][vterm]] is an improved terminal emulator package which uses a compiled native module to interact with the underlying terminal applications.  This enables it to be much faster than =term-mode= and to also provide a more complete terminal emulation experience.
+
+Make sure that you have the [[https://github.com/akermu/emacs-libvterm/#requirements][necessary dependencies]] installed before trying to use =vterm= because there is a module that will need to be compiled before you can use it successfully.
+
+#+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
+
+  (use-package vterm
+    ;;:ensure (:fetcher github :repo "akermu/emacs-libvterm")
+    :commands vterm
+    :config
+    (setq vterm-environment ("PS1=\\u@\\h:\\w \n$"))
+    (setq term-prompt-regexp "^[^#$%>\n]*[#$%>] *")  ;; Set this to match your custom shell prompt
+    (setq vterm-shell "zsh")                        ;; Set this to customize the shell to launch
+    (setq vterm-max-scrollback 10000))
+
+#+end_src
+
+*** shell-mode
+
+[[https://www.gnu.org/software/emacs/manual/html_node/emacs/Interactive-Shell.html#Interactive-Shell][shell-mode]] is a middle ground between =term-mode= and Eshell.  It is *not* a terminal emulator so more complex terminal programs will not run inside of it.  It does have much better integration with Emacs because all command input in this mode is handled by Emacs and then sent to the underlying shell once you press Enter.  This means that you can use =evil-mode='s editing motions on the command line, unlike in the terminal emulator modes above.
+
+*Useful key bindings:*
+
+- =C-c C-p= / =C-c C-n= - go back and forward in the buffer's prompts (also =[[= and =]]= with evil-mode)
+- =M-p= / =M-n= - go back and forward in the input history
+- =C-c C-u= - delete the current input string backwards up to the cursor
+- =counsel-shell-history= - A searchable history of commands typed into the shell
+
+*** Eshell
+
+[[https://www.gnu.org/software/emacs/manual/html_mono/eshell.html#Contributors-to-Eshell][Eshell]] is Emacs' own shell implementation written in Emacs Lisp.  It provides you with a cross-platform implementation (even on Windows!) of the common GNU utilities you would find on Linux and macOS (=ls=, =rm=, =mv=, =grep=, etc).  It also allows you to call Emacs Lisp functions directly from the shell and you can even set up aliases (like aliasing =vim= to =find-file=).  Eshell is also an Emacs Lisp REPL which allows you to evaluate full expressions at the shell.
+
+The downsides to Eshell are that it can be harder to configure than other packages due to the particularity of where you need to set some options for them to go into effect, the lack of shell completions (by default) for some useful things like Git commands, and that REPL programs sometimes don't work as well.  However, many of these limitations can be dealt with by good configuration and installing external packages, so don't let that discourage you from trying it!
+
+*Useful key bindings:*
+
+- =C-c C-p= / =C-c C-n= - go back and forward in the buffer's prompts (also =[[= and =]]= with evil-mode)
+- =M-p= / =M-n= - go back and forward in the input history
+- =C-c C-u= - delete the current input string backwards up to the cursor
+- =counsel-esh-history= - A searchable history of commands typed into Eshell
+
+We will be covering Eshell more in future videos highlighting other things you can do with it.
+
+For more thoughts on Eshell, check out these articles by Pierre Neidhardt:
+- https://ambrevar.xyz/emacs-eshell/index.html
+- https://ambrevar.xyz/emacs-eshell-versus-shell/index.html
+
+#+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
+
+  (defun mifi/configure-eshell ()
+    ;; Save command history when commands are entered
+    (add-hook 'eshell-pre-command-hook 'eshell-save-some-history)
+    ;; Truncate buffer for performance
+    (add-to-list 'eshell-output-filter-functions 'eshell-truncate-buffer)
+    (setq eshell-history-size   10000
+      eshell-buffer-maximum-lines 10000
+      eshell-hist-ignoredups t
+      eshell-scroll-to-bottom-on-input t))
+
+  (use-package eshell-git-prompt
+    :after eshell)
+
+  (use-package eshell
+    :ensure
+    :defer t
+    :hook (eshell-first-time-mode . mifi/configure-eshell)
+    :config
+    (with-eval-after-load 'esh-opt
+      (setq eshell-destroy-buffer-when-process-dies t)
+      (setq eshell-visual-commands '("htop" "zsh" "vim")))
+    (eshell-git-prompt-use-theme 'powerline))
+
+#+end_src
+
+** File Management
+*** Dired
+
+Dired is a built-in file manager for Emacs that does some pretty amazing things!  Here are some key bindings you should try out:
+
+**** Key Bindings
+***** Navigation
+*Emacs* / *Evil*
+- =n= / =j= - next line
+- =p= / =k= - previous line
+- =j= / =J= - jump to file in buffer
+- =RET= - select file or directory
+- =^= - go to parent directory
+- =S-RET= / =g O= - Open file in "other" window
+- =M-RET= - Show file in other window without focusing (previewing files)
+- =g o= (=dired-view-file=) - Open file but in a "preview" mode, close with =q=
+- =g= / =g r= Refresh the buffer with =revert-buffer= after changing configuration (and after filesystem changes!)
+
+***** Marking files
+- =m= - Marks a file
+- =u= - Unmarks a file
+- =U= - Unmarks all files in buffer
+- =* t= / =t= - Inverts marked files in buffer
+- =% m= - Mark files in buffer using regular expression
+- =*= - Lots of other auto-marking functions
+- =k= / =K= - "Kill" marked items (refresh buffer with =g= / =g r= to get them back)
+- Many operations can be done on a single file if there are no active marks!
+
+***** Copying and Renaming files
+- =C= - Copy marked files (or if no files are marked, the current file)
+- Copying single and multiple files
+- =U= - Unmark all files in buffer
+- =R= - Rename marked files, renaming multiple is a move!
+- =% R= - Rename based on regular expression: =^test= , =old-\&=
+
+*Power command*: =C-x C-q= (=dired-toggle-read-only=) - Makes all file names in the buffer editable directly to rename them!  Press =Z Z= to confirm renaming or =Z Q= to abort.
+
+***** Deleting files
+- =D= - Delete marked file
+- =d= - Mark file for deletion
+- =x= - Execute deletion for marks
+- =delete-by-moving-to-trash= - Move to trash instead of deleting permanently
+
+***** Creating and extracting archives
+- =Z= - Compress or uncompress a file or folder to (=.tar.gz=)
+- =c= - Compress selection to a specific file
+- =dired-compress-files-alist= - Bind compression commands to file extension
+
+***** Other common operations
+- =T= - Touch (change timestamp)
+- =M= - Change file mode
+- =O= - Change file owner
+- =G= - Change file group
+- =S= - Create a symbolic link to this file
+- =L= - Load an Emacs Lisp file into Emacs
+  
+**** Configuration
+
+#+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
+
+    ;; Prefer g-prefixed coreutils version of standard utilities when available
+  (let ((gls (executable-find "gls")))
+    (when gls (setq-default insert-directory-program gls
+              dired-use-ls-dired t
+                ;; Needed to fix an issue on Mac which causes dired to fail
+                dired-listing-switches "-al --group-directories-first")))
+
+  (use-package all-the-icons-dired
+    :after dired
+    :hook (dired-mode . all-the-icons-dired-mode))
+
+  (use-package dired-open
+    :commands (dired dired-jump)
+    :config
+    ;; Doesn't work as expected!
+    ;;(add-to-list 'dired-open-functions #'dired-open-xdg t)
+    (setq dired-open-extensions '(("png" . "feh")
+                                 ("mkv" . "mpv"))))
+
+  (use-package dired-hide-dotfiles
+    :after dired-mode
+    :hook (dired-mode . dired-hide-dotfiles-mode))
+
+#+end_src
+
+**** Single Window
+Dired, by default, opens up multiple windows - one for each directory. It would be nice to be able to limit =dired= to use just a single window. [[https://codeberg.org/amano.kenji/dired-single][dired-single]] does just that. We configure =dired-single= to open up a directory while in dired with the =C-<return>=  key combination. This will then open up the directory in the buffer named =*dired*=. Whenever a directory is opened with the =C-<return>= key sequence, that directory will then replace what's currently in the =*dired*= buffer.
+
+#+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
+  ;; Single Window dired - don't continually open new buffers
+
+  (defun mifi/dired-single-keymap-init ()
+    "Bunch of stuff to run for dired, either immediately or when it's
+     loaded."
+    (define-key dired-mode-map
+      [remap dired-find-file] 'dired-single-buffer)
+    (define-key dired-mode-map
+      [remap dired-mouse-find-file-other-window] 'dired-single-buffer-mouse)
+    (define-key dired-mode-map
+      [remap dired-up-directory] 'dired-single-up-directory))
+
+  (use-package dired-single
+    :after dired
+    :config
+    (mifi/dired-single-keymap-init))
+#+end_src
 
 
 * Visuals
@@ -1906,7 +2654,8 @@ This package provides a global minor mode to increase the spacing/padding of Ema
 #+end_src
 
 
-* Org Mode
+* Productivity
+** Org Mode
 
 Org Mode is one of the hallmark features of Emacs.  It is a rich document editor, project planner, task and time tracker, blogging engine, and literate coding utility all wrapped up in one package [[https://orgmode.org/][Orgmode]].
 
@@ -1914,7 +2663,7 @@ The =mifi/org-font-setup= function configures various text faces to tweak the si
 
 *NOTE:* Most of the code below has been taken from the [[https://systemcrafters.net][System Crafters]] site run by David Wilson. Please visit that site for lots of great stuff!
 
-** Font setup
+*** Font setup
 
 This function sets up the fonts faces that are used within org-mode.
 
@@ -1993,7 +2742,7 @@ This function sets up the fonts faces that are used within org-mode.
         :height (cdr face))))
 #+end_src
 
-** Setup
+*** Setup
 
 This section contains the basic configuration for =org-mode= plus the configuration for Org agendas and capture templates.
 
@@ -2030,7 +2779,7 @@ This section contains the basic configuration for =org-mode= plus the configurat
 
 #+end_src
 
-**** Function to setup the agenda
+***** Function to setup the agenda
 
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
@@ -2086,7 +2835,7 @@ This section contains the basic configuration for =org-mode= plus the configurat
 
 #+end_src
 
-**** The capture-templates function
+***** The capture-templates function
 
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
@@ -2123,7 +2872,7 @@ This section contains the basic configuration for =org-mode= plus the configurat
 
 #+end_src
 
-**** Todos
+***** Todos
 
 #+begin_src emacs-lisp
 
@@ -2143,7 +2892,28 @@ This section contains the basic configuration for =org-mode= plus the configurat
 
 #+end_src
 
-** The main 'Org' package
+***** User customized faces
+
+#+begin_src emacs-lisp
+
+  (custom-theme-set-faces
+   'user
+   '(org-block ((t (:inherit fixed-pitch))))
+   '(org-code ((t (:inherit (shadow fixed-pitch)))))
+   '(org-document-info ((t (:foreground "dark orange"))))
+   '(org-document-info-keyword ((t (:inherit (shadow fixed-pitch)))))
+   '(org-indent ((t (:inherit (org-hide fixed-pitch)))))
+   '(org-link ((t (:foreground "royal blue" :underline t))))
+   '(org-meta-line ((t (:inherit (font-lock-comment-face fixed-pitch)))))
+   '(org-property-value ((t (:inherit fixed-pitch))) t)
+   '(org-special-keyword ((t (:inherit (font-lock-comment-face fixed-pitch)))))
+   '(org-table ((t (:inherit fixed-pitch :foreground "#83a598"))))
+   '(org-tag ((t (:inherit (shadow fixed-pitch) :weight bold :height 0.8))))
+   '(org-verbatim ((t (:inherit (shadow fixed-pitch))))))
+
+#+end_src
+
+*** The main 'Org' package
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
 
@@ -2195,7 +2965,7 @@ This section contains the basic configuration for =org-mode= plus the configurat
 #+RESULTS:
 : #s(hash-table size 65 test eql rehash-size 1.5 rehash-threshold 0.8125 data (:use-package (26172 1876 296393 0) :use-package-secs (0 0 907 0) :preface (26171 64968 44297 0) :init (26171 64968 44286 0) :init-secs (0 0 28 0) :preface-secs (0 0 265 0) :config (26171 64988 735976 0) :config-secs (0 0 361702 0)))
 
-** Better Bullets
+*** Better Bullets
 [[https://github.com/sabof/org-bullets][org-bullets]] replaces the heading stars in =org-mode= buffers with nicer looking characters that you can control.  Another option for this is [[https://github.com/integral-dw/org-superstar-mode][org-superstar-mode]].
 
 #+begin_src emacs-lisp
@@ -2234,7 +3004,7 @@ This section contains the basic configuration for =org-mode= plus the configurat
 
 #+end_src
 
-** Export Code
+*** Export Code
 To execute or export code in =org-mode= code blocks, you'll need to set up =org-babel-load-languages= for each language you'd like to use.  [[https://orgmode.org/worg/org-contrib/babel/languages.html][Babel]] documents all of the languages that you can use with =org-babel=.
 
 #+begin_src emacs-lisp
@@ -2268,7 +3038,7 @@ To execute or export code in =org-mode= code blocks, you'll need to set up =org-
   
 #+end_src
 
-** Structure Templates
+*** Structure Templates
 Org Mode's structure templates feature enables you to quickly insert code blocks into your Org files in combination with =org-tempo= by typing =<= followed by the template name like =el= or =py= and then press =TAB=.  For example, to insert an empty =emacs-lisp= block below, you can type =<el= and press =TAB= to expand into such a block.  You can add more =src= block templates below by copying one of the lines and changing the two strings at the end, the first to be the template name and the second to contain the name of the language as it is known by Org Babel.
 
 This snippet adds a hook to =org-mode= buffers so that =mifi/org-babel-tangle-config= gets executed each time such a buffer gets saved.  This function checks to see if the file being saved is the Emacs.org file you're looking at right now, and if so, automatically exports the configuration here to the associated output files.
@@ -2284,7 +3054,7 @@ This snippet adds a hook to =org-mode= buffers so that =mifi/org-babel-tangle-co
 
 #+end_src
 
-** Markdown support
+*** Markdown support
 While there is standard markdown support built into =org-mode=, this additional markdown package can also be used.
 *Disabled for now. Plus there is a large starup time.*
 #+begin_src emacs-lisp :tangle no
@@ -2295,7 +3065,7 @@ While there is standard markdown support built into =org-mode=, this additional 
 
 #+end_src
 
-** Org-Roam
+*** Org-Roam
 Org Mode is known to be a great tool not just for writing and personal notes but also TODO lists, project planning, time tracking, and more. Once you start to become really invested in Org Mode you’ll eventually have to come up with a system for managing your Org files so that it’s easy to store and find the information you need.
 
 Org Roam is an extension to Org Mode which solves a couple of the biggest problems that I’ve personally had when using Org for personal notes:
@@ -2305,7 +3075,7 @@ Org Roam is an extension to Org Mode which solves a couple of the biggest proble
 
 Org Roam solves these problems by making it easy to create topic-focused Org Files and link them together so that you can treat the information as nodes in a network rather than as hierarchical documents. You can think of it like a personal wiki!
 
-*** Some required pacakages 
+**** Some required pacakages 
 
 #+begin_src emacs-lisp :tangle no
   ;;; --------------------------------------------------------------------------
@@ -2314,7 +3084,7 @@ Org Roam solves these problems by making it easy to create topic-focused Org Fil
    
 #+end_src
 
-*** Org Agenda from Roam Notes
+**** Org Agenda from Roam Notes
 One of the most useful features of Org Mode is the agenda view. You can actually use your Org Roam notes as the source for this view!
 
 Typically you won’t want to pull in all of your Org Roam notes, so we’ll only use the notes with a specific tag like Project.
@@ -2343,7 +3113,7 @@ Here is a snippet that will find all the notes with a specific tag and then set 
   ;; Build the agenda list the first time for the session
 #+end_src
 
-*** Selecting from a list of notes
+**** Selecting from a list of notes
 The org-roam-node-find function gives us the ability to filter the list of notes that get displayed for selection.
 
 We can define our own function that shows a selection list for notes that have a specific tag like Project which we talked about before. This can be useful to set up a keybinding to quickly select from a specific set of notes!
@@ -2385,7 +3155,7 @@ This means that we can automatically create a new note with our project capture 
   
 #+end_src
 
-*** Keep and inbox of notes and tasks
+**** Keep and inbox of notes and tasks
 If you want to quickly capture new notes and tasks with a single keybinding into a place that you can review later, we can use org-roam-capture- to capture to a single-specific file like Inbox.org!
 
 Even though this file won’t have the timestamped filename, it will still be treated as a node in your Org Roam notes.
@@ -2400,7 +3170,7 @@ Even though this file won’t have the timestamped filename, it will still be tr
   
 #+end_src
 
-*** Insert a node immediately
+**** Insert a node immediately
 
 #+begin_src emacs-lisp :tangle no
   ;;; --------------------------------------------------------------------------
@@ -2414,7 +3184,7 @@ Even though this file won’t have the timestamped filename, it will still be tr
       (apply #'org-roam-node-insert args)))
 #+end_src
 
-*** Capture a task
+**** Capture a task
 If you’ve set up project note files like we mentioned earlier, you can set up a capture template that allows you to quickly capture tasks for any project.
 
 Much like the example before, we can either select a project that exists or automatically create a project note when it doesn’t exist yet.
@@ -2437,7 +3207,7 @@ Much like the example before, we can either select a project that exists or auto
                      ("Tasks"))))))
 #+end_src
 
-*** Todo
+**** Todo
 The following snippet sets up a hook for all Org task state changes and then copies the completed (DONE) entry to today’s note file
 
 #+begin_src emacs-lisp :tangle no
@@ -2463,7 +3233,7 @@ The following snippet sets up a hook for all Org task state changes and then cop
 
 #+end_src
 
-*** Table-of-contents
+**** Table-of-contents
 #+begin_src emacs-lisp :tangle no
   ;;; --------------------------------------------------------------------------
   
@@ -2477,7 +3247,7 @@ The following snippet sets up a hook for all Org task state changes and then cop
 
 #+end_src
 
-*** Main Org-roam Configuration
+**** Main Org-roam Configuration
 
 #+begin_src emacs-lisp :tangle no
   ;;; --------------------------------------------------------------------------
@@ -2519,7 +3289,7 @@ The following snippet sets up a hook for all Org task state changes and then cop
 
 #+end_src
 
-** Org-transclusion
+*** Org-transclusion
 
 Org-transclusion lets you insert a copy of text content via a file link or ID link within an Org file. It lets you have the same content present in different buffers at the same time without copy-and-pasting it. Edit the source of the content, and you can refresh the transcluded copies to the up-to-date state. Org-transclusion keeps your files clear of the transcluded copies, leaving only the links to the original content.
 
@@ -2536,8 +3306,7 @@ Org-transclusion lets you insert a copy of text content via a file link or ID li
 
 #+end_src
 
-
-* Denote
+** Denote
 
 Denote aims to be a simple-to-use, focused-in-scope, and effective note-taking and file-naming tool for Emacs.
 
@@ -2545,7 +3314,7 @@ Denote is based on the idea that files should follow a predictable and descripti
 
 Denote’s file-naming scheme is not limited to “notes”. It can be used for all types of file, including those that are not editable in Emacs, such as videos. Naming files in a consistent way makes their filtering and retrieval considerably easier. Denote provides relevant facilities to rename files, regardless of file type.
 
-** Denote Keymap
+*** Denote Keymap
 
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
@@ -2594,7 +3363,7 @@ Denote’s file-naming scheme is not limited to “notes”. It can be used for 
 
 #+end_src
 
-** Denote Configuration
+*** Denote Configuration
 
 #+begin_src  emacs-lisp
   ;;; --------------------------------------------------------------------------
@@ -2637,6 +3406,56 @@ Denote’s file-naming scheme is not limited to “notes”. It can be used for 
            :jump-to-captured t)))
 
     (add-hook 'context-menu-functions #'denote-context-menu))
+
+#+end_src
+
+** Projectile
+
+[[https://projectile.mx/][Projectile]] is a project management library for Emacs which makes it a lot easier to navigate around code projects for various languages.  Many packages integrate with Projectile so it's a good idea to have it installed even if you don't use its commands directly.
+
+#+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
+
+  (use-package projectile
+    :when (equal custom-project-handler 'custom-project-projectile)
+    :diminish Proj
+    :config (projectile-mode)
+    :bind-keymap
+    ("C-c p" . projectile-command-map)
+    :init
+    ;; NOTE: Set this to the folder where you keep your Git repos!
+    (when (file-directory-p "~/Developer")
+      (setq projectile-project-search-path '("~/Developer")))
+    (setq projectile-switch-project-action #'projectile-dired))
+
+  (when (equal completion-handler 'comphand-ivy-counsel)
+    (use-package counsel-projectile
+      :when (equal custom-project-handler 'custom-project-projectile)
+      :after projectile
+      :config
+      (setq projectile-completion-system 'ivy)
+      (counsel-projectile-mode)))
+
+#+end_src
+
+** Project.el
+This is the default built-in project system. For those not needing the full-featured ~projectile~, this package is generally enough.
+
+#+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
+
+  (defun project-find-go-module (dir)
+    (when-let ((root (locate-dominating-file dir "go.mod")))
+      (cons 'go-module root)))
+
+  (use-package project
+    :when (equal custom-project-handler 'custom-project-project)
+    :ensure nil
+    :defer t
+    :config
+    (cl-defmethod project-root ((project (head go-module)))
+      (cdr project))
+    (add-hook 'project-find-functions #'project-find-go-module))
 
 #+end_src
 
@@ -2798,15 +3617,15 @@ Denote’s file-naming scheme is not limited to “notes”. It can be used for 
 
 * Dashboard
 <<<Dashboard>>> is an extensible Emacs startup screen showing you what’s most important.
-**** Value of dashboard-startup-banner can be:
-***** =nil= to display no banner
-***** ='official= which displays the official emacs logo
-***** ='logo= which displays an alternative emacs logo
-***** =1, 2 or 3= which displays one of the text banners
-***** ~"path/to/your/image.gif"~,
+*** Value of dashboard-startup-banner can be:
+**** =nil= to display no banner
+**** ='official= which displays the official emacs logo
+**** ='logo= which displays an alternative emacs logo
+**** =1, 2 or 3= which displays one of the text banners
+**** ~"path/to/your/image.gif"~,
 ~"path/to/your/image.png"~ or
 ~"path/to/your/text.txt"~  which displays whatever gif/image/text you would prefer
-***** a cons of '("path/to/your/image.png" . "path/to/your/text.txt")
+**** a cons of '("path/to/your/image.png" . "path/to/your/text.txt")
 
 ** Dashboard Setup
 #+begin_src emacs-lisp
@@ -2838,13 +3657,14 @@ Denote’s file-naming scheme is not limited to “notes”. It can be used for 
 
 The following are configured for Python development and provide an IDE type experience.  It's worth noting that Eglot/LSP can be configured for other languages. The others are Python specific. Use the =configure= system to select which one is used (=Mrf Custom Selection=).
 
-*** Features
+:Features:
 - context-sensitive code completion
 - jump to definitions
 - find references
 - view documentation
 - virtual environment
 - eldoc mode
+:END:
 
 ** EGlot
 
@@ -3099,7 +3919,6 @@ Advantages of lsp-bridge:
 
 #+end_src
 
-
 ** Anaconda-mode
 
 Anaconda-mode provides Code navigation, documentation lookup and completion for Python.
@@ -3174,468 +3993,6 @@ C-c C-d displays documentation for the thing under cursor. The documentation wil
       (bind-keys :map elpy-mode-map
         ("<tab>" . company-indent-or-complete-common)))
     (elpy-enable))
-
-#+end_src
-
-
-
-* Completion Systems
-Here are a series of completion systems that are available for Emacs.
-
-** Prescient
-
-prescient.el is a library which sorts and filters lists of candidates, such as appear when you use a package like Ivy or Company. Extension packages such as ivy-prescient.el and company-prescient.el adapt the library for usage with various frameworks.
-
-prescient.el also provides a completion style (prescient) for filtering candidates via Emacs's generic completion, such as in Icomplete, Vertico, and Corfu. These last two have extension packages to correctly set up filtering and sorting.
-
-As compared to other packages which accomplish similar tasks, including IDO, Ivy, Helm, Smex, Flx, Historian, and Company-Statistics, prescient.el aims to be simpler, more predictable, and faster.
-
-TL;DR prescient.el: simple but effective sorting and filtering for Emacs.
-
-#+begin_src emacs-lisp
-  ;;; --------------------------------------------------------------------------
-  
-  (use-package prescient)
-
-#+end_src
-
-** Orderless
-
-This package provides an orderless completion style that divides the pattern into space-separated components, and matches candidates that match all of the components in any order. Each component can match in any one of several ways: literally, as a regexp, as an initialism, in the flex style, or as multiple word prefixes. By default, regexp and literal matches are enabled.
-
-#+begin_src emacs-lisp
-  ;;; --------------------------------------------------------------------------
-
-  (use-package orderless
-    :when (or (equal completion-handler 'comphand-vertico)
-            (equal completion-handler 'comphand-ivy-counsel))
-    :custom
-    (completion-styles '(orderless basic))
-    (completion-category-overrides '((file (styles basic partial-completion)))))
-
-#+end_src
-
-** IVY Mode
-
-<<<Ivy>>> is an excellent completion framework for Emacs.  It provides a minimal yet powerful selection menu that appears when you open files, switch buffers, and for many other tasks in Emacs.  Counsel is a customized set of commands to replace `find-file` with `counsel-find-file`, etc which provide useful commands for each of the default completion commands.
-
-#+begin_src emacs-lisp
-  ;;; --------------------------------------------------------------------------
-  ;;; Swiper and IVY mode
-
-  (use-package ivy
-    :when (equal completion-handler 'comphand-ivy-counsel)
-    :bind (("C-s" . swiper)
-            :map ivy-minibuffer-map
-              ;;; ("TAB" . ivy-alt-done)
-            ("C-l" . ivy-alt-done)
-            ("C-j" . ivy-next-line)
-            ("C-k" . ivy-previous-line)
-            :map ivy-switch-buffer-map
-            ("C-k" . ivy-previous-line)
-            ("C-l" . ivy-done)
-            ("C-d" . ivy-switch-buffer-kill)
-            :map ivy-reverse-i-search-map
-            ("C-k" . ivy-previous-line)
-            ("C-d" . ivy-reverse-i-search-kill))
-    :custom
-    (enable-recursive-minibuffers t)
-    (ivy-use-virtual-buffers t)
-    :config
-    (ivy-mode 1)
-    (setq ivy-re-builders-alist '((t . orderless-ivy-re-builder)))
-    (add-to-list 'ivy-highlight-functions-alist
-      '(orderless-ivy-re-builder . orderless-ivy-highlight)))
-
-#+end_src
-
-*** Ivy-rich and ivy-yasnippet
-
-Ivy-rich provides rich transformers for commands from ivy and counsel.
-Ivy-yasnippet lets you preview yasnippet snippets with ivy.
-
-#+begin_src emacs-lisp
-  ;;; --------------------------------------------------------------------------
-
-  (use-package ivy-rich
-    :when (equal completion-handler 'comphand-ivy-counsel)
-    :after ivy
-    :init
-    (ivy-rich-mode 1)
-    :config
-    (setcdr (assq t ivy-format-functions-alist) #'ivy-format-function-line))
-
-  (use-package ivy-yasnippet
-    :when (equal completion-handler 'comphand-ivy-counsel)
-    :after (:any yasnippet ivy))
-  ;; :ensure (:host github :repo "mkcms/ivy-yasnippet"))
-
-#+end_src
-
-*** Swiper
-Swiper is an alternative to isearch that uses Ivy to show an overview of all matches.
-
-#+begin_src emacs-lisp
-  ;;; --------------------------------------------------------------------------
-
-  (use-package swiper
-    :when (equal completion-handler 'comphand-ivy-counsel)
-    :after ivy)
-
-#+end_src
-
-*** Counsel
-
-~ivy-mode~ ensures that any Emacs command using completing-read-function uses ivy for completion.
-Counsel takes this further, providing versions of common Emacs commands that are customised to make the best use of Ivy. For example, ~counsel-find-file~ has some additional keybindings. Pressing =DEL= will move you to the parent directory.
-
-#+begin_src emacs-lisp :results output silent
-  ;;; --------------------------------------------------------------------------
-
-  (use-package counsel
-    :when (equal completion-handler 'comphand-ivy-counsel)
-    :bind ( ("C-M-j" . 'counsel-switch-buffer)
-            ("M-x" . 'counsel-M-x)
-            ("M-g o" . 'counsel-outline)
-            ("C-x C-f" . 'counsel-find-file)
-            ("C-c C-r" . 'ivy-resume)
-            :map minibuffer-local-map
-            ("C-r" . 'counsel-minibuffer-history))
-    :custom
-    (counsel-linux-app-format-function #'counsel-linux-app-format-function-name-only)
-    :config
-    (counsel-mode 1))
-
-#+end_src
-
-*** Ivy Prescient
-~prescient.el~ is a library which sorts and filters lists of candidates, such as appear when you use a package like =Ivy= or =Company=.
-
-#+begin_src emacs-lisp
-  ;;; --------------------------------------------------------------------------
-
-  (use-package ivy-prescient
-    :when (equal completion-handler 'comphand-ivy-counsel)
-    :after (ivy prescient)
-    :custom
-    (prescient-persist-mode t)
-    (ivy-prescient-mode t)
-    (ivy-prescient-enable-filtering t))
-
-#+end_src
-
-** Corfu
-
-<<<Corfu>>> enhances in-buffer completion with a small completion popup. The current candidates are shown in a popup below or above the point. The candidates can be selected by moving up and down. Corfu is the minimalistic in-buffer completion counterpart of the Vertico minibuffer UI.
-
-#+begin_src emacs-lisp
-  ;;; --------------------------------------------------------------------------
-
-  ;;;; Code Completion
-  (use-package corfu
-    :when (equal completion-handler 'comphand-corfu)
-    ;; Optional customizations
-    :custom
-    (corfu-cycle t)                  ; Allows cycling through candidates
-    (corfu-auto t)                   ; Enable auto completion
-    (corfu-auto-prefix 2)
-    (corfu-auto-delay 0.8)
-    (corfu-popupinfo-delay '(0.5 . 0.2))
-    (corfu-preview-current 'insert) ; insert previewed candidate
-    (corfu-preselect 'prompt)
-    (corfu-on-exact-match nil)       ; Don't auto expand tempel snippets
-    ;; Optionally use TAB for cycling, default is `corfu-complete'.
-    :bind (:map corfu-map
-          ("M-SPC"          . corfu-insert-separator)
-          ("TAB"            . corfu-next)
-          ([tab]            . corfu-next)
-          ("S-TAB"          . corfu-previous)
-          ([backtab]    . corfu-previous)
-          ("S-<return>" . corfu-insert)
-          ("RET"            . nil))
-    :init
-    (global-corfu-mode)
-    (corfu-history-mode)
-    (corfu-popupinfo-mode) ; Popup completion info
-    :config
-    (add-hook 'eshell-mode-hook
-      (lambda () (setq-local corfu-quit-at-boundary t
-                 corfu-quit-no-match t
-                 corfu-auto nil)
-        (corfu-mode))))
-  
-#+end_src
-
-*** Cape Configuration
-
-#+begin_src emacs-lisp
-  ;;; --------------------------------------------------------------------------
-  ;; Add extensions
-  (use-package cape
-    :when (equal completion-handler 'comphand-corfu)
-    :after corfu
-    ;; Bind dedicated completion commands
-    ;; Alternative prefix keys: C-c p, M-p, M-+, ...
-    :bind ( ("C-c C-p p" . completion-at-point) ;; capf
-            ("C-c C-p t" . complete-tag)        ;; etags
-            ("C-c C-p d" . cape-dabbrev)        ;; or dabbrev-completion
-            ("C-c C-p h" . cape-history)
-            ("C-c C-p f" . cape-file)
-            ("C-c C-p k" . cape-keyword)
-            ("C-c C-p s" . cape-elisp-symbol)
-            ("C-c C-p e" . cape-elisp-block)
-            ("C-c C-p a" . cape-abbrev)
-            ("C-c C-p l" . cape-line)
-            ("C-c C-p w" . cape-dict)
-            ("C-c C-p :" . cape-emoji)
-            ("C-c C-p \\" . cape-tex)
-            ("C-c C-p _" . cape-tex)
-            ("C-c C-p ^" . cape-tex)
-            ("C-c C-p &" . cape-sgml)
-            ("C-c C-p r" . cape-rfc1345))
-    :init
-    ;; Add to the global default value of `completion-at-point-functions' which is
-    ;; used by `completion-at-point'.  The order of the functions matters, the
-    ;; first function returning a result wins.  Note that the list of buffer-local
-    ;; completion functions takes precedence over the global list.
-    (add-hook 'completion-at-point-functions #'cape-dabbrev)
-    (add-hook 'completion-at-point-functions #'cape-file)
-    (add-hook 'completion-at-point-functions #'cape-elisp-block)
-    ;;(add-hook 'completion-at-point-functions #'cape-history)
-    ;;(add-hook 'completion-at-point-functions #'cape-keyword)
-    ;;(add-hook 'completion-at-point-functions #'cape-tex)
-    ;;(add-hook 'completion-at-point-functions #'cape-sgml)
-    ;;(add-hook 'completion-at-point-functions #'cape-rfc1345)
-    ;;(add-hook 'completion-at-point-functions #'cape-abbrev)
-    ;;(add-hook 'completion-at-point-functions #'cape-dict)
-    ;;(add-hook 'completion-at-point-functions #'cape-elisp-symbol)
-    ;;(add-hook 'completion-at-point-functions #'cape-line)
-    )
-
-#+end_src
-
-*** Corfu-prescient
-
-#+begin_src emacs-lisp
-  ;;; --------------------------------------------------------------------------
-  
-  (use-package corfu-prescient
-    :when (equal completion-handler 'comphand-corfu)
-    :after (corfu prescient))
-
-#+end_src
-
-** Vertico
-
-<<<Vertico>>> provides a performant and minimalistic vertical completion UI based on the default completion system. The focus of Vertico is to provide a UI which behaves correctly under all circumstances. By reusing the built-in facilities system, Vertico achieves full compatibility with built-in Emacs completion commands and completion tables.
-
-#+begin_src emacs-lisp
-  ;;; --------------------------------------------------------------------------
-
-  (use-package vertico
-    :when (equal completion-handler 'comphand-vertico)
-    :demand t
-    ;;:wait t
-    ;;:ensure (:repo "minad/vertico" :files (:defaults "extensions/vertico-*.el") :fetcher github)
-    :custom
-    (recentf-mode t)
-    (vertico-count 12)
-    (vertico-cycle nil)
-    (vertico-multiform-mode 1)
-    :config
-    (vertico-mode)
-    ;; :bind ("C-x C-f" . ido-find-file)
-    ;; Clean up file path when typing
-    :hook ((rfn-eshadow-update-overlay . vertico-directory-tidy)
-          ;; Make sure vertico state is saved
-          (minibuffer-setup . vertico-repeat-save)))
-  
-#+end_src
-
-*** Marginalia
-
-Marginalia are marks or annotations placed at the margin of the page of a book or in this case helpful colorful annotations placed at the margin of the  minibuffer for your completion candidates. Marginalia can only add annotations  to the completion candidates. It cannot modify the appearance of the candidates  themselves, which are shown unaltered as supplied by the original command.
-
-#+begin_src emacs-lisp
-  ;;; --------------------------------------------------------------------------
-
-  (use-package marginalia
-    ;; :when (equal completion-handler 'comphand-vertico)
-    ;; :after vertico
-    :custom
-    (marginalia-max-relative-age 0)
-    (marginalia-align 'left)
-    (marginalia-annotators '(marginalia-annotators-heavy marginalia-annotators-light nil))
-    :config
-    (marginalia-mode t))
-  
-#+end_src
-
-*** Icons for Marginalia
-
-#+begin_src emacs-lisp
-  ;;; --------------------------------------------------------------------------
-
-  (use-package all-the-icons-completion
-    :after (marginalia all-the-icons)
-    :hook (marginalia-mode . all-the-icons-completion-marginalia-setup))
-
-#+end_src
-
-*** Consult
-
-Consult provides search and navigation commands based on the Emacs completion function completing-read. Completion allows you to quickly select an item from a list of candidates. Consult offers asynchronous and interactive consult-grep and  consult-ripgrep commands, and the line-based search command consult-line. Furthermore Consult provides an advanced buffer switching command consult-buffer to switch between buffers, recently opened files, bookmarks and buffer-like candidates from other sources. Some of the Consult commands are enhanced versions of built-in Emacs commands.
-
-#+begin_src emacs-lisp
-  ;;; --------------------------------------------------------------------------
-
-  (use-package consult
-    :when (equal completion-handler 'comphand-vertico)
-    :after vertico
-    :bind
-    ([remap switch-to-buffer] . consult-buffer)
-    ([remap switch-to-buffer-other-window] . consult-buffer-other-window)
-    ([remap switch-to-buffer-other-frame] . consult-buffer-other-frame)
-    ([remap project-switch-to-buffer] . consult-project-buffer)
-    ([remap bookmark-jump] . consult-bookmark)
-    ([remap recentf-open] . consult-recent-file)
-    ([remap yank] . nil)
-    ([remap yank-pop] . consult-yank-pop)
-    ([remap goto-line] . consult-goto-line)
-    ("M-g m" . consult-mark)
-    ("M-g M" . consult-global-mark)
-    ("M-g o" . consult-outline)
-    ("M-g i" . consult-imenu)
-    ("M-g I" . consult-imenu-multi)
-    ("M-s l" . consult-line)
-    ("M-s p" . consult-preview)  
-    ("M-s L" . consult-line-multi)
-    ("M-s k" . consult-keep-lines)
-    ("M-s u" . consult-focus-lines)
-    ("M-s r" . consult-ripgrep)
-    ("M-s f" . consult-find)
-    ("M-s F" . consult-locate)
-    ("M-g e" . consult-compile-error)
-    ("M-g f" . consult-flymake)
-    ([remap repeat-complex-command] . consult-complex-command)
-    ("M-s e" . consult-isearch-history)
-    ([remap isearch-edit-string] . consult-isearch-history)
-    ([remap next-matching-history-element] . consult-history)
-    ([remap previous-matching-history-element] . consult-history)
-    ([remap Info-search] . consult-info)
-    :custom
-    (xref-show-xrefs-function 'consult-xref)
-    (xref-show-definitions-function 'consult-xref)
-    :config
-    (setq consult-buffer-sources
-      '(consult--source-hidden-buffer 
-         consult--source-buffer
-         (:name "Ephemeral" :state consult--buffer-state
-         :narrow 109 :category buffer
-         :items ("*Messages*"  "*scratch*" "*vterm*"
-                  "*Async-native-compile-log*" "*dashboard*"))
-         consult--source-modified-buffer
-         consult--source-recent-file)))
-
-#+end_src
-
-*** Vertico support packages
-
-#+begin_src emacs-lisp
-  ;;; --------------------------------------------------------------------------
-
-  (use-package vertico-prescient
-    :when (equal completion-handler 'comphand-vertico)
-    :after vertico prescient)
-  
-#+end_src
-
-vertico-posframe is an vertico extension, which lets vertico use posframe to show its candidate menu.
-
-#+begin_src emacs-lisp
-  ;;; --------------------------------------------------------------------------
-
-  (use-package vertico-posframe
-    :when (equal completion-handler 'comphand-vertico)
-    :after vertico
-    :custom
-    (setq vertico-multiform-commands
-      '((consult-line
-          posframe
-          (vertico-posframe-poshandler . posframe-poshandler-frame-top-center)
-          (vertico-posframe-border-width . 10)
-          ;; NOTE: This is useful when emacs is used in both in X and
-          ;; terminal, for posframe do not work well in terminal, so
-          ;; vertico-buffer-mode will be used as fallback at the
-          ;; moment.
-          (vertico-posframe-fallback-mode . vertico-buffer-mode))
-         (t posframe)))
-    (vertico-multiform-mode 1)
-    (setq vertico-posframe-parameters
-      '((left-fringe . 8)
-         (right-fringe . 8))))
-  
-#+end_src
-
-** Built-In (Ido)
-Enable the IDO handler everywhere.
-
-#+begin_src emacs-lisp
-  ;;; --------------------------------------------------------------------------
-
-  ;; This has to be evaluated at the end of the init since it's possible that the
-  ;; completion-handler variable will not yet be defined at this point in the
-  ;; init phase using elpaca.
-  (add-hook 'elpaca-after-init-hook
-    (lambda ()
-      (when (equal completion-handler 'comphand-built-in)
-        (ido-everywhere t))))
-
-#+end_src
-
-** Embark
-
-Embark makes it easy to choose a command to run based on what is near point, both during a minibuffer completion session (in a way familiar to Helm or Counsel users) and in normal buffers. Bind the command  embark-act to a key and it acts like prefix-key for a keymap of actions (commands) relevant to the target around point. With point on an URL in a buffer you can open the URL in a browser or eww or download the file it points to. If while switching buffers you spot an old one, you can kill it right there and continue to select another. Embark comes preconfigured with over a hundred actions for common types of targets such as files, buffers, identifiers, s-expressions, sentences; and it is easy to add more actions and more target types. Embark can also collect all the candidates in a minibuffer to an occur-like buffer or export them to a buffer in a major-mode specific to the type of candidates, such as dired for a set of files, ibuffer for a set of buffers, or customize for a set of variables.
-
-#+begin_src emacs-lisp
-  ;;; --------------------------------------------------------------------------
-
-  (use-package embark
-    :when enable-embark
-    :bind
-    (("C-." . embark-act)         ;; pick some comfortable binding
-      ("C-;" . embark-dwim)        ;; good alternative: M-.
-      ("C-h B" . embark-bindings)) ;; alternative for `describe-bindings'
-
-    :init
-
-    ;; Optionally replace the key help with a completing-read interface
-    (setq prefix-help-command #'embark-prefix-help-command)
-
-    ;; Show the Embark target at point via Eldoc. You may adjust the
-    ;; Eldoc strategy, if you want to see the documentation from
-    ;; multiple providers. Beware that using this can be a little
-    ;; jarring since the message shown in the minibuffer can be more
-    ;; than one line, causing the modeline to move up and down:
-
-    ;; (add-hook 'eldoc-documentation-functions #'embark-eldoc-first-target)
-    ;; (setq eldoc-documentation-strategy #'eldoc-documentation-compose-eagerly)
-
-    :config
-
-    ;; Hide the mode line of the Embark live/completions buffers
-    (add-to-list 'display-buffer-alist
-      '("\\`\\*Embark Collect \\(Live\\|Completions\\)\\*"
-         nil
-         (window-parameters (mode-line-format . none)))))
-
-  ;; Consult users will also want the embark-consult package.
-  (use-package embark-consult
-    :when (equal completion-handler 'comphand-vertico)
-    :defer t
-    ;;:ensure t ; only need to install it, embark loads it after consult if found
-    :hook
-    (embark-collect-mode . consult-preview-at-point-mode))
 
 #+end_src
 
@@ -4718,381 +5075,6 @@ Below are all the necessary functions and definitions for Hydra use under DAP.
 z
 
 
-* Company Mode
-
-[[http://company-mode.github.io/][Company Mode]] provides a nicer in-buffer completion interface than =completion-at-point= which is more reminiscent of what you would expect from an IDE.  We add a simple configuration to make the keybindings a little more useful (=TAB= now completes the selection and initiates completion at the current location if needed).
-
-We also use [[https://github.com/sebastiencs/company-box][company-box]] to further enhance the look of the completions with icons and better overall presentation.
-
-#+begin_src emacs-lisp
-  ;;; --------------------------------------------------------------------------
-
-  ;; Don't use lsp-bridge with company as lsp-bridge already provides the same
-  ;; features. They actually collide.
-  
-  (use-package company
-    :unless (equal custom-ide 'custom-ide-lsp-bridge)
-    :custom
-    (company-minimum-prefix-length 2)
-    (company-idle-delay 0.2)
-    :config
-    (global-company-mode +1))
-
-#+end_src
-
-
-#+begin_src emacs-lisp :tangle no
-  ;;; --------------------------------------------------------------------------
-
-  ;; Don't use lsp-bridge with company as lsp-bridge already provides the same
-  ;; features. They actually collide.
-
-  (use-package company
-    :unless (equal custom-ide 'custom-ide-lsp-bridge)
-    :bind (:map company-active-map
-            ("C-n". company-select-next)
-            ("C-p". company-select-previous)
-            ("M-<". company-select-first)
-            ("M->". company-select-last)
-            ("<tab>" . company-complete-selection))
-    :custom
-    (company-minimum-prefix-length 2)
-    (company-idle-delay 0.5)
-    :config
-    (global-company-mode +1))
-
-  ;; IMPORTANT:
-  ;; Don't use company at all if lsp-bridge is active.
-  ;; lsp-bridge already provides similar functionality.
-
-  ;; :config
-  ;; (add-to-list 'company-backends 'company-yasnippet))
-
-#+end_src
-
-** Company Packages :Python:
-#+begin_src emacs-lisp
-  ;;; --------------------------------------------------------------------------
-
-  (use-package company-box
-    :after company
-    :diminish cb
-    :hook (company-mode . company-box-mode))
-
-  (use-package company-jedi
-    :when  (equal custom-ide 'custom-ide-elpy)
-    :after python company
-    :config
-    (jedi:setup)
-    (defun my/company-jedi-python-mode-hook ()
-      (add-to-list 'company-backends 'company-jedi))
-    (add-hook 'python-mode-hook 'my/company-jedi-python-mode-hook))
-
-  (use-package company-anaconda
-    :when (equal custom-ide 'custom-ide-anaconda)
-    :after anaconda company
-    :hook (python-mode . anaconda-mode)
-    :config
-    (eval-after-load "company"
-      '(add-to-list 'company-backends 'company-anaconda)))
-
-#+end_src
-
-
-
-* Projectile
-
-[[https://projectile.mx/][Projectile]] is a project management library for Emacs which makes it a lot easier to navigate around code projects for various languages.  Many packages integrate with Projectile so it's a good idea to have it installed even if you don't use its commands directly.
-
-#+begin_src emacs-lisp
-  ;;; --------------------------------------------------------------------------
-
-  (use-package projectile
-    :when (equal custom-project-handler 'custom-project-projectile)
-    :diminish Proj
-    :config (projectile-mode)
-    :bind-keymap
-    ("C-c p" . projectile-command-map)
-    :init
-    ;; NOTE: Set this to the folder where you keep your Git repos!
-    (when (file-directory-p "~/Developer")
-      (setq projectile-project-search-path '("~/Developer")))
-    (setq projectile-switch-project-action #'projectile-dired))
-
-  (when (equal completion-handler 'comphand-ivy-counsel)
-    (use-package counsel-projectile
-      :when (equal custom-project-handler 'custom-project-projectile)
-      :after projectile
-      :config
-      (setq projectile-completion-system 'ivy)
-      (counsel-projectile-mode)))
-
-#+end_src
-
-
-* Project.el
-This is the default built-in project system. For those not needing the full-featured ~projectile~, this package is generally enough.
-
-#+begin_src emacs-lisp
-  ;;; --------------------------------------------------------------------------
-
-  (defun project-find-go-module (dir)
-    (when-let ((root (locate-dominating-file dir "go.mod")))
-      (cons 'go-module root)))
-
-  (use-package project
-    :when (equal custom-project-handler 'custom-project-project)
-    :ensure nil
-    :defer t
-    :config
-    (cl-defmethod project-root ((project (head go-module)))
-      (cdr project))
-    (add-hook 'project-find-functions #'project-find-go-module))
-
-#+end_src
-
-
-* Terminals
-** term-mode
-
-=term-mode= is a built-in terminal emulator in Emacs.  Because it is written in Emacs Lisp, you can start using it immediately with very little configuration.  If you are on Linux or macOS, =term-mode= is a great choice to get started because it supports fairly complex terminal applications (=htop=, =vim=, etc) and works pretty reliably.  However, because it is written in Emacs Lisp, it can be slower than other options like =vterm=.  The speed will only be an issue if you regularly run console apps with a lot of output.
-
-One important thing to understand is =line-mode= versus =char-mode=.  =line-mode= enables you to use normal Emacs keybindings while moving around in the terminal buffer while =char-mode= sends most of your keypresses to the underlying terminal.  While using =term-mode=, you will want to be in =char-mode= for any terminal applications that have their own keybindings.  If you're just in your usual shell, =line-mode= is sufficient and feels more integrated with Emacs.
-
-With =evil-collection= installed, you will automatically switch to =char-mode= when you enter Evil's insert mode (press =i=).  You will automatically be switched back to =line-mode= when you enter Evil's normal mode (press =ESC=).
-
-Run a terminal with =M-x term!=
-
-*Useful key bindings:*
-
-- =C-c C-p= / =C-c C-n= - go back and forward in the buffer's prompts (also =[[= and =]]= with evil-mode)
-- =C-c C-k= - Enter char-mode
-- =C-c C-j= - Return to line-mode
-- If you have =evil-collection= installed, =term-mode= will enter char mode when you use Evil's Insert mode
-
-#+begin_src emacs-lisp
-  ;;; --------------------------------------------------------------------------
-
-  (use-package term+
-    ;;:ensure (:repo "tarao/term-plus-el" :fetcher github)
-    :commands term
-    :config
-    (setq explicit-shell-file-name "bash") ;; Change this to zsh, etc
-    ;;(setq explicit-zsh-args '())          ;; Use 'explicit-<shell>-args for shell-specific args
-
-    ;; Match the default Bash shell prompt.  Update this if you have a custom prompt
-    (setq term-prompt-regexp "^[^#$%>\n]*[#$%>] *"))
-
-#+end_src
-
-** Better term-mode colors
-
-The =eterm-256color= package enhances the output of =term-mode= to enable handling of a wider range of color codes so that many popular terminal applications look as you would expect them to.  Keep in mind that this package requires =ncurses= to be installed on your machine so that it has access to the =tic= program.  Most Linux distributions come with this program installed already so you may not have to do anything extra to use it.
-
-#+begin_src emacs-lisp
-  ;;; --------------------------------------------------------------------------
-
-  (use-package eterm-256color
-    :hook (term-mode . eterm-256color-mode))
-  
-#+end_src
-
-** vterm
-
-[[https://github.com/akermu/emacs-libvterm/][vterm]] is an improved terminal emulator package which uses a compiled native module to interact with the underlying terminal applications.  This enables it to be much faster than =term-mode= and to also provide a more complete terminal emulation experience.
-
-Make sure that you have the [[https://github.com/akermu/emacs-libvterm/#requirements][necessary dependencies]] installed before trying to use =vterm= because there is a module that will need to be compiled before you can use it successfully.
-
-#+begin_src emacs-lisp
-  ;;; --------------------------------------------------------------------------
-
-  (use-package vterm
-    ;;:ensure (:fetcher github :repo "akermu/emacs-libvterm")
-    :commands vterm
-    :config
-    (setq vterm-environment ("PS1=\\u@\\h:\\w \n$"))
-    (setq term-prompt-regexp "^[^#$%>\n]*[#$%>] *")  ;; Set this to match your custom shell prompt
-    (setq vterm-shell "zsh")                        ;; Set this to customize the shell to launch
-    (setq vterm-max-scrollback 10000))
-
-#+end_src
-
-** shell-mode
-
-[[https://www.gnu.org/software/emacs/manual/html_node/emacs/Interactive-Shell.html#Interactive-Shell][shell-mode]] is a middle ground between =term-mode= and Eshell.  It is *not* a terminal emulator so more complex terminal programs will not run inside of it.  It does have much better integration with Emacs because all command input in this mode is handled by Emacs and then sent to the underlying shell once you press Enter.  This means that you can use =evil-mode='s editing motions on the command line, unlike in the terminal emulator modes above.
-
-*Useful key bindings:*
-
-- =C-c C-p= / =C-c C-n= - go back and forward in the buffer's prompts (also =[[= and =]]= with evil-mode)
-- =M-p= / =M-n= - go back and forward in the input history
-- =C-c C-u= - delete the current input string backwards up to the cursor
-- =counsel-shell-history= - A searchable history of commands typed into the shell
-
-** Eshell
-
-[[https://www.gnu.org/software/emacs/manual/html_mono/eshell.html#Contributors-to-Eshell][Eshell]] is Emacs' own shell implementation written in Emacs Lisp.  It provides you with a cross-platform implementation (even on Windows!) of the common GNU utilities you would find on Linux and macOS (=ls=, =rm=, =mv=, =grep=, etc).  It also allows you to call Emacs Lisp functions directly from the shell and you can even set up aliases (like aliasing =vim= to =find-file=).  Eshell is also an Emacs Lisp REPL which allows you to evaluate full expressions at the shell.
-
-The downsides to Eshell are that it can be harder to configure than other packages due to the particularity of where you need to set some options for them to go into effect, the lack of shell completions (by default) for some useful things like Git commands, and that REPL programs sometimes don't work as well.  However, many of these limitations can be dealt with by good configuration and installing external packages, so don't let that discourage you from trying it!
-
-*Useful key bindings:*
-
-- =C-c C-p= / =C-c C-n= - go back and forward in the buffer's prompts (also =[[= and =]]= with evil-mode)
-- =M-p= / =M-n= - go back and forward in the input history
-- =C-c C-u= - delete the current input string backwards up to the cursor
-- =counsel-esh-history= - A searchable history of commands typed into Eshell
-
-We will be covering Eshell more in future videos highlighting other things you can do with it.
-
-For more thoughts on Eshell, check out these articles by Pierre Neidhardt:
-- https://ambrevar.xyz/emacs-eshell/index.html
-- https://ambrevar.xyz/emacs-eshell-versus-shell/index.html
-
-#+begin_src emacs-lisp
-  ;;; --------------------------------------------------------------------------
-
-  (defun mifi/configure-eshell ()
-    ;; Save command history when commands are entered
-    (add-hook 'eshell-pre-command-hook 'eshell-save-some-history)
-    ;; Truncate buffer for performance
-    (add-to-list 'eshell-output-filter-functions 'eshell-truncate-buffer)
-    (setq eshell-history-size   10000
-      eshell-buffer-maximum-lines 10000
-      eshell-hist-ignoredups t
-      eshell-scroll-to-bottom-on-input t))
-
-  (use-package eshell-git-prompt
-    :after eshell)
-
-  (use-package eshell
-    :ensure
-    :defer t
-    :hook (eshell-first-time-mode . mifi/configure-eshell)
-    :config
-    (with-eval-after-load 'esh-opt
-      (setq eshell-destroy-buffer-when-process-dies t)
-      (setq eshell-visual-commands '("htop" "zsh" "vim")))
-    (eshell-git-prompt-use-theme 'powerline))
-
-#+end_src
-
-
-* File Management
-** Dired
-
-Dired is a built-in file manager for Emacs that does some pretty amazing things!  Here are some key bindings you should try out:
-
-**** Key Bindings
-**** Navigation
-
-*Emacs* / *Evil*
-- =n= / =j= - next line
-- =p= / =k= - previous line
-- =j= / =J= - jump to file in buffer
-- =RET= - select file or directory
-- =^= - go to parent directory
-- =S-RET= / =g O= - Open file in "other" window
-- =M-RET= - Show file in other window without focusing (previewing files)
-- =g o= (=dired-view-file=) - Open file but in a "preview" mode, close with =q=
-- =g= / =g r= Refresh the buffer with =revert-buffer= after changing configuration (and after filesystem changes!)
-
-**** Marking files
-
-- =m= - Marks a file
-- =u= - Unmarks a file
-- =U= - Unmarks all files in buffer
-- =* t= / =t= - Inverts marked files in buffer
-- =% m= - Mark files in buffer using regular expression
-- =*= - Lots of other auto-marking functions
-- =k= / =K= - "Kill" marked items (refresh buffer with =g= / =g r= to get them back)
-- Many operations can be done on a single file if there are no active marks!
-
-**** Copying and Renaming files
-
-- =C= - Copy marked files (or if no files are marked, the current file)
-- Copying single and multiple files
-- =U= - Unmark all files in buffer
-- =R= - Rename marked files, renaming multiple is a move!
-- =% R= - Rename based on regular expression: =^test= , =old-\&=
-
-*Power command*: =C-x C-q= (=dired-toggle-read-only=) - Makes all file names in the buffer editable directly to rename them!  Press =Z Z= to confirm renaming or =Z Q= to abort.
-
-**** Deleting files
-
-- =D= - Delete marked file
-- =d= - Mark file for deletion
-- =x= - Execute deletion for marks
-- =delete-by-moving-to-trash= - Move to trash instead of deleting permanently
-
-**** Creating and extracting archives
-
-- =Z= - Compress or uncompress a file or folder to (=.tar.gz=)
-- =c= - Compress selection to a specific file
-- =dired-compress-files-alist= - Bind compression commands to file extension
-
-**** Other common operations
-
-- =T= - Touch (change timestamp)
-- =M= - Change file mode
-- =O= - Change file owner
-- =G= - Change file group
-- =S= - Create a symbolic link to this file
-- =L= - Load an Emacs Lisp file into Emacs
-
-*** Configuration
-
-#+begin_src emacs-lisp
-  ;;; --------------------------------------------------------------------------
-
-    ;; Prefer g-prefixed coreutils version of standard utilities when available
-  (let ((gls (executable-find "gls")))
-    (when gls (setq-default insert-directory-program gls
-              dired-use-ls-dired t
-                ;; Needed to fix an issue on Mac which causes dired to fail
-                dired-listing-switches "-al --group-directories-first")))
-
-  (use-package all-the-icons-dired
-    :after dired
-    :hook (dired-mode . all-the-icons-dired-mode))
-
-  (use-package dired-open
-    :commands (dired dired-jump)
-    :config
-    ;; Doesn't work as expected!
-    ;;(add-to-list 'dired-open-functions #'dired-open-xdg t)
-    (setq dired-open-extensions '(("png" . "feh")
-                                 ("mkv" . "mpv"))))
-
-  (use-package dired-hide-dotfiles
-    :after dired-mode
-    :hook (dired-mode . dired-hide-dotfiles-mode))
-
-#+end_src
-
-
-*** Single Window
-Dired, by default, opens up multiple windows - one for each directory. It would be nice to be able to limit =dired= to use just a single window. [[https://codeberg.org/amano.kenji/dired-single][dired-single]] does just that. We configure =dired-single= to open up a directory while in dired with the =C-<return>=  key combination. This will then open up the directory in the buffer named =*dired*=. Whenever a directory is opened with the =C-<return>= key sequence, that directory will then replace what's currently in the =*dired*= buffer.
-
-#+begin_src emacs-lisp
-  ;;; --------------------------------------------------------------------------
-  ;; Single Window dired - don't continually open new buffers
-
-  (defun mifi/dired-single-keymap-init ()
-    "Bunch of stuff to run for dired, either immediately or when it's
-     loaded."
-    (define-key dired-mode-map
-      [remap dired-find-file] 'dired-single-buffer)
-    (define-key dired-mode-map
-      [remap dired-mouse-find-file-other-window] 'dired-single-buffer-mouse)
-    (define-key dired-mode-map
-      [remap dired-up-directory] 'dired-single-up-directory))
-
-  (use-package dired-single
-    :after dired
-    :config
-    (mifi/dired-single-keymap-init))
-#+end_src
-
-
 * Miscellaneous
 
 The following packages are some additional quality of life features.
@@ -5128,6 +5110,28 @@ The following packages are some additional quality of life features.
     (bind-keys
       ([remap describe-command] . helpful-command)
       ([remap describe-key] . helpful-key)))
+
+#+end_src
+
+** Thesaurus
+#+begin_src emacs-lisp
+
+  (use-package mw-thesaurus
+    :when enable-thesaurus
+    :ensure t
+    :custom
+    (mw-thesaurus-api-key "429331e9-b40e-4f17-9988-0632ef3ddd2d")
+    :defer t
+    :commands mw-thesaurus-lookup-dwim
+    :hook (mw-thesaurus-mode . variable-pitch-mode)
+    :config
+    ;; window on the right side
+    (add-to-list 'display-buffer-alist '(,mw-thesaurus-buffer-name
+                                        (display-buffer-reuse-window
+                                          display-buffer-in-direction)
+                                        (direction . right)
+                                        (window . root)
+                                        (window-width . 0.3))))
 
 #+end_src
 
@@ -5365,18 +5369,23 @@ Mitch's minor mode (or <<<mmm>>>) just defines frequently used hot-keys. It work
 *** Mitch's Minor Mode Functions
 #+begin_src emacs-lisp
   ;;; --------------------------------------------------------------------------
-  
+
   (defun mifi/set-fill-column-interactively (num)
     "Asks for the fill column."
-    (interactive "nfill-column: ")
+    (interactive "fill-column: ")
     (set-fill-column num))
 
   (defun mifi/set-org-fill-column-interactively (num)
     "Asks for the fill column for Org mode."
-    (interactive "norg-fill-column: ")
+    (interactive "org-fill-column: ")
     (setq custom-org-fill-column num)
     (mifi/org-mode-visual-fill)
     (redraw-display))
+
+  (defun mifi/jump-to-register ()
+    "Asks for a register to jump to."
+    (interactive)
+    (call-interactively 'jump-to-register))
 
 #+end_src
 
@@ -5392,19 +5401,20 @@ This is a set of keymaps that do the same things as the popup menu. Both are her
       (let ((map (make-sparse-keymap)))
         (bind-keys :map map
         ("M-RET $" . jinx-correct)
-          ("M-RET p" . pulsar-pulse-line)
-          ("M-RET d" . dashboard-open)
+          ("M-RET ?" . eldoc-box-help-at-point)
           ("M-RET S e" . eshell)
-          ("M-RET f" . mifi/set-fill-column-interactively)
-          ("M-RET r" . repeat-mode)
           ("M-RET S i" . ielm)
           ("M-RET S v" . vterm-other-window)
-          ("M-RET t" . treemacs)
-          ("M-RET |" . global-display-fill-column-indicator-mode)
           ("M-RET T +" . next-theme)
           ("M-RET T -" . previous-theme)
           ("M-RET T ?" . which-theme)
-          ("M-RET ?" . eldoc-box-help-at-point))
+          ("M-RET d" . dashboard-open)
+          ("M-RET e" . treemacs) ;; e for Explore
+          ("M-RET f" . mifi/set-fill-column-interactively)
+          ("M-RET p" . pulsar-pulse-line)
+          ("M-RET r" . repeat-mode)
+        ("M-RET j" . mifi/jump-to-register)
+          ("M-RET |" . global-display-fill-column-indicator-mode))
         map)
       "mmm-keys-minor-mode keymap.")
 
@@ -5433,6 +5443,9 @@ shown. Plus, some keys are mode specific and will only appear when that major mo
       (unbind-key "M-RET o l" map)
       (unbind-key "M-RET P ?" map)
       (unbind-key "M-RET M-RET" map)
+      (when enable-thesaurus
+        (bind-keys :map map
+        ("M-RET m t" . mw-thesaurus-lookup-dwim)))
       (cond
         ((equal major-mode 'org-mode)
         (bind-keys :map map
@@ -5450,8 +5463,10 @@ shown. Plus, some keys are mode specific and will only appear when that major mo
     (which-key-add-key-based-replacements "M-RET T" "theme-keys")
     (which-key-add-key-based-replacements "M-RET P" "python-menu")
     (which-key-add-key-based-replacements "M-RET o" "org-menu")
-    (which-key-add-key-based-replacements "M-RET t" "treemacs-toggle")
+    (which-key-add-key-based-replacements "M-RET e" "treemacs-toggle")
+    (which-key-add-key-based-replacements "M-RET m" "Thesaurus")
     (which-key-add-key-based-replacements "M-RET f" "set-fill-column")
+    (which-key-add-key-based-replacements "M-RET j" "jump-to-register")
     (which-key-add-key-based-replacements "M-RET" "Mitch's Menu"))
 
   (add-hook 'which-key-inhibit-display-hook 'mifi/mmm-update-menu)

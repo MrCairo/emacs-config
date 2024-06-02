@@ -152,8 +152,13 @@ The Dashboard will be in the *dashboard* buffer and can also be opened using
   :type 'boolean
   :group 'mrf-custom-toggles)
 
+(defcustom enable-thesaurus t
+  "When set to t, enables the Merriam-Webster Thesaurus."
+  :type 'boolean
+  :group 'mrf-custom-toggles)
+
 ;; Keep as defvar until the frameset save/restore process works better.
-(defvar enable-frameset-restore nil
+(defvar enable-frameset-restore t
   "Set to t to enable restoring the last Emacs window size and position
    upon startup.")
   ;; :type 'boolean
@@ -342,11 +347,11 @@ font size is computed + 20 of this value."
 (defun mifi/validate-variable-pitch-font ()
   (let* ((variable-pitch-font
            (cond
-	     ((x-list-fonts variable-pitch-font-family) variable-pitch-font-family)
-	     ((x-list-fonts "SF Pro")           "SF Pro")
-	     ((x-list-fonts "DejaVu Sans")      "DejaVu Sans")
-	     ((x-list-fonts "Ubuntu")           "Ubuntu")
-	     ((x-list-fonts "Helvetica")        "Helvetica")
+           ((x-list-fonts variable-pitch-font-family) variable-pitch-font-family)
+           ((x-list-fonts "SF Pro")           "SF Pro")
+           ((x-list-fonts "DejaVu Sans")      "DejaVu Sans")
+           ((x-list-fonts "Ubuntu")           "Ubuntu")
+           ((x-list-fonts "Helvetica")        "Helvetica")
              ((x-list-fonts "Source Sans Pro")  "Source Sans Pro")
              ((x-list-fonts "Lucida Grande")    "Lucida Grande")
              ((x-list-fonts "Verdana")          "Verdana")
@@ -354,7 +359,7 @@ font size is computed + 20 of this value."
              (nil (warn "Cannot find a Sans Serif Font.  Install Source Sans Pro.")))))
     (if variable-pitch-font
       (when (not (equal variable-pitch-font variable-pitch-font-family))
-	(setq variable-pitch-font-family variable-pitch-font))
+      (setq variable-pitch-font-family variable-pitch-font))
       (message "---- Can't find a variable-pitch font to use.")))
 
   (message (format ">>> variable-pitch font is %s" variable-pitch-font-family)))
@@ -364,17 +369,17 @@ font size is computed + 20 of this value."
 (defun mifi/validate-monospace-font ()
   (let* ((monospace-font
            (cond
-	     ((x-list-fonts mono-spaced-font-family) mono-spaced-font-family)
-	     ((x-list-fonts "Fira Code Retina")  "Fira Code Retina")
-	     ((x-list-fonts "Fira Code")         "Fira Code")
-	     ((x-list-fonts "Source Code Pro")   "Source Code Pro")
-	     ((x-list-fonts "Ubuntu Monospaced") "Ubuntu Monospaced")
+           ((x-list-fonts mono-spaced-font-family) mono-spaced-font-family)
+           ((x-list-fonts "Fira Code Retina")  "Fira Code Retina")
+           ((x-list-fonts "Fira Code")         "Fira Code")
+           ((x-list-fonts "Source Code Pro")   "Source Code Pro")
+           ((x-list-fonts "Ubuntu Monospaced") "Ubuntu Monospaced")
              ((x-family-fonts "Monospaced")      "Monospaced")
              (nil (warn "Cannot find a monospaced Font.  Install Source Code Pro.")))))
     (if monospace-font
       (when (not (equal monospace-font variable-pitch-font-family))
-	(setq mono-spaced-font-family monospace-font)
-	(setq default-font-family monospace-font))
+      (setq mono-spaced-font-family monospace-font)
+      (setq default-font-family monospace-font))
       (message "---- Can't find a monospace font to use.")))
 
   (message (format ">>> monospace font is %s" mono-spaced-font-family)))
@@ -397,12 +402,10 @@ font size is computed + 20 of this value."
 
 ;;; Put any emacs cusomized variables in a special file
 (setq custom-file (expand-file-name "customized-vars.el" user-emacs-directory))
-;; create custom file if it does not exists.
-(unless (file-exists-p custom-file)
+
+(unless (file-exists-p custom-file) ;; create custom file if it doesn't exists
   (write-region "" nil custom-file))
-;; (add-hook 'elpaca-after-init-hook (lambda () (load custom-file 'noerror 'nomessage)))
 (load custom-file 'noerror 'nomessage)
-(setq enable-frameset-restore nil) ;; FORCE UNTIL FRAMESET RESTORE IS DONE
 
 ;; ensure that the loaded font values are supported by this OS. If not, try
 ;; to correct them.
@@ -479,9 +482,6 @@ font size is computed + 20 of this value."
   :config
   (show-paren-mode 1))
 
-(setq register-preview-delay 0) ;; Show registers ASAP
-(set-register ?C (cons 'file (concat emacs-config-directory "/emacs-config.org")))
-
 ;;; --------------------------------------------------------------------------
 
 (defun mifi/save-desktop-frameset ()
@@ -498,17 +498,19 @@ font size is computed + 20 of this value."
 ;;; --------------------------------------------------------------------------
  
 (defun mifi/restore-desktop-frameset ()
-  (unless (and (daemonp) (not enable-frameset-restore))
+  (unless (and (daemonp) (not enable-frameset-<restore))
     (let
       ((file (expand-file-name "saved-frameset.el" user-emacs-directory)))
       (desktop-save-mode 0)
-      (when (f-exists? file) (load file)
+      (when (file-exists-p  file) (load file)
       (desktop-restore-frameset)
       (when (featurep 'spacious-padding)
-        (when spacious-padding-mode
-          (spacious-padding-mode 0)
-          (spacious-padding-mode 1)))))
-      ))
+          (when spacious-padding-mode
+            (spacious-padding-mode 0)
+            (spacious-padding-mode 1)))))))
+
+(setq register-preview-delay 0) ;; Show registers ASAP
+(set-register ?C (cons 'file (concat emacs-config-directory "emacs-config.org")))
 
 ;;; --------------------------------------------------------------------------
 ;; Allow access from emacsclient
@@ -520,17 +522,6 @@ font size is computed + 20 of this value."
 
 ;; (when (fboundp 'pixel-scroll-precision-mode)
 ;;    (pixel-scroll-precision-mode))
-
-;;; --------------------------------------------------------------------------
-
-(use-package f
-  :ensure ( :package "f" :source "MELPA" :protocol https :inherit t
-          :depth 1 :fetcher github :repo "rejeep/f.el"
-          :files ("*.el" "*.el.in" "dir" "*.info" "*.texi" "*.texinfo"
-                   "doc/dir" "doc/*.info" "doc/*.texi" "doc/*.texinfo"
-                   "lisp/*.el" (:exclude ".dir-locals.el" "test.el"
-                                 "tests.el" "*-test.el" "*-tests.el"
-                                 "LICENSE" "README*" "*-pkg.el"))))
 
 ;;; --------------------------------------------------------------------------
 
@@ -602,8 +593,7 @@ font size is computed + 20 of this value."
 
 ;;; --------------------------------------------------------------------------
 
-(use-package visual-fill-column
-  :after org)
+(use-package visual-fill-column :after org)
 
 ;;; --------------------------------------------------------------------------
 
@@ -771,9 +761,9 @@ font size is computed + 20 of this value."
 ;;
 ;; Sometimes, when behind a firewall, the undo-tree package triggers elpaca
 ;; to queue up the Queue package which then hangs and fails. This happens
-;; even if the :unless option is specified in the use-package (only :disabled
+;; even if the :unless/:when option is specified in the use-package (only :disabled
 ;; seems to work which isn't what I want). So, we prevent the loading of the
-;; page altogether.
+;; page altogether unless the undo-handler is set to undo tree.
 ;;
 (when (equal undo-handler 'undo-handler-undo-tree)
   (use-package undo-tree
@@ -794,6 +784,475 @@ font size is computed + 20 of this value."
       ("RET" . undo-tree-visualizer-quit)
       ("C-g" . undo-tree-visualizer-abort))
     (setq undo-tree-auto-save-history nil)))
+
+;;; --------------------------------------------------------------------------
+
+(use-package prescient)
+
+;;; --------------------------------------------------------------------------
+
+(use-package orderless
+  :when (or (equal completion-handler 'comphand-vertico)
+          (equal completion-handler 'comphand-ivy-counsel))
+  :custom
+  (completion-styles '(orderless basic))
+  (completion-category-overrides '((file (styles basic partial-completion)))))
+
+;;; --------------------------------------------------------------------------
+;;; Swiper and IVY mode
+
+(use-package ivy
+  :when (equal completion-handler 'comphand-ivy-counsel)
+  :bind (("C-s" . swiper)
+          :map ivy-minibuffer-map
+            ;;; ("TAB" . ivy-alt-done)
+          ("C-l" . ivy-alt-done)
+          ("C-j" . ivy-next-line)
+          ("C-k" . ivy-previous-line)
+          :map ivy-switch-buffer-map
+          ("C-k" . ivy-previous-line)
+          ("C-l" . ivy-done)
+          ("C-d" . ivy-switch-buffer-kill)
+          :map ivy-reverse-i-search-map
+          ("C-k" . ivy-previous-line)
+          ("C-d" . ivy-reverse-i-search-kill))
+  :custom
+  (enable-recursive-minibuffers t)
+  (ivy-use-virtual-buffers t)
+  :config
+  (ivy-mode 1)
+  (setq ivy-re-builders-alist '((t . orderless-ivy-re-builder)))
+  (add-to-list 'ivy-highlight-functions-alist
+    '(orderless-ivy-re-builder . orderless-ivy-highlight)))
+
+;;; --------------------------------------------------------------------------
+
+(use-package ivy-rich
+  :when (equal completion-handler 'comphand-ivy-counsel)
+  :after ivy
+  :init
+  (ivy-rich-mode 1)
+  :config
+  (setcdr (assq t ivy-format-functions-alist) #'ivy-format-function-line))
+
+(use-package ivy-yasnippet
+  :when (equal completion-handler 'comphand-ivy-counsel)
+  :after (:any yasnippet ivy))
+;; :ensure (:host github :repo "mkcms/ivy-yasnippet"))
+
+;;; --------------------------------------------------------------------------
+
+(use-package swiper
+  :when (equal completion-handler 'comphand-ivy-counsel)
+  :after ivy)
+
+;;; --------------------------------------------------------------------------
+
+(use-package counsel
+  :when (equal completion-handler 'comphand-ivy-counsel)
+  :bind ( ("C-M-j" . 'counsel-switch-buffer)
+          ("M-x" . 'counsel-M-x)
+          ("M-g o" . 'counsel-outline)
+          ("C-x C-f" . 'counsel-find-file)
+          ("C-c C-r" . 'ivy-resume)
+          :map minibuffer-local-map
+          ("C-r" . 'counsel-minibuffer-history))
+  :custom
+  (counsel-linux-app-format-function #'counsel-linux-app-format-function-name-only)
+  :config
+  (counsel-mode 1))
+
+;;; --------------------------------------------------------------------------
+
+(use-package ivy-prescient
+  :when (equal completion-handler 'comphand-ivy-counsel)
+  :after (ivy prescient)
+  :custom
+  (prescient-persist-mode t)
+  (ivy-prescient-mode t)
+  (ivy-prescient-enable-filtering t))
+
+;;; --------------------------------------------------------------------------
+
+;;;; Code Completion
+(use-package corfu
+  :when (equal completion-handler 'comphand-corfu)
+  ;; Optional customizations
+  :custom
+  (corfu-cycle t)                  ; Allows cycling through candidates
+  (corfu-auto t)                   ; Enable auto completion
+  (corfu-auto-prefix 2)
+  (corfu-auto-delay 0.8)
+  (corfu-popupinfo-delay '(0.5 . 0.2))
+  (corfu-preview-current 'insert) ; insert previewed candidate
+  (corfu-preselect 'prompt)
+  (corfu-on-exact-match nil)       ; Don't auto expand tempel snippets
+  ;; Optionally use TAB for cycling, default is `corfu-complete'.
+  :bind (:map corfu-map
+        ("M-SPC"          . corfu-insert-separator)
+        ("TAB"            . corfu-next)
+        ([tab]            . corfu-next)
+        ("S-TAB"          . corfu-previous)
+        ([backtab]    . corfu-previous)
+        ("S-<return>" . corfu-insert)
+        ("RET"            . nil))
+  :init
+  (global-corfu-mode)
+  (corfu-history-mode)
+  (corfu-popupinfo-mode) ; Popup completion info
+  :config
+  (add-hook 'eshell-mode-hook
+    (lambda () (setq-local corfu-quit-at-boundary t
+               corfu-quit-no-match t
+               corfu-auto nil)
+      (corfu-mode))))
+
+;;; --------------------------------------------------------------------------
+;; Add extensions
+(use-package cape
+  :when (equal completion-handler 'comphand-corfu)
+  :after corfu
+  ;; Bind dedicated completion commands
+  ;; Alternative prefix keys: C-c p, M-p, M-+, ...
+  :bind ( ("C-c C-p p" . completion-at-point) ;; capf
+          ("C-c C-p t" . complete-tag)        ;; etags
+          ("C-c C-p d" . cape-dabbrev)        ;; or dabbrev-completion
+          ("C-c C-p h" . cape-history)
+          ("C-c C-p f" . cape-file)
+          ("C-c C-p k" . cape-keyword)
+          ("C-c C-p s" . cape-elisp-symbol)
+          ("C-c C-p e" . cape-elisp-block)
+          ("C-c C-p a" . cape-abbrev)
+          ("C-c C-p l" . cape-line)
+          ("C-c C-p w" . cape-dict)
+          ("C-c C-p :" . cape-emoji)
+          ("C-c C-p \\" . cape-tex)
+          ("C-c C-p _" . cape-tex)
+          ("C-c C-p ^" . cape-tex)
+          ("C-c C-p &" . cape-sgml)
+          ("C-c C-p r" . cape-rfc1345))
+  :init
+  ;; Add to the global default value of `completion-at-point-functions' which is
+  ;; used by `completion-at-point'.  The order of the functions matters, the
+  ;; first function returning a result wins.  Note that the list of buffer-local
+  ;; completion functions takes precedence over the global list.
+  (add-hook 'completion-at-point-functions #'cape-dabbrev)
+  (add-hook 'completion-at-point-functions #'cape-file)
+  (add-hook 'completion-at-point-functions #'cape-elisp-block)
+  ;;(add-hook 'completion-at-point-functions #'cape-history)
+  ;;(add-hook 'completion-at-point-functions #'cape-keyword)
+  ;;(add-hook 'completion-at-point-functions #'cape-tex)
+  ;;(add-hook 'completion-at-point-functions #'cape-sgml)
+  ;;(add-hook 'completion-at-point-functions #'cape-rfc1345)
+  ;;(add-hook 'completion-at-point-functions #'cape-abbrev)
+  ;;(add-hook 'completion-at-point-functions #'cape-dict)
+  ;;(add-hook 'completion-at-point-functions #'cape-elisp-symbol)
+  ;;(add-hook 'completion-at-point-functions #'cape-line)
+  )
+
+;;; --------------------------------------------------------------------------
+
+(use-package corfu-prescient
+  :when (equal completion-handler 'comphand-corfu)
+  :after (corfu prescient))
+
+;;; --------------------------------------------------------------------------
+
+(use-package vertico
+  :when (equal completion-handler 'comphand-vertico)
+  :demand t
+  ;;:wait t
+  ;;:ensure (:repo "minad/vertico" :files (:defaults "extensions/vertico-*.el") :fetcher github)
+  :custom
+  (recentf-mode t)
+  (vertico-count 12)
+  (vertico-cycle nil)
+  (vertico-multiform-mode 1)
+  :config
+  (vertico-mode)
+  ;; :bind ("C-x C-f" . ido-find-file)
+  ;; Clean up file path when typing
+  :hook ((rfn-eshadow-update-overlay . vertico-directory-tidy)
+        ;; Make sure vertico state is saved
+        (minibuffer-setup . vertico-repeat-save)))
+
+;;; --------------------------------------------------------------------------
+
+(use-package marginalia
+  ;; :when (equal completion-handler 'comphand-vertico)
+  ;; :after vertico
+  :custom
+  (marginalia-max-relative-age 0)
+  (marginalia-align 'left)
+  (marginalia-annotators '(marginalia-annotators-heavy marginalia-annotators-light nil))
+  :config
+  (marginalia-mode t))
+
+;;; --------------------------------------------------------------------------
+
+(use-package all-the-icons-completion
+  :after (marginalia all-the-icons)
+  :hook (marginalia-mode . all-the-icons-completion-marginalia-setup))
+
+;;; --------------------------------------------------------------------------
+
+(use-package consult
+  :when (equal completion-handler 'comphand-vertico)
+  :after vertico
+  :bind
+  ([remap switch-to-buffer] . consult-buffer)
+  ([remap switch-to-buffer-other-window] . consult-buffer-other-window)
+  ([remap switch-to-buffer-other-frame] . consult-buffer-other-frame)
+  ([remap project-switch-to-buffer] . consult-project-buffer)
+  ([remap bookmark-jump] . consult-bookmark)
+  ([remap recentf-open] . consult-recent-file)
+  ([remap yank] . nil)
+  ([remap yank-pop] . consult-yank-pop)
+  ([remap goto-line] . consult-goto-line)
+  ("M-g m" . consult-mark)
+  ("M-g M" . consult-global-mark)
+  ("M-g o" . consult-outline)
+  ("M-g i" . consult-imenu)
+  ("M-g I" . consult-imenu-multi)
+  ("M-s l" . consult-line)
+  ("M-s p" . consult-preview)  
+  ("M-s L" . consult-line-multi)
+  ("M-s k" . consult-keep-lines)
+  ("M-s u" . consult-focus-lines)
+  ("M-s r" . consult-ripgrep)
+  ("M-s f" . consult-find)
+  ("M-s F" . consult-locate)
+  ("M-g e" . consult-compile-error)
+  ("M-g f" . consult-flymake)
+  ([remap repeat-complex-command] . consult-complex-command)
+  ("M-s e" . consult-isearch-history)
+  ([remap isearch-edit-string] . consult-isearch-history)
+  ([remap next-matching-history-element] . consult-history)
+  ([remap previous-matching-history-element] . consult-history)
+  ([remap Info-search] . consult-info)
+  :custom
+  (xref-show-xrefs-function 'consult-xref)
+  (xref-show-definitions-function 'consult-xref)
+  :config
+  (setq consult-buffer-sources
+    '(consult--source-hidden-buffer 
+       consult--source-buffer
+       (:name "Ephemeral" :state consult--buffer-state
+       :narrow 109 :category buffer
+       :items ("*Messages*"  "*scratch*" "*vterm*"
+                "*Async-native-compile-log*" "*dashboard*"))
+       consult--source-modified-buffer
+       consult--source-recent-file)))
+
+;;; --------------------------------------------------------------------------
+
+(use-package vertico-prescient
+  :when (equal completion-handler 'comphand-vertico)
+  :after vertico prescient)
+
+;;; --------------------------------------------------------------------------
+
+(use-package vertico-posframe
+  :when (equal completion-handler 'comphand-vertico)
+  :after vertico
+  :custom
+  (setq vertico-multiform-commands
+    '((consult-line
+        posframe
+        (vertico-posframe-poshandler . posframe-poshandler-frame-top-center)
+        (vertico-posframe-border-width . 10)
+        ;; NOTE: This is useful when emacs is used in both in X and
+        ;; terminal, for posframe do not work well in terminal, so
+        ;; vertico-buffer-mode will be used as fallback at the
+        ;; moment.
+        (vertico-posframe-fallback-mode . vertico-buffer-mode))
+       (t posframe)))
+  (vertico-multiform-mode 1)
+  (setq vertico-posframe-parameters
+    '((left-fringe . 8)
+       (right-fringe . 8))))
+
+;;; --------------------------------------------------------------------------
+
+;; This has to be evaluated at the end of the init since it's possible that the
+;; completion-handler variable will not yet be defined at this point in the
+;; init phase using elpaca.
+(add-hook 'elpaca-after-init-hook
+  (lambda ()
+    (when (equal completion-handler 'comphand-built-in)
+      (ido-everywhere t))))
+
+;;; --------------------------------------------------------------------------
+
+(use-package embark
+  :when enable-embark
+  :bind
+  (("C-." . embark-act)         ;; pick some comfortable binding
+    ("C-;" . embark-dwim)        ;; good alternative: M-.
+    ("C-h B" . embark-bindings)) ;; alternative for `describe-bindings'
+
+  :init
+
+  ;; Optionally replace the key help with a completing-read interface
+  (setq prefix-help-command #'embark-prefix-help-command)
+
+  ;; Show the Embark target at point via Eldoc. You may adjust the
+  ;; Eldoc strategy, if you want to see the documentation from
+  ;; multiple providers. Beware that using this can be a little
+  ;; jarring since the message shown in the minibuffer can be more
+  ;; than one line, causing the modeline to move up and down:
+
+  ;; (add-hook 'eldoc-documentation-functions #'embark-eldoc-first-target)
+  ;; (setq eldoc-documentation-strategy #'eldoc-documentation-compose-eagerly)
+
+  :config
+
+  ;; Hide the mode line of the Embark live/completions buffers
+  (add-to-list 'display-buffer-alist
+    '("\\`\\*Embark Collect \\(Live\\|Completions\\)\\*"
+       nil
+       (window-parameters (mode-line-format . none)))))
+
+;; Consult users will also want the embark-consult package.
+(use-package embark-consult
+  :when (equal completion-handler 'comphand-vertico)
+  :defer t
+  ;;:ensure t ; only need to install it, embark loads it after consult if found
+  :hook
+  (embark-collect-mode . consult-preview-at-point-mode))
+
+;;; --------------------------------------------------------------------------
+
+;; Don't use lsp-bridge with company as lsp-bridge already provides the same
+;; features. They actually collide.
+
+(use-package company
+  :unless (equal custom-ide 'custom-ide-lsp-bridge)
+  :custom
+  (company-minimum-prefix-length 2)
+  (company-idle-delay 0.2)
+  :config
+  (global-company-mode +1))
+
+;;; --------------------------------------------------------------------------
+
+(use-package company-box
+  :after company
+  :diminish cb
+  :hook (company-mode . company-box-mode))
+
+(use-package company-jedi
+  :when  (equal custom-ide 'custom-ide-elpy)
+  :after python company
+  :config
+  (jedi:setup)
+  (defun my/company-jedi-python-mode-hook ()
+    (add-to-list 'company-backends 'company-jedi))
+  (add-hook 'python-mode-hook 'my/company-jedi-python-mode-hook))
+
+(use-package company-anaconda
+  :when (equal custom-ide 'custom-ide-anaconda)
+  :after anaconda company
+  :hook (python-mode . anaconda-mode)
+  :config
+  (eval-after-load "company"
+    '(add-to-list 'company-backends 'company-anaconda)))
+
+;;; --------------------------------------------------------------------------
+
+(use-package term+
+  ;;:ensure (:repo "tarao/term-plus-el" :fetcher github)
+  :commands term
+  :config
+  (setq explicit-shell-file-name "bash") ;; Change this to zsh, etc
+  ;;(setq explicit-zsh-args '())          ;; Use 'explicit-<shell>-args for shell-specific args
+
+  ;; Match the default Bash shell prompt.  Update this if you have a custom prompt
+  (setq term-prompt-regexp "^[^#$%>\n]*[#$%>] *"))
+
+;;; --------------------------------------------------------------------------
+
+(use-package eterm-256color
+  :hook (term-mode . eterm-256color-mode))
+
+;;; --------------------------------------------------------------------------
+
+(use-package vterm
+  ;;:ensure (:fetcher github :repo "akermu/emacs-libvterm")
+  :commands vterm
+  :config
+  (setq vterm-environment ("PS1=\\u@\\h:\\w \n$"))
+  (setq term-prompt-regexp "^[^#$%>\n]*[#$%>] *")  ;; Set this to match your custom shell prompt
+  (setq vterm-shell "zsh")                        ;; Set this to customize the shell to launch
+  (setq vterm-max-scrollback 10000))
+
+;;; --------------------------------------------------------------------------
+
+(defun mifi/configure-eshell ()
+  ;; Save command history when commands are entered
+  (add-hook 'eshell-pre-command-hook 'eshell-save-some-history)
+  ;; Truncate buffer for performance
+  (add-to-list 'eshell-output-filter-functions 'eshell-truncate-buffer)
+  (setq eshell-history-size   10000
+    eshell-buffer-maximum-lines 10000
+    eshell-hist-ignoredups t
+    eshell-scroll-to-bottom-on-input t))
+
+(use-package eshell-git-prompt
+  :after eshell)
+
+(use-package eshell
+  :ensure
+  :defer t
+  :hook (eshell-first-time-mode . mifi/configure-eshell)
+  :config
+  (with-eval-after-load 'esh-opt
+    (setq eshell-destroy-buffer-when-process-dies t)
+    (setq eshell-visual-commands '("htop" "zsh" "vim")))
+  (eshell-git-prompt-use-theme 'powerline))
+
+;;; --------------------------------------------------------------------------
+
+  ;; Prefer g-prefixed coreutils version of standard utilities when available
+(let ((gls (executable-find "gls")))
+  (when gls (setq-default insert-directory-program gls
+            dired-use-ls-dired t
+              ;; Needed to fix an issue on Mac which causes dired to fail
+              dired-listing-switches "-al --group-directories-first")))
+
+(use-package all-the-icons-dired
+  :after dired
+  :hook (dired-mode . all-the-icons-dired-mode))
+
+(use-package dired-open
+  :commands (dired dired-jump)
+  :config
+  ;; Doesn't work as expected!
+  ;;(add-to-list 'dired-open-functions #'dired-open-xdg t)
+  (setq dired-open-extensions '(("png" . "feh")
+                               ("mkv" . "mpv"))))
+
+(use-package dired-hide-dotfiles
+  :after dired-mode
+  :hook (dired-mode . dired-hide-dotfiles-mode))
+
+;;; --------------------------------------------------------------------------
+;; Single Window dired - don't continually open new buffers
+
+(defun mifi/dired-single-keymap-init ()
+  "Bunch of stuff to run for dired, either immediately or when it's
+   loaded."
+  (define-key dired-mode-map
+    [remap dired-find-file] 'dired-single-buffer)
+  (define-key dired-mode-map
+    [remap dired-mouse-find-file-other-window] 'dired-single-buffer-mouse)
+  (define-key dired-mode-map
+    [remap dired-up-directory] 'dired-single-up-directory))
+
+(use-package dired-single
+  :after dired
+  :config
+  (mifi/dired-single-keymap-init))
 
 ;;; --------------------------------------------------------------------------
 
@@ -1090,9 +1549,9 @@ font size is computed + 20 of this value."
     (when (display-graphic-p)
       (mifi/update-face-attribute)
       (unless (daemonp)
-	(if enable-frameset-restore
+      (if enable-frameset-restore
           (mifi/restore-desktop-frameset)
-	  (mifi/frame-recenter)))
+        (mifi/frame-recenter)))
       )))
 
 ;;; --------------------------------------------------------------------------
@@ -1426,6 +1885,21 @@ font size is computed + 20 of this value."
        ("STUDY" :inherit (region org-todo) :foreground "plum3"   :weight bold)
        ("DONE" . "SeaGreen4"))))
 
+(custom-theme-set-faces
+ 'user
+ '(org-block ((t (:inherit fixed-pitch))))
+ '(org-code ((t (:inherit (shadow fixed-pitch)))))
+ '(org-document-info ((t (:foreground "dark orange"))))
+ '(org-document-info-keyword ((t (:inherit (shadow fixed-pitch)))))
+ '(org-indent ((t (:inherit (org-hide fixed-pitch)))))
+ '(org-link ((t (:foreground "royal blue" :underline t))))
+ '(org-meta-line ((t (:inherit (font-lock-comment-face fixed-pitch)))))
+ '(org-property-value ((t (:inherit fixed-pitch))) t)
+ '(org-special-keyword ((t (:inherit (font-lock-comment-face fixed-pitch)))))
+ '(org-table ((t (:inherit fixed-pitch :foreground "#83a598"))))
+ '(org-tag ((t (:inherit (shadow fixed-pitch) :weight bold :height 0.8))))
+ '(org-verbatim ((t (:inherit (shadow fixed-pitch))))))
+
 ;;; --------------------------------------------------------------------------
 
 (use-package org
@@ -1479,14 +1953,14 @@ font size is computed + 20 of this value."
     (org-superstar-leading-bullet " ")
     (org-superstar-special-todo-items t)
     (org-superstar-todo-bullet-alist '( ("TODO" . 9744)
-  				      ("INPROG-TODO" . 9744)
-  				      ("HW" . 9744)
-  				      ("STUDY" . 9744)
-  				      ("SOMEDAY" . 9744)
-  				      ("READ" . 9744)
-  				      ("PROJ" . 9744)
-  				      ("CONTACT" . 9744)
-  				      ("DONE" . 9745)))
+                                    ("INPROG-TODO" . 9744)
+                                    ("HW" . 9744)
+                                    ("STUDY" . 9744)
+                                    ("SOMEDAY" . 9744)
+                                    ("READ" . 9744)
+                                    ("PROJ" . 9744)
+                                    ("CONTACT" . 9744)
+                                    ("DONE" . 9745)))
     ;; (org-superstar-headline-bullets-list '("✪" "✫" "✦" "✧" "✸" "✺"))
     :hook (org-mode . org-superstar-mode))
 
@@ -1511,25 +1985,25 @@ font size is computed + 20 of this value."
     'org-babel-load-languages
     (seq-filter
       (lambda (pair)
-	(locate-library (concat "ob-" (symbol-name (car pair)))))
+      (locate-library (concat "ob-" (symbol-name (car pair)))))
       '((emacs-lisp . t)
-	 (ditaa . t)
-	 (dot . t)
-	 (emacs-lisp . t)
-	 (gnuplot . t)
-	 (haskell . nil)
-	 (latex . t)
-	 (ledger . t)
-	 (ocaml . nil)
-	 (octave . t)
-	 (plantuml . t)
-	 (python . t)
-	 (ruby . t)
-	 (screen . nil)
-	 (sh . t) ;; obsolete
-	 (shell . t)
-	 (sql . t)
-	 (sqlite . t))))
+       (ditaa . t)
+       (dot . t)
+       (emacs-lisp . t)
+       (gnuplot . t)
+       (haskell . nil)
+       (latex . t)
+       (ledger . t)
+       (ocaml . nil)
+       (octave . t)
+       (plantuml . t)
+       (python . t)
+       (ruby . t)
+       (screen . nil)
+       (sh . t) ;; obsolete
+       (shell . t)
+       (sql . t)
+       (sqlite . t))))
   (push '("conf-unix" . conf-unix) org-src-lang-modes))
 
 ;;; --------------------------------------------------------------------------
@@ -1624,6 +2098,43 @@ font size is computed + 20 of this value."
          :jump-to-captured t)))
 
   (add-hook 'context-menu-functions #'denote-context-menu))
+
+;;; --------------------------------------------------------------------------
+
+(use-package projectile
+  :when (equal custom-project-handler 'custom-project-projectile)
+  :diminish Proj
+  :config (projectile-mode)
+  :bind-keymap
+  ("C-c p" . projectile-command-map)
+  :init
+  ;; NOTE: Set this to the folder where you keep your Git repos!
+  (when (file-directory-p "~/Developer")
+    (setq projectile-project-search-path '("~/Developer")))
+  (setq projectile-switch-project-action #'projectile-dired))
+
+(when (equal completion-handler 'comphand-ivy-counsel)
+  (use-package counsel-projectile
+    :when (equal custom-project-handler 'custom-project-projectile)
+    :after projectile
+    :config
+    (setq projectile-completion-system 'ivy)
+    (counsel-projectile-mode)))
+
+;;; --------------------------------------------------------------------------
+
+(defun project-find-go-module (dir)
+  (when-let ((root (locate-dominating-file dir "go.mod")))
+    (cons 'go-module root)))
+
+(use-package project
+  :when (equal custom-project-handler 'custom-project-project)
+  :ensure nil
+  :defer t
+  :config
+  (cl-defmethod project-root ((project (head go-module)))
+    (cdr project))
+  (add-hook 'project-find-functions #'project-find-go-module))
 
 ;;; --------------------------------------------------------------------------
 ;;; Treemacs
@@ -1993,342 +2504,6 @@ font size is computed + 20 of this value."
 
 ;;; --------------------------------------------------------------------------
 
-(use-package prescient)
-
-;;; --------------------------------------------------------------------------
-
-(use-package orderless
-  :when (or (equal completion-handler 'comphand-vertico)
-          (equal completion-handler 'comphand-ivy-counsel))
-  :custom
-  (completion-styles '(orderless basic))
-  (completion-category-overrides '((file (styles basic partial-completion)))))
-
-;;; --------------------------------------------------------------------------
-;;; Swiper and IVY mode
-
-(use-package ivy
-  :when (equal completion-handler 'comphand-ivy-counsel)
-  :bind (("C-s" . swiper)
-          :map ivy-minibuffer-map
-            ;;; ("TAB" . ivy-alt-done)
-          ("C-l" . ivy-alt-done)
-          ("C-j" . ivy-next-line)
-          ("C-k" . ivy-previous-line)
-          :map ivy-switch-buffer-map
-          ("C-k" . ivy-previous-line)
-          ("C-l" . ivy-done)
-          ("C-d" . ivy-switch-buffer-kill)
-          :map ivy-reverse-i-search-map
-          ("C-k" . ivy-previous-line)
-          ("C-d" . ivy-reverse-i-search-kill))
-  :custom
-  (enable-recursive-minibuffers t)
-  (ivy-use-virtual-buffers t)
-  :config
-  (ivy-mode 1)
-  (setq ivy-re-builders-alist '((t . orderless-ivy-re-builder)))
-  (add-to-list 'ivy-highlight-functions-alist
-    '(orderless-ivy-re-builder . orderless-ivy-highlight)))
-
-;;; --------------------------------------------------------------------------
-
-(use-package ivy-rich
-  :when (equal completion-handler 'comphand-ivy-counsel)
-  :after ivy
-  :init
-  (ivy-rich-mode 1)
-  :config
-  (setcdr (assq t ivy-format-functions-alist) #'ivy-format-function-line))
-
-(use-package ivy-yasnippet
-  :when (equal completion-handler 'comphand-ivy-counsel)
-  :after (:any yasnippet ivy))
-;; :ensure (:host github :repo "mkcms/ivy-yasnippet"))
-
-;;; --------------------------------------------------------------------------
-
-(use-package swiper
-  :when (equal completion-handler 'comphand-ivy-counsel)
-  :after ivy)
-
-;;; --------------------------------------------------------------------------
-
-(use-package counsel
-  :when (equal completion-handler 'comphand-ivy-counsel)
-  :bind ( ("C-M-j" . 'counsel-switch-buffer)
-          ("M-x" . 'counsel-M-x)
-          ("M-g o" . 'counsel-outline)
-          ("C-x C-f" . 'counsel-find-file)
-          ("C-c C-r" . 'ivy-resume)
-          :map minibuffer-local-map
-          ("C-r" . 'counsel-minibuffer-history))
-  :custom
-  (counsel-linux-app-format-function #'counsel-linux-app-format-function-name-only)
-  :config
-  (counsel-mode 1))
-
-;;; --------------------------------------------------------------------------
-
-(use-package ivy-prescient
-  :when (equal completion-handler 'comphand-ivy-counsel)
-  :after (ivy prescient)
-  :custom
-  (prescient-persist-mode t)
-  (ivy-prescient-mode t)
-  (ivy-prescient-enable-filtering t))
-
-;;; --------------------------------------------------------------------------
-
-;;;; Code Completion
-(use-package corfu
-  :when (equal completion-handler 'comphand-corfu)
-  ;; Optional customizations
-  :custom
-  (corfu-cycle t)                  ; Allows cycling through candidates
-  (corfu-auto t)                   ; Enable auto completion
-  (corfu-auto-prefix 2)
-  (corfu-auto-delay 0.8)
-  (corfu-popupinfo-delay '(0.5 . 0.2))
-  (corfu-preview-current 'insert) ; insert previewed candidate
-  (corfu-preselect 'prompt)
-  (corfu-on-exact-match nil)       ; Don't auto expand tempel snippets
-  ;; Optionally use TAB for cycling, default is `corfu-complete'.
-  :bind (:map corfu-map
-        ("M-SPC"          . corfu-insert-separator)
-        ("TAB"            . corfu-next)
-        ([tab]            . corfu-next)
-        ("S-TAB"          . corfu-previous)
-        ([backtab]    . corfu-previous)
-        ("S-<return>" . corfu-insert)
-        ("RET"            . nil))
-  :init
-  (global-corfu-mode)
-  (corfu-history-mode)
-  (corfu-popupinfo-mode) ; Popup completion info
-  :config
-  (add-hook 'eshell-mode-hook
-    (lambda () (setq-local corfu-quit-at-boundary t
-               corfu-quit-no-match t
-               corfu-auto nil)
-      (corfu-mode))))
-
-;;; --------------------------------------------------------------------------
-;; Add extensions
-(use-package cape
-  :when (equal completion-handler 'comphand-corfu)
-  :after corfu
-  ;; Bind dedicated completion commands
-  ;; Alternative prefix keys: C-c p, M-p, M-+, ...
-  :bind ( ("C-c C-p p" . completion-at-point) ;; capf
-          ("C-c C-p t" . complete-tag)        ;; etags
-          ("C-c C-p d" . cape-dabbrev)        ;; or dabbrev-completion
-          ("C-c C-p h" . cape-history)
-          ("C-c C-p f" . cape-file)
-          ("C-c C-p k" . cape-keyword)
-          ("C-c C-p s" . cape-elisp-symbol)
-          ("C-c C-p e" . cape-elisp-block)
-          ("C-c C-p a" . cape-abbrev)
-          ("C-c C-p l" . cape-line)
-          ("C-c C-p w" . cape-dict)
-          ("C-c C-p :" . cape-emoji)
-          ("C-c C-p \\" . cape-tex)
-          ("C-c C-p _" . cape-tex)
-          ("C-c C-p ^" . cape-tex)
-          ("C-c C-p &" . cape-sgml)
-          ("C-c C-p r" . cape-rfc1345))
-  :init
-  ;; Add to the global default value of `completion-at-point-functions' which is
-  ;; used by `completion-at-point'.  The order of the functions matters, the
-  ;; first function returning a result wins.  Note that the list of buffer-local
-  ;; completion functions takes precedence over the global list.
-  (add-hook 'completion-at-point-functions #'cape-dabbrev)
-  (add-hook 'completion-at-point-functions #'cape-file)
-  (add-hook 'completion-at-point-functions #'cape-elisp-block)
-  ;;(add-hook 'completion-at-point-functions #'cape-history)
-  ;;(add-hook 'completion-at-point-functions #'cape-keyword)
-  ;;(add-hook 'completion-at-point-functions #'cape-tex)
-  ;;(add-hook 'completion-at-point-functions #'cape-sgml)
-  ;;(add-hook 'completion-at-point-functions #'cape-rfc1345)
-  ;;(add-hook 'completion-at-point-functions #'cape-abbrev)
-  ;;(add-hook 'completion-at-point-functions #'cape-dict)
-  ;;(add-hook 'completion-at-point-functions #'cape-elisp-symbol)
-  ;;(add-hook 'completion-at-point-functions #'cape-line)
-  )
-
-;;; --------------------------------------------------------------------------
-
-(use-package corfu-prescient
-  :when (equal completion-handler 'comphand-corfu)
-  :after (corfu prescient))
-
-;;; --------------------------------------------------------------------------
-
-(use-package vertico
-  :when (equal completion-handler 'comphand-vertico)
-  :demand t
-  ;;:wait t
-  ;;:ensure (:repo "minad/vertico" :files (:defaults "extensions/vertico-*.el") :fetcher github)
-  :custom
-  (recentf-mode t)
-  (vertico-count 12)
-  (vertico-cycle nil)
-  (vertico-multiform-mode 1)
-  :config
-  (vertico-mode)
-  ;; :bind ("C-x C-f" . ido-find-file)
-  ;; Clean up file path when typing
-  :hook ((rfn-eshadow-update-overlay . vertico-directory-tidy)
-        ;; Make sure vertico state is saved
-        (minibuffer-setup . vertico-repeat-save)))
-
-;;; --------------------------------------------------------------------------
-
-(use-package marginalia
-  ;; :when (equal completion-handler 'comphand-vertico)
-  ;; :after vertico
-  :custom
-  (marginalia-max-relative-age 0)
-  (marginalia-align 'left)
-  (marginalia-annotators '(marginalia-annotators-heavy marginalia-annotators-light nil))
-  :config
-  (marginalia-mode t))
-
-;;; --------------------------------------------------------------------------
-
-(use-package all-the-icons-completion
-  :after (marginalia all-the-icons)
-  :hook (marginalia-mode . all-the-icons-completion-marginalia-setup))
-
-;;; --------------------------------------------------------------------------
-
-(use-package consult
-  :when (equal completion-handler 'comphand-vertico)
-  :after vertico
-  :bind
-  ([remap switch-to-buffer] . consult-buffer)
-  ([remap switch-to-buffer-other-window] . consult-buffer-other-window)
-  ([remap switch-to-buffer-other-frame] . consult-buffer-other-frame)
-  ([remap project-switch-to-buffer] . consult-project-buffer)
-  ([remap bookmark-jump] . consult-bookmark)
-  ([remap recentf-open] . consult-recent-file)
-  ([remap yank] . nil)
-  ([remap yank-pop] . consult-yank-pop)
-  ([remap goto-line] . consult-goto-line)
-  ("M-g m" . consult-mark)
-  ("M-g M" . consult-global-mark)
-  ("M-g o" . consult-outline)
-  ("M-g i" . consult-imenu)
-  ("M-g I" . consult-imenu-multi)
-  ("M-s l" . consult-line)
-  ("M-s p" . consult-preview)  
-  ("M-s L" . consult-line-multi)
-  ("M-s k" . consult-keep-lines)
-  ("M-s u" . consult-focus-lines)
-  ("M-s r" . consult-ripgrep)
-  ("M-s f" . consult-find)
-  ("M-s F" . consult-locate)
-  ("M-g e" . consult-compile-error)
-  ("M-g f" . consult-flymake)
-  ([remap repeat-complex-command] . consult-complex-command)
-  ("M-s e" . consult-isearch-history)
-  ([remap isearch-edit-string] . consult-isearch-history)
-  ([remap next-matching-history-element] . consult-history)
-  ([remap previous-matching-history-element] . consult-history)
-  ([remap Info-search] . consult-info)
-  :custom
-  (xref-show-xrefs-function 'consult-xref)
-  (xref-show-definitions-function 'consult-xref)
-  :config
-  (setq consult-buffer-sources
-    '(consult--source-hidden-buffer 
-       consult--source-buffer
-       (:name "Ephemeral" :state consult--buffer-state
-       :narrow 109 :category buffer
-       :items ("*Messages*"  "*scratch*" "*vterm*"
-                "*Async-native-compile-log*" "*dashboard*"))
-       consult--source-modified-buffer
-       consult--source-recent-file)))
-
-;;; --------------------------------------------------------------------------
-
-(use-package vertico-prescient
-  :when (equal completion-handler 'comphand-vertico)
-  :after vertico prescient)
-
-;;; --------------------------------------------------------------------------
-
-(use-package vertico-posframe
-  :when (equal completion-handler 'comphand-vertico)
-  :after vertico
-  :custom
-  (setq vertico-multiform-commands
-    '((consult-line
-        posframe
-        (vertico-posframe-poshandler . posframe-poshandler-frame-top-center)
-        (vertico-posframe-border-width . 10)
-        ;; NOTE: This is useful when emacs is used in both in X and
-        ;; terminal, for posframe do not work well in terminal, so
-        ;; vertico-buffer-mode will be used as fallback at the
-        ;; moment.
-        (vertico-posframe-fallback-mode . vertico-buffer-mode))
-       (t posframe)))
-  (vertico-multiform-mode 1)
-  (setq vertico-posframe-parameters
-    '((left-fringe . 8)
-       (right-fringe . 8))))
-
-;;; --------------------------------------------------------------------------
-
-;; This has to be evaluated at the end of the init since it's possible that the
-;; completion-handler variable will not yet be defined at this point in the
-;; init phase using elpaca.
-(add-hook 'elpaca-after-init-hook
-  (lambda ()
-    (when (equal completion-handler 'comphand-built-in)
-      (ido-everywhere t))))
-
-;;; --------------------------------------------------------------------------
-
-(use-package embark
-  :when enable-embark
-  :bind
-  (("C-." . embark-act)         ;; pick some comfortable binding
-    ("C-;" . embark-dwim)        ;; good alternative: M-.
-    ("C-h B" . embark-bindings)) ;; alternative for `describe-bindings'
-
-  :init
-
-  ;; Optionally replace the key help with a completing-read interface
-  (setq prefix-help-command #'embark-prefix-help-command)
-
-  ;; Show the Embark target at point via Eldoc. You may adjust the
-  ;; Eldoc strategy, if you want to see the documentation from
-  ;; multiple providers. Beware that using this can be a little
-  ;; jarring since the message shown in the minibuffer can be more
-  ;; than one line, causing the modeline to move up and down:
-
-  ;; (add-hook 'eldoc-documentation-functions #'embark-eldoc-first-target)
-  ;; (setq eldoc-documentation-strategy #'eldoc-documentation-compose-eagerly)
-
-  :config
-
-  ;; Hide the mode line of the Embark live/completions buffers
-  (add-to-list 'display-buffer-alist
-    '("\\`\\*Embark Collect \\(Live\\|Completions\\)\\*"
-       nil
-       (window-parameters (mode-line-format . none)))))
-
-;; Consult users will also want the embark-consult package.
-(use-package embark-consult
-  :when (equal completion-handler 'comphand-vertico)
-  :defer t
-  ;;:ensure t ; only need to install it, embark loads it after consult if found
-  :hook
-  (embark-collect-mode . consult-preview-at-point-mode))
-
-;;; --------------------------------------------------------------------------
-
 (use-package flycheck
   :unless (equal custom-ide 'custom-ide-elpy)
   :diminish FlM
@@ -2691,7 +2866,7 @@ font size is computed + 20 of this value."
   :custom
   (compile-command "go build -v && go test -v && go vet")
   :bind (:map go-mode-map
-	  ("C-c C-c" . 'compile))
+        ("C-c C-c" . 'compile))
   :config
   (eglot-format-buffer-on-save)
   (define-key (current-local-map) "\C-c\C-c" 'compile)
@@ -3012,176 +3187,6 @@ font size is computed + 20 of this value."
     ("Q" mifi/dap-delete-all-debug-sessions :color red)))
 
 ;;; --------------------------------------------------------------------------
-
-;; Don't use lsp-bridge with company as lsp-bridge already provides the same
-;; features. They actually collide.
-
-(use-package company
-  :unless (equal custom-ide 'custom-ide-lsp-bridge)
-  :custom
-  (company-minimum-prefix-length 2)
-  (company-idle-delay 0.2)
-  :config
-  (global-company-mode +1))
-
-;;; --------------------------------------------------------------------------
-
-(use-package company-box
-  :after company
-  :diminish cb
-  :hook (company-mode . company-box-mode))
-
-(use-package company-jedi
-  :when  (equal custom-ide 'custom-ide-elpy)
-  :after python company
-  :config
-  (jedi:setup)
-  (defun my/company-jedi-python-mode-hook ()
-    (add-to-list 'company-backends 'company-jedi))
-  (add-hook 'python-mode-hook 'my/company-jedi-python-mode-hook))
-
-(use-package company-anaconda
-  :when (equal custom-ide 'custom-ide-anaconda)
-  :after anaconda company
-  :hook (python-mode . anaconda-mode)
-  :config
-  (eval-after-load "company"
-    '(add-to-list 'company-backends 'company-anaconda)))
-
-;;; --------------------------------------------------------------------------
-
-(use-package projectile
-  :when (equal custom-project-handler 'custom-project-projectile)
-  :diminish Proj
-  :config (projectile-mode)
-  :bind-keymap
-  ("C-c p" . projectile-command-map)
-  :init
-  ;; NOTE: Set this to the folder where you keep your Git repos!
-  (when (file-directory-p "~/Developer")
-    (setq projectile-project-search-path '("~/Developer")))
-  (setq projectile-switch-project-action #'projectile-dired))
-
-(when (equal completion-handler 'comphand-ivy-counsel)
-  (use-package counsel-projectile
-    :when (equal custom-project-handler 'custom-project-projectile)
-    :after projectile
-    :config
-    (setq projectile-completion-system 'ivy)
-    (counsel-projectile-mode)))
-
-;;; --------------------------------------------------------------------------
-
-(defun project-find-go-module (dir)
-  (when-let ((root (locate-dominating-file dir "go.mod")))
-    (cons 'go-module root)))
-
-(use-package project
-  :when (equal custom-project-handler 'custom-project-project)
-  :ensure nil
-  :defer t
-  :config
-  (cl-defmethod project-root ((project (head go-module)))
-    (cdr project))
-  (add-hook 'project-find-functions #'project-find-go-module))
-
-;;; --------------------------------------------------------------------------
-
-(use-package term+
-  ;;:ensure (:repo "tarao/term-plus-el" :fetcher github)
-  :commands term
-  :config
-  (setq explicit-shell-file-name "bash") ;; Change this to zsh, etc
-  ;;(setq explicit-zsh-args '())          ;; Use 'explicit-<shell>-args for shell-specific args
-
-  ;; Match the default Bash shell prompt.  Update this if you have a custom prompt
-  (setq term-prompt-regexp "^[^#$%>\n]*[#$%>] *"))
-
-;;; --------------------------------------------------------------------------
-
-(use-package eterm-256color
-  :hook (term-mode . eterm-256color-mode))
-
-;;; --------------------------------------------------------------------------
-
-(use-package vterm
-  ;;:ensure (:fetcher github :repo "akermu/emacs-libvterm")
-  :commands vterm
-  :config
-  (setq vterm-environment ("PS1=\\u@\\h:\\w \n$"))
-  (setq term-prompt-regexp "^[^#$%>\n]*[#$%>] *")  ;; Set this to match your custom shell prompt
-  (setq vterm-shell "zsh")                        ;; Set this to customize the shell to launch
-  (setq vterm-max-scrollback 10000))
-
-;;; --------------------------------------------------------------------------
-
-(defun mifi/configure-eshell ()
-  ;; Save command history when commands are entered
-  (add-hook 'eshell-pre-command-hook 'eshell-save-some-history)
-  ;; Truncate buffer for performance
-  (add-to-list 'eshell-output-filter-functions 'eshell-truncate-buffer)
-  (setq eshell-history-size   10000
-    eshell-buffer-maximum-lines 10000
-    eshell-hist-ignoredups t
-    eshell-scroll-to-bottom-on-input t))
-
-(use-package eshell-git-prompt
-  :after eshell)
-
-(use-package eshell
-  :ensure
-  :defer t
-  :hook (eshell-first-time-mode . mifi/configure-eshell)
-  :config
-  (with-eval-after-load 'esh-opt
-    (setq eshell-destroy-buffer-when-process-dies t)
-    (setq eshell-visual-commands '("htop" "zsh" "vim")))
-  (eshell-git-prompt-use-theme 'powerline))
-
-;;; --------------------------------------------------------------------------
-
-  ;; Prefer g-prefixed coreutils version of standard utilities when available
-(let ((gls (executable-find "gls")))
-  (when gls (setq-default insert-directory-program gls
-	      dired-use-ls-dired t
-              ;; Needed to fix an issue on Mac which causes dired to fail
-              dired-listing-switches "-al --group-directories-first")))
-
-(use-package all-the-icons-dired
-  :after dired
-  :hook (dired-mode . all-the-icons-dired-mode))
-
-(use-package dired-open
-  :commands (dired dired-jump)
-  :config
-  ;; Doesn't work as expected!
-  ;;(add-to-list 'dired-open-functions #'dired-open-xdg t)
-  (setq dired-open-extensions '(("png" . "feh")
-                               ("mkv" . "mpv"))))
-
-(use-package dired-hide-dotfiles
-  :after dired-mode
-  :hook (dired-mode . dired-hide-dotfiles-mode))
-
-;;; --------------------------------------------------------------------------
-;; Single Window dired - don't continually open new buffers
-
-(defun mifi/dired-single-keymap-init ()
-  "Bunch of stuff to run for dired, either immediately or when it's
-   loaded."
-  (define-key dired-mode-map
-    [remap dired-find-file] 'dired-single-buffer)
-  (define-key dired-mode-map
-    [remap dired-mouse-find-file-other-window] 'dired-single-buffer-mouse)
-  (define-key dired-mode-map
-    [remap dired-up-directory] 'dired-single-up-directory))
-
-(use-package dired-single
-  :after dired
-  :config
-  (mifi/dired-single-keymap-init))
-
-;;; --------------------------------------------------------------------------
 ;; helpful package
 
 (use-package helpful
@@ -3198,6 +3203,23 @@ font size is computed + 20 of this value."
   (bind-keys
     ([remap describe-command] . helpful-command)
     ([remap describe-key] . helpful-key)))
+
+(use-package mw-thesaurus
+  :when enable-thesaurus
+  :ensure t
+  :custom
+  (mw-thesaurus-api-key "429331e9-b40e-4f17-9988-0632ef3ddd2d")
+  :defer t
+  :commands mw-thesaurus-lookup-dwim
+  :hook (mw-thesaurus-mode . variable-pitch-mode)
+  :config
+  ;; window on the right side
+  (add-to-list 'display-buffer-alist '(,mw-thesaurus-buffer-name
+                                      (display-buffer-reuse-window
+                                        display-buffer-in-direction)
+                                      (direction . right)
+                                      (window . root)
+                                      (window-width . 0.3))))
 
 ;;; --------------------------------------------------------------------------
 
@@ -3300,15 +3322,20 @@ font size is computed + 20 of this value."
 
 (defun mifi/set-fill-column-interactively (num)
   "Asks for the fill column."
-  (interactive "nfill-column: ")
+  (interactive "fill-column: ")
   (set-fill-column num))
 
 (defun mifi/set-org-fill-column-interactively (num)
   "Asks for the fill column for Org mode."
-  (interactive "norg-fill-column: ")
+  (interactive "org-fill-column: ")
   (setq custom-org-fill-column num)
   (mifi/org-mode-visual-fill)
   (redraw-display))
+
+(defun mifi/jump-to-register ()
+  "Asks for a register to jump to."
+  (interactive)
+  (call-interactively 'jump-to-register))
 
 ;;; --------------------------------------------------------------------------
 
@@ -3316,20 +3343,21 @@ font size is computed + 20 of this value."
   (defvar mmm-keys-minor-mode-map
     (let ((map (make-sparse-keymap)))
       (bind-keys :map map
-	("M-RET $" . jinx-correct)
-        ("M-RET p" . pulsar-pulse-line)
-        ("M-RET d" . dashboard-open)
+      ("M-RET $" . jinx-correct)
+        ("M-RET ?" . eldoc-box-help-at-point)
         ("M-RET S e" . eshell)
-        ("M-RET f" . mifi/set-fill-column-interactively)
-        ("M-RET r" . repeat-mode)
         ("M-RET S i" . ielm)
         ("M-RET S v" . vterm-other-window)
-        ("M-RET t" . treemacs)
-        ("M-RET |" . global-display-fill-column-indicator-mode)
         ("M-RET T +" . next-theme)
         ("M-RET T -" . previous-theme)
         ("M-RET T ?" . which-theme)
-        ("M-RET ?" . eldoc-box-help-at-point))
+        ("M-RET d" . dashboard-open)
+        ("M-RET e" . treemacs) ;; e for Explore
+        ("M-RET f" . mifi/set-fill-column-interactively)
+        ("M-RET p" . pulsar-pulse-line)
+        ("M-RET r" . repeat-mode)
+      ("M-RET j" . mifi/jump-to-register)
+        ("M-RET |" . global-display-fill-column-indicator-mode))
       map)
     "mmm-keys-minor-mode keymap.")
 
@@ -3350,6 +3378,9 @@ font size is computed + 20 of this value."
     (unbind-key "M-RET o l" map)
     (unbind-key "M-RET P ?" map)
     (unbind-key "M-RET M-RET" map)
+    (when enable-thesaurus
+      (bind-keys :map map
+      ("M-RET m t" . mw-thesaurus-lookup-dwim)))
     (cond
       ((equal major-mode 'org-mode)
       (bind-keys :map map
@@ -3367,8 +3398,10 @@ font size is computed + 20 of this value."
   (which-key-add-key-based-replacements "M-RET T" "theme-keys")
   (which-key-add-key-based-replacements "M-RET P" "python-menu")
   (which-key-add-key-based-replacements "M-RET o" "org-menu")
-  (which-key-add-key-based-replacements "M-RET t" "treemacs-toggle")
+  (which-key-add-key-based-replacements "M-RET e" "treemacs-toggle")
+  (which-key-add-key-based-replacements "M-RET m" "Thesaurus")
   (which-key-add-key-based-replacements "M-RET f" "set-fill-column")
+  (which-key-add-key-based-replacements "M-RET j" "jump-to-register")
   (which-key-add-key-based-replacements "M-RET" "Mitch's Menu"))
 
 (add-hook 'which-key-inhibit-display-hook 'mifi/mmm-update-menu)
@@ -3383,15 +3416,15 @@ font size is computed + 20 of this value."
   (lambda ()
     (setq-default initial-scratch-message
       (format
-	";; Hello, World and Happy hacking %s!\n%s\n\n" user-login-name
-	";; Press M-RET (Meta-RET) to open Mitch's Context Aware Menu"))
+      ";; Hello, World and Happy hacking %s!\n%s\n\n" user-login-name
+      ";; Press M-RET (Meta-RET) to open Mitch's Context Aware Menu"))
     (when dashboard-landing-screen (dashboard-open))))
 
 (when dashboard-landing-screen
   ;; (add-hook 'inferior-emacs-lisp-mode 'dashboard-open) ;; IELM open?
   (add-hook 'elpaca-after-init-hook
-	(lambda ()
-	  (add-hook 'lisp-interaction-mode-hook #'dashboard-open))))
+      (lambda ()
+        (add-hook 'lisp-interaction-mode-hook #'dashboard-open))))
 
 ;;; --------------------------------------------------------------------------
 
