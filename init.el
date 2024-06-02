@@ -158,11 +158,11 @@ The Dashboard will be in the *dashboard* buffer and can also be opened using
   :group 'mrf-custom-toggles)
 
 ;; Keep as defvar until the frameset save/restore process works better.
-(defvar enable-frameset-restore t
+(defcustom enable-frameset-restore t
   "Set to t to enable restoring the last Emacs window size and position
-   upon startup.")
-  ;; :type 'boolean
-  ;; :group 'mrf-custom-toggles)
+   upon startup."
+  :type 'boolean
+  :group 'mrf-custom-toggles)
 
 ;;; --------------------------------------------------------------------------
 
