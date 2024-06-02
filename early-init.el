@@ -1,4 +1,4 @@
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 ;; Adjust garbage collection threshold for early startup (see use of gcmh below)
 (setq gc-cons-threshold (* 100 1024 1024))
@@ -57,7 +57,7 @@
   (lambda ()
     (setq gc-cons-percentage 0.1))) ;; Default value for `gc-cons-percentage'
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 (defconst *is-a-mac* (eq system-type 'darwin))
 
 (defun mifi/setup-exec-path ()

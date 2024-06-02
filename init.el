@@ -11,7 +11,7 @@
 ;; (setq debug-on-error t)
 ;;
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (defvar elpaca-installer-version 0.7)
 (defvar elpaca-directory (expand-file-name "elpaca/" user-emacs-directory))
@@ -59,30 +59,30 @@
   (setq elpaca-use-package-by-default t))
 ;; (use-package emacs :ensure nil :config (setq ring-bell-function #'ignore))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 ;;; Define my customization groups
 
-(defgroup mrf-custom nil
+(defgroup mifi-custom nil
   "M.R. Fisher's configuration section."
   :group 'Local)
 
-(defgroup mrf-custom-toggles nil
+(defgroup mifi-custom-toggles nil
   "A set of toggles that enable or disable  specific packages."
-  :group 'mrf-custom)
+  :group 'mifi-custom)
 
-(defgroup mrf-custom-features nil
+(defgroup mifi-custom-features nil
   "Customization from a selection of specific features and handlers."
-  :group 'mrf-custom)
+  :group 'mifi-custom)
 
-(defgroup mrf-custom-fonts nil
+(defgroup mifi-custom-fonts nil
   "Customization of fonts and sizes."
-  :group 'mrf-custom)
+  :group 'mifi-custom)
 
-(defgroup mrf-custom-theming nil
+(defgroup mifi-custom-theming nil
   "Custom theming values."
-  :group 'mrf-custom)
+  :group 'mifi-custom)
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (defcustom dashboard-landing-screen t
   "If set to t, the `dashboard' package will be displayed once emacs has
@@ -92,79 +92,79 @@ shown instead.
 The Dashboard will be in the *dashboard* buffer and can also be opened using
 \"C-c d\" or \"M-RET d\" from anywhere even if this value is nil."
   :type 'boolean
-  :group 'mrf-custom)
+  :group 'mifi-custom)
 
 (defcustom custom-docs-dir "~/Documents/Emacs-Related"
   "A directory used to store documents and customized data."
   :type 'string
-  :group 'mrf-custom)
+  :group 'mifi-custom)
 
 (defcustom working-files-directory
   (expand-file-name "emacs-working-files" custom-docs-dir)
   "The directory where to store Emacs working files."
   :type 'string
-  :group 'mrf-custom)
+  :group 'mifi-custom)
 
 (defcustom custom-org-fill-column 120
   "The fill column width for Org mode text.
     Note that the text is also centered on the screen so that should
     be taken into consideration when providing a width."
   :type 'natnum
-  :group 'mrf-custom)
+  :group 'mifi-custom)
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 ;;; Feature Toggles
 
 (defcustom enable-gb-dev nil
   "If set to t, the z80-mode and other GameBoy related packages
     will be enabled."
   :type 'boolean
-  :group 'mrf-custom-toggles)
+  :group 'mifi-custom-toggles)
 
 (defcustom enable-ts nil
   "Set to t to enable TypeScript handling."
   :type 'boolean
-  :group 'mrf-custom-toggles)
+  :group 'mifi-custom-toggles)
 
 (defcustom enable-centaur-tabs nil
   "Set to t to enable `centaur-tabs' which uses tabs to represent open buffer."
   :type 'boolean
-  :group 'mrf-custom-toggles)
+  :group 'mifi-custom-toggles)
 
 (defcustom enable-neotree nil
   "Set to t to enable the `neotree' package."
   :type 'boolean
-  :group 'mrf-custom-toggles)
+  :group 'mifi-custom-toggles)
 
 (defcustom enable-golden-ratio nil
   "Set to t to enable `golden-ratio-mode' which resizes the active buffer
    window to the dimensions of a golden-rectangle"
   :type 'boolean
-  :group 'mrf-custom-toggles)
+  :group 'mifi-custom-toggles)
 
 (defcustom enable-org-fill-column-centering nil
   "Set to t to center the visual-fill column of the Org display."
   :type 'boolean
-  :group 'mrf-custom-toggles)
+  :group 'mifi-custom-toggles)
 
 (defcustom enable-embark nil
   "Set to t to enable the Embark package."
   :type 'boolean
-  :group 'mrf-custom-toggles)
+  :group 'mifi-custom-toggles)
 
 (defcustom enable-thesaurus t
   "When set to t, enables the Merriam-Webster Thesaurus."
   :type 'boolean
-  :group 'mrf-custom-toggles)
+  :group 'mifi-custom-toggles)
 
 ;; Keep as defvar until the frameset save/restore process works better.
 (defcustom enable-frameset-restore t
   "Set to t to enable restoring the last Emacs window size and position
    upon startup."
   :type 'boolean
-  :group 'mrf-custom-toggles)
+  :group 'mifi-custom-toggles)
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (defcustom undo-handler 'undo-handler-vundo
   "Select the undo handler to use.
@@ -180,7 +180,7 @@ Finally, the standard undo handler can also be chosen."
          (const :tag "Vundo (default)" undo-handler-vundo)
          (const :tag "Undo-tree" undo-handler-undo-tree)
          (const :tag "Built-in" undo-handler-built-in))
-  :group 'mrf-custom-features)
+  :group 'mifi-custom-features)
 
 (defcustom completion-handler 'comphand-vertico
   "Select the default minibuffer completion handler.
@@ -199,7 +199,7 @@ alternative to isearch that uses Ivy to show an overview of all matches."
          (const :tag "Ivy, Counsel, Swiper completion systems" comphand-ivy-counsel)
          (const :tag "Cofu completion systems" comphand-corfu)
          (const :tag "Built-in Ido" comphand-built-in))
-  :group 'mrf-custom-features)
+  :group 'mifi-custom-features)
 
 (defcustom debug-adapter 'debug-adapter-dape
   "Select the debug adapter to use for debugging applications.  dap-mode is an
@@ -214,7 +214,7 @@ dap-mode."
   :type '(radio
          (const :tag "Debug Adapter Protocol (DAP)" debug-adapter-dap-mode)
          (const :tag "Debug Adapter Protocol for Emacs (DAPE)" debug-adapter-dape))
-  :group 'mrf-custom-features)
+  :group 'mifi-custom-features)
 
 (defcustom custom-ide 'custom-ide-eglot
   "Select which IDE will be used for Python development.
@@ -238,15 +238,15 @@ configurable but has a host of great feaures that just work."
          (const :tag "Language Server Protocol (LSP)" custom-ide-lsp)
          (const :tag "LSP Bridge (standalone)" custom-ide-lsp-bridge)
          (const :tag "Python Anaconda-mode for Emacs" custom-ide-anaconda))
-  :group 'mrf-custom-features)
+  :group 'mifi-custom-features)
 
 (defcustom custom-project-handler 'custom-project-project
   "Select which project handler to use."
   :type '(radio (const :tag "Projectile" custom-project-projectile)
            (const :tag "Built-in project" custom-project-project))
-  :group 'mrf-custom-features)
+  :group 'mifi-custom-features)
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 ;;; Theming related
 
 (defcustom theme-list '("palenight-deeper-blue"
@@ -263,86 +263,86 @@ configurable but has a host of great feaures that just work."
 
   "My personal list of themes to cycle through indexed by `theme-selector'.
 If additional themes are added, they must be previously installed."
-  :group 'mrf-custom-theming
+  :group 'mifi-custom-theming
   :type '(repeat string))
 
 (defcustom default-terminal-theme "sanityinc-tomorrow-bright"
   "The default theme used for a terminal invocation of Emacs."
-  :group 'mrf-custom-theming
+  :group 'mifi-custom-theming
   :type 'string)
 
 (defcustom theme-selector 0
   "The index into the list of custom themes."
-  :group 'mrf-custom-theming
+  :group 'mifi-custom-theming
   :type 'natnum)
 
 ;;; Font related
 (defcustom default-font-family "Fira Code Retina"
   "The font family used as the default font."
   :type 'string
-  :group 'mrf-custom-fonts)
+  :group 'mifi-custom-fonts)
 
 (defcustom mono-spaced-font-family "Fira Code Retina"
   "The font family used as the mono-spaced font."
   :type 'string
-  :group 'mrf-custom-fonts)
+  :group 'mifi-custom-fonts)
 
 (defcustom variable-pitch-font-family "Helvetica Neue"
   "The font family used as the default proportional font."
   :type 'string
-  :group 'mrf-custom-fonts)
+  :group 'mifi-custom-fonts)
 
 (defcustom small-mono-font-size 150
   "The small font size in pixels."
   :type 'natnum
-  :group 'mrf-custom-fonts)
+  :group 'mifi-custom-fonts)
 
 (defcustom medium-mono-font-size 170
   "The medium font size in pixels."
   :type 'natnum
-  :group 'mrf-custom-fonts)
+  :group 'mifi-custom-fonts)
 
 (defcustom large-mono-font-size 190
   "The large font size in pixels."
   :type 'natnum
-  :group 'mrf-custom-fonts)
+  :group 'mifi-custom-fonts)
 
 (defcustom x-large-mono-font-size 220
   "The extra-large font size in pixels."
   :type 'natnum
-  :group 'mrf-custom-fonts)
+  :group 'mifi-custom-fonts)
 
 (defcustom small-variable-font-size 170
   "The small font size in pixels."
   :type 'natnum
-  :group 'mrf-custom-fonts)
+  :group 'mifi-custom-fonts)
 
 (defcustom medium-variable-font-size 190
   "The small font size in pixels."
   :type 'natnum
-  :group 'mrf-custom-fonts)
+  :group 'mifi-custom-fonts)
 
 (defcustom large-variable-font-size 210
   "The small font size in pixels."
   :type 'natnum
-  :group 'mrf-custom-fonts)
+  :group 'mifi-custom-fonts)
 
 (defcustom x-large-variable-font-size 240
   "The small font size in pixels."
   :type 'natnum
-  :group 'mrf-custom-fonts)
+  :group 'mifi-custom-fonts)
 
 (defcustom custom-default-font-size 170
   "A place to store the most current (face-attribute 'default :height).  This
 is specifically for the mono-spaced and default font. The variable type-face
 font size is computed + 20 of this value."
   :type 'natnum
-  :group 'mrf-custom-fonts)
+  :group 'mifi-custom-fonts)
 
 (defvar custom-default-mono-font-size 170
   "Storage for the current mono-spaced font height.")
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (defun mifi/validate-variable-pitch-font ()
   (let* ((variable-pitch-font
@@ -364,7 +364,7 @@ font size is computed + 20 of this value."
 
   (message (format ">>> variable-pitch font is %s" variable-pitch-font-family)))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (defun mifi/validate-monospace-font ()
   (let* ((monospace-font
@@ -384,7 +384,7 @@ font size is computed + 20 of this value."
 
   (message (format ">>> monospace font is %s" mono-spaced-font-family)))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 ;;; Set a variable that represents the actual emacs configuration directory.
 ;;; This is being done so that the user-emacs-directory which normally points
 ;;; to the .emacs.d directory can be re-assigned so that customized files don't
@@ -412,12 +412,12 @@ font size is computed + 20 of this value."
 (mifi/validate-variable-pitch-font)
 (mifi/validate-monospace-font)
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (add-to-list 'load-path (expand-file-name "lisp" emacs-config-directory))
 (add-to-list 'custom-theme-load-path (expand-file-name "Themes" custom-docs-dir))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (setq-default
   window-resize-pixelwise t ;; enable smooth resizing
@@ -443,7 +443,7 @@ font size is computed + 20 of this value."
                                  "Gemfile"
                                  "package.json"))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 (setq savehist-file (expand-file-name "savehist" user-emacs-directory))
 (savehist-mode t)
 (setq history-length t)
@@ -454,7 +454,7 @@ font size is computed + 20 of this value."
         search-ring
         regexp-search-ring))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 ;; (global-display-line-numbers-mode 1) ;; Line numbers appear everywhere
 ;; A cool mode to revert a window configuration
 (winner-mode 1)
@@ -468,7 +468,7 @@ font size is computed + 20 of this value."
 ;; (repeat-mode 1)
 (add-hook 'prog-mode-hook 'display-line-numbers-mode)
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 ;; Used to highlight matching delimiters '( { [ ] } )
 (use-package paren
@@ -482,7 +482,7 @@ font size is computed + 20 of this value."
   :config
   (show-paren-mode 1))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (defun mifi/save-desktop-frameset ()
   (unless (daemonp)
@@ -495,24 +495,27 @@ font size is computed + 20 of this value."
 
 (add-hook 'kill-emacs-hook 'mifi/save-desktop-frameset)
 
-;;; --------------------------------------------------------------------------
- 
+;;; ##########################################################################
+
 (defun mifi/restore-desktop-frameset ()
   (unless (and (daemonp) (not enable-frameset-<restore))
     (let
       ((file (expand-file-name "saved-frameset.el" user-emacs-directory)))
       (desktop-save-mode 0)
-      (when (file-exists-p  file) (load file)
-      (desktop-restore-frameset)
-      (when (featurep 'spacious-padding)
-          (when spacious-padding-mode
-            (spacious-padding-mode 0)
-            (spacious-padding-mode 1)))))))
+      (if (file-exists-p file)
+	(progn
+	  (load file)
+	  (desktop-restore-frameset)
+	  (when (featurep 'spacious-padding)
+            (when spacious-padding-mode
+              (spacious-padding-mode 0)
+              (spacious-padding-mode 1))))
+	(use-medium-display-font t)))))
 
 (setq register-preview-delay 0) ;; Show registers ASAP
-(set-register ?C (cons 'file (concat emacs-config-directory "emacs-config.org")))
+(set-register ?O (cons 'file (concat emacs-config-directory "emacs-config.org")))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 ;; Allow access from emacsclient
 (add-hook 'elpaca-after-init-hook
   (lambda ()
@@ -523,13 +526,13 @@ font size is computed + 20 of this value."
 ;; (when (fboundp 'pixel-scroll-precision-mode)
 ;;    (pixel-scroll-precision-mode))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package hydra
   :ensure (:repo "abo-abo/hydra" :fetcher github
             :files (:defaults (:exclude "lv.el"))))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (defun mifi/set-diminish ()
   (when (equal custom-project-handler 'custom-project-projectile)
@@ -551,7 +554,7 @@ font size is computed + 20 of this value."
       (lambda () (run-with-timer 0.5 nil 'mifi/set-diminish)))
     (run-with-timer 1.0 nil 'mifi/set-diminsh)))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package which-key
   :diminish which-key-mode
@@ -565,7 +568,7 @@ font size is computed + 20 of this value."
   (which-key-mode)
   (which-key-setup-minibuffer))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package multiple-cursors
   :bind (("C-S-c C-S-c" . mc/edit-lines)
@@ -573,7 +576,7 @@ font size is computed + 20 of this value."
         ("C-<" . mc/mark-previous-like-this)
         ("C-c C-<" . mc/mark-all-like-this)))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package anzu
   :custom
@@ -591,16 +594,16 @@ font size is computed + 20 of this value."
   (define-key isearch-mode-map
     [remap isearch-query-replace-regexp] #'anzu-isearch-query-replace-regexp))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package visual-fill-column :after org)
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package default-text-scale
   :hook (elpaca-after-init . default-text-scale-mode))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 ;; Macintosh specific configurations.
 (when *is-a-mac*
@@ -608,11 +611,9 @@ font size is computed + 20 of this value."
         mac-option-modifier         nil
         mac-control-modifier       'control
         mac-right-command-modifier 'super
-        mac-right-control-modifier 'hyper)
+        mac-right-control-modifier 'hyper))
 
-  (global-set-key (kbd "<escape>") 'keyboard-escape-quit))
-
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (bind-key "C-c ]" 'indent-region prog-mode-map)
 (bind-key "C-c }" 'indent-region prog-mode-map)
@@ -640,7 +641,7 @@ font size is computed + 20 of this value."
 (global-unset-key (kbd "C-<wheel-down>"))
 (global-unset-key (kbd "C-<wheel-up>"))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 ;; prevent (emacs) eldoc loaded before Elpaca activation warning.
 ;; (Warning only displayed during first Elpaca installation)
@@ -665,7 +666,7 @@ font size is computed + 20 of this value."
   :config
   (global-eldoc-mode t))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 ;;; Automatic Package Updates
 
 (use-package auto-package-update
@@ -679,7 +680,7 @@ font size is computed + 20 of this value."
   (auto-package-update-maybe)
   (auto-package-update-at-time "09:00"))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 ;; YASnippets
 
 (use-package yasnippet
@@ -698,30 +699,30 @@ font size is computed + 20 of this value."
     (prettify-symbols-mode))
   (add-hook 'yas-after-exit-snippet-hook #'help/yas-after-exit-snippet-hook-fn))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package yasnippet-snippets
   :after yasnippet)
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package all-the-icons
   :when (display-graphic-p))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package ace-window
   ;;:ensure (:repo "abo-abo/ace-window" :fetcher github)
   :bind ("M-o" . ace-window))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 ;;; Window Number
 
 (use-package winum
   ;;:ensure (:host github :repo "deb0ch/emacs-winum")
   :config (winum-mode))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 (use-package jinx
   :ensure (:host github :repo "minad/jinx")
   ;;:hook (emacs-startup . global-jinx-mode)
@@ -731,9 +732,9 @@ font size is computed + 20 of this value."
   (dolist (hook '(text-mode-hook prog-mode-hook org-mode-hook))
     (add-hook hook #'jinx-mode)))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package vundo
   ;;:ensure ( :host github :repo "casouri/vundo")
@@ -745,7 +746,7 @@ font size is computed + 20 of this value."
   (set-face-attribute 'vundo-default nil :family "Symbola")
   (setq vundo-glyph-alist vundo-unicode-symbols))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (defun mifi/undo-tree-hook ()
   (set-frame-width (selected-frame) 20))
@@ -756,7 +757,7 @@ font size is computed + 20 of this value."
        (split-width-threshold 0))
     (apply original-function args)))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 ;;
 ;; Sometimes, when behind a firewall, the undo-tree package triggers elpaca
@@ -785,11 +786,11 @@ font size is computed + 20 of this value."
       ("C-g" . undo-tree-visualizer-abort))
     (setq undo-tree-auto-save-history nil)))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package prescient)
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package orderless
   :when (or (equal completion-handler 'comphand-vertico)
@@ -798,7 +799,7 @@ font size is computed + 20 of this value."
   (completion-styles '(orderless basic))
   (completion-category-overrides '((file (styles basic partial-completion)))))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 ;;; Swiper and IVY mode
 
 (use-package ivy
@@ -825,7 +826,7 @@ font size is computed + 20 of this value."
   (add-to-list 'ivy-highlight-functions-alist
     '(orderless-ivy-re-builder . orderless-ivy-highlight)))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package ivy-rich
   :when (equal completion-handler 'comphand-ivy-counsel)
@@ -840,13 +841,13 @@ font size is computed + 20 of this value."
   :after (:any yasnippet ivy))
 ;; :ensure (:host github :repo "mkcms/ivy-yasnippet"))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package swiper
   :when (equal completion-handler 'comphand-ivy-counsel)
   :after ivy)
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package counsel
   :when (equal completion-handler 'comphand-ivy-counsel)
@@ -862,7 +863,7 @@ font size is computed + 20 of this value."
   :config
   (counsel-mode 1))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package ivy-prescient
   :when (equal completion-handler 'comphand-ivy-counsel)
@@ -872,7 +873,7 @@ font size is computed + 20 of this value."
   (ivy-prescient-mode t)
   (ivy-prescient-enable-filtering t))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 ;;;; Code Completion
 (use-package corfu
@@ -907,7 +908,7 @@ font size is computed + 20 of this value."
                corfu-auto nil)
       (corfu-mode))))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 ;; Add extensions
 (use-package cape
   :when (equal completion-handler 'comphand-corfu)
@@ -950,13 +951,13 @@ font size is computed + 20 of this value."
   ;;(add-hook 'completion-at-point-functions #'cape-line)
   )
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package corfu-prescient
   :when (equal completion-handler 'comphand-corfu)
   :after (corfu prescient))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package vertico
   :when (equal completion-handler 'comphand-vertico)
@@ -976,7 +977,7 @@ font size is computed + 20 of this value."
         ;; Make sure vertico state is saved
         (minibuffer-setup . vertico-repeat-save)))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package marginalia
   ;; :when (equal completion-handler 'comphand-vertico)
@@ -988,13 +989,13 @@ font size is computed + 20 of this value."
   :config
   (marginalia-mode t))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package all-the-icons-completion
   :after (marginalia all-the-icons)
   :hook (marginalia-mode . all-the-icons-completion-marginalia-setup))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package consult
   :when (equal completion-handler 'comphand-vertico)
@@ -1044,13 +1045,13 @@ font size is computed + 20 of this value."
        consult--source-modified-buffer
        consult--source-recent-file)))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package vertico-prescient
   :when (equal completion-handler 'comphand-vertico)
   :after vertico prescient)
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package vertico-posframe
   :when (equal completion-handler 'comphand-vertico)
@@ -1072,7 +1073,7 @@ font size is computed + 20 of this value."
     '((left-fringe . 8)
        (right-fringe . 8))))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 ;; This has to be evaluated at the end of the init since it's possible that the
 ;; completion-handler variable will not yet be defined at this point in the
@@ -1082,7 +1083,7 @@ font size is computed + 20 of this value."
     (when (equal completion-handler 'comphand-built-in)
       (ido-everywhere t))))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package embark
   :when enable-embark
@@ -1121,7 +1122,7 @@ font size is computed + 20 of this value."
   :hook
   (embark-collect-mode . consult-preview-at-point-mode))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 ;; Don't use lsp-bridge with company as lsp-bridge already provides the same
 ;; features. They actually collide.
@@ -1134,7 +1135,7 @@ font size is computed + 20 of this value."
   :config
   (global-company-mode +1))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package company-box
   :after company
@@ -1158,7 +1159,7 @@ font size is computed + 20 of this value."
   (eval-after-load "company"
     '(add-to-list 'company-backends 'company-anaconda)))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package term+
   ;;:ensure (:repo "tarao/term-plus-el" :fetcher github)
@@ -1170,12 +1171,12 @@ font size is computed + 20 of this value."
   ;; Match the default Bash shell prompt.  Update this if you have a custom prompt
   (setq term-prompt-regexp "^[^#$%>\n]*[#$%>] *"))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package eterm-256color
   :hook (term-mode . eterm-256color-mode))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package vterm
   ;;:ensure (:fetcher github :repo "akermu/emacs-libvterm")
@@ -1186,7 +1187,7 @@ font size is computed + 20 of this value."
   (setq vterm-shell "zsh")                        ;; Set this to customize the shell to launch
   (setq vterm-max-scrollback 10000))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (defun mifi/configure-eshell ()
   ;; Save command history when commands are entered
@@ -1211,7 +1212,7 @@ font size is computed + 20 of this value."
     (setq eshell-visual-commands '("htop" "zsh" "vim")))
   (eshell-git-prompt-use-theme 'powerline))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
   ;; Prefer g-prefixed coreutils version of standard utilities when available
 (let ((gls (executable-find "gls")))
@@ -1236,7 +1237,7 @@ font size is computed + 20 of this value."
   :after dired-mode
   :hook (dired-mode . dired-hide-dotfiles-mode))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 ;; Single Window dired - don't continually open new buffers
 
 (defun mifi/dired-single-keymap-init ()
@@ -1254,7 +1255,7 @@ font size is computed + 20 of this value."
   :config
   (mifi/dired-single-keymap-init))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 ;;
 ;; 1. The function `mifi/load-theme-from-selector' is called from the
@@ -1275,7 +1276,7 @@ font size is computed + 20 of this value."
 (add-to-list 'savehist-additional-variables 'theme-selector)
 (add-to-list 'savehist-additional-variables 'custom-default-mono-font-size)
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (defun mifi/cycle-theme-selector (&rest theme)
   "Cycle the `theme-selector' by 1, resetting to 0 if beyond array bounds."
@@ -1295,7 +1296,7 @@ font size is computed + 20 of this value."
 ;; `mifi/load-theme-from-selector' function.
 (add-hook 'disable-theme-functions #'mifi/cycle-theme-selector)
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (defvar theme-did-load nil
   "Set to true if the last Theme was loaded.")
@@ -1316,7 +1317,7 @@ font size is computed + 20 of this value."
     (mifi/org-font-setup))
   (set-face-foreground 'line-number "SkyBlue4"))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (defun mifi/print-custom-theme-name ()
   "Print the current loaded theme from the `theme-list' on the modeline."
@@ -1346,7 +1347,7 @@ font size is computed + 20 of this value."
 ;; Print current theme
 (global-set-key (kbd "C-c C-?") 'which-theme)
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (defun mifi/org-theme-override-values ()
   (defface org-block-begin-line
@@ -1365,7 +1366,7 @@ font size is computed + 20 of this value."
     '((t (:strike-through "green" :weight bold)))
     "Face used for the Horizontal like (-----)"))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (defun mifi/customize-modus-theme ()
   (when (featurep 'org)
@@ -1390,7 +1391,7 @@ font size is computed + 20 of this value."
 ;;(add-hook 'org-load-hook 'mifi/customize-ef-theme)
 (add-hook 'elpaca-after-init-hook 'mifi/customize-ef-theme)
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (add-to-list 'custom-theme-load-path (expand-file-name "Themes" custom-docs-dir))
 
@@ -1405,7 +1406,7 @@ font size is computed + 20 of this value."
 (use-package darktooth-theme :ensure t)
 (use-package zenburn-theme :defer t)
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 ;; (add-hook 'emacs-startup-hook #'(mifi/load-theme-from-selector))
 ;; (mifi/load-theme-from-selector)
 ;; For terminal mode we choose Material theme
@@ -1429,7 +1430,7 @@ font size is computed + 20 of this value."
           (mifi/load-theme-from-selector))))
       )))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 ;; Frame (view) setup including fonts.
 ;; You will most likely need to adjust this font size for your system!
@@ -1459,7 +1460,7 @@ font size is computed + 20 of this value."
 
 (setq frame-resize-pixelwise t)
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package mixed-pitch
   :defer t
@@ -1469,7 +1470,7 @@ font size is computed + 20 of this value."
   (dolist (face '(org-date org-priority org-special-keyword org-tag))
     (add-to-list 'mixed-pitch-fixed-pitch-faces face)))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 ;; Functions to set the frame size
 
 (defun mifi/frame-recenter (&optional frame)
@@ -1518,7 +1519,7 @@ font size is computed + 20 of this value."
   (add-to-list 'default-frame-alist '(fullscreen . maximized))
   (unless enable-frameset-restore (mifi/frame-recenter)))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 ;; Default fonts
 
@@ -1554,7 +1555,7 @@ font size is computed + 20 of this value."
         (mifi/frame-recenter)))
       )))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (defun mifi/default-font-height-change ()
   (setq-default custom-default-font-size (face-attribute 'default :height))
@@ -1563,7 +1564,7 @@ font size is computed + 20 of this value."
 
 (add-hook 'after-setting-font-hook 'mifi/default-font-height-change)
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 ;; Frame font selection
 
 (defvar mifi/font-size-slot 1)
@@ -1595,7 +1596,7 @@ font size is computed + 20 of this value."
             mifi/font-size-slot 3)
       (mifi/update-face-attribute))))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 ;; Some alternate keys below....
 
 (bind-keys ("C-c 1". use-small-display-font)
@@ -1613,7 +1614,7 @@ font size is computed + 20 of this value."
   (define-key map (kbd "C-S-c 4")
     (lambda () (interactive) (use-x-large-display-font t))))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 ;; Frame support functions
 
 (defun mifi/set-frame-font (slot)
@@ -1627,7 +1628,7 @@ font size is computed + 20 of this value."
     ;;else
     (unless enable-frameset-restore (mifi/frame-recenter))))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (defun use-small-display-font (&optional force-recenter)
   (interactive)
@@ -1664,7 +1665,7 @@ font size is computed + 20 of this value."
         (unless enable-frameset-restore (mifi/frame-recenter))))
       )))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package spacious-padding
   :custom
@@ -1685,7 +1686,7 @@ font size is computed + 20 of this value."
 ;;       `( :mode-line-active 'default
 ;;          :mode-line-inactive vertical-border))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package faces :ensure nil)
 (defun mifi/org-font-setup ()
@@ -1758,7 +1759,7 @@ font size is computed + 20 of this value."
     (set-face-attribute (car face) nil :font "Helvetica Neue" :weight 'regular
       :height (cdr face))))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (defun mifi/org-mode-visual-fill ()
   (interactive)
@@ -1788,7 +1789,7 @@ font size is computed + 20 of this value."
     '(("Archive.org" :maxlevel . 1)
        ("Tasks.org" :maxlevel . 1))))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (defun mifi/org-setup-agenda ()
   (setq org-agenda-custom-commands
@@ -1839,7 +1840,7 @@ font size is computed + 20 of this value."
                (org-agenda-files org-agenda-files)))))))
   ) ;; mifi/org-setup-agenda
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (defun mifi/org-setup-capture-templates ()
   (setq org-capture-templates
@@ -1900,7 +1901,7 @@ font size is computed + 20 of this value."
  '(org-tag ((t (:inherit (shadow fixed-pitch) :weight bold :height 0.8))))
  '(org-verbatim ((t (:inherit (shadow fixed-pitch))))))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package org
   :pin gnu-elpa
@@ -1945,7 +1946,7 @@ font size is computed + 20 of this value."
   (define-key global-map (kbd "C-c j")
     (lambda () (interactive) (org-capture nil "jj"))))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
   (use-package org-superstar
     :after org
@@ -1978,7 +1979,7 @@ font size is computed + 20 of this value."
 (setq org-list-demote-modify-bullet
 '(("+" ・ "*"）（"*" ・ "-"）（"-" . "+")))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (with-eval-after-load 'org
   (org-babel-do-load-languages
@@ -2006,7 +2007,7 @@ font size is computed + 20 of this value."
        (sqlite . t))))
   (push '("conf-unix" . conf-unix) org-src-lang-modes))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (with-eval-after-load 'org
   ;; This is needed as of Org 9.2
@@ -2014,7 +2015,7 @@ font size is computed + 20 of this value."
   (add-to-list 'org-structure-template-alist '("el" . "src emacs-lisp"))
   (add-to-list 'org-structure-template-alist '("py" . "src python")))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (defun mifi/define-denote-keymap ()
   (interactive)
@@ -2058,7 +2059,7 @@ font size is computed + 20 of this value."
   (if (mifi/minor-mode-is-active 'which-key-mode)
     (which-key-add-key-based-replacements "C-c n f" "denote-find")))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package denote
   :custom
@@ -2099,7 +2100,7 @@ font size is computed + 20 of this value."
 
   (add-hook 'context-menu-functions #'denote-context-menu))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package projectile
   :when (equal custom-project-handler 'custom-project-projectile)
@@ -2121,7 +2122,7 @@ font size is computed + 20 of this value."
     (setq projectile-completion-system 'ivy)
     (counsel-projectile-mode)))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (defun project-find-go-module (dir)
   (when-let ((root (locate-dominating-file dir "go.mod")))
@@ -2136,7 +2137,7 @@ font size is computed + 20 of this value."
     (cdr project))
   (add-hook 'project-find-functions #'project-find-go-module))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 ;;; Treemacs
 
 (use-package treemacs
@@ -2225,19 +2226,19 @@ font size is computed + 20 of this value."
       (treemacs-git-mode 'simple)))
   (treemacs-hide-gitignored-files-mode nil))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package treemacs-projectile
   :when (equal custom-project-handler 'custom-project-projectile)
   :after treemacs projectile)
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package treemacs-icons-dired
   :after treemacs
   :hook (dired-mode . treemacs-icons-dired-enable-once))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 ;; (use-package treemacs-perspective
 ;;    :disabled
@@ -2249,19 +2250,19 @@ font size is computed + 20 of this value."
   :after (:any treemacs persp-mode) ;;or perspective vs. persp-mode
   :config (treemacs-set-scope-type 'Perspectives))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package treemacs-tab-bar ;;treemacs-tab-bar if you use tab-bar-mode
   :after treemacs
   :config (treemacs-set-scope-type 'Tabs))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package treemacs-all-the-icons
   :after treemacs
   :if (display-graphic-p))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package dashboard
   :custom
@@ -2281,7 +2282,7 @@ font size is computed + 20 of this value."
   (add-hook 'elpaca-after-init-hook #'dashboard-initialize)
   (dashboard-setup-startup-hook))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 ;;; Emacs Polyglot is the Emacs LSP client that stays out of your way:
 
 (defvar mifi/clangd-path (executable-find "clangd")
@@ -2309,7 +2310,7 @@ font size is computed + 20 of this value."
   (unless theme-did-load
     (mifi/load-theme-from-selector)))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package eglot
   :when (equal custom-ide 'custom-ide-eglot)
@@ -2347,7 +2348,7 @@ font size is computed + 20 of this value."
       ("<tab>" . company-indent-or-complete-common))
     (message "Eglot: Company was expected to be loaded but wasn't.")))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 ;;; Language Server Protocol
 
 ;; (when (equal custom-ide 'custom-ide-lsp)
@@ -2366,7 +2367,7 @@ font size is computed + 20 of this value."
   (mifi/define-rust-lsp-values)
   (lsp-enable-which-key-integration t))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package lsp-ui
   :when (equal custom-ide 'custom-ide-lsp)
@@ -2390,7 +2391,7 @@ font size is computed + 20 of this value."
           ("C-c l d" . lsp-ui-doc-focus-frame))
   :hook (lsp-mode . lsp-ui-mode))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 ;;; To enable bidirectional synchronization of lsp workspace folders and
 ;;; treemacs projects set lsp-treemacs-sync-mode to 1.
 
@@ -2407,7 +2408,7 @@ font size is computed + 20 of this value."
           (equal completion-handler 'comphand-ivy-counsel))
   :after lsp ivy)
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 ;;; LSP mode setup hook
 
 (defun mifi/lsp-mode-setup ()
@@ -2418,7 +2419,7 @@ font size is computed + 20 of this value."
     (setq lsp-clangd-binary-path "/usr/bin/clangd")'
     (lsp-headerline-breadcrumb-mode)))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (defun mifi/define-rust-lsp-values ()
   (setq-default lsp-rust-analyzer-cargo-watch-command "clippy")
@@ -2436,7 +2437,7 @@ font size is computed + 20 of this value."
   (setq-default lsp-rust-analyzer-display-parameter-hints nil)
   (setq-default lsp-rust-analyzer-display-reborrow-hints nil))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package lsp-bridge
   :when (equal custom-ide 'custom-ide-lsp-bridge)
@@ -2448,12 +2449,12 @@ font size is computed + 20 of this value."
   :config
   (global-lsp-bridge-mode))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package markdown-mode
   :when (equal custom-ide 'custom-ide-lsp-bridge))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package anaconda-mode
   :when (equal custom-ide 'custom-ide-anaconda)
@@ -2471,7 +2472,7 @@ font size is computed + 20 of this value."
       ("<tab>" . company-indent-or-complete-common)))
   (python-mode-hook . anaconda-eldoc-mode))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package elpy
   :when (equal custom-ide 'custom-ide-elpy)
@@ -2502,7 +2503,7 @@ font size is computed + 20 of this value."
       ("<tab>" . company-indent-or-complete-common)))
   (elpy-enable))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package flycheck
   :unless (equal custom-ide 'custom-ide-elpy)
@@ -2517,7 +2518,7 @@ font size is computed + 20 of this value."
 (use-package flycheck-package
   :after flycheck)
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (defun mifi/tree-sitter-setup ()
   (tree-sitter-hl-mode t))
@@ -2526,7 +2527,7 @@ font size is computed + 20 of this value."
   (add-hook 'before-save-hook #'lsp-format-buffer t t)
   (add-hook 'before-save-hook #'lsp-organize-imports t t))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package tree-sitter
   :defer t
@@ -2550,14 +2551,14 @@ font size is computed + 20 of this value."
 (use-package tree-sitter-langs
   :after tree-sitter)
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package treesit-auto
   :demand t
   :config
   (global-treesit-auto-mode))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package transient :defer t)
 (use-package git-commit :after transient :defer t)
@@ -2570,7 +2571,7 @@ font size is computed + 20 of this value."
 (use-package forge :after magit :defer t)
 (use-package treemacs-magit :defer t :after treemacs magit)
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (defun mifi/set-custom-ide-python-keymaps ()
   (cond
@@ -2603,7 +2604,7 @@ font size is computed + 20 of this value."
         ("C-c g ?" . lsp-bridge-popup-documentation)))
     ))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (defun mifi/load-python-file-hook ()
   (python-mode)
@@ -2650,7 +2651,7 @@ font size is computed + 20 of this value."
   (add-hook 'before-save-hook 'mifi/before-save)
   (set-fill-column 80))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (add-to-list 'auto-mode-alist '("\\.py\\'" . mifi/load-python-file-hook))
 
@@ -2663,13 +2664,13 @@ font size is computed + 20 of this value."
   (add-to-list 'python-shell-completion-native-disabled-interpreters "python3")
   (setq python-shell-completion-native-disabled-interpreters '("python3")))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package py-autopep8
   :after python
   :hook (python-mode . py-autopep8-mode))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 ;; This is a helpful macro that is used to put double quotes around a word.
 (defalias 'quote-word
@@ -2684,13 +2685,13 @@ font size is computed + 20 of this value."
       ("C-c q"   . quote-word)
       ("C-c |"   . display-fill-column-indicator-mode)))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package pyvenv-auto
   :after python
   :hook (python-mode . pyvenv-auto-run))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package pydoc
   ;;:ensure (:host github :repo "statmobile/pydoc")
@@ -2699,7 +2700,7 @@ font size is computed + 20 of this value."
   (pydoc-python-command "python3")
   (pydoc-pip-version-command "pip3 --version"))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package typescript-mode
   :defer t
@@ -2718,7 +2719,7 @@ font size is computed + 20 of this value."
       (bind-keys :map typescript-mode-map
       ("C-c ." . dape-hydra/body)))))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (defun mifi/load-js-file-hook ()
   (js2-mode)
@@ -2741,7 +2742,7 @@ font size is computed + 20 of this value."
 
 (setq nodejs-repl-command #'mifi/nvm-which)
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package js2-mode
   :hook (js-mode . js2-minor-mode)
@@ -2755,7 +2756,7 @@ font size is computed + 20 of this value."
   :after js2-mode
   :hook (js2-mode . ac-js2-mode))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (defun mifi/load-c-file-hook ()
   (c-mode)
@@ -2779,7 +2780,7 @@ font size is computed + 20 of this value."
 (global-set-key [f9] 'code-compile)
 (add-to-list 'auto-mode-alist '("\\.c\\'" . mifi/load-c-file-hook))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package z80-mode
   :when enable-gb-dev
@@ -2794,7 +2795,7 @@ font size is computed + 20 of this value."
   :after mwim
   :ensure (:host github :repo "japanoise/rgbds-mode"))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package rustic
   :ensure t
@@ -2826,7 +2827,7 @@ font size is computed + 20 of this value."
     (setq-local buffer-save-without-query t))
   (add-hook 'before-save-hook 'lsp-format-buffer nil t))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 ;; (use-package graphql-mode)
 (use-package rust-mode
@@ -2842,7 +2843,7 @@ font size is computed + 20 of this value."
 (use-package rust-playground :ensure t :after rust-mode)
 (use-package toml-mode :ensure t :after rust-mode)
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package cargo-mode
   :defer t
@@ -2855,7 +2856,7 @@ font size is computed + 20 of this value."
                      "*-test.el" "*-tests.el" "LICENSE" "README*"
                      "*-pkg.el"))))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (defun eglot-format-buffer-on-save ()
   (add-hook 'before-save-hook #'eglot-format-buffer -10 t))
@@ -2877,7 +2878,7 @@ font size is computed + 20 of this value."
     ((equal custom-ide 'custom-ide-lsp)
       (add-hook 'go-mode-hook 'lsp-deferred))))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package go-eldoc
   :after go-mode
@@ -2888,13 +2889,13 @@ font size is computed + 20 of this value."
     :underline t :foreground "green"
     :weight 'bold))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package go-guru
   :after go-mode
   :hook (go-mode . go-guru-hl-identifier-mode))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package slime
   :defer t
@@ -2921,7 +2922,7 @@ font size is computed + 20 of this value."
     ("C-c ." . dape-hydra/body))
   (mifi/additional-dape-configs))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (setq mifi/vscode-js-debug-dir (file-name-concat user-emacs-directory "dape/vscode-js-debug"))
 
@@ -2935,7 +2936,7 @@ font size is computed + 20 of this value."
     (call-process "npm" nil "*snam-install*" t "install")
     (call-process "npx" nil "*snam-install*" t "gulp" "dapDebugServer")))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 ;; (mifi/install-vscode-js-debug)
 
@@ -2957,7 +2958,7 @@ font size is computed + 20 of this value."
        :cwd dape-cwd-fn
        :program dape-cwd-fn))))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (defun mifi/dape-end-debug-session ()
   "End the debug session."
@@ -2970,7 +2971,7 @@ font size is computed + 20 of this value."
   (dape-breakpoint-remove-all)
   (mifi/dape-end-debug-session))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (defun define-dape-hydra ()
   (defhydra dape-hydra (:color pink :hint nil :foreign-keys run)
@@ -3014,7 +3015,7 @@ font size is computed + 20 of this value."
     ("q" mifi/dape-end-debug-session "quit" :color blue)
     ("Q" mifi/dape-delete-all-debug-sessions :color red)))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 ;;; Debug Adapter Protocol
 (use-package dap-mode
   :when (equal debug-adapter 'debug-adapter-dap-mode)
@@ -3034,7 +3035,7 @@ font size is computed + 20 of this value."
   (dap-ui-controls-mode)
   (dap-ui-mode 1))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 ;;; DAP for Python
 
 (use-package dap-python
@@ -3045,7 +3046,7 @@ font size is computed + 20 of this value."
   (setq dap-python-executable "python3") ;; Otherwise it looks for 'python' else error.
   (setq dap-python-debugger 'debugpy))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package dap-lldb
   :when (equal debug-adapter 'debug-adapter-dap-mode)
@@ -3080,7 +3081,7 @@ font size is computed + 20 of this value."
   ;; :config
   ;; (dap-cpptools-setup))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (with-eval-after-load 'dap-lldb
   (dap-register-debug-template
@@ -3109,7 +3110,7 @@ font size is computed + 20 of this value."
       :request "launch"
       :name "Python :: Run file (buffer)")))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (defun mifi/dap-end-debug-session ()
   "End the debug session and delete project Python buffers."
@@ -3131,7 +3132,7 @@ font size is computed + 20 of this value."
   (dap-ui-show-many-windows)
   (dap-debug))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (defun define-dap-hydra ()
   (defhydra dap-hydra (:color pink :hint nil :foreign-keys run)
@@ -3186,7 +3187,7 @@ font size is computed + 20 of this value."
     ("q" mifi/dap-end-debug-session "quit" :color blue)
     ("Q" mifi/dap-delete-all-debug-sessions :color red)))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 ;; helpful package
 
 (use-package helpful
@@ -3221,7 +3222,7 @@ font size is computed + 20 of this value."
                                       (window . root)
                                       (window-width . 0.3))))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package solaire-mode
   :after treemacs
@@ -3232,7 +3233,7 @@ font size is computed + 20 of this value."
   (push '(treemacs-window-background-face . solaire-default-face) solaire-mode-remap-alist)
   (push '(treemacs-hl-line-face . solaire-hl-line-face) solaire-mode-remap-alist))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 ;; Golen Ratio
 
 (use-package golden-ratio
@@ -3259,7 +3260,7 @@ font size is computed + 20 of this value."
   :config
   (golden-ratio-mode 1))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package buffer-move
   :bind (("C-S-<up>"     . buf-move-up)
@@ -3267,7 +3268,7 @@ font size is computed + 20 of this value."
         ("C-S-<left>"  . buf-move-left)
         ("C-S-<right>" . buf-move-right)))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package neotree
   :when enable-neotree
@@ -3275,7 +3276,7 @@ font size is computed + 20 of this value."
   (global-set-key [f8] 'neotree-toggle)
   (setq neo-theme (if (display-graphic-p) 'icons 'arrow)))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 ;; Enable tabs for each buffer
 
 (use-package centaur-tabs
@@ -3290,13 +3291,13 @@ font size is computed + 20 of this value."
   :config ;; Enable centaur-tabs
   (centaur-tabs-mode t))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package diff-hl
   :config
   (global-diff-hl-mode))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package pulsar
   :config
@@ -3308,26 +3309,26 @@ font size is computed + 20 of this value."
   (pulsar-face 'pulsar-magenta)
   (pulsar-highlight-face 'pulsar-yellow))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package rainbow-mode
   :hook (prog-mode . (lambda () (rainbow-mode t))))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (use-package highlight-defined
   :hook (emacs-lisp-mode . highlight-defined-mode))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (defun mifi/set-fill-column-interactively (num)
   "Asks for the fill column."
-  (interactive "fill-column: ")
+  (interactive "nfill-column: ")
   (set-fill-column num))
 
 (defun mifi/set-org-fill-column-interactively (num)
   "Asks for the fill column for Org mode."
-  (interactive "org-fill-column: ")
+  (interactive "norg-fill-column: ")
   (setq custom-org-fill-column num)
   (mifi/org-mode-visual-fill)
   (redraw-display))
@@ -3337,13 +3338,13 @@ font size is computed + 20 of this value."
   (interactive)
   (call-interactively 'jump-to-register))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (defun mifi/define-mmm-minor-mode-map ()
   (defvar mmm-keys-minor-mode-map
     (let ((map (make-sparse-keymap)))
       (bind-keys :map map
-      ("M-RET $" . jinx-correct)
+        ("M-RET $" . jinx-correct)
         ("M-RET ?" . eldoc-box-help-at-point)
         ("M-RET S e" . eshell)
         ("M-RET S i" . ielm)
@@ -3356,8 +3357,9 @@ font size is computed + 20 of this value."
         ("M-RET f" . mifi/set-fill-column-interactively)
         ("M-RET p" . pulsar-pulse-line)
         ("M-RET r" . repeat-mode)
-      ("M-RET j" . mifi/jump-to-register)
-        ("M-RET |" . global-display-fill-column-indicator-mode))
+        ("M-RET j" . mifi/jump-to-register)
+        ("M-RET |" . global-display-fill-column-indicator-mode)
+        ("M-RET C-g" . keyboard-quit))
       map)
     "mmm-keys-minor-mode keymap.")
 
@@ -3369,31 +3371,33 @@ font size is computed + 20 of this value."
 (mifi/define-mmm-minor-mode-map)
 (mmm-keys-minor-mode 1)
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
-(defun mifi/mmm-handle-context-keys ()
+(defun mifi/mmm-handle-context-keys (&optional winframe)
   "Enable or Disable keys based upon featurep context."
+  (when winframe
   (let ((map mmm-keys-minor-mode-map))
-    (unbind-key "M-RET o f" map)
-    (unbind-key "M-RET o l" map)
-    (unbind-key "M-RET P ?" map)
-    (unbind-key "M-RET M-RET" map)
     (when enable-thesaurus
       (bind-keys :map map
-      ("M-RET m t" . mw-thesaurus-lookup-dwim)))
+        ("M-RET m t" . mw-thesaurus-lookup-dwim)))
     (cond
       ((equal major-mode 'org-mode)
-      (bind-keys :map map
-        ("M-RET M-RET" . org-insert-heading)
-        ("M-RET o f" . mifi/set-org-fill-column-interactively)
-        ("M-RET o l" . org-toggle-link-display)))
+        (bind-keys :map map
+          ("M-RET M-RET" . org-insert-heading)
+          ("M-RET o f" . mifi/set-org-fill-column-interactively)
+          ("M-RET o l" . org-toggle-link-display)))
       ((equal major-mode 'python-mode)
-      (bind-keys :map map
-        ("M-RET P" . 'pydoc-at-point))))))
+        (bind-keys :map map
+          ("M-RET P" . 'pydoc-at-point)))
+      (t   ;; Default 
+        (unbind-key "M-RET o f" map)
+        (unbind-key "M-RET o l" map)
+        (unbind-key "M-RET P ?" map)
+        (unbind-key "M-RET M-RET" map))))))
 
-(defun mifi/mmm-update-menu ()
+(defun mifi/mmm-update-menu (&optional winframe)
   (interactive)
-  (mifi/mmm-handle-context-keys)
+  (mifi/mmm-handle-context-keys nil)
   (which-key-add-key-based-replacements "M-RET S" "shells")
   (which-key-add-key-based-replacements "M-RET T" "theme-keys")
   (which-key-add-key-based-replacements "M-RET P" "python-menu")
@@ -3404,9 +3408,17 @@ font size is computed + 20 of this value."
   (which-key-add-key-based-replacements "M-RET j" "jump-to-register")
   (which-key-add-key-based-replacements "M-RET" "Mitch's Menu"))
 
-(add-hook 'which-key-inhibit-display-hook 'mifi/mmm-update-menu)
 
-;;; --------------------------------------------------------------------------
+;; Check the keys when:
+;; - the whick-key menu is displayed
+(add-hook 'which-key-inhibit-display-hook 'mifi/mmm-update-menu)
+;; - the user updates/changes the buffer - like loading a file
+;;   (but not switching to a new buffer)
+(add-hook 'window-buffer-change-functions 'mifi/mmm-handle-context-keys)
+;; - the user switches windows
+(add-hook 'window-selection-change-functions 'mifi/mmm-handle-context-keys)
+
+;;; ##########################################################################
 
 (add-hook 'elpaca-after-init-hook
   (lambda ()
@@ -3426,7 +3438,7 @@ font size is computed + 20 of this value."
       (lambda ()
         (add-hook 'lisp-interaction-mode-hook #'dashboard-open))))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (defun mifi/cleanup-when-exiting ()
   (let ((backdir (format "%s/config-backup" working-files-directory)))
@@ -3441,7 +3453,7 @@ font size is computed + 20 of this value."
 
 (add-hook 'kill-emacs-hook #'mifi/cleanup-when-exiting)
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 ;; Ignore Line Numbers for the following modes:
 
 ;; Line #'s appear everywhere if global-display-line-numbers-mode is set
@@ -3459,7 +3471,7 @@ font size is computed + 20 of this value."
                    vterm-mode-hook))
     (add-hook mode (lambda () (display-line-numbers-mode 0)))))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 ;; Supress common annoying warning.
 ;; These can still be found in the  *Warnings* buffer
 (setq warning-suppress-types '((package reinitialization)
@@ -3468,6 +3480,6 @@ font size is computed + 20 of this value."
                                 (use-package)
                                 (python-mode)))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 ;;; init.el ends here.
