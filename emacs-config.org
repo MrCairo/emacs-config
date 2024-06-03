@@ -5,13 +5,14 @@
 #+STARTUP: showall
 #+PROPERTY: header-args:emacs-lisp :tangle ./init.el :results silent :exports code :mkdirp yes
 
+
 * Welcome!
 
 This ORG file will configure the  ~init.el~  file based upon all of the =emacs-lisp= source blocks. The =emacs-lisp= source blocks are defined in an organized order. While these blocks can generally be moved around, there are some order dependencies. So it's generally best that this order be preserved to prevent any compile-time issues.
 
 The goal of this Emacs configuration is to make an Emacs configuration that has a good collection of popular options. So far, the following collections of options are included here:
 
-:feature-overview:
+:Features:
 - Landing Screen Options ::
   + Dashboard
   + IELM (Integrated Emacs Lisp Mode)
@@ -52,6 +53,7 @@ The goal of this Emacs configuration is to make an Emacs configuration that has 
   + Customizable Menu (MmM)
 :END:
 
+
 * README:
 
 --------------------------------------------------------------------------------
@@ -69,6 +71,8 @@ The goal of this Emacs configuration is to make an Emacs configuration that has 
 - When starting this Configuration for the very first time, set the =use-package-always-ensure= variable to =t=. This will force all packages to be installed even if deferred. Make sure to set this value back to =nil= after everything is loaded otherwise Emacs startup time will be impacted. This can be found in the [[Bootstrap straight][Bootstrap straight]] section.
 
 - Take a look a the [[Custom enable flags][Custom Variables]] and [[Customization groups][Groups]] section to see what options exist. It's important to note that these variables need to be adhered to. Another thing to note is that the various =enable*= flags are not used as =:if= option in =use-package= statement. Instead, a lisp conditional statement is used so that the package is actually never loaded or installed. This improves overall startup performance.
+
+- Tested with Emacs versions 29.1 - 29.3 and 30.0.50.
   
 - Shout out to the many people in the Emacs community from which a lot of this configuration took inspiration from.
   
@@ -165,10 +169,9 @@ Because in macOS, Emacs could be started outside of a shell (like an application
   (defconst *is-a-mac* (eq system-type 'darwin))
 
   (defun mifi/setup-exec-path ()
-       ;;; Set up Emacs' `exec-path' and PATH environment variable to match"
-       ;;; that used by the user's shell.
-       ;;; This is particularly useful under Mac OS X and macOS, where GUI
-       ;;; apps are not started from a shell."
+    ;; A list of customized executable paths. This is just something I (mifi)
+    ;; do personally rather than have another package do it for me. For the
+    ;; most part, the paths are typical on a Mac and with homebrew installed.
     (interactive)
     (setq exec-path '( "/Users/strider/.cargo/bin"
                      "/Users/strider/.local/bin"
@@ -189,6 +192,8 @@ Because in macOS, Emacs could be started outside of a shell (like an application
 
 #+end_src
 
+** Lispy end of early-init.el
+Standard fare and good practice.
 
 #+begin_src emacs-lisp :tangle "early-init.el" 
   ;;; early-init.el ends here.
@@ -540,12 +545,12 @@ This is a curated selection of themes that I personally like. Most of them are d
     :type 'natnum)
 
   ;;; Font related
-  (defcustom default-font-family "Fira Code Retina"
+  (defcustom default-font-family "Menlo"
     "The font family used as the default font."
     :type 'string
     :group 'mifi-custom-fonts)
 
-  (defcustom mono-spaced-font-family "Fira Code Retina"
+  (defcustom mono-spaced-font-family "Andale Mono"
     "The font family used as the mono-spaced font."
     :type 'string
     :group 'mifi-custom-fonts)
@@ -713,6 +718,26 @@ This directory is expected to be in the ~emacs-config-direcory~ dir. This can be
 
   (add-to-list 'load-path (expand-file-name "lisp" emacs-config-directory))
   (add-to-list 'custom-theme-load-path (expand-file-name "Themes" custom-docs-dir))
+
+#+end_src
+
+*** Add site-lisp entries to load-path
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  ;; Add both site-lisp and its immediate subdirs to `load-path'
+  (let ((site-lisp-dir (expand-file-name "site-lisp/" emacs-config-directory)))
+    (when (file-directory-p site-lisp-dir)
+      (push site-lisp-dir load-path)
+      ;; Add every non-hidden subdir of PARENT-DIR to `load-path'.
+      (let ((default-directory site-lisp-dir))
+        (setq load-path
+            (append
+             (cl-remove-if-not
+              #'file-directory-p
+               (directory-files (expand-file-name site-lisp-dir) t "^[^\\.]"))
+              load-path)))))
 
 #+end_src
 
@@ -1242,8 +1267,47 @@ Window numbers for Emacs: Navigate your windows and frames using numbers. This i
   ;;; Window Number
 
   (use-package winum
-    ;;:ensure (:host github :repo "deb0ch/emacs-winum")
+    ;; :vc syntax below works, just for testing. Elpaca handles it for now.
+    ;; :vc ( :url "https://github.com/deb0ch/emacs-winum"
+    ;; 	:branch "master"
+    ;; 	:main-file "winum.el")
     :config (winum-mode))
+
+#+end_src
+
+** Dashboard
+<<<Dashboard>>> is an extensible Emacs startup screen showing you what’s most important.
+*** Value of dashboard-startup-banner can be:
+**** =nil= to display no banner
+**** ='official= which displays the official emacs logo
+**** ='logo= which displays an alternative emacs logo
+**** =1, 2 or 3= which displays one of the text banners
+**** ~"path/to/your/image.gif"~,
+~"path/to/your/image.png"~ or
+~"path/to/your/text.txt"~  which displays whatever gif/image/text you would prefer
+**** a cons of '("path/to/your/image.png" . "path/to/your/text.txt")
+
+*** Dashboard Setup
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package dashboard
+    :custom
+    (dashboard-items '(   (recents . 15)
+                        (bookmarks . 10)
+                        (projects . 10)))
+    (dashboard-center-content t)
+    (dashboard-set-heading-icons t)
+    (dashboard-set-file-icons t)
+    (dashboard-footer-messages '("Greetings Program!"))
+    (dashboard-banner-logo-title "Welcome to Emacs!")
+    (dashboard-startup-banner 'logo)
+    :bind ("C-c d" . dashboard-open)
+    :config
+    ;; (setq initial-buffer-choice (lambda () (get-buffer-create dashboard-buffer-name)))
+    (add-hook 'elpaca-after-init-hook #'dashboard-insert-startupify-lists)
+    (add-hook 'elpaca-after-init-hook #'dashboard-initialize)
+    (dashboard-setup-startup-hook))
 
 #+end_src
 
@@ -1274,11 +1338,16 @@ These are packages located in the ~"lisp"~ directory within the emacs-config-dir
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
+  ;; These are packages located in the site-lisp or lisp directories in the
+  ;; 'emacs-config-directory'
   
+
 #+end_src
 
 
 * Operational Systems
+These are major systems that control major operational features of Emacs like Search, File handling, Undo/Redo.
+
 ** Undo Handlers
 *** Vundo (visual undo)
 
@@ -2118,6 +2187,160 @@ Dired, by default, opens up multiple windows - one for each directory. It would 
     (mifi/dired-single-keymap-init))
 #+end_src
 
+*** Treemacs
+<<<Treemacs>>> is a file and project explorer similar to NeoTree or vim’s NerdTree, but largely inspired by the Project Explorer in Eclipse. It shows the file system outlines of your projects in a simple tree layout allowing quick navigation and exploration, while also possessing basic file management utilities.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+  ;;; Treemacs
+
+  (use-package treemacs
+    :after (:all winum ace-window)
+    :bind (:map global-map
+            ("M-0"         . treemacs-select-window)
+            ("C-x t 1"   . treemacs-delete-other-windows)
+            ("C-x t t"   . treemacs)
+            ("C-x t d"   . treemacs-select-directory)
+            ("C-x t B"   . treemacs-bookmark)
+            ("C-x t C-t" . treemacs-find-file)
+            ("C-x t M-t" . treemacs-find-tag))
+    :config
+    (setq treemacs-collapse-dirs                  (if treemacs-python-executable 3 0)
+      treemacs-deferred-git-apply-delay  0.5
+      treemacs-directory-name-transformer        #'identity
+      treemacs-display-in-side-window            t
+      treemacs-eldoc-display                     'simple
+      treemacs-file-event-delay          2000
+      treemacs-file-extension-regex              treemacs-last-period-regex-value
+      treemacs-file-follow-delay                 0.2
+      treemacs-file-name-transformer             #'identity
+      treemacs-follow-after-init                 t
+      treemacs-expand-after-init                 t
+      treemacs-find-workspace-method             'find-for-file-or-pick-first
+      treemacs-git-command-pipe          ""
+      treemacs-goto-tag-strategy                 'refetch-index
+      treemacs-header-scroll-indicators  '(nil . "^^^^^^")
+      treemacs-hide-dot-git-directory            t
+      treemacs-indentation                       2
+      treemacs-indentation-string                " "
+      treemacs-is-never-other-window             nil
+      treemacs-max-git-entries           5000
+      treemacs-missing-project-action            'ask
+      treemacs-move-forward-on-expand            nil
+      treemacs-no-png-images                     nil
+      treemacs-no-delete-other-windows   t
+      treemacs-project-follow-cleanup            nil
+      treemacs-persist-file                      (expand-file-name
+                                                     ".cache/treemacs-persist"
+                                                     user-emacs-directory)
+      treemacs-position                  'left
+      treemacs-read-string-input                 'from-child-frame
+      treemacs-recenter-distance                 0.1
+      treemacs-recenter-after-file-follow        nil
+      treemacs-recenter-after-tag-follow         nil
+      treemacs-recenter-after-project-jump       'always
+      treemacs-recenter-after-project-expand     'on-distance
+      treemacs-litter-directories                '("/node_modules"
+                                              "/.venv"
+                                              "/.cask"
+                                              "/__pycache__")
+      treemacs-project-follow-into-home  nil
+      treemacs-show-cursor                       nil
+      treemacs-show-hidden-files                 t
+      treemacs-silent-filewatch          nil
+      treemacs-silent-refresh                    nil
+      treemacs-sorting                   'alphabetic-asc
+      treemacs-select-when-already-in-treemacs 'move-back
+      treemacs-space-between-root-nodes  t
+      treemacs-tag-follow-cleanup                t
+      treemacs-tag-follow-delay          1.5
+      treemacs-text-scale                        nil
+      treemacs-user-mode-line-format             nil
+      treemacs-user-header-line-format   nil
+      treemacs-wide-toggle-width                 70
+      treemacs-width                             38
+      treemacs-width-increment           1
+      treemacs-width-is-initially-locked         t
+      treemacs-workspace-switch-cleanup  nil)
+
+    ;; The default width and height of the icons is 22 pixels. If you are
+    ;; using a Hi-DPI display, uncomment this to double the icon size.
+    ;;(treemacs-resize-icons 44)
+
+    (treemacs-follow-mode t)
+    (treemacs-filewatch-mode t)
+    (treemacs-fringe-indicator-mode 'always)
+    (when treemacs-python-executable
+      (treemacs-git-commit-diff-mode t))
+    (pcase (cons (not (null (executable-find "git")))
+             (not (null treemacs-python-executable)))
+      (`(t . t)
+        (treemacs-git-mode 'deferred))
+      (`(t . _)
+        (treemacs-git-mode 'simple)))
+    (treemacs-hide-gitignored-files-mode nil))
+
+#+end_src
+
+**** Treemacs Projectile
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package treemacs-projectile
+    :when (equal custom-project-handler 'custom-project-projectile)
+    :after treemacs projectile)
+
+#+end_src
+
+**** Treemacs dired
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package treemacs-icons-dired
+    :after treemacs
+    :hook (dired-mode . treemacs-icons-dired-enable-once))
+
+#+end_src
+
+**** Treemacs Persp
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  ;; (use-package treemacs-perspective
+  ;;    :disabled
+  ;;    :after (treemacs persp-mode) ;;or perspective vs. persp-mode
+  ;;    :config (treemacs-set-scope-type 'Perspectives))
+
+  (use-package treemacs-persp ;;treemacs-perspective if you use perspective.el vs. persp-mode
+    ;;:ensure (:files ("src/extra/treemacs-persp.el" "treemacs-persp-pkg.el"):host github :repo "Alexander-Miller/treemacs")
+    :after (:any treemacs persp-mode) ;;or perspective vs. persp-mode
+    :config (treemacs-set-scope-type 'Perspectives))
+
+#+end_src
+
+**** Treemacs tab-bar
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package treemacs-tab-bar ;;treemacs-tab-bar if you use tab-bar-mode
+    :after treemacs
+    :config (treemacs-set-scope-type 'Tabs))
+
+#+end_src
+
+**** Treemacs all-the-icons
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package treemacs-all-the-icons
+    :after treemacs
+    :if (display-graphic-p))
+
+#+end_src
+
 
 * Visuals
 ** Theme List and Selection
@@ -2248,7 +2471,7 @@ This function simply loads the theme from the theme-list indexed by the ~theme-s
       "Face used for the line delimiting the begin of source blocks.")
 
     (defface org-block
-      '((t (:background "#242635" :extend t :font "Fira Code Retina")))
+      '((t (:background "#242635" :extend t :font "Avenir Next")))
       "Face used for the source block background.")
 
     (defface org-block-end-line
@@ -2395,7 +2618,6 @@ A better version of variable-pitch mode. This keeps certain faces (defined in mi
     
 #+end_src
 
-
 *** Functions to set the frame size
 
 #+begin_src emacs-lisp
@@ -2459,6 +2681,7 @@ A better version of variable-pitch mode. This keeps certain faces (defined in mi
 
   (defun mifi/update-face-attribute ()
     "Set the font faces."
+    (interactive)
     ;; ====================================
     (set-face-attribute 'default nil
       :family default-font-family
@@ -2566,7 +2789,12 @@ Some key kindings to switch to different screen resolutions.
     (define-key map (kbd "C-S-c 3")
       (lambda () (interactive) (use-large-display-font t)))
     (define-key map (kbd "C-S-c 4")
-      (lambda () (interactive) (use-x-large-display-font t))))
+      (lambda () (interactive) (use-x-large-display-font t)))
+    (which-key-add-key-based-replacements "C-S-c 1" "recenter-with-small-font")
+    (which-key-add-key-based-replacements "C-S-c 2" "recenter-with-medium-font")
+    (which-key-add-key-based-replacements "C-S-c 3" "recenter-with-large-font")
+    (which-key-add-key-based-replacements "C-S-c 4" "recenter-with-x-large-font")
+  )
 
 #+end_src
 
@@ -2587,7 +2815,14 @@ These functions are used to configure the main frame font size. Based upon a mon
       (mifi/frame-recenter)
       ;;else
       (unless enable-frameset-restore (mifi/frame-recenter))))
+  
+#+end_src
 
+***** Select Display Font and optionally Recenter
+These functions resize the font to some pre-defined values and will optiononally resize and recenter the window.
+(see =mifi-custom= defcustom variables for the pre-defined font sizes and font families)
+
+#+begin_src emacs-lisp
   ;;; ##########################################################################
 
   (defun use-small-display-font (&optional force-recenter)
@@ -2612,19 +2847,24 @@ These functions are used to configure the main frame font size. Based upon a mon
     (interactive)
     (mifi/set-frame-font 3)
     (mifi/should-recenter force-recenter))
+  
+#+end_src
 
+***** Early Display Resize
+Apply saved font/window-size early in the startup process.
 
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
   ;; This is done so that the Emacs window is sized early in the init phase along with the default font size.
   ;; Startup works without this but it's nice to see the window expand early...
   (when (display-graphic-p)
     (add-hook 'elpaca-after-init-hook
       (lambda ()
         (progn
-        (mifi/update-face-attribute)
-        (unless (daemonp)
-          (unless enable-frameset-restore (mifi/frame-recenter))))
+  	(mifi/update-face-attribute)
+  	(unless (daemonp)
+            (unless enable-frameset-restore (mifi/frame-recenter))))
         )))
-
 #+end_src
 
 *** Window, mode-line, +more padding
@@ -2969,7 +3209,7 @@ This section contains the basic configuration for =org-mode= plus the configurat
 *** Better Bullets
 [[https://github.com/sabof/org-bullets][org-bullets]] replaces the heading stars in =org-mode= buffers with nicer looking characters that you can control.  Another option for this is [[https://github.com/integral-dw/org-superstar-mode][org-superstar-mode]].
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
     ;;; ##########################################################################
 
     (use-package org-superstar
@@ -3066,7 +3306,57 @@ While there is standard markdown support built into =org-mode=, this additional 
 
 #+end_src
 
+*** Org Modern
+
+This package implements a modern style for your Org buffers using font locking and text properties. The package styles headlines, keywords, tables and source blocks. The styling is configurable, you can enable, disable or modify the style of each syntax element individually via the org-modern customization group.
+
+Note that org-modern is a full replacement for both org-superstar and org-bullets. You can easily disable styling of certain elements, e.g., org-modern-timestamp, if you only want to use a subset of  org-modern.
+
+#+begin_src emacs-lisp
+
+  (use-package org-modern
+    :when (display-graphic-p)
+    :after org
+    :hook (org-mode . org-modern-mode)
+    :config
+    ;; Add frame borders and window dividers
+    ;; (modify-all-frames-parameters
+    ;;   '((right-divider-width . 40)
+    ;;      (internal-border-width . 40)))
+    ;; (dolist (face '(window-divider
+    ;; 		   window-divider-first-pixel
+    ;; 		   window-divider-last-pixel))
+    ;;   (face-spec-reset-face face)
+    ;;   (set-face-foreground face (face-attribute 'default :background nil)))
+    ;; (set-face-background 'fringe (face-attribute 'default :background nil))
+    ;; (setq
+    ;;   ;; Edit settings
+    ;;   org-auto-align-tags nil
+    ;;   org-tags-column 0
+    ;;   org-catch-invisible-edits 'show-and-error
+    ;;   org-special-ctrl-a/e t
+    ;;   org-insert-heading-respect-content t
+
+    ;;   ;; Org styling, hide markup etc.
+    ;;   org-hide-emphasis-markers nil
+    ;;   org-pretty-entities t
+    ;;   org-ellipsis "…"
+
+    ;;   ;; Agenda styling
+    ;;   org-agenda-tags-column 0
+    ;;   org-agenda-block-separator ?─
+    ;;   org-agenda-time-grid
+    ;;   '((daily today require-timed)
+    ;;      (800 1000 1200 1400 1600 1800 2000)
+    ;;      " ┄┄┄┄┄ " "┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄")
+    ;;   org-agenda-current-time-string
+    ;;   "◀── now ─────────────────────────────────────────────────")
+    (global-org-modern-mode))
+
+#+end_src
+
 *** Org-Roam
+
 Org Mode is known to be a great tool not just for writing and personal notes but also TODO lists, project planning, time tracking, and more. Once you start to become really invested in Org Mode you’ll eventually have to come up with a system for managing your Org files so that it’s easy to store and find the information you need.
 
 Org Roam is an extension to Org Mode which solves a couple of the biggest problems that I’ve personally had when using Org for personal notes:
@@ -3459,199 +3749,6 @@ This is the default built-in project system. For those not needing the full-feat
     (add-hook 'project-find-functions #'project-find-go-module))
 
 #+end_src
-
-
-* Treemacs
-<<<Treemacs>>> is a file and project explorer similar to NeoTree or vim’s NerdTree, but largely inspired by the Project Explorer in Eclipse. It shows the file system outlines of your projects in a simple tree layout allowing quick navigation and exploration, while also possessing basic file management utilities.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-  ;;; Treemacs
-
-  (use-package treemacs
-    :after (:all winum ace-window)
-    :bind (:map global-map
-            ("M-0"         . treemacs-select-window)
-            ("C-x t 1"   . treemacs-delete-other-windows)
-            ("C-x t t"   . treemacs)
-            ("C-x t d"   . treemacs-select-directory)
-            ("C-x t B"   . treemacs-bookmark)
-            ("C-x t C-t" . treemacs-find-file)
-            ("C-x t M-t" . treemacs-find-tag))
-    :config
-    (setq treemacs-collapse-dirs                  (if treemacs-python-executable 3 0)
-      treemacs-deferred-git-apply-delay  0.5
-      treemacs-directory-name-transformer        #'identity
-      treemacs-display-in-side-window            t
-      treemacs-eldoc-display                     'simple
-      treemacs-file-event-delay          2000
-      treemacs-file-extension-regex              treemacs-last-period-regex-value
-      treemacs-file-follow-delay                 0.2
-      treemacs-file-name-transformer             #'identity
-      treemacs-follow-after-init                 t
-      treemacs-expand-after-init                 t
-      treemacs-find-workspace-method             'find-for-file-or-pick-first
-      treemacs-git-command-pipe          ""
-      treemacs-goto-tag-strategy                 'refetch-index
-      treemacs-header-scroll-indicators  '(nil . "^^^^^^")
-      treemacs-hide-dot-git-directory            t
-      treemacs-indentation                       2
-      treemacs-indentation-string                " "
-      treemacs-is-never-other-window             nil
-      treemacs-max-git-entries           5000
-      treemacs-missing-project-action            'ask
-      treemacs-move-forward-on-expand            nil
-      treemacs-no-png-images                     nil
-      treemacs-no-delete-other-windows   t
-      treemacs-project-follow-cleanup            nil
-      treemacs-persist-file                      (expand-file-name
-                                                     ".cache/treemacs-persist"
-                                                     user-emacs-directory)
-      treemacs-position                  'left
-      treemacs-read-string-input                 'from-child-frame
-      treemacs-recenter-distance                 0.1
-      treemacs-recenter-after-file-follow        nil
-      treemacs-recenter-after-tag-follow         nil
-      treemacs-recenter-after-project-jump       'always
-      treemacs-recenter-after-project-expand     'on-distance
-      treemacs-litter-directories                '("/node_modules"
-                                              "/.venv"
-                                              "/.cask"
-                                              "/__pycache__")
-      treemacs-project-follow-into-home  nil
-      treemacs-show-cursor                       nil
-      treemacs-show-hidden-files                 t
-      treemacs-silent-filewatch          nil
-      treemacs-silent-refresh                    nil
-      treemacs-sorting                   'alphabetic-asc
-      treemacs-select-when-already-in-treemacs 'move-back
-      treemacs-space-between-root-nodes  t
-      treemacs-tag-follow-cleanup                t
-      treemacs-tag-follow-delay          1.5
-      treemacs-text-scale                        nil
-      treemacs-user-mode-line-format             nil
-      treemacs-user-header-line-format   nil
-      treemacs-wide-toggle-width                 70
-      treemacs-width                             38
-      treemacs-width-increment           1
-      treemacs-width-is-initially-locked         t
-      treemacs-workspace-switch-cleanup  nil)
-
-    ;; The default width and height of the icons is 22 pixels. If you are
-    ;; using a Hi-DPI display, uncomment this to double the icon size.
-    ;;(treemacs-resize-icons 44)
-
-    (treemacs-follow-mode t)
-    (treemacs-filewatch-mode t)
-    (treemacs-fringe-indicator-mode 'always)
-    (when treemacs-python-executable
-      (treemacs-git-commit-diff-mode t))
-    (pcase (cons (not (null (executable-find "git")))
-             (not (null treemacs-python-executable)))
-      (`(t . t)
-        (treemacs-git-mode 'deferred))
-      (`(t . _)
-        (treemacs-git-mode 'simple)))
-    (treemacs-hide-gitignored-files-mode nil))
-
-#+end_src
-
-** Treemacs Projectile
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package treemacs-projectile
-    :when (equal custom-project-handler 'custom-project-projectile)
-    :after treemacs projectile)
-
-#+end_src
-
-** Treemacs dired
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package treemacs-icons-dired
-    :after treemacs
-    :hook (dired-mode . treemacs-icons-dired-enable-once))
-
-#+end_src
-
-** Treemacs Persp
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  ;; (use-package treemacs-perspective
-  ;;    :disabled
-  ;;    :after (treemacs persp-mode) ;;or perspective vs. persp-mode
-  ;;    :config (treemacs-set-scope-type 'Perspectives))
-
-  (use-package treemacs-persp ;;treemacs-perspective if you use perspective.el vs. persp-mode
-    ;;:ensure (:files ("src/extra/treemacs-persp.el" "treemacs-persp-pkg.el"):host github :repo "Alexander-Miller/treemacs")
-    :after (:any treemacs persp-mode) ;;or perspective vs. persp-mode
-    :config (treemacs-set-scope-type 'Perspectives))
-
-#+end_src
-
-** Treemacs tab-bar
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package treemacs-tab-bar ;;treemacs-tab-bar if you use tab-bar-mode
-    :after treemacs
-    :config (treemacs-set-scope-type 'Tabs))
-
-#+end_src
-
-** Treemacs all-the-icons
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package treemacs-all-the-icons
-    :after treemacs
-    :if (display-graphic-p))
-
-#+end_src
-
-
-* Dashboard
-<<<Dashboard>>> is an extensible Emacs startup screen showing you what’s most important.
-*** Value of dashboard-startup-banner can be:
-**** =nil= to display no banner
-**** ='official= which displays the official emacs logo
-**** ='logo= which displays an alternative emacs logo
-**** =1, 2 or 3= which displays one of the text banners
-**** ~"path/to/your/image.gif"~,
-~"path/to/your/image.png"~ or
-~"path/to/your/text.txt"~  which displays whatever gif/image/text you would prefer
-**** a cons of '("path/to/your/image.png" . "path/to/your/text.txt")
-
-** Dashboard Setup
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package dashboard
-    :custom
-    (dashboard-items '(   (recents . 15)
-                        (bookmarks . 10)
-                        (projects . 10)))
-    (dashboard-center-content t)
-    (dashboard-set-heading-icons t)
-    (dashboard-set-file-icons t)
-    (dashboard-footer-messages '("Greetings Program!"))
-    (dashboard-banner-logo-title "Welcome to Emacs!")
-    (dashboard-startup-banner 'logo)
-    :bind ("C-c d" . dashboard-open)
-    :config
-    ;; (setq initial-buffer-choice (lambda () (get-buffer-create dashboard-buffer-name)))
-    (add-hook 'elpaca-after-init-hook #'dashboard-insert-startupify-lists)
-    (add-hook 'elpaca-after-init-hook #'dashboard-initialize)
-    (dashboard-setup-startup-hook))
-
-#+end_src
-
 
 
 * Integrated Development Environments
@@ -5363,11 +5460,11 @@ Instant Github-flavored Markdown/Org preview using Grip (GitHub Readme Instant P
   
 #+end_src
 
-** Mitch's Minor Mode
+** MiFi's Minor Mode (MmM)
 
 Mitch's minor mode (or <<<mmm>>>) just defines frequently used hot-keys. It works well when =which-key= is active.
 
-*** Mitch's Minor Mode Functions
+*** Helper Functions
 #+begin_src emacs-lisp
   ;;; ##########################################################################
 
@@ -5390,7 +5487,7 @@ Mitch's minor mode (or <<<mmm>>>) just defines frequently used hot-keys. It work
 
 #+end_src
 
-*** Mitch's Minor-Mode Standard Keymaps
+*** Standard Keymaps
 
 This is a set of keymaps that do the same things as the popup menu. Both are here for convenience. *Note* that the ~mmm-menu~ is called with either a ="C-c RET RET"= or simply a ="C-c C-<return>"=.
 
@@ -5403,6 +5500,10 @@ This is a set of keymaps that do the same things as the popup menu. Both are her
         (bind-keys :map map
           ("M-RET $" . jinx-correct)
           ("M-RET ?" . eldoc-box-help-at-point)
+          ("M-RET R 1" . eshell)
+          ("M-RET R 2" . eshell)
+          ("M-RET R 3" . eshell)
+          ("M-RET R 4" . eshell)
           ("M-RET S e" . eshell)
           ("M-RET S i" . ielm)
           ("M-RET S v" . vterm-other-window)
@@ -5430,7 +5531,7 @@ This is a set of keymaps that do the same things as the popup menu. Both are her
 
 #+end_src
 
-*** MmM Context-Aware Keys and Descriptions
+*** Context-Aware Keys and Descriptions
 
 For those menus that would normally show up as either =prefix= or =lambda=, given them a better description via the which-key replacement function. This is run via the ~which-key-inhibit-display-hook~ hook which is run just before the which-key popup is
 shown. Plus, some keys are mode specific and will only appear when that major mode is active.
@@ -5441,25 +5542,36 @@ shown. Plus, some keys are mode specific and will only appear when that major mo
   (defun mifi/mmm-handle-context-keys (&optional winframe)
     "Enable or Disable keys based upon featurep context."
     (when winframe
-    (let ((map mmm-keys-minor-mode-map))
-      (when enable-thesaurus
-        (bind-keys :map map
-          ("M-RET m t" . mw-thesaurus-lookup-dwim)))
-      (cond
-        ((equal major-mode 'org-mode)
-          (bind-keys :map map
-            ("M-RET M-RET" . org-insert-heading)
-            ("M-RET o f" . mifi/set-org-fill-column-interactively)
-            ("M-RET o l" . org-toggle-link-display)))
-        ((equal major-mode 'python-mode)
-          (bind-keys :map map
-            ("M-RET P" . 'pydoc-at-point)))
-        (t   ;; Default 
-          (unbind-key "M-RET o f" map)
-          (unbind-key "M-RET o l" map)
-          (unbind-key "M-RET P ?" map)
-          (unbind-key "M-RET M-RET" map))))))
+      (let ((map mmm-keys-minor-mode-map))
+        (when enable-thesaurus
+  	(bind-keys :map map
+            ("M-RET m t" . mw-thesaurus-lookup-dwim)))
+        (cond
+  	((equal major-mode 'org-mode)
+            (bind-keys :map map
+              ("M-RET M-RET" . org-insert-heading)
+              ("M-RET o f" . mifi/set-org-fill-column-interactively)
+              ("M-RET o l" . org-toggle-link-display)))
+  	((equal major-mode 'python-mode)
+            (bind-keys :map map
+              ("M-RET P" . 'pydoc-at-point)))
+  	(t   ;; Default 
+            (unbind-key "M-RET o f" map)
+            (unbind-key "M-RET o l" map)
+            (unbind-key "M-RET P ?" map)
+            (unbind-key "M-RET M-RET" map))))))
+  
+#+end_src
 
+*** Key Description Overrides
+
+Sometimes, the descriptions that which-key provide are not what we want. So, for cases like this, these description replacemens are used.
+
+What's also important with this function is that it calls the ~mifi/mmm-handle-context-keys~ function which updates the context aware keys.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+  
   (defun mifi/mmm-update-menu (&optional winframe)
     (interactive)
     (mifi/mmm-handle-context-keys nil)
@@ -5471,9 +5583,18 @@ shown. Plus, some keys are mode specific and will only appear when that major mo
     (which-key-add-key-based-replacements "M-RET m" "Thesaurus")
     (which-key-add-key-based-replacements "M-RET f" "set-fill-column")
     (which-key-add-key-based-replacements "M-RET j" "jump-to-register")
+    (which-key-add-key-based-replacements "M-RET C-g" "Exit menu")
     (which-key-add-key-based-replacements "M-RET" "Mitch's Menu"))
 
+#+end_src
 
+*** Hooks
+
+These are the hools that update the context-aware menu triggered by various state changes of Emacs buffers and windows.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+  
   ;; Check the keys when:
   ;; - the whick-key menu is displayed
   (add-hook 'which-key-inhibit-display-hook 'mifi/mmm-update-menu)

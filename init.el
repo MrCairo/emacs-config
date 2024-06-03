@@ -277,12 +277,12 @@ If additional themes are added, they must be previously installed."
   :type 'natnum)
 
 ;;; Font related
-(defcustom default-font-family "Fira Code Retina"
+(defcustom default-font-family "Menlo"
   "The font family used as the default font."
   :type 'string
   :group 'mifi-custom-fonts)
 
-(defcustom mono-spaced-font-family "Fira Code Retina"
+(defcustom mono-spaced-font-family "Andale Mono"
   "The font family used as the mono-spaced font."
   :type 'string
   :group 'mifi-custom-fonts)
@@ -416,6 +416,21 @@ font size is computed + 20 of this value."
 
 (add-to-list 'load-path (expand-file-name "lisp" emacs-config-directory))
 (add-to-list 'custom-theme-load-path (expand-file-name "Themes" custom-docs-dir))
+
+;;; ##########################################################################
+
+;; Add both site-lisp and its immediate subdirs to `load-path'
+(let ((site-lisp-dir (expand-file-name "site-lisp/" emacs-config-directory)))
+  (when (file-directory-p site-lisp-dir)
+    (push site-lisp-dir load-path)
+    ;; Add every non-hidden subdir of PARENT-DIR to `load-path'.
+    (let ((default-directory site-lisp-dir))
+      (setq load-path
+          (append
+           (cl-remove-if-not
+            #'file-directory-p
+             (directory-files (expand-file-name site-lisp-dir) t "^[^\\.]"))
+            load-path)))))
 
 ;;; ##########################################################################
 
@@ -719,8 +734,31 @@ font size is computed + 20 of this value."
 ;;; Window Number
 
 (use-package winum
-  ;;:ensure (:host github :repo "deb0ch/emacs-winum")
+  ;; :vc syntax below works, just for testing. Elpaca handles it for now.
+  ;; :vc ( :url "https://github.com/deb0ch/emacs-winum"
+  ;; 	:branch "master"
+  ;; 	:main-file "winum.el")
   :config (winum-mode))
+
+;;; ##########################################################################
+
+(use-package dashboard
+  :custom
+  (dashboard-items '(   (recents . 15)
+                      (bookmarks . 10)
+                      (projects . 10)))
+  (dashboard-center-content t)
+  (dashboard-set-heading-icons t)
+  (dashboard-set-file-icons t)
+  (dashboard-footer-messages '("Greetings Program!"))
+  (dashboard-banner-logo-title "Welcome to Emacs!")
+  (dashboard-startup-banner 'logo)
+  :bind ("C-c d" . dashboard-open)
+  :config
+  ;; (setq initial-buffer-choice (lambda () (get-buffer-create dashboard-buffer-name)))
+  (add-hook 'elpaca-after-init-hook #'dashboard-insert-startupify-lists)
+  (add-hook 'elpaca-after-init-hook #'dashboard-initialize)
+  (dashboard-setup-startup-hook))
 
 ;;; ##########################################################################
 (use-package jinx
@@ -733,6 +771,8 @@ font size is computed + 20 of this value."
     (add-hook hook #'jinx-mode)))
 
 ;;; ##########################################################################
+;; These are packages located in the site-lisp or lisp directories in the
+;; 'emacs-config-directory'
 
 ;;; ##########################################################################
 
@@ -1256,6 +1296,131 @@ font size is computed + 20 of this value."
   (mifi/dired-single-keymap-init))
 
 ;;; ##########################################################################
+;;; Treemacs
+
+(use-package treemacs
+  :after (:all winum ace-window)
+  :bind (:map global-map
+          ("M-0"         . treemacs-select-window)
+          ("C-x t 1"   . treemacs-delete-other-windows)
+          ("C-x t t"   . treemacs)
+          ("C-x t d"   . treemacs-select-directory)
+          ("C-x t B"   . treemacs-bookmark)
+          ("C-x t C-t" . treemacs-find-file)
+          ("C-x t M-t" . treemacs-find-tag))
+  :config
+  (setq treemacs-collapse-dirs                  (if treemacs-python-executable 3 0)
+    treemacs-deferred-git-apply-delay  0.5
+    treemacs-directory-name-transformer        #'identity
+    treemacs-display-in-side-window            t
+    treemacs-eldoc-display                     'simple
+    treemacs-file-event-delay          2000
+    treemacs-file-extension-regex              treemacs-last-period-regex-value
+    treemacs-file-follow-delay                 0.2
+    treemacs-file-name-transformer             #'identity
+    treemacs-follow-after-init                 t
+    treemacs-expand-after-init                 t
+    treemacs-find-workspace-method             'find-for-file-or-pick-first
+    treemacs-git-command-pipe          ""
+    treemacs-goto-tag-strategy                 'refetch-index
+    treemacs-header-scroll-indicators  '(nil . "^^^^^^")
+    treemacs-hide-dot-git-directory            t
+    treemacs-indentation                       2
+    treemacs-indentation-string                " "
+    treemacs-is-never-other-window             nil
+    treemacs-max-git-entries           5000
+    treemacs-missing-project-action            'ask
+    treemacs-move-forward-on-expand            nil
+    treemacs-no-png-images                     nil
+    treemacs-no-delete-other-windows   t
+    treemacs-project-follow-cleanup            nil
+    treemacs-persist-file                      (expand-file-name
+                                                   ".cache/treemacs-persist"
+                                                   user-emacs-directory)
+    treemacs-position                  'left
+    treemacs-read-string-input                 'from-child-frame
+    treemacs-recenter-distance                 0.1
+    treemacs-recenter-after-file-follow        nil
+    treemacs-recenter-after-tag-follow         nil
+    treemacs-recenter-after-project-jump       'always
+    treemacs-recenter-after-project-expand     'on-distance
+    treemacs-litter-directories                '("/node_modules"
+                                            "/.venv"
+                                            "/.cask"
+                                            "/__pycache__")
+    treemacs-project-follow-into-home  nil
+    treemacs-show-cursor                       nil
+    treemacs-show-hidden-files                 t
+    treemacs-silent-filewatch          nil
+    treemacs-silent-refresh                    nil
+    treemacs-sorting                   'alphabetic-asc
+    treemacs-select-when-already-in-treemacs 'move-back
+    treemacs-space-between-root-nodes  t
+    treemacs-tag-follow-cleanup                t
+    treemacs-tag-follow-delay          1.5
+    treemacs-text-scale                        nil
+    treemacs-user-mode-line-format             nil
+    treemacs-user-header-line-format   nil
+    treemacs-wide-toggle-width                 70
+    treemacs-width                             38
+    treemacs-width-increment           1
+    treemacs-width-is-initially-locked         t
+    treemacs-workspace-switch-cleanup  nil)
+
+  ;; The default width and height of the icons is 22 pixels. If you are
+  ;; using a Hi-DPI display, uncomment this to double the icon size.
+  ;;(treemacs-resize-icons 44)
+
+  (treemacs-follow-mode t)
+  (treemacs-filewatch-mode t)
+  (treemacs-fringe-indicator-mode 'always)
+  (when treemacs-python-executable
+    (treemacs-git-commit-diff-mode t))
+  (pcase (cons (not (null (executable-find "git")))
+           (not (null treemacs-python-executable)))
+    (`(t . t)
+      (treemacs-git-mode 'deferred))
+    (`(t . _)
+      (treemacs-git-mode 'simple)))
+  (treemacs-hide-gitignored-files-mode nil))
+
+;;; ##########################################################################
+
+(use-package treemacs-projectile
+  :when (equal custom-project-handler 'custom-project-projectile)
+  :after treemacs projectile)
+
+;;; ##########################################################################
+
+(use-package treemacs-icons-dired
+  :after treemacs
+  :hook (dired-mode . treemacs-icons-dired-enable-once))
+
+;;; ##########################################################################
+
+;; (use-package treemacs-perspective
+;;    :disabled
+;;    :after (treemacs persp-mode) ;;or perspective vs. persp-mode
+;;    :config (treemacs-set-scope-type 'Perspectives))
+
+(use-package treemacs-persp ;;treemacs-perspective if you use perspective.el vs. persp-mode
+  ;;:ensure (:files ("src/extra/treemacs-persp.el" "treemacs-persp-pkg.el"):host github :repo "Alexander-Miller/treemacs")
+  :after (:any treemacs persp-mode) ;;or perspective vs. persp-mode
+  :config (treemacs-set-scope-type 'Perspectives))
+
+;;; ##########################################################################
+
+(use-package treemacs-tab-bar ;;treemacs-tab-bar if you use tab-bar-mode
+  :after treemacs
+  :config (treemacs-set-scope-type 'Tabs))
+
+;;; ##########################################################################
+
+(use-package treemacs-all-the-icons
+  :after treemacs
+  :if (display-graphic-p))
+
+;;; ##########################################################################
 
 ;;
 ;; 1. The function `mifi/load-theme-from-selector' is called from the
@@ -1355,7 +1520,7 @@ font size is computed + 20 of this value."
     "Face used for the line delimiting the begin of source blocks.")
 
   (defface org-block
-    '((t (:background "#242635" :extend t :font "Fira Code Retina")))
+    '((t (:background "#242635" :extend t :font "Avenir Next")))
     "Face used for the source block background.")
 
   (defface org-block-end-line
@@ -1525,6 +1690,7 @@ font size is computed + 20 of this value."
 
 (defun mifi/update-face-attribute ()
   "Set the font faces."
+  (interactive)
   ;; ====================================
   (set-face-attribute 'default nil
     :family default-font-family
@@ -1612,7 +1778,12 @@ font size is computed + 20 of this value."
   (define-key map (kbd "C-S-c 3")
     (lambda () (interactive) (use-large-display-font t)))
   (define-key map (kbd "C-S-c 4")
-    (lambda () (interactive) (use-x-large-display-font t))))
+    (lambda () (interactive) (use-x-large-display-font t)))
+  (which-key-add-key-based-replacements "C-S-c 1" "recenter-with-small-font")
+  (which-key-add-key-based-replacements "C-S-c 2" "recenter-with-medium-font")
+  (which-key-add-key-based-replacements "C-S-c 3" "recenter-with-large-font")
+  (which-key-add-key-based-replacements "C-S-c 4" "recenter-with-x-large-font")
+)
 
 ;;; ##########################################################################
 ;; Frame support functions
@@ -1653,16 +1824,16 @@ font size is computed + 20 of this value."
   (mifi/set-frame-font 3)
   (mifi/should-recenter force-recenter))
 
-
+;;; ##########################################################################
 ;; This is done so that the Emacs window is sized early in the init phase along with the default font size.
 ;; Startup works without this but it's nice to see the window expand early...
 (when (display-graphic-p)
   (add-hook 'elpaca-after-init-hook
     (lambda ()
       (progn
-      (mifi/update-face-attribute)
-      (unless (daemonp)
-        (unless enable-frameset-restore (mifi/frame-recenter))))
+	(mifi/update-face-attribute)
+	(unless (daemonp)
+          (unless enable-frameset-restore (mifi/frame-recenter))))
       )))
 
 ;;; ##########################################################################
@@ -1948,39 +2119,6 @@ font size is computed + 20 of this value."
 
 ;;; ##########################################################################
 
-  (use-package org-superstar
-    :after org
-    :custom
-    (org-superstar-leading-bullet " ")
-    (org-superstar-special-todo-items t)
-    (org-superstar-todo-bullet-alist '( ("TODO" . 9744)
-                                    ("INPROG-TODO" . 9744)
-                                    ("HW" . 9744)
-                                    ("STUDY" . 9744)
-                                    ("SOMEDAY" . 9744)
-                                    ("READ" . 9744)
-                                    ("PROJ" . 9744)
-                                    ("CONTACT" . 9744)
-                                    ("DONE" . 9745)))
-    ;; (org-superstar-headline-bullets-list '("✪" "✫" "✦" "✧" "✸" "✺"))
-    :hook (org-mode . org-superstar-mode))
-
-  (use-package org-appear
-    :init
-    (setq org-hide-emphasis-markers t)
-    (setq org-appear-autoemphasis t) ;; Enable org-appear on emphasis
-    (setq org-appear-autolinks t) ;; Enable on links
-    (setq org-appear-autosubmarkers t) ;; Enable on sub and superscript
-    :commands (org-appear-mode)
-    :hook (or-mode . org-appear-mode))
-
-;; Automatically change bullet type when indenting
-;; Ex: indenting a + makes the bullet a *.
-(setq org-list-demote-modify-bullet
-'(("+" ・ "*"）（"*" ・ "-"）（"-" . "+")))
-
-;;; ##########################################################################
-
 (with-eval-after-load 'org
   (org-babel-do-load-languages
     'org-babel-load-languages
@@ -2014,6 +2152,45 @@ font size is computed + 20 of this value."
   (add-to-list 'org-structure-template-alist '("sh" . "src shell"))
   (add-to-list 'org-structure-template-alist '("el" . "src emacs-lisp"))
   (add-to-list 'org-structure-template-alist '("py" . "src python")))
+
+(use-package org-modern
+  :when (display-graphic-p)
+  :after org
+  :hook (org-mode . org-modern-mode)
+  :config
+  ;; Add frame borders and window dividers
+  ;; (modify-all-frames-parameters
+  ;;   '((right-divider-width . 40)
+  ;;      (internal-border-width . 40)))
+  ;; (dolist (face '(window-divider
+  ;; 		   window-divider-first-pixel
+  ;; 		   window-divider-last-pixel))
+  ;;   (face-spec-reset-face face)
+  ;;   (set-face-foreground face (face-attribute 'default :background nil)))
+  ;; (set-face-background 'fringe (face-attribute 'default :background nil))
+  ;; (setq
+  ;;   ;; Edit settings
+  ;;   org-auto-align-tags nil
+  ;;   org-tags-column 0
+  ;;   org-catch-invisible-edits 'show-and-error
+  ;;   org-special-ctrl-a/e t
+  ;;   org-insert-heading-respect-content t
+
+  ;;   ;; Org styling, hide markup etc.
+  ;;   org-hide-emphasis-markers nil
+  ;;   org-pretty-entities t
+  ;;   org-ellipsis "…"
+
+  ;;   ;; Agenda styling
+  ;;   org-agenda-tags-column 0
+  ;;   org-agenda-block-separator ?─
+  ;;   org-agenda-time-grid
+  ;;   '((daily today require-timed)
+  ;;      (800 1000 1200 1400 1600 1800 2000)
+  ;;      " ┄┄┄┄┄ " "┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄")
+  ;;   org-agenda-current-time-string
+  ;;   "◀── now ─────────────────────────────────────────────────")
+  (global-org-modern-mode))
 
 ;;; ##########################################################################
 
@@ -2136,151 +2313,6 @@ font size is computed + 20 of this value."
   (cl-defmethod project-root ((project (head go-module)))
     (cdr project))
   (add-hook 'project-find-functions #'project-find-go-module))
-
-;;; ##########################################################################
-;;; Treemacs
-
-(use-package treemacs
-  :after (:all winum ace-window)
-  :bind (:map global-map
-          ("M-0"         . treemacs-select-window)
-          ("C-x t 1"   . treemacs-delete-other-windows)
-          ("C-x t t"   . treemacs)
-          ("C-x t d"   . treemacs-select-directory)
-          ("C-x t B"   . treemacs-bookmark)
-          ("C-x t C-t" . treemacs-find-file)
-          ("C-x t M-t" . treemacs-find-tag))
-  :config
-  (setq treemacs-collapse-dirs                  (if treemacs-python-executable 3 0)
-    treemacs-deferred-git-apply-delay  0.5
-    treemacs-directory-name-transformer        #'identity
-    treemacs-display-in-side-window            t
-    treemacs-eldoc-display                     'simple
-    treemacs-file-event-delay          2000
-    treemacs-file-extension-regex              treemacs-last-period-regex-value
-    treemacs-file-follow-delay                 0.2
-    treemacs-file-name-transformer             #'identity
-    treemacs-follow-after-init                 t
-    treemacs-expand-after-init                 t
-    treemacs-find-workspace-method             'find-for-file-or-pick-first
-    treemacs-git-command-pipe          ""
-    treemacs-goto-tag-strategy                 'refetch-index
-    treemacs-header-scroll-indicators  '(nil . "^^^^^^")
-    treemacs-hide-dot-git-directory            t
-    treemacs-indentation                       2
-    treemacs-indentation-string                " "
-    treemacs-is-never-other-window             nil
-    treemacs-max-git-entries           5000
-    treemacs-missing-project-action            'ask
-    treemacs-move-forward-on-expand            nil
-    treemacs-no-png-images                     nil
-    treemacs-no-delete-other-windows   t
-    treemacs-project-follow-cleanup            nil
-    treemacs-persist-file                      (expand-file-name
-                                                   ".cache/treemacs-persist"
-                                                   user-emacs-directory)
-    treemacs-position                  'left
-    treemacs-read-string-input                 'from-child-frame
-    treemacs-recenter-distance                 0.1
-    treemacs-recenter-after-file-follow        nil
-    treemacs-recenter-after-tag-follow         nil
-    treemacs-recenter-after-project-jump       'always
-    treemacs-recenter-after-project-expand     'on-distance
-    treemacs-litter-directories                '("/node_modules"
-                                            "/.venv"
-                                            "/.cask"
-                                            "/__pycache__")
-    treemacs-project-follow-into-home  nil
-    treemacs-show-cursor                       nil
-    treemacs-show-hidden-files                 t
-    treemacs-silent-filewatch          nil
-    treemacs-silent-refresh                    nil
-    treemacs-sorting                   'alphabetic-asc
-    treemacs-select-when-already-in-treemacs 'move-back
-    treemacs-space-between-root-nodes  t
-    treemacs-tag-follow-cleanup                t
-    treemacs-tag-follow-delay          1.5
-    treemacs-text-scale                        nil
-    treemacs-user-mode-line-format             nil
-    treemacs-user-header-line-format   nil
-    treemacs-wide-toggle-width                 70
-    treemacs-width                             38
-    treemacs-width-increment           1
-    treemacs-width-is-initially-locked         t
-    treemacs-workspace-switch-cleanup  nil)
-
-  ;; The default width and height of the icons is 22 pixels. If you are
-  ;; using a Hi-DPI display, uncomment this to double the icon size.
-  ;;(treemacs-resize-icons 44)
-
-  (treemacs-follow-mode t)
-  (treemacs-filewatch-mode t)
-  (treemacs-fringe-indicator-mode 'always)
-  (when treemacs-python-executable
-    (treemacs-git-commit-diff-mode t))
-  (pcase (cons (not (null (executable-find "git")))
-           (not (null treemacs-python-executable)))
-    (`(t . t)
-      (treemacs-git-mode 'deferred))
-    (`(t . _)
-      (treemacs-git-mode 'simple)))
-  (treemacs-hide-gitignored-files-mode nil))
-
-;;; ##########################################################################
-
-(use-package treemacs-projectile
-  :when (equal custom-project-handler 'custom-project-projectile)
-  :after treemacs projectile)
-
-;;; ##########################################################################
-
-(use-package treemacs-icons-dired
-  :after treemacs
-  :hook (dired-mode . treemacs-icons-dired-enable-once))
-
-;;; ##########################################################################
-
-;; (use-package treemacs-perspective
-;;    :disabled
-;;    :after (treemacs persp-mode) ;;or perspective vs. persp-mode
-;;    :config (treemacs-set-scope-type 'Perspectives))
-
-(use-package treemacs-persp ;;treemacs-perspective if you use perspective.el vs. persp-mode
-  ;;:ensure (:files ("src/extra/treemacs-persp.el" "treemacs-persp-pkg.el"):host github :repo "Alexander-Miller/treemacs")
-  :after (:any treemacs persp-mode) ;;or perspective vs. persp-mode
-  :config (treemacs-set-scope-type 'Perspectives))
-
-;;; ##########################################################################
-
-(use-package treemacs-tab-bar ;;treemacs-tab-bar if you use tab-bar-mode
-  :after treemacs
-  :config (treemacs-set-scope-type 'Tabs))
-
-;;; ##########################################################################
-
-(use-package treemacs-all-the-icons
-  :after treemacs
-  :if (display-graphic-p))
-
-;;; ##########################################################################
-
-(use-package dashboard
-  :custom
-  (dashboard-items '(   (recents . 15)
-                      (bookmarks . 10)
-                      (projects . 10)))
-  (dashboard-center-content t)
-  (dashboard-set-heading-icons t)
-  (dashboard-set-file-icons t)
-  (dashboard-footer-messages '("Greetings Program!"))
-  (dashboard-banner-logo-title "Welcome to Emacs!")
-  (dashboard-startup-banner 'logo)
-  :bind ("C-c d" . dashboard-open)
-  :config
-  ;; (setq initial-buffer-choice (lambda () (get-buffer-create dashboard-buffer-name)))
-  (add-hook 'elpaca-after-init-hook #'dashboard-insert-startupify-lists)
-  (add-hook 'elpaca-after-init-hook #'dashboard-initialize)
-  (dashboard-setup-startup-hook))
 
 ;;; ##########################################################################
 ;;; Emacs Polyglot is the Emacs LSP client that stays out of your way:
@@ -3346,6 +3378,10 @@ font size is computed + 20 of this value."
       (bind-keys :map map
         ("M-RET $" . jinx-correct)
         ("M-RET ?" . eldoc-box-help-at-point)
+        ("M-RET R 1" . eshell)
+        ("M-RET R 2" . eshell)
+        ("M-RET R 3" . eshell)
+        ("M-RET R 4" . eshell)
         ("M-RET S e" . eshell)
         ("M-RET S i" . ielm)
         ("M-RET S v" . vterm-other-window)
@@ -3376,24 +3412,26 @@ font size is computed + 20 of this value."
 (defun mifi/mmm-handle-context-keys (&optional winframe)
   "Enable or Disable keys based upon featurep context."
   (when winframe
-  (let ((map mmm-keys-minor-mode-map))
-    (when enable-thesaurus
-      (bind-keys :map map
-        ("M-RET m t" . mw-thesaurus-lookup-dwim)))
-    (cond
-      ((equal major-mode 'org-mode)
-        (bind-keys :map map
-          ("M-RET M-RET" . org-insert-heading)
-          ("M-RET o f" . mifi/set-org-fill-column-interactively)
-          ("M-RET o l" . org-toggle-link-display)))
-      ((equal major-mode 'python-mode)
-        (bind-keys :map map
-          ("M-RET P" . 'pydoc-at-point)))
-      (t   ;; Default 
-        (unbind-key "M-RET o f" map)
-        (unbind-key "M-RET o l" map)
-        (unbind-key "M-RET P ?" map)
-        (unbind-key "M-RET M-RET" map))))))
+    (let ((map mmm-keys-minor-mode-map))
+      (when enable-thesaurus
+	(bind-keys :map map
+          ("M-RET m t" . mw-thesaurus-lookup-dwim)))
+      (cond
+	((equal major-mode 'org-mode)
+          (bind-keys :map map
+            ("M-RET M-RET" . org-insert-heading)
+            ("M-RET o f" . mifi/set-org-fill-column-interactively)
+            ("M-RET o l" . org-toggle-link-display)))
+	((equal major-mode 'python-mode)
+          (bind-keys :map map
+            ("M-RET P" . 'pydoc-at-point)))
+	(t   ;; Default 
+          (unbind-key "M-RET o f" map)
+          (unbind-key "M-RET o l" map)
+          (unbind-key "M-RET P ?" map)
+          (unbind-key "M-RET M-RET" map))))))
+
+;;; ##########################################################################
 
 (defun mifi/mmm-update-menu (&optional winframe)
   (interactive)
@@ -3406,8 +3444,10 @@ font size is computed + 20 of this value."
   (which-key-add-key-based-replacements "M-RET m" "Thesaurus")
   (which-key-add-key-based-replacements "M-RET f" "set-fill-column")
   (which-key-add-key-based-replacements "M-RET j" "jump-to-register")
+  (which-key-add-key-based-replacements "M-RET C-g" "Exit menu")
   (which-key-add-key-based-replacements "M-RET" "Mitch's Menu"))
 
+;;; ##########################################################################
 
 ;; Check the keys when:
 ;; - the whick-key menu is displayed

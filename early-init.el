@@ -61,10 +61,9 @@
 (defconst *is-a-mac* (eq system-type 'darwin))
 
 (defun mifi/setup-exec-path ()
-     ;;; Set up Emacs' `exec-path' and PATH environment variable to match"
-     ;;; that used by the user's shell.
-     ;;; This is particularly useful under Mac OS X and macOS, where GUI
-     ;;; apps are not started from a shell."
+  ;; A list of customized executable paths. This is just something I (mifi)
+  ;; do personally rather than have another package do it for me. For the
+  ;; most part, the paths are typical on a Mac and with homebrew installed.
   (interactive)
   (setq exec-path '( "/Users/strider/.cargo/bin"
                    "/Users/strider/.local/bin"
