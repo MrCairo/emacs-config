@@ -249,17 +249,19 @@ configurable but has a host of great feaures that just work."
 ;;; ##########################################################################
 ;;; Theming related
 
-(defcustom theme-list '("palenight-deeper-blue"
-                       "ef-symbiosis"
-                       "ef-maris-light"
-                       "ef-maris-dark"
-                       "ef-kassio"
-                       "ef-bio"
-                       "sanityinc-tomorrow-bright"
-                       "ef-melissa-dark"
-                       "darktooth-dark"
-                       "material"
-                       "tron-legacy")
+(defcustom theme-list '( "palenight-deeper-blue"
+                         "ef-symbiosis"
+                         "ef-maris-light"
+                         "ef-maris-dark"
+                         "ef-kassio"
+                         "ef-bio"
+                         "ef-dream"
+                         "ef-deuteranopia-dark"
+                         "sanityinc-tomorrow-bright"
+                         "ef-melissa-dark"
+                         "darktooth-dark"
+                         "material"
+                         "tron-legacy")
 
   "My personal list of themes to cycle through indexed by `theme-selector'.
 If additional themes are added, they must be previously installed."
@@ -451,7 +453,7 @@ font size is computed + 20 of this value."
   visible-bell t             ;; Set up the visible bell
   truncate-lines 1           ;; long lines of text do not wrap
   sentence-end-double-space nil
-  fill-column 80             ;; Default line limit for fills
+  fill-column 79             ;; Default line limit for fills
   ;; Triggers project for directories with any of the following files:
   project-vc-extra-root-markers '(".dir-locals.el"
                                  "requirements.txt"
@@ -518,17 +520,19 @@ font size is computed + 20 of this value."
       ((file (expand-file-name "saved-frameset.el" user-emacs-directory)))
       (desktop-save-mode 0)
       (if (file-exists-p file)
-	(progn
-	  (load file)
-	  (desktop-restore-frameset)
-	  (when (featurep 'spacious-padding)
+      (progn
+        (load file)
+        (desktop-restore-frameset)
+        (when (featurep 'spacious-padding)
             (when spacious-padding-mode
               (spacious-padding-mode 0)
               (spacious-padding-mode 1))))
-	(use-medium-display-font t)))))
+      (use-medium-display-font t)))))
 
 (setq register-preview-delay 0) ;; Show registers ASAP
 (set-register ?O (cons 'file (concat emacs-config-directory "emacs-config.org")))
+
+(set-register ?G '(file . "~/Developer/game-dev/GB_asm"))
 
 ;;; ##########################################################################
 ;; Allow access from emacsclient
@@ -568,6 +572,10 @@ font size is computed + 20 of this value."
     (add-hook 'elpaca-after-init-hook
       (lambda () (run-with-timer 0.5 nil 'mifi/set-diminish)))
     (run-with-timer 1.0 nil 'mifi/set-diminsh)))
+
+(use-package dumb-jump
+  :config
+  (add-hook 'xref-backend-functions #'dumb-jump-xref-activate))
 
 ;;; ##########################################################################
 
@@ -736,8 +744,8 @@ font size is computed + 20 of this value."
 (use-package winum
   ;; :vc syntax below works, just for testing. Elpaca handles it for now.
   ;; :vc ( :url "https://github.com/deb0ch/emacs-winum"
-  ;; 	:branch "master"
-  ;; 	:main-file "winum.el")
+  ;;  :branch "master"
+  ;;  :main-file "winum.el")
   :config (winum-mode))
 
 ;;; ##########################################################################
@@ -769,6 +777,16 @@ font size is computed + 20 of this value."
   :config
   (dolist (hook '(text-mode-hook prog-mode-hook org-mode-hook))
     (add-hook hook #'jinx-mode)))
+
+;;; ------------------------------------------------------------------------
+(use-package jsonrpc
+  :config
+  ;; For some odd reason, it is possible that jsonrpc will try to load a
+  ;; theme. (jsonrpc/lisp/custom.el:1362). If our theme hasn't been loaded
+  ;; yet, go ahead and try. This could prevent a startup without the theme
+  ;; properly loaded.
+  (unless theme-did-load
+    (mifi/load-theme-from-selector)))
 
 ;;; ##########################################################################
 ;; These are packages located in the site-lisp or lisp directories in the
@@ -1831,8 +1849,8 @@ font size is computed + 20 of this value."
   (add-hook 'elpaca-after-init-hook
     (lambda ()
       (progn
-	(mifi/update-face-attribute)
-	(unless (daemonp)
+      (mifi/update-face-attribute)
+      (unless (daemonp)
           (unless enable-frameset-restore (mifi/frame-recenter))))
       )))
 
@@ -1952,10 +1970,6 @@ font size is computed + 20 of this value."
   ;; (use-package org-habit)
   ;; (add-to-list 'org-modules 'org-habit)
   ;; (setq org-habit-graph-column 60)
-  (setq org-todo-keywords
-    '((sequence "TODO(t)" "NEXT(n)" "|" "DONE(d!)")
-       (sequence "BACKLOG(b)" "PLAN(p)" "READY(r)" "ACTIVE(a)"
-         "REVIEW(v)" "WAIT(w@/!)" "HOLD(h)" "|" "COMPLETED(c)" "CANC(k@)")))
   (setq org-refile-targets
     '(("Archive.org" :maxlevel . 1)
        ("Tasks.org" :maxlevel . 1))))
@@ -2044,18 +2058,23 @@ font size is computed + 20 of this value."
        "| %U | %^{Weight} | %^{Notes} |" :kill-buffer t))))
 
 (defun mifi/org-setup-todos ()
-  (setq org-todo-keywords '((type
-                              "TODO(t)" "WAITING(h)" "INPROG-TODO(i)" "WORK(w)"
-                              "STUDY(s)" "SOMEDAY" "READ(r)" "PROJ(p)"
-                              "CONTACT(c)" "|" "DONE(d)" "CANCELLED(C@)")))
+  "Setup the org TODO keywords and colors."
+  (setq org-todo-keywords
+    '((type
+        "TODO(t)" "WAITING(w)" "IN-PROGRESS(i)"
+        "RESEARCH(r)" "SOMEDAY(-)" "READING(e)"
+        "CONTACT(c)" "|" "DONE(d)" "CANCELLED(C@)")))
 
   (setq org-todo-keyword-faces
-    '(("TODO"  :inherit (region org-todo) :foreground "DarkOrange1" :weight bold)
-       ("WORK"  :inherit (org-todo region) :foreground "DarkOrange1" :weight bold)
-       ("READ"  :inherit (org-todo region) :foreground "MediumPurple2" :weight bold)
-       ("PROJ"  :inherit (org-todo region) :foreground "orange3" :weight bold)
-       ("STUDY" :inherit (region org-todo) :foreground "plum3"   :weight bold)
-       ("DONE" . "SeaGreen4"))))
+    '(("TODO" :inherit (region org-todo) :foreground "gray70" :weight bold)
+       ("WAITING" :inherit (org-todo region) :foreground "red1" :weight bold)
+       ("IN-PROGRESS" :inherit (org-todo region) :foreground "gold1" :weight bold)
+       ("RESEARCH" :inherit (org-todo region) :foreground "OliveDrab3" :weight bold)
+       ("SOMEDAY" :inherit (org-todo region) :foreground "MediumPurple2" :weight bold)
+       ("READING" :inherit (org-todo region) :foreground "DeepSkyBlue1" :weight bold)
+       ("CONTACT" :inherit (org-todo region) :foreground "orange1" :weight bold)
+       ("DONE" :inherit (region org-todo) :foreground "green1"   :weight bold)
+       ("CANCELLED" :inherit (region org-todo) :foreground "green4"   :weight bold))))
 
 (custom-theme-set-faces
  'user
@@ -2159,37 +2178,38 @@ font size is computed + 20 of this value."
   :hook (org-mode . org-modern-mode)
   :config
   ;; Add frame borders and window dividers
-  ;; (modify-all-frames-parameters
-  ;;   '((right-divider-width . 40)
-  ;;      (internal-border-width . 40)))
-  ;; (dolist (face '(window-divider
-  ;; 		   window-divider-first-pixel
-  ;; 		   window-divider-last-pixel))
-  ;;   (face-spec-reset-face face)
-  ;;   (set-face-foreground face (face-attribute 'default :background nil)))
-  ;; (set-face-background 'fringe (face-attribute 'default :background nil))
-  ;; (setq
-  ;;   ;; Edit settings
-  ;;   org-auto-align-tags nil
-  ;;   org-tags-column 0
-  ;;   org-catch-invisible-edits 'show-and-error
-  ;;   org-special-ctrl-a/e t
-  ;;   org-insert-heading-respect-content t
+  (modify-all-frames-parameters
+    '((right-divider-width . 40)
+       (internal-border-width . 40)))
+  (dolist (face '(window-divider
+                 window-divider-first-pixel
+                 window-divider-last-pixel))
+    (face-spec-reset-face face)
+    (set-face-foreground face (face-attribute 'default :background nil)))
+  (set-face-background 'fringe (face-attribute 'default :background nil))
+  (setq
+    ;;   ;; Edit settings
+    ;;   org-auto-align-tags nil
+    ;;   org-tags-column 0
+    org-catch-invisible-edits 'show-and-error
+    org-special-ctrl-a/e t
+    org-insert-heading-respect-content t
 
-  ;;   ;; Org styling, hide markup etc.
-  ;;   org-hide-emphasis-markers nil
-  ;;   org-pretty-entities t
-  ;;   org-ellipsis "…"
+    ;;   ;; Org styling, hide markup etc.
+    org-hide-emphasis-markers nil
+    org-pretty-entities t
+    org-ellipsis "…"
 
-  ;;   ;; Agenda styling
-  ;;   org-agenda-tags-column 0
-  ;;   org-agenda-block-separator ?─
-  ;;   org-agenda-time-grid
-  ;;   '((daily today require-timed)
-  ;;      (800 1000 1200 1400 1600 1800 2000)
-  ;;      " ┄┄┄┄┄ " "┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄")
-  ;;   org-agenda-current-time-string
-  ;;   "◀── now ─────────────────────────────────────────────────")
+    ;;   ;; Agenda styling
+    ;;   org-agenda-tags-column 0
+    ;;   org-agenda-block-separator ?─
+    ;;   org-agenda-time-grid
+    ;;   '((daily today require-timed)
+    ;;      (800 1000 1200 1400 1600 1800 2000)
+    ;;      " ┄┄┄┄┄ " "┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄")
+    ;;   org-agenda-current-time-string
+    ;;   "◀── now ─────────────────────────────────────────────────"
+    )
   (global-org-modern-mode))
 
 ;;; ##########################################################################
@@ -2332,16 +2352,6 @@ font size is computed + 20 of this value."
   (unless theme-did-load
     (mifi/load-theme-from-selector)))
 
-;;; ------------------------------------------------------------------------
-(use-package jsonrpc
-  :config
-  ;; For some odd reason, it is possible that jsonrpc will try to load a
-  ;; theme. (jsonrpc/lisp/custom.el:1362). If our theme hasn't been loaded
-  ;; yet, go ahead and try. This could prevent a startup without the theme
-  ;; properly loaded.
-  (unless theme-did-load
-    (mifi/load-theme-from-selector)))
-
 ;;; ##########################################################################
 
 (use-package eglot
@@ -2359,7 +2369,7 @@ font size is computed + 20 of this value."
   (lisp-mode . eglot-ensure)
   (python-mode . eglot-ensure)
   (go-mode . eglot-ensure)
-  (rust-mode . eglot-ensure)
+  (rustic-mode . eglot-ensure)
   ;; (c-mode . eglot-ensure)
   ;; (c++-mode . eglot-ensure)
   ;; (prog-mode . eglot-ensure)
@@ -2840,6 +2850,7 @@ font size is computed + 20 of this value."
           ("C-c C-c q" . lsp-workspace-restart)
           ("C-c C-c Q" . lsp-workspace-shutdown)
           ("C-c C-c s" . lsp-rust-analyzer-status))
+  :hook (rustic-mode . rk/rustic-mode-hook)
   :config
   ;; uncomment for less flashiness
   ;; (setq lsp-eldoc-hook nil)
@@ -2847,8 +2858,8 @@ font size is computed + 20 of this value."
   ;; (setq lsp-signature-auto-activate nil)
 
   ;; comment to disable rustfmt on save
-  (setq rustic-format-on-save t)
-  (add-hook 'rustic-mode-hook 'rk/rustic-mode-hook))
+  (setq rustic-format-on-save t))
+
 
 (defun rk/rustic-mode-hook ()
   ;; so that run C-c C-c C-r works without having to confirm, but don't try to
@@ -2860,9 +2871,15 @@ font size is computed + 20 of this value."
   (add-hook 'before-save-hook 'lsp-format-buffer nil t))
 
 ;;; ##########################################################################
+;; for Cargo.toml and other config files
+
+(use-package toml-mode :ensure)
+
+;;; ##########################################################################
 
 ;; (use-package graphql-mode)
 (use-package rust-mode
+  :disabled ;;; Older than rustic so don't use but 
   :defer t
   :init (setq rust-mode-treesitter-derive t)
   :hook
@@ -3378,10 +3395,6 @@ font size is computed + 20 of this value."
       (bind-keys :map map
         ("M-RET $" . jinx-correct)
         ("M-RET ?" . eldoc-box-help-at-point)
-        ("M-RET R 1" . eshell)
-        ("M-RET R 2" . eshell)
-        ("M-RET R 3" . eshell)
-        ("M-RET R 4" . eshell)
         ("M-RET S e" . eshell)
         ("M-RET S i" . ielm)
         ("M-RET S v" . vterm-other-window)
@@ -3399,6 +3412,9 @@ font size is computed + 20 of this value."
       map)
     "mmm-keys-minor-mode keymap.")
 
+  (which-key-add-key-based-replacements "M-RET |" "display-fill-column")    
+  (which-key-add-key-based-replacements "M-RET ?" "help-at-point")
+
   (define-minor-mode mmm-keys-minor-mode
     "A minor mode so that my key settings override annoying major modes."
     :init-value t
@@ -3414,22 +3430,27 @@ font size is computed + 20 of this value."
   (when winframe
     (let ((map mmm-keys-minor-mode-map))
       (when enable-thesaurus
-	(bind-keys :map map
+      (bind-keys :map map
           ("M-RET m t" . mw-thesaurus-lookup-dwim)))
       (cond
-	((equal major-mode 'org-mode)
+      ((equal major-mode 'org-mode)
           (bind-keys :map map
             ("M-RET M-RET" . org-insert-heading)
             ("M-RET o f" . mifi/set-org-fill-column-interactively)
             ("M-RET o l" . org-toggle-link-display)))
-	((equal major-mode 'python-mode)
+      ((equal major-mode 'python-mode)
           (bind-keys :map map
             ("M-RET P" . 'pydoc-at-point)))
-	(t   ;; Default 
+      (t   ;; Default 
           (unbind-key "M-RET o f" map)
           (unbind-key "M-RET o l" map)
           (unbind-key "M-RET P ?" map)
-          (unbind-key "M-RET M-RET" map))))))
+          (unbind-key "M-RET M-RET" map)))))
+
+  ;; Override default menu text with better things
+  (which-key-add-key-based-replacements "M-RET m t" "thesaurus-at-point")
+  (which-key-add-key-based-replacements "M-RET o" "org-menu")
+  (which-key-add-key-based-replacements "M-RET o f" "set-org-fill-column"))
 
 ;;; ##########################################################################
 
@@ -3439,7 +3460,6 @@ font size is computed + 20 of this value."
   (which-key-add-key-based-replacements "M-RET S" "shells")
   (which-key-add-key-based-replacements "M-RET T" "theme-keys")
   (which-key-add-key-based-replacements "M-RET P" "python-menu")
-  (which-key-add-key-based-replacements "M-RET o" "org-menu")
   (which-key-add-key-based-replacements "M-RET e" "treemacs-toggle")
   (which-key-add-key-based-replacements "M-RET m" "Thesaurus")
   (which-key-add-key-based-replacements "M-RET f" "set-fill-column")

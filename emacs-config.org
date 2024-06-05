@@ -2,7 +2,7 @@
 #+author: Mitch Fisher
 #+date: 2024-05-11
 #+OPTIONS: toc:nil h:4
-#+STARTUP: showall
+#+STARTUP: showeverything
 #+PROPERTY: header-args:emacs-lisp :tangle ./init.el :results silent :exports code :mkdirp yes
 
 
@@ -23,6 +23,8 @@ The goal of this Emacs configuration is to make an Emacs configuration that has 
   + Ivy, Counsel, Swiper
   + Corfu
 
+- Customized Org mode
+  
 - Undo Handlers
   + =Vundo=
   + Undo-tree
@@ -31,9 +33,9 @@ The goal of this Emacs configuration is to make an Emacs configuration that has 
   + DAPE
   + DAP
 
-- Integrated Development Environments
-  + =Elpy=
-  + =Eglot=
+- Integrated Development Environments (IDE)
+  + Elpy
+  + Eglot
   + Stand-alone LSP
   + LSP Bridge (experimental)
   + Anaconda-mode for Python
@@ -58,7 +60,7 @@ The goal of this Emacs configuration is to make an Emacs configuration that has 
 
 --------------------------------------------------------------------------------
 
-- This configuration requires Emacs 29.1+
+- This configuration requires Emacs 29.1+. It has been tested with Emacs 29.1 - 29.3 and Emacs 30.0.50
 
 - While this configuration includes support for several languages - and I mean support for syntax highlighting and, to some extent, debugging - this configuration caters to be a Python development environment.
 
@@ -72,9 +74,7 @@ The goal of this Emacs configuration is to make an Emacs configuration that has 
 
 - Take a look a the [[Custom enable flags][Custom Variables]] and [[Customization groups][Groups]] section to see what options exist. It's important to note that these variables need to be adhered to. Another thing to note is that the various =enable*= flags are not used as =:if= option in =use-package= statement. Instead, a lisp conditional statement is used so that the package is actually never loaded or installed. This improves overall startup performance.
 
-- Tested with Emacs versions 29.1 - 29.3 and 30.0.50.
-  
-- Shout out to the many people in the Emacs community from which a lot of this configuration took inspiration from.
+- *Shout out to the many people in the Emacs community from which a lot of this configuration took inspiration from.*
   
 --------------------------------------------------------------------------------
 
@@ -517,17 +517,19 @@ This is a curated selection of themes that I personally like. Most of them are d
   ;;; ##########################################################################
   ;;; Theming related
 
-  (defcustom theme-list '("palenight-deeper-blue"
-                         "ef-symbiosis"
-                         "ef-maris-light"
-                         "ef-maris-dark"
-                         "ef-kassio"
-                         "ef-bio"
-                         "sanityinc-tomorrow-bright"
-                         "ef-melissa-dark"
-                         "darktooth-dark"
-                         "material"
-                         "tron-legacy")
+  (defcustom theme-list '( "palenight-deeper-blue"
+                           "ef-symbiosis"
+                           "ef-maris-light"
+                           "ef-maris-dark"
+                           "ef-kassio"
+                           "ef-bio"
+                           "ef-dream"
+                           "ef-deuteranopia-dark"
+                           "sanityinc-tomorrow-bright"
+                           "ef-melissa-dark"
+                           "darktooth-dark"
+                           "material"
+                           "tron-legacy")
 
     "My personal list of themes to cycle through indexed by `theme-selector'.
   If additional themes are added, they must be previously installed."
@@ -766,7 +768,7 @@ These are global variables that effect the behavior of Emacs in general.
     visible-bell t             ;; Set up the visible bell
     truncate-lines 1           ;; long lines of text do not wrap
     sentence-end-double-space nil
-    fill-column 80             ;; Default line limit for fills
+    fill-column 79             ;; Default line limit for fills
     ;; Triggers project for directories with any of the following files:
     project-vc-extra-root-markers '(".dir-locals.el"
                                    "requirements.txt"
@@ -859,14 +861,14 @@ These functions will save and restore Emacs framework. These are normally called
         ((file (expand-file-name "saved-frameset.el" user-emacs-directory)))
         (desktop-save-mode 0)
         (if (file-exists-p file)
-  	(progn
-  	  (load file)
-  	  (desktop-restore-frameset)
-  	  (when (featurep 'spacious-padding)
+        (progn
+          (load file)
+          (desktop-restore-frameset)
+          (when (featurep 'spacious-padding)
               (when spacious-padding-mode
                 (spacious-padding-mode 0)
                 (spacious-padding-mode 1))))
-  	(use-medium-display-font t)))))
+        (use-medium-display-font t)))))
 
 #+end_src
 
@@ -877,6 +879,8 @@ These are just some common registers that I have just so I can bookmark files an
 
   (setq register-preview-delay 0) ;; Show registers ASAP
   (set-register ?O (cons 'file (concat emacs-config-directory "emacs-config.org")))
+
+  (set-register ?G '(file . "~/Developer/game-dev/GB_asm"))
 
 #+end_src
 
@@ -944,6 +948,15 @@ The Hydra is vanquished once Hercules, any binding that isn't the Hydra's head, 
       (run-with-timer 1.0 nil 'mifi/set-diminsh)))
 
 
+#+end_src
+
+** Dumb Jump
+#+begin_src emacs-lisp
+
+  (use-package dumb-jump
+    :config
+    (add-hook 'xref-backend-functions #'dumb-jump-xref-activate))
+  
 #+end_src
 
 ** Which Key
@@ -1269,8 +1282,8 @@ Window numbers for Emacs: Navigate your windows and frames using numbers. This i
   (use-package winum
     ;; :vc syntax below works, just for testing. Elpaca handles it for now.
     ;; :vc ( :url "https://github.com/deb0ch/emacs-winum"
-    ;; 	:branch "master"
-    ;; 	:main-file "winum.el")
+    ;;  :branch "master"
+    ;;  :main-file "winum.el")
     :config (winum-mode))
 
 #+end_src
@@ -1329,6 +1342,23 @@ Jinx requires the library ~libenchant~ or ~enchant~ installed. This can be done 
     (dolist (hook '(text-mode-hook prog-mode-hook org-mode-hook))
       (add-hook hook #'jinx-mode)))
 
+
+#+end_src
+
+** JSON-RPC
+
+The JSON-RPC protocol is used to communicate with many different types of server. This is required for the DAPE and DAP Debug Adapters as well as Eglot.
+
+#+begin_src emacs-lisp
+  ;;; ------------------------------------------------------------------------
+  (use-package jsonrpc
+    :config
+    ;; For some odd reason, it is possible that jsonrpc will try to load a
+    ;; theme. (jsonrpc/lisp/custom.el:1362). If our theme hasn't been loaded
+    ;; yet, go ahead and try. This could prevent a startup without the theme
+    ;; properly loaded.
+    (unless theme-did-load
+      (mifi/load-theme-from-selector)))
 
 #+end_src
 
@@ -2511,7 +2541,7 @@ This function simply loads the theme from the theme-list indexed by the ~theme-s
 
 *** Color Theming
 
-<<<Color Theming>>> as a curated list of theming packages.
+Color Theming (or just <<<theming>>>) is a curated list of theming packages.
 *Note:* If new themes are added in the ~theme-list~ custom variable then they must be included here along with any customizations.
 
 #+begin_src emacs-lisp
@@ -2861,8 +2891,8 @@ Apply saved font/window-size early in the startup process.
     (add-hook 'elpaca-after-init-hook
       (lambda ()
         (progn
-  	(mifi/update-face-attribute)
-  	(unless (daemonp)
+        (mifi/update-face-attribute)
+        (unless (daemonp)
             (unless enable-frameset-restore (mifi/frame-recenter))))
         )))
 #+end_src
@@ -2898,7 +2928,7 @@ This package provides a global minor mode to increase the spacing/padding of Ema
 * Productivity
 ** Org Mode
 
-Org Mode is one of the hallmark features of Emacs.  It is a rich document editor, project planner, task and time tracker, blogging engine, and literate coding utility all wrapped up in one package [[https://orgmode.org/][Orgmode]].
+<<<Org Mode>>> is one of the hallmark features of Emacs.  It is a rich document editor, project planner, task and time tracker, blogging engine, and literate coding utility all wrapped up in one package [[https://orgmode.org/][Orgmode]].
 
 The =mifi/org-font-setup= function configures various text faces to tweak the sizes of headings and use variable width fonts in most cases so that it looks more like we're editing a document in =org-mode=.  We switch back to fixed width (monospace) fonts for code blocks and tables so that they display correctly.
 
@@ -3010,10 +3040,6 @@ This section contains the basic configuration for =org-mode= plus the configurat
     ;; (use-package org-habit)
     ;; (add-to-list 'org-modules 'org-habit)
     ;; (setq org-habit-graph-column 60)
-    (setq org-todo-keywords
-      '((sequence "TODO(t)" "NEXT(n)" "|" "DONE(d!)")
-         (sequence "BACKLOG(b)" "PLAN(p)" "READY(r)" "ACTIVE(a)"
-           "REVIEW(v)" "WAIT(w@/!)" "HOLD(h)" "|" "COMPLETED(c)" "CANC(k@)")))
     (setq org-refile-targets
       '(("Archive.org" :maxlevel . 1)
          ("Tasks.org" :maxlevel . 1))))
@@ -3118,18 +3144,23 @@ This section contains the basic configuration for =org-mode= plus the configurat
 #+begin_src emacs-lisp
 
   (defun mifi/org-setup-todos ()
-    (setq org-todo-keywords '((type
-                                "TODO(t)" "WAITING(h)" "INPROG-TODO(i)" "WORK(w)"
-                                "STUDY(s)" "SOMEDAY" "READ(r)" "PROJ(p)"
-                                "CONTACT(c)" "|" "DONE(d)" "CANCELLED(C@)")))
+    "Setup the org TODO keywords and colors."
+    (setq org-todo-keywords
+      '((type
+          "TODO(t)" "WAITING(w)" "IN-PROGRESS(i)"
+          "RESEARCH(r)" "SOMEDAY(-)" "READING(e)"
+          "CONTACT(c)" "|" "DONE(d)" "CANCELLED(C@)")))
 
     (setq org-todo-keyword-faces
-      '(("TODO"  :inherit (region org-todo) :foreground "DarkOrange1" :weight bold)
-         ("WORK"  :inherit (org-todo region) :foreground "DarkOrange1" :weight bold)
-         ("READ"  :inherit (org-todo region) :foreground "MediumPurple2" :weight bold)
-         ("PROJ"  :inherit (org-todo region) :foreground "orange3" :weight bold)
-         ("STUDY" :inherit (region org-todo) :foreground "plum3"   :weight bold)
-         ("DONE" . "SeaGreen4"))))
+      '(("TODO" :inherit (region org-todo) :foreground "gray70" :weight bold)
+         ("WAITING" :inherit (org-todo region) :foreground "red1" :weight bold)
+         ("IN-PROGRESS" :inherit (org-todo region) :foreground "gold1" :weight bold)
+         ("RESEARCH" :inherit (org-todo region) :foreground "OliveDrab3" :weight bold)
+         ("SOMEDAY" :inherit (org-todo region) :foreground "MediumPurple2" :weight bold)
+         ("READING" :inherit (org-todo region) :foreground "DeepSkyBlue1" :weight bold)
+         ("CONTACT" :inherit (org-todo region) :foreground "orange1" :weight bold)
+         ("DONE" :inherit (region org-todo) :foreground "green1"   :weight bold)
+         ("CANCELLED" :inherit (region org-todo) :foreground "green4"   :weight bold))))
 
 #+end_src
 
@@ -3153,6 +3184,7 @@ This section contains the basic configuration for =org-mode= plus the configurat
    '(org-verbatim ((t (:inherit (shadow fixed-pitch))))))
 
 #+end_src
+
 
 *** The main 'Org' package
 #+begin_src emacs-lisp
@@ -3203,8 +3235,6 @@ This section contains the basic configuration for =org-mode= plus the configurat
 
 #+end_src
 
-#+RESULTS:
-: #s(hash-table size 65 test eql rehash-size 1.5 rehash-threshold 0.8125 data (:use-package (26172 1876 296393 0) :use-package-secs (0 0 907 0) :preface (26171 64968 44297 0) :init (26171 64968 44286 0) :init-secs (0 0 28 0) :preface-secs (0 0 265 0) :config (26171 64988 735976 0) :config-secs (0 0 361702 0)))
 
 *** Better Bullets
 [[https://github.com/sabof/org-bullets][org-bullets]] replaces the heading stars in =org-mode= buffers with nicer looking characters that you can control.  Another option for this is [[https://github.com/integral-dw/org-superstar-mode][org-superstar-mode]].
@@ -3320,37 +3350,38 @@ Note that org-modern is a full replacement for both org-superstar and org-bullet
     :hook (org-mode . org-modern-mode)
     :config
     ;; Add frame borders and window dividers
-    ;; (modify-all-frames-parameters
-    ;;   '((right-divider-width . 40)
-    ;;      (internal-border-width . 40)))
-    ;; (dolist (face '(window-divider
-    ;; 		   window-divider-first-pixel
-    ;; 		   window-divider-last-pixel))
-    ;;   (face-spec-reset-face face)
-    ;;   (set-face-foreground face (face-attribute 'default :background nil)))
-    ;; (set-face-background 'fringe (face-attribute 'default :background nil))
-    ;; (setq
-    ;;   ;; Edit settings
-    ;;   org-auto-align-tags nil
-    ;;   org-tags-column 0
-    ;;   org-catch-invisible-edits 'show-and-error
-    ;;   org-special-ctrl-a/e t
-    ;;   org-insert-heading-respect-content t
+    (modify-all-frames-parameters
+      '((right-divider-width . 40)
+         (internal-border-width . 40)))
+    (dolist (face '(window-divider
+                   window-divider-first-pixel
+                   window-divider-last-pixel))
+      (face-spec-reset-face face)
+      (set-face-foreground face (face-attribute 'default :background nil)))
+    (set-face-background 'fringe (face-attribute 'default :background nil))
+    (setq
+      ;;   ;; Edit settings
+      ;;   org-auto-align-tags nil
+      ;;   org-tags-column 0
+      org-catch-invisible-edits 'show-and-error
+      org-special-ctrl-a/e t
+      org-insert-heading-respect-content t
 
-    ;;   ;; Org styling, hide markup etc.
-    ;;   org-hide-emphasis-markers nil
-    ;;   org-pretty-entities t
-    ;;   org-ellipsis "…"
+      ;;   ;; Org styling, hide markup etc.
+      org-hide-emphasis-markers nil
+      org-pretty-entities t
+      org-ellipsis "…"
 
-    ;;   ;; Agenda styling
-    ;;   org-agenda-tags-column 0
-    ;;   org-agenda-block-separator ?─
-    ;;   org-agenda-time-grid
-    ;;   '((daily today require-timed)
-    ;;      (800 1000 1200 1400 1600 1800 2000)
-    ;;      " ┄┄┄┄┄ " "┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄")
-    ;;   org-agenda-current-time-string
-    ;;   "◀── now ─────────────────────────────────────────────────")
+      ;;   ;; Agenda styling
+      ;;   org-agenda-tags-column 0
+      ;;   org-agenda-block-separator ?─
+      ;;   org-agenda-time-grid
+      ;;   '((daily today require-timed)
+      ;;      (800 1000 1200 1400 1600 1800 2000)
+      ;;      " ┄┄┄┄┄ " "┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄")
+      ;;   org-agenda-current-time-string
+      ;;   "◀── now ─────────────────────────────────────────────────"
+      )
     (global-org-modern-mode))
 
 #+end_src
@@ -3370,6 +3401,7 @@ Org Roam solves these problems by making it easy to create topic-focused Org Fil
 
 #+begin_src emacs-lisp :tangle no
   ;;; ##########################################################################
+
   (use-package emacsql :demand t :ensure t :after org)
   (use-package emacsql-sqlite :demand t :ensure t :after org)
    
@@ -3597,6 +3629,7 @@ Org-transclusion lets you insert a copy of text content via a file link or ID li
 
 #+end_src
 
+
 ** Denote
 
 Denote aims to be a simple-to-use, focused-in-scope, and effective note-taking and file-naming tool for Emacs.
@@ -3753,16 +3786,15 @@ This is the default built-in project system. For those not needing the full-feat
 
 * Integrated Development Environments
 
-The following are configured for Python development and provide an IDE type experience.  It's worth noting that Eglot/LSP can be configured for other languages. The others are Python specific. Use the =configure= system to select which one is used (=Mrf Custom Selection=).
+The following are configured for Python development and provide an <<<IDE>>> type experience.  It's worth noting that Eglot/LSP can be configured for other languages. The others are Python specific. Use the =configure= system to select which one is used (=Mrf Custom Selection=).
 
-:Features:
 - context-sensitive code completion
 - jump to definitions
 - find references
 - view documentation
 - virtual environment
 - eldoc mode
-:END:
+
 
 ** EGlot
 
@@ -3789,23 +3821,6 @@ The following are configured for Python development and provide an IDE type expe
 
 #+end_src
 
-*** JSON-RPC
-
-The JSON-RPC protocol is used to communicate with many different types of server. This is required for the DAPE and DAP Debug Adapters as well as Eglot.
-
-#+begin_src emacs-lisp
-  ;;; ------------------------------------------------------------------------
-  (use-package jsonrpc
-    :config
-    ;; For some odd reason, it is possible that jsonrpc will try to load a
-    ;; theme. (jsonrpc/lisp/custom.el:1362). If our theme hasn't been loaded
-    ;; yet, go ahead and try. This could prevent a startup without the theme
-    ;; properly loaded.
-    (unless theme-did-load
-      (mifi/load-theme-from-selector)))
-
-#+end_src
-
 *** Eglot Setup
 
 #+begin_src emacs-lisp
@@ -3826,7 +3841,7 @@ The JSON-RPC protocol is used to communicate with many different types of server
     (lisp-mode . eglot-ensure)
     (python-mode . eglot-ensure)
     (go-mode . eglot-ensure)
-    (rust-mode . eglot-ensure)
+    (rustic-mode . eglot-ensure)
     ;; (c-mode . eglot-ensure)
     ;; (c++-mode . eglot-ensure)
     ;; (prog-mode . eglot-ensure)
@@ -4206,7 +4221,7 @@ Magit]] is the one of the best Git interface implementations .  Common Git opera
 
 #+end_src
 
-** Python :Python:
+** Python
 
 <<<Python>>> is an interpreted, interactive, object-oriented programming language. It incorporates modules, exceptions, dynamic typing, very high level dynamic data types, and classes. It supports multiple programming paradigms beyond object-oriented programming, such as procedural and functional programming. Python combines remarkable power with very clear syntax. It has interfaces to many system calls and libraries, as well as to various window systems, and is extensible in C or C++. It is also usable as an extension language for applications that need a programmable interface. Finally, Python is portable: it runs on many Unix variants including Linux and macOS, and on Windows.
 
@@ -4528,6 +4543,31 @@ RGBDS is a compiler that has been around quite a long time (since 1997). It supp
 
 Rust is blazingly fast and memory-efficient: with no runtime or garbage collector, it can power performance-critical services, run on embedded devices, and easily integrate with other languages.
 
+Much of this configuration was taken from the [[https://robert.kra.hn/posts/rust-emacs-setup/][Robert Krahn]] web site.
+
+*** Prerequisites
+
+1. Install Rust and Cargo
+   
+   #+begin_src shell
+               
+     curl https://sh.rustup.rs -sSf | sh
+
+   #+end_src
+
+
+2. Install the Rust analyzer 
+   
+#+begin_src shell
+  #!/bin/bash
+
+  git clone https://github.com/rust-analyzer/rust-analyzer.git -b release
+  cd rust-analyzer
+  cargo xtask install --server # will install rust-analyzer into $HOME/.cargo/bin
+
+#+end_src
+
+
 *** Rustic package configuration
 
 #+begin_src emacs-lisp
@@ -4544,6 +4584,7 @@ Rust is blazingly fast and memory-efficient: with no runtime or garbage collecto
             ("C-c C-c q" . lsp-workspace-restart)
             ("C-c C-c Q" . lsp-workspace-shutdown)
             ("C-c C-c s" . lsp-rust-analyzer-status))
+    :hook (rustic-mode . rk/rustic-mode-hook)
     :config
     ;; uncomment for less flashiness
     ;; (setq lsp-eldoc-hook nil)
@@ -4551,8 +4592,8 @@ Rust is blazingly fast and memory-efficient: with no runtime or garbage collecto
     ;; (setq lsp-signature-auto-activate nil)
 
     ;; comment to disable rustfmt on save
-    (setq rustic-format-on-save t)
-    (add-hook 'rustic-mode-hook 'rk/rustic-mode-hook))
+    (setq rustic-format-on-save t))
+
 
   (defun rk/rustic-mode-hook ()
     ;; so that run C-c C-c C-r works without having to confirm, but don't try to
@@ -4562,7 +4603,18 @@ Rust is blazingly fast and memory-efficient: with no runtime or garbage collecto
     (when buffer-file-name
       (setq-local buffer-save-without-query t))
     (add-hook 'before-save-hook 'lsp-format-buffer nil t))
-  
+
+#+end_src
+
+*** Cargo and Cargo.toml packages
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+  ;; for Cargo.toml and other config files
+
+  (use-package toml-mode :ensure)
+
+
 #+end_src
 
 *** Rust-mode configuration
@@ -4572,6 +4624,7 @@ Rust is blazingly fast and memory-efficient: with no runtime or garbage collecto
 
   ;; (use-package graphql-mode)
   (use-package rust-mode
+    :disabled ;;; Older than rustic so don't use but 
     :defer t
     :init (setq rust-mode-treesitter-derive t)
     :hook
@@ -5500,10 +5553,6 @@ This is a set of keymaps that do the same things as the popup menu. Both are her
         (bind-keys :map map
           ("M-RET $" . jinx-correct)
           ("M-RET ?" . eldoc-box-help-at-point)
-          ("M-RET R 1" . eshell)
-          ("M-RET R 2" . eshell)
-          ("M-RET R 3" . eshell)
-          ("M-RET R 4" . eshell)
           ("M-RET S e" . eshell)
           ("M-RET S i" . ielm)
           ("M-RET S v" . vterm-other-window)
@@ -5520,6 +5569,9 @@ This is a set of keymaps that do the same things as the popup menu. Both are her
           ("M-RET C-g" . keyboard-quit))
         map)
       "mmm-keys-minor-mode keymap.")
+
+    (which-key-add-key-based-replacements "M-RET |" "display-fill-column")    
+    (which-key-add-key-based-replacements "M-RET ?" "help-at-point")
 
     (define-minor-mode mmm-keys-minor-mode
       "A minor mode so that my key settings override annoying major modes."
@@ -5544,23 +5596,28 @@ shown. Plus, some keys are mode specific and will only appear when that major mo
     (when winframe
       (let ((map mmm-keys-minor-mode-map))
         (when enable-thesaurus
-  	(bind-keys :map map
+        (bind-keys :map map
             ("M-RET m t" . mw-thesaurus-lookup-dwim)))
         (cond
-  	((equal major-mode 'org-mode)
+        ((equal major-mode 'org-mode)
             (bind-keys :map map
               ("M-RET M-RET" . org-insert-heading)
               ("M-RET o f" . mifi/set-org-fill-column-interactively)
               ("M-RET o l" . org-toggle-link-display)))
-  	((equal major-mode 'python-mode)
+        ((equal major-mode 'python-mode)
             (bind-keys :map map
               ("M-RET P" . 'pydoc-at-point)))
-  	(t   ;; Default 
+        (t   ;; Default 
             (unbind-key "M-RET o f" map)
             (unbind-key "M-RET o l" map)
             (unbind-key "M-RET P ?" map)
-            (unbind-key "M-RET M-RET" map))))))
-  
+            (unbind-key "M-RET M-RET" map)))))
+
+    ;; Override default menu text with better things
+    (which-key-add-key-based-replacements "M-RET m t" "thesaurus-at-point")
+    (which-key-add-key-based-replacements "M-RET o" "org-menu")
+    (which-key-add-key-based-replacements "M-RET o f" "set-org-fill-column"))
+
 #+end_src
 
 *** Key Description Overrides
@@ -5578,7 +5635,6 @@ What's also important with this function is that it calls the ~mifi/mmm-handle-c
     (which-key-add-key-based-replacements "M-RET S" "shells")
     (which-key-add-key-based-replacements "M-RET T" "theme-keys")
     (which-key-add-key-based-replacements "M-RET P" "python-menu")
-    (which-key-add-key-based-replacements "M-RET o" "org-menu")
     (which-key-add-key-based-replacements "M-RET e" "treemacs-toggle")
     (which-key-add-key-based-replacements "M-RET m" "Thesaurus")
     (which-key-add-key-based-replacements "M-RET f" "set-fill-column")
