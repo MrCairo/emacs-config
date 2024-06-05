@@ -38,14 +38,6 @@
   use-package-always-demand nil
   use-package-always-defer nil)
 
-(add-hook 'emacs-startup-hook
-  (lambda ()
-    (setq startup-time-message
-      (format "Emacs read in %.2f seconds with %d garbage collections."
-      (float-time (time-subtract after-init-time before-init-time))
-      gcs-done))
-    (message startup-time-message)))
-
 ;; (use-package gcmh
 ;;   :diminish gcmh-mode
 ;;   :config
@@ -55,7 +47,12 @@
 
 (add-hook 'emacs-startup-hook
   (lambda ()
-    (setq gc-cons-percentage 0.1))) ;; Default value for `gc-cons-percentage'
+    (setq gc-cons-percentage 0.1) ;; Default value for `gc-cons-percentage'
+    (setq startup-time-message
+      (format "Emacs read in %.2f seconds with %d garbage collections."
+        (float-time (time-subtract after-init-time before-init-time))
+        gcs-done))
+    (message startup-time-message)))
 
 ;;; ##########################################################################
 (defconst *is-a-mac* (eq system-type 'darwin))
@@ -66,11 +63,11 @@
   ;; most part, the paths are typical on a Mac and with homebrew installed.
   (interactive)
   (setq exec-path '( "/Users/strider/.cargo/bin"
-                   "/Users/strider/.local/bin"
-                   "/opt/homebrew/bin" "/opt/homebrew/sbin"
-                   "/usr/bin" "/bin" "/usr/sbin" "/sbin"
-                   "/usr/local/bin" "/opt/local/bin"
-                   "/Library/Frameworks/Python.framework/Versions/Current/bin"))
+                     "/Users/strider/.local/bin"
+                     "/opt/homebrew/bin" "/opt/homebrew/sbin"
+                     "/usr/bin" "/bin" "/usr/sbin" "/sbin"
+                     "/usr/local/bin" "/opt/local/bin"
+                     "/Library/Frameworks/Python.framework/Versions/Current/bin"))
 
   (let ((path-from-exec-path (string-join exec-path path-separator)))
     (setenv "PATH" path-from-exec-path)))

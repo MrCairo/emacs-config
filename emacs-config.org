@@ -128,19 +128,6 @@ The goal of this Emacs configuration is to make an Emacs configuration that has 
     use-package-always-ensure nil
     use-package-always-demand nil
     use-package-always-defer nil)
-  
-#+end_src
-
-** Calculate startup time
-#+begin_src emacs-lisp :tangle "early-init.el" 
-
-  (add-hook 'emacs-startup-hook
-    (lambda ()
-      (setq startup-time-message
-        (format "Emacs read in %.2f seconds with %d garbage collections."
-        (float-time (time-subtract after-init-time before-init-time))
-        gcs-done))
-      (message startup-time-message)))
 
 #+end_src
 
@@ -154,9 +141,19 @@ The goal of this Emacs configuration is to make an Emacs configuration that has 
   ;;     gcmh-high-cons-threshold (* 16 1024 1024))      ; 16mb
   ;;   (gcmh-mode 1))
 
+#+end_src
+
+** Calculate startup time
+#+begin_src emacs-lisp :tangle "early-init.el" 
+
   (add-hook 'emacs-startup-hook
     (lambda ()
-      (setq gc-cons-percentage 0.1))) ;; Default value for `gc-cons-percentage'
+      (setq gc-cons-percentage 0.1) ;; Default value for `gc-cons-percentage'
+      (setq startup-time-message
+        (format "Emacs read in %.2f seconds with %d garbage collections."
+          (float-time (time-subtract after-init-time before-init-time))
+          gcs-done))
+      (message startup-time-message)))
 
 #+end_src
 
@@ -174,11 +171,11 @@ Because in macOS, Emacs could be started outside of a shell (like an application
     ;; most part, the paths are typical on a Mac and with homebrew installed.
     (interactive)
     (setq exec-path '( "/Users/strider/.cargo/bin"
-                     "/Users/strider/.local/bin"
-                     "/opt/homebrew/bin" "/opt/homebrew/sbin"
-                     "/usr/bin" "/bin" "/usr/sbin" "/sbin"
-                     "/usr/local/bin" "/opt/local/bin"
-                     "/Library/Frameworks/Python.framework/Versions/Current/bin"))
+                       "/Users/strider/.local/bin"
+                       "/opt/homebrew/bin" "/opt/homebrew/sbin"
+                       "/usr/bin" "/bin" "/usr/sbin" "/sbin"
+                       "/usr/local/bin" "/opt/local/bin"
+                       "/Library/Frameworks/Python.framework/Versions/Current/bin"))
 
     (let ((path-from-exec-path (string-join exec-path path-separator)))
       (setenv "PATH" path-from-exec-path)))
@@ -239,7 +236,7 @@ Elpaca:
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
-  
+
   (defvar elpaca-installer-version 0.7)
   (defvar elpaca-directory (expand-file-name "elpaca/" user-emacs-directory))
   (defvar elpaca-builds-directory (expand-file-name "builds/" elpaca-directory))
@@ -438,9 +435,9 @@ These are features that basically have multiple-choice options instead of being 
 
   Finally, the standard undo handler can also be chosen."
     :type '(radio
-           (const :tag "Vundo (default)" undo-handler-vundo)
-           (const :tag "Undo-tree" undo-handler-undo-tree)
-           (const :tag "Built-in" undo-handler-built-in))
+             (const :tag "Vundo (default)" undo-handler-vundo)
+             (const :tag "Undo-tree" undo-handler-undo-tree)
+             (const :tag "Built-in" undo-handler-built-in))
     :group 'mifi-custom-features)
 
   (defcustom completion-handler 'comphand-vertico
@@ -456,10 +453,10 @@ These are features that basically have multiple-choice options instead of being 
   commands that are customised to make the best use of Ivy.  Swiper is an
   alternative to isearch that uses Ivy to show an overview of all matches."
     :type '(radio
-           (const :tag "Vertico completion system." comphand-vertico)
-           (const :tag "Ivy, Counsel, Swiper completion systems" comphand-ivy-counsel)
-           (const :tag "Cofu completion systems" comphand-corfu)
-           (const :tag "Built-in Ido" comphand-built-in))
+             (const :tag "Vertico completion system." comphand-vertico)
+             (const :tag "Ivy, Counsel, Swiper completion systems" comphand-ivy-counsel)
+             (const :tag "Cofu completion systems" comphand-corfu)
+             (const :tag "Built-in Ido" comphand-built-in))
     :group 'mifi-custom-features)
 
   (defcustom debug-adapter 'debug-adapter-dape
@@ -473,8 +470,8 @@ These are features that basically have multiple-choice options instead of being 
   with DAPE. DAPE supports most popular languages, however, not as many as
   dap-mode."
     :type '(radio
-           (const :tag "Debug Adapter Protocol (DAP)" debug-adapter-dap-mode)
-           (const :tag "Debug Adapter Protocol for Emacs (DAPE)" debug-adapter-dape))
+             (const :tag "Debug Adapter Protocol (DAP)" debug-adapter-dap-mode)
+             (const :tag "Debug Adapter Protocol for Emacs (DAPE)" debug-adapter-dape))
     :group 'mifi-custom-features)
 
   (defcustom custom-ide 'custom-ide-eglot
@@ -494,11 +491,11 @@ These are features that basically have multiple-choice options instead of being 
   Anaconda-mode is another IDE for Python very much like Elpy. It is not as
   configurable but has a host of great feaures that just work."
     :type '(radio
-           (const :tag "Elpy: Emacs Lisp Python Environment" custom-ide-elpy)
-           (const :tag "Emacs Polyglot (Eglot)" custom-ide-eglot)
-           (const :tag "Language Server Protocol (LSP)" custom-ide-lsp)
-           (const :tag "LSP Bridge (standalone)" custom-ide-lsp-bridge)
-           (const :tag "Python Anaconda-mode for Emacs" custom-ide-anaconda))
+             (const :tag "Elpy: Emacs Lisp Python Environment" custom-ide-elpy)
+             (const :tag "Emacs Polyglot (Eglot)" custom-ide-eglot)
+             (const :tag "Language Server Protocol (LSP)" custom-ide-lsp)
+             (const :tag "LSP Bridge (standalone)" custom-ide-lsp-bridge)
+             (const :tag "Python Anaconda-mode for Emacs" custom-ide-anaconda))
     :group 'mifi-custom-features)
 
   (defcustom custom-project-handler 'custom-project-project
@@ -620,15 +617,15 @@ Look for a proportional font that is available on the OS. If the actual default 
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
-  
+
   (defun mifi/validate-variable-pitch-font ()
     (let* ((variable-pitch-font
              (cond
-             ((x-list-fonts variable-pitch-font-family) variable-pitch-font-family)
-             ((x-list-fonts "SF Pro")           "SF Pro")
-             ((x-list-fonts "DejaVu Sans")      "DejaVu Sans")
-             ((x-list-fonts "Ubuntu")           "Ubuntu")
-             ((x-list-fonts "Helvetica")        "Helvetica")
+               ((x-list-fonts variable-pitch-font-family) variable-pitch-font-family)
+               ((x-list-fonts "SF Pro")           "SF Pro")
+               ((x-list-fonts "DejaVu Sans")      "DejaVu Sans")
+               ((x-list-fonts "Ubuntu")           "Ubuntu")
+               ((x-list-fonts "Helvetica")        "Helvetica")
                ((x-list-fonts "Source Sans Pro")  "Source Sans Pro")
                ((x-list-fonts "Lucida Grande")    "Lucida Grande")
                ((x-list-fonts "Verdana")          "Verdana")
@@ -636,7 +633,7 @@ Look for a proportional font that is available on the OS. If the actual default 
                (nil (warn "Cannot find a Sans Serif Font.  Install Source Sans Pro.")))))
       (if variable-pitch-font
         (when (not (equal variable-pitch-font variable-pitch-font-family))
-        (setq variable-pitch-font-family variable-pitch-font))
+          (setq variable-pitch-font-family variable-pitch-font))
         (message "---- Can't find a variable-pitch font to use.")))
 
     (message (format ">>> variable-pitch font is %s" variable-pitch-font-family)))
@@ -649,21 +646,21 @@ Look for a proportional font that is available on the OS. If the actual default 
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
-  
+
   (defun mifi/validate-monospace-font ()
     (let* ((monospace-font
              (cond
-             ((x-list-fonts mono-spaced-font-family) mono-spaced-font-family)
-             ((x-list-fonts "Fira Code Retina")  "Fira Code Retina")
-             ((x-list-fonts "Fira Code")         "Fira Code")
-             ((x-list-fonts "Source Code Pro")   "Source Code Pro")
-             ((x-list-fonts "Ubuntu Monospaced") "Ubuntu Monospaced")
+               ((x-list-fonts mono-spaced-font-family) mono-spaced-font-family)
+               ((x-list-fonts "Fira Code Retina")  "Fira Code Retina")
+               ((x-list-fonts "Fira Code")         "Fira Code")
+               ((x-list-fonts "Source Code Pro")   "Source Code Pro")
+               ((x-list-fonts "Ubuntu Monospaced") "Ubuntu Monospaced")
                ((x-family-fonts "Monospaced")      "Monospaced")
                (nil (warn "Cannot find a monospaced Font.  Install Source Code Pro.")))))
       (if monospace-font
         (when (not (equal monospace-font variable-pitch-font-family))
-        (setq mono-spaced-font-family monospace-font)
-        (setq default-font-family monospace-font))
+          (setq mono-spaced-font-family monospace-font)
+          (setq default-font-family monospace-font))
         (message "---- Can't find a monospace font to use.")))
 
     (message (format ">>> monospace font is %s" mono-spaced-font-family)))
@@ -735,11 +732,11 @@ This directory is expected to be in the ~emacs-config-direcory~ dir. This can be
       ;; Add every non-hidden subdir of PARENT-DIR to `load-path'.
       (let ((default-directory site-lisp-dir))
         (setq load-path
-            (append
-             (cl-remove-if-not
+          (append
+            (cl-remove-if-not
               #'file-directory-p
-               (directory-files (expand-file-name site-lisp-dir) t "^[^\\.]"))
-              load-path)))))
+              (directory-files (expand-file-name site-lisp-dir) t "^[^\\.]"))
+            load-path)))))
 
 #+end_src
 
@@ -771,9 +768,9 @@ These are global variables that effect the behavior of Emacs in general.
     fill-column 79             ;; Default line limit for fills
     ;; Triggers project for directories with any of the following files:
     project-vc-extra-root-markers '(".dir-locals.el"
-                                   "requirements.txt"
-                                   "Gemfile"
-                                   "package.json"))
+                                     "requirements.txt"
+                                     "Gemfile"
+                                     "package.json"))
 
 #+end_src
 
@@ -789,9 +786,9 @@ Keeps a persistent history file across Emacs restarts. It's also saved into the 
   (setq history-delete-duplicates t)
   (setq savehist-save-minibuffer-history 1)
   (setq savehist-additional-variables
-        '(kill-ring
-          search-ring
-          regexp-search-ring))
+    '(kill-ring
+       search-ring
+       regexp-search-ring))
 
 #+end_src
 
@@ -850,7 +847,7 @@ These functions will save and restore Emacs framework. These are normally called
         (insert (format
                   "(setq desktop-saved-frameset %S)"
                   desktop-saved-frameset)))))
-  
+
   (add-hook 'kill-emacs-hook 'mifi/save-desktop-frameset)
 
   ;;; ##########################################################################
@@ -861,14 +858,14 @@ These functions will save and restore Emacs framework. These are normally called
         ((file (expand-file-name "saved-frameset.el" user-emacs-directory)))
         (desktop-save-mode 0)
         (if (file-exists-p file)
-        (progn
-          (load file)
-          (desktop-restore-frameset)
-          (when (featurep 'spacious-padding)
+          (progn
+            (load file)
+            (desktop-restore-frameset)
+            (when (featurep 'spacious-padding)
               (when spacious-padding-mode
                 (spacious-padding-mode 0)
                 (spacious-padding-mode 1))))
-        (use-medium-display-font t)))))
+          (use-medium-display-font t)))))
 
 #+end_src
 
@@ -956,7 +953,7 @@ The Hydra is vanquished once Hercules, any binding that isn't the Hydra's head, 
   (use-package dumb-jump
     :config
     (add-hook 'xref-backend-functions #'dumb-jump-xref-activate))
-  
+
 #+end_src
 
 ** Which Key
@@ -987,9 +984,9 @@ Multiple cursors for Emacs. This is some pretty crazy functionality, so yes, the
 
   (use-package multiple-cursors
     :bind (("C-S-c C-S-c" . mc/edit-lines)
-          ("C->" . mc/mark-next-like-this)
-          ("C-<" . mc/mark-previous-like-this)
-          ("C-c C-<" . mc/mark-all-like-this)))
+            ("C->" . mc/mark-next-like-this)
+            ("C-<" . mc/mark-previous-like-this)
+            ("C-c C-<" . mc/mark-all-like-this)))
 
 #+end_src
 
@@ -1014,7 +1011,7 @@ anzu.el is an Emacs port of anzu.vim. anzu.el provides a minor mode which displa
       [remap isearch-query-replace]  #'anzu-isearch-query-replace)
     (define-key isearch-mode-map
       [remap isearch-query-replace-regexp] #'anzu-isearch-query-replace-regexp))
-  
+
 #+end_src
 
 ** Visual Fill
@@ -1032,7 +1029,7 @@ We use [[https://github.com/joostkremers/visual-fill-column][visual-fill-column]
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
-  
+
   (use-package default-text-scale
     :hook (elpaca-after-init . default-text-scale-mode))
 
@@ -1046,10 +1043,10 @@ We use [[https://github.com/joostkremers/visual-fill-column][visual-fill-column]
   ;; Macintosh specific configurations.
   (when *is-a-mac*
     (setq mac-command-modifier       'meta
-          mac-option-modifier         nil
-          mac-control-modifier       'control
-          mac-right-command-modifier 'super
-          mac-right-control-modifier 'hyper))
+      mac-option-modifier         nil
+      mac-control-modifier       'control
+      mac-right-command-modifier 'super
+      mac-right-control-modifier 'hyper))
 
 #+end_src
 
@@ -1066,10 +1063,10 @@ We use [[https://github.com/joostkremers/visual-fill-column][visual-fill-column]
     ;; We display [CRM<separator>], e.g., [CRM,] if the separator is a comma.
     (defun crm-indicator (args)
       (cons (format "[CRM%s] %s"
-            (replace-regexp-in-string
-              "\\`\\[.*?]\\*\\|\\[.*?]\\*\\'" ""
-              crm-separator)
-            (car args))
+              (replace-regexp-in-string
+                "\\`\\[.*?]\\*\\|\\[.*?]\\*\\'" ""
+                crm-separator)
+              (car args))
         (cdr args)))
     (advice-add #'completing-read-multiple :filter-args #'crm-indicator)
 
@@ -1180,7 +1177,7 @@ These are useful snippets of code that are commonly used in various languages. Y
 
   (use-package yasnippet
     :bind (:map yas-minor-mode-map
-          ("<C-'>" . yas-expand))
+            ("<C-'>" . yas-expand))
     :config
     (setq yas-global-mode t)
     (setq yas-minor-mode t)
@@ -1239,15 +1236,15 @@ Features:
   (use-package auto-complete)
 
   (defvar ac-directory (unless (file-exists-p "auto-complete")
-                       (make-directory "auto-complete")))
+                         (make-directory "auto-complete")))
   (add-to-list 'load-path ac-directory)
 
   (global-auto-complete-mode 1)
   (setq-default ac-sources '(ac-source-pycomplete
-                            ac-source-yasnippet
-                            ac-source-abbrev
-                            ac-source-dictionary
-                            ac-source-words-in-same-mode-buffers))
+                              ac-source-yasnippet
+                              ac-source-abbrev
+                              ac-source-dictionary
+                              ac-source-words-in-same-mode-buffers))
 
   (ac-set-trigger-key "TAB")
   (ac-set-trigger-key "<tab>")
@@ -1337,7 +1334,7 @@ Jinx requires the library ~libenchant~ or ~enchant~ installed. This can be done 
     :ensure (:host github :repo "minad/jinx")
     ;;:hook (emacs-startup . global-jinx-mode)
     :bind (("C-c C-$" . jinx-correct)
-           ("C-x C-$" . jinx-languages))
+            ("C-x C-$" . jinx-languages))
     :config
     (dolist (hook '(text-mode-hook prog-mode-hook org-mode-hook))
       (add-hook hook #'jinx-mode)))
@@ -1370,7 +1367,7 @@ These are packages located in the ~"lisp"~ directory within the emacs-config-dir
   ;;; ##########################################################################
   ;; These are packages located in the site-lisp or lisp directories in the
   ;; 'emacs-config-directory'
-  
+
 
 #+end_src
 
@@ -1411,7 +1408,7 @@ Instead of treating undo/redo as a linear sequence of changes, undo-tree-mode tr
   (defun undo-tree-split-side-by-side (original-function &rest args)
     "Split undo-tree side-by-side"
     (let ((split-height-threshold nil)
-         (split-width-threshold 0))
+           (split-width-threshold 0))
       (apply original-function args)))
 
   ;;; ##########################################################################
@@ -1460,7 +1457,7 @@ TL;DR prescient.el: simple but effective sorting and filtering for Emacs.
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
-  
+
   (use-package prescient)
 
 #+end_src
@@ -1612,13 +1609,13 @@ Counsel takes this further, providing versions of common Emacs commands that are
     (corfu-on-exact-match nil)       ; Don't auto expand tempel snippets
     ;; Optionally use TAB for cycling, default is `corfu-complete'.
     :bind (:map corfu-map
-          ("M-SPC"          . corfu-insert-separator)
-          ("TAB"            . corfu-next)
-          ([tab]            . corfu-next)
-          ("S-TAB"          . corfu-previous)
-          ([backtab]    . corfu-previous)
-          ("S-<return>" . corfu-insert)
-          ("RET"            . nil))
+            ("M-SPC"          . corfu-insert-separator)
+            ("TAB"            . corfu-next)
+            ([tab]            . corfu-next)
+            ("S-TAB"          . corfu-previous)
+            ([backtab]    . corfu-previous)
+            ("S-<return>" . corfu-insert)
+            ("RET"            . nil))
     :init
     (global-corfu-mode)
     (corfu-history-mode)
@@ -1626,10 +1623,10 @@ Counsel takes this further, providing versions of common Emacs commands that are
     :config
     (add-hook 'eshell-mode-hook
       (lambda () (setq-local corfu-quit-at-boundary t
-                 corfu-quit-no-match t
-                 corfu-auto nil)
+                   corfu-quit-no-match t
+                   corfu-auto nil)
         (corfu-mode))))
-  
+
 #+end_src
 
 **** Cape Configuration
@@ -1684,7 +1681,7 @@ Counsel takes this further, providing versions of common Emacs commands that are
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
-  
+
   (use-package corfu-prescient
     :when (equal completion-handler 'comphand-corfu)
     :after (corfu prescient))
@@ -1713,9 +1710,9 @@ Counsel takes this further, providing versions of common Emacs commands that are
     ;; :bind ("C-x C-f" . ido-find-file)
     ;; Clean up file path when typing
     :hook ((rfn-eshadow-update-overlay . vertico-directory-tidy)
-          ;; Make sure vertico state is saved
-          (minibuffer-setup . vertico-repeat-save)))
-  
+            ;; Make sure vertico state is saved
+            (minibuffer-setup . vertico-repeat-save)))
+
 #+end_src
 
 **** Marginalia
@@ -1734,7 +1731,7 @@ Marginalia are marks or annotations placed at the margin of the page of a book o
     (marginalia-annotators '(marginalia-annotators-heavy marginalia-annotators-light nil))
     :config
     (marginalia-mode t))
-  
+
 #+end_src
 
 **** Icons for Marginalia
@@ -1797,9 +1794,9 @@ Consult provides search and navigation commands based on the Emacs completion fu
       '(consult--source-hidden-buffer 
          consult--source-buffer
          (:name "Ephemeral" :state consult--buffer-state
-         :narrow 109 :category buffer
-         :items ("*Messages*"  "*scratch*" "*vterm*"
-                  "*Async-native-compile-log*" "*dashboard*"))
+           :narrow 109 :category buffer
+           :items ("*Messages*"  "*scratch*" "*vterm*"
+                    "*Async-native-compile-log*" "*dashboard*"))
          consult--source-modified-buffer
          consult--source-recent-file)))
 
@@ -1813,7 +1810,7 @@ Consult provides search and navigation commands based on the Emacs completion fu
   (use-package vertico-prescient
     :when (equal completion-handler 'comphand-vertico)
     :after vertico prescient)
-  
+
 #+end_src
 
 vertico-posframe is an vertico extension, which lets vertico use posframe to show its candidate menu.
@@ -1840,7 +1837,7 @@ vertico-posframe is an vertico extension, which lets vertico use posframe to sho
     (setq vertico-posframe-parameters
       '((left-fringe . 8)
          (right-fringe . 8))))
-  
+
 #+end_src
 
 *** Built-In (Ido)
@@ -1916,7 +1913,7 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
 
   ;; Don't use lsp-bridge with company as lsp-bridge already provides the same
   ;; features. They actually collide.
-  
+
   (use-package company
     :unless (equal custom-ide 'custom-ide-lsp-bridge)
     :custom
@@ -2027,7 +2024,7 @@ The =eterm-256color= package enhances the output of =term-mode= to enable handli
 
   (use-package eterm-256color
     :hook (term-mode . eterm-256color-mode))
-  
+
 #+end_src
 
 *** vterm
@@ -2169,10 +2166,10 @@ Dired is a built-in file manager for Emacs that does some pretty amazing things!
 #+begin_src emacs-lisp
   ;;; ##########################################################################
 
-    ;; Prefer g-prefixed coreutils version of standard utilities when available
+  ;; Prefer g-prefixed coreutils version of standard utilities when available
   (let ((gls (executable-find "gls")))
     (when gls (setq-default insert-directory-program gls
-              dired-use-ls-dired t
+                dired-use-ls-dired t
                 ;; Needed to fix an issue on Mac which causes dired to fail
                 dired-listing-switches "-al --group-directories-first")))
 
@@ -2186,7 +2183,7 @@ Dired is a built-in file manager for Emacs that does some pretty amazing things!
     ;; Doesn't work as expected!
     ;;(add-to-list 'dired-open-functions #'dired-open-xdg t)
     (setq dired-open-extensions '(("png" . "feh")
-                                 ("mkv" . "mpv"))))
+                                   ("mkv" . "mpv"))))
 
   (use-package dired-hide-dotfiles
     :after dired-mode
@@ -2261,8 +2258,8 @@ Dired, by default, opens up multiple windows - one for each directory. It would 
       treemacs-no-delete-other-windows   t
       treemacs-project-follow-cleanup            nil
       treemacs-persist-file                      (expand-file-name
-                                                     ".cache/treemacs-persist"
-                                                     user-emacs-directory)
+                                                   ".cache/treemacs-persist"
+                                                   user-emacs-directory)
       treemacs-position                  'left
       treemacs-read-string-input                 'from-child-frame
       treemacs-recenter-distance                 0.1
@@ -2271,9 +2268,9 @@ Dired, by default, opens up multiple windows - one for each directory. It would 
       treemacs-recenter-after-project-jump       'always
       treemacs-recenter-after-project-expand     'on-distance
       treemacs-litter-directories                '("/node_modules"
-                                              "/.venv"
-                                              "/.cask"
-                                              "/__pycache__")
+                                                    "/.venv"
+                                                    "/.cask"
+                                                    "/__pycache__")
       treemacs-project-follow-into-home  nil
       treemacs-show-cursor                       nil
       treemacs-show-hidden-files                 t
@@ -2414,11 +2411,11 @@ This is the main function that allows cycling (up or down) through the list of t
     (when (not (eq theme-cycle-step nil))
       (let ((step theme-cycle-step) (result 0))
         (when step
-        (setq result (+ step theme-selector))
-        (when (< result 0)
-          (setq result (- (length theme-list) 1)))
-        (when (> result (- (length theme-list) 1))
-          (setq result 0)))
+          (setq result (+ step theme-selector))
+          (when (< result 0)
+            (setq result (- (length theme-list) 1)))
+          (when (> result (- (length theme-list) 1))
+            (setq result 0)))
         (setq-default theme-selector result))))
 
   ;; This is used to trigger the cycling of the theme-selector
@@ -2460,7 +2457,7 @@ This function simply loads the theme from the theme-list indexed by the ~theme-s
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
-  
+
   (defun mifi/print-custom-theme-name ()
     "Print the current loaded theme from the `theme-list' on the modeline."
     (interactive)
@@ -2580,14 +2577,14 @@ This includes the theme to use in both graphical and non-graphical.
     (progn
       (if (not elpaca-after-init-time)
         (add-hook 'elpaca-after-init-hook
-        (lambda ()
-          (unless theme-did-load
-            (mifi/load-theme-from-selector))))
+          (lambda ()
+            (unless theme-did-load
+              (mifi/load-theme-from-selector))))
         ;; else
         (add-hook 'window-setup-hook
-        (lambda ()
-          (unless theme-did-load
-            (mifi/load-theme-from-selector))))
+          (lambda ()
+            (unless theme-did-load
+              (mifi/load-theme-from-selector))))
         )))
 
 #+end_src
@@ -2645,7 +2642,7 @@ A better version of variable-pitch mode. This keeps certain faces (defined in mi
     :config
     (dolist (face '(org-date org-priority org-special-keyword org-tag))
       (add-to-list 'mixed-pitch-fixed-pitch-faces face)))
-    
+
 #+end_src
 
 *** Functions to set the frame size
@@ -2737,9 +2734,9 @@ A better version of variable-pitch mode. This keeps certain faces (defined in mi
       (when (display-graphic-p)
         (mifi/update-face-attribute)
         (unless (daemonp)
-        (if enable-frameset-restore
+          (if enable-frameset-restore
             (mifi/restore-desktop-frameset)
-          (mifi/frame-recenter)))
+            (mifi/frame-recenter)))
         )))
 
 #+end_src
@@ -2774,27 +2771,27 @@ This little function toggles between a larger font size and the default font siz
     (cond
       ((equal mifi/font-size-slot 3)
         (setq custom-default-font-size mifi/x-large-font-size
-              custom-default-mono-font-size mifi/x-large-mono-font-size
-              mifi/default-variable-font-size (+ custom-default-font-size 20)
-              mifi/font-size-slot 2)
+          custom-default-mono-font-size mifi/x-large-mono-font-size
+          mifi/default-variable-font-size (+ custom-default-font-size 20)
+          mifi/font-size-slot 2)
         (mifi/update-face-attribute))
       ((equal mifi/font-size-slot 2)
         (setq custom-default-font-size mifi/large-font-size
-              custom-default-mono-font-size mifi/large-mono-font-size
-              mifi/default-variable-font-size (+ custom-default-font-size 20)
-              mifi/font-size-slot 1)
+          custom-default-mono-font-size mifi/large-mono-font-size
+          mifi/default-variable-font-size (+ custom-default-font-size 20)
+          mifi/font-size-slot 1)
         (mifi/update-face-attribute))
       ((equal mifi/font-size-slot 1)
         (setq custom-default-font-size mifi/medium-font-size
-              custom-default-mono-font-size mifi/medium-mono-font-size
-              mifi/default-variable-font-size (+ custom-default-font-size 20)
-              mifi/font-size-slot 0)
+          custom-default-mono-font-size mifi/medium-mono-font-size
+          mifi/default-variable-font-size (+ custom-default-font-size 20)
+          mifi/font-size-slot 0)
         (mifi/update-face-attribute))
       ((equal mifi/font-size-slot 0)
         (setq custom-default-font-size mifi/small-font-size
-              custom-default-mono-font-size mifi/small-mono-font-size
-              mifi/default-variable-font-size (+ custom-default-font-size 20)
-              mifi/font-size-slot 3)
+          custom-default-mono-font-size mifi/small-mono-font-size
+          mifi/default-variable-font-size (+ custom-default-font-size 20)
+          mifi/font-size-slot 3)
         (mifi/update-face-attribute))))
 
 #+end_src
@@ -2824,7 +2821,7 @@ Some key kindings to switch to different screen resolutions.
     (which-key-add-key-based-replacements "C-S-c 2" "recenter-with-medium-font")
     (which-key-add-key-based-replacements "C-S-c 3" "recenter-with-large-font")
     (which-key-add-key-based-replacements "C-S-c 4" "recenter-with-x-large-font")
-  )
+    )
 
 #+end_src
 
@@ -2845,7 +2842,7 @@ These functions are used to configure the main frame font size. Based upon a mon
       (mifi/frame-recenter)
       ;;else
       (unless enable-frameset-restore (mifi/frame-recenter))))
-  
+
 #+end_src
 
 ***** Select Display Font and optionally Recenter
@@ -2877,7 +2874,7 @@ These functions resize the font to some pre-defined values and will optiononally
     (interactive)
     (mifi/set-frame-font 3)
     (mifi/should-recenter force-recenter))
-  
+
 #+end_src
 
 ***** Early Display Resize
@@ -2891,8 +2888,8 @@ Apply saved font/window-size early in the startup process.
     (add-hook 'elpaca-after-init-hook
       (lambda ()
         (progn
-        (mifi/update-face-attribute)
-        (unless (daemonp)
+          (mifi/update-face-attribute)
+          (unless (daemonp)
             (unless enable-frameset-restore (mifi/frame-recenter))))
         )))
 #+end_src
@@ -3111,31 +3108,31 @@ This section contains the basic configuration for =org-mode= plus the configurat
     (setq org-capture-templates
       `(("t" "Tasks / Projects")
          ("tt" "Task" entry (file+olp "~/Projects/Code/emacs-from-scratch/OrgFiles/Tasks.org" "Inbox")
-         "* TODO %?\n  %U\n  %a\n        %i" :empty-lines 1)
+           "* TODO %?\n  %U\n  %a\n        %i" :empty-lines 1)
 
          ("j" "Journal Entries")
          ("jj" "Journal" entry
-         (file+olp+datetree "~/Projects/Code/emacs-from-scratch/OrgFiles/Journal.org")
-         "\n* %<%I:%M %p> - Journal :journal:\n\n%?\n\n"
-         ;; ,(dw/read-file-as-string "~/Notes/Templates/Daily.org")
-         :clock-in :clock-resume
-         :empty-lines 1)
+           (file+olp+datetree "~/Projects/Code/emacs-from-scratch/OrgFiles/Journal.org")
+           "\n* %<%I:%M %p> - Journal :journal:\n\n%?\n\n"
+           ;; ,(dw/read-file-as-string "~/Notes/Templates/Daily.org")
+           :clock-in :clock-resume
+           :empty-lines 1)
          ("jm" "Meeting" entry
-         (file+olp+datetree "~/Projects/Code/emacs-from-scratch/OrgFiles/Journal.org")
-         "* %<%I:%M %p> - %a :meetings:\n\n%?\n\n"
-         :clock-in :clock-resume
-         :empty-lines 1)
+           (file+olp+datetree "~/Projects/Code/emacs-from-scratch/OrgFiles/Journal.org")
+           "* %<%I:%M %p> - %a :meetings:\n\n%?\n\n"
+           :clock-in :clock-resume
+           :empty-lines 1)
 
          ("w" "Workflows")
          ("we" "Checking Email" entry (file+olp+datetree
-                                      "~/Projects/Code/emacs-from-scratch/OrgFiles/Journal.org")
-         "* Checking Email :email:\n\n%?" :clock-in :clock-resume :empty-lines 1)
+                                        "~/Projects/Code/emacs-from-scratch/OrgFiles/Journal.org")
+           "* Checking Email :email:\n\n%?" :clock-in :clock-resume :empty-lines 1)
 
          ("m" "Metrics Capture")
          ("mw" "Weight" table-line (file+headline
-                                   "~/Projects/Code/emacs-from-scratch/OrgFiles/Metrics.org"
-                                   "Weight")
-         "| %U | %^{Weight} | %^{Notes} |" :kill-buffer t))))
+                                     "~/Projects/Code/emacs-from-scratch/OrgFiles/Metrics.org"
+                                     "Weight")
+           "| %U | %^{Weight} | %^{Notes} |" :kill-buffer t))))
 
 #+end_src
 
@@ -3169,19 +3166,19 @@ This section contains the basic configuration for =org-mode= plus the configurat
 #+begin_src emacs-lisp
 
   (custom-theme-set-faces
-   'user
-   '(org-block ((t (:inherit fixed-pitch))))
-   '(org-code ((t (:inherit (shadow fixed-pitch)))))
-   '(org-document-info ((t (:foreground "dark orange"))))
-   '(org-document-info-keyword ((t (:inherit (shadow fixed-pitch)))))
-   '(org-indent ((t (:inherit (org-hide fixed-pitch)))))
-   '(org-link ((t (:foreground "royal blue" :underline t))))
-   '(org-meta-line ((t (:inherit (font-lock-comment-face fixed-pitch)))))
-   '(org-property-value ((t (:inherit fixed-pitch))) t)
-   '(org-special-keyword ((t (:inherit (font-lock-comment-face fixed-pitch)))))
-   '(org-table ((t (:inherit fixed-pitch :foreground "#83a598"))))
-   '(org-tag ((t (:inherit (shadow fixed-pitch) :weight bold :height 0.8))))
-   '(org-verbatim ((t (:inherit (shadow fixed-pitch))))))
+    'user
+    '(org-block ((t (:inherit fixed-pitch))))
+    '(org-code ((t (:inherit (shadow fixed-pitch)))))
+    '(org-document-info ((t (:foreground "dark orange"))))
+    '(org-document-info-keyword ((t (:inherit (shadow fixed-pitch)))))
+    '(org-indent ((t (:inherit (org-hide fixed-pitch)))))
+    '(org-link ((t (:foreground "royal blue" :underline t))))
+    '(org-meta-line ((t (:inherit (font-lock-comment-face fixed-pitch)))))
+    '(org-property-value ((t (:inherit fixed-pitch))) t)
+    '(org-special-keyword ((t (:inherit (font-lock-comment-face fixed-pitch)))))
+    '(org-table ((t (:inherit fixed-pitch :foreground "#83a598"))))
+    '(org-tag ((t (:inherit (shadow fixed-pitch) :weight bold :height 0.8))))
+    '(org-verbatim ((t (:inherit (shadow fixed-pitch))))))
 
 #+end_src
 
@@ -3242,36 +3239,36 @@ This section contains the basic configuration for =org-mode= plus the configurat
 #+begin_src emacs-lisp :tangle no
     ;;; ##########################################################################
 
-    (use-package org-superstar
-      :after org
-      :custom
-      (org-superstar-leading-bullet " ")
-      (org-superstar-special-todo-items t)
-      (org-superstar-todo-bullet-alist '( ("TODO" . 9744)
-                                      ("INPROG-TODO" . 9744)
-                                      ("HW" . 9744)
-                                      ("STUDY" . 9744)
-                                      ("SOMEDAY" . 9744)
-                                      ("READ" . 9744)
-                                      ("PROJ" . 9744)
-                                      ("CONTACT" . 9744)
-                                      ("DONE" . 9745)))
-      ;; (org-superstar-headline-bullets-list '("✪" "✫" "✦" "✧" "✸" "✺"))
-      :hook (org-mode . org-superstar-mode))
+  (use-package org-superstar
+    :after org
+    :custom
+    (org-superstar-leading-bullet " ")
+    (org-superstar-special-todo-items t)
+    (org-superstar-todo-bullet-alist '( ("TODO" . 9744)
+                                        ("INPROG-TODO" . 9744)
+                                        ("HW" . 9744)
+                                        ("STUDY" . 9744)
+                                        ("SOMEDAY" . 9744)
+                                        ("READ" . 9744)
+                                        ("PROJ" . 9744)
+                                        ("CONTACT" . 9744)
+                                        ("DONE" . 9745)))
+    ;; (org-superstar-headline-bullets-list '("✪" "✫" "✦" "✧" "✸" "✺"))
+    :hook (org-mode . org-superstar-mode))
 
-    (use-package org-appear
-      :init
-      (setq org-hide-emphasis-markers t)
-      (setq org-appear-autoemphasis t) ;; Enable org-appear on emphasis
-      (setq org-appear-autolinks t) ;; Enable on links
-      (setq org-appear-autosubmarkers t) ;; Enable on sub and superscript
-      :commands (org-appear-mode)
-      :hook (or-mode . org-appear-mode))
+  (use-package org-appear
+    :init
+    (setq org-hide-emphasis-markers t)
+    (setq org-appear-autoemphasis t) ;; Enable org-appear on emphasis
+    (setq org-appear-autolinks t) ;; Enable on links
+    (setq org-appear-autosubmarkers t) ;; Enable on sub and superscript
+    :commands (org-appear-mode)
+    :hook (or-mode . org-appear-mode))
 
   ;; Automatically change bullet type when indenting
   ;; Ex: indenting a + makes the bullet a *.
   (setq org-list-demote-modify-bullet
-  '(("+" ・ "*"）（"*" ・ "-"）（"-" . "+")))
+    '(("+" ・ "*"）（"*" ・ "-"）（"-" . "+")))
 
 #+end_src
 
@@ -3286,27 +3283,27 @@ To execute or export code in =org-mode= code blocks, you'll need to set up =org-
       'org-babel-load-languages
       (seq-filter
         (lambda (pair)
-        (locate-library (concat "ob-" (symbol-name (car pair)))))
+          (locate-library (concat "ob-" (symbol-name (car pair)))))
         '((emacs-lisp . t)
-         (ditaa . t)
-         (dot . t)
-         (emacs-lisp . t)
-         (gnuplot . t)
-         (haskell . nil)
-         (latex . t)
-         (ledger . t)
-         (ocaml . nil)
-         (octave . t)
-         (plantuml . t)
-         (python . t)
-         (ruby . t)
-         (screen . nil)
-         (sh . t) ;; obsolete
-         (shell . t)
-         (sql . t)
-         (sqlite . t))))
+           (ditaa . t)
+           (dot . t)
+           (emacs-lisp . t)
+           (gnuplot . t)
+           (haskell . nil)
+           (latex . t)
+           (ledger . t)
+           (ocaml . nil)
+           (octave . t)
+           (plantuml . t)
+           (python . t)
+           (ruby . t)
+           (screen . nil)
+           (sh . t) ;; obsolete
+           (shell . t)
+           (sql . t)
+           (sqlite . t))))
     (push '("conf-unix" . conf-unix) org-src-lang-modes))
-  
+
 #+end_src
 
 *** Structure Templates
@@ -3354,8 +3351,8 @@ Note that org-modern is a full replacement for both org-superstar and org-bullet
       '((right-divider-width . 40)
          (internal-border-width . 40)))
     (dolist (face '(window-divider
-                   window-divider-first-pixel
-                   window-divider-last-pixel))
+                     window-divider-first-pixel
+                     window-divider-last-pixel))
       (face-spec-reset-face face)
       (set-face-foreground face (face-attribute 'default :background nil)))
     (set-face-background 'fringe (face-attribute 'default :background nil))
@@ -3404,7 +3401,7 @@ Org Roam solves these problems by making it easy to create topic-focused Org Fil
 
   (use-package emacsql :demand t :ensure t :after org)
   (use-package emacsql-sqlite :demand t :ensure t :after org)
-   
+
 #+end_src
 
 **** Org Agenda from Roam Notes
@@ -3471,11 +3468,11 @@ This means that we can automatically create a new note with our project capture 
       (mifi/org-roam-filter-by-tag "Project")
       :templates
       '(("p" "project" plain "* Goals\n\n%?\n\n* Tasks\n\n** TODO Add initial tasks\n\n* Dates\n\n"
-        :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n#+category: ${title}\n#+filetags: Project")
-        :unnarrowed t))))
+          :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n#+category: ${title}\n#+filetags: Project")
+          :unnarrowed t))))
 
   ;; (global-set-key (kbd "C-c n p") #'mifi/org-roam-find-project)
-  
+
 #+end_src
 
 **** Keep and inbox of notes and tasks
@@ -3489,21 +3486,21 @@ Even though this file won’t have the timestamped filename, it will still be tr
     (interactive)
     (org-roam-capture- :node (org-roam-node-create)
       :templates '(("i" "inbox" plain "* %?"
-                   :if-new (file+head "Inbox.org" "#+title: Inbox\n")))))
-  
+                     :if-new (file+head "Inbox.org" "#+title: Inbox\n")))))
+
 #+end_src
 
 **** Insert a node immediately
 
 #+begin_src emacs-lisp :tangle no
   ;;; ##########################################################################
-  
+
   (defun mifi/org-roam-node-insert-immediate (arg &rest args)
     (interactive "P")
     (let ((args (push arg args))
-         (org-roam-capture-templates
-           (list (append (car org-roam-capture-templates)
-                   '(:immediate-finish t)))))
+           (org-roam-capture-templates
+             (list (append (car org-roam-capture-templates)
+                     '(:immediate-finish t)))))
       (apply #'org-roam-node-insert args)))
 #+end_src
 
@@ -3522,12 +3519,12 @@ Much like the example before, we can either select a project that exists or auto
 
     ;; Capture the new task, creating the project file if necessary
     (org-roam-capture- :node (org-roam-node-read nil
-                             (mifi/org-roam-filter-by-tag "Project"))
+                               (mifi/org-roam-filter-by-tag "Project"))
       :templates '(("p" "project" plain "** TODO %?"
-                   :if-new
-                   (file+head+olp "%<%Y%m%d%H%M%S>-${slug}.org"
-                     "#+title: ${title}\n#+category: ${title}\n#+filetags: Project"
-                     ("Tasks"))))))
+                     :if-new
+                     (file+head+olp "%<%Y%m%d%H%M%S>-${slug}.org"
+                       "#+title: ${title}\n#+category: ${title}\n#+filetags: Project"
+                       ("Tasks"))))))
 #+end_src
 
 **** Todo
@@ -3539,11 +3536,11 @@ The following snippet sets up a hook for all Org task state changes and then cop
   (defun mifi/org-roam-copy-todo-to-today ()
     (interactive)
     (let ((org-refile-keep t) ;; Set this to nil to delete the original!
-         (org-roam-dailies-capture-templates
-           '(("t" "tasks" entry "%?"
-               :if-new (file+head+olp "%<%Y-%m-%d>.org" "#+title: %<%Y-%m-%d>\n" ("Tasks")))))
-         (org-after-refile-insert-hook #'save-buffer)
-         today-file pos)
+           (org-roam-dailies-capture-templates
+             '(("t" "tasks" entry "%?"
+                 :if-new (file+head+olp "%<%Y-%m-%d>.org" "#+title: %<%Y-%m-%d>\n" ("Tasks")))))
+           (org-after-refile-insert-hook #'save-buffer)
+           today-file pos)
       (save-window-excursion
         (org-roam-dailies--capture (current-time) t)
         (setq today-file (buffer-file-name))
@@ -3551,7 +3548,7 @@ The following snippet sets up a hook for all Org task state changes and then cop
 
       ;; Only refile if the target file is different than the current file
       (unless (equal (file-truename today-file)
-              (file-truename (buffer-file-name)))
+                (file-truename (buffer-file-name)))
         (org-refile nil nil (list "Tasks" today-file nil pos)))))
 
 #+end_src
@@ -3559,14 +3556,14 @@ The following snippet sets up a hook for all Org task state changes and then cop
 **** Table-of-contents
 #+begin_src emacs-lisp :tangle no
   ;;; ##########################################################################
-  
+
   (use-package toc-org
     :after org markdown-mode
     :hook
     (org-mode . toc-org-mode)
     (markdown-mode-hook . toc-org-mode)
     :bind (:map markdown-mode-map
-          ("C-c C-o" . toc-org-markdown-follow-thing-at-point)))
+            ("C-c C-o" . toc-org-markdown-follow-thing-at-point)))
 
 #+end_src
 
@@ -3574,7 +3571,7 @@ The following snippet sets up a hook for all Org task state changes and then cop
 
 #+begin_src emacs-lisp :tangle no
   ;;; ##########################################################################
-  
+
   (use-package org-roam
     ;; :demand t  ;; Ensure org-roam is loaded by default
     :defer t
@@ -3588,17 +3585,17 @@ The following snippet sets up a hook for all Org task state changes and then cop
     (org-roam-directory (expand-file-name "org-roam-notes" user-emacs-directory))
     (org-roam-completion-everywhere t)
     :bind ( ("C-c n l" . org-roam-buffer-toggle)
-          ("C-c n f" . org-roam-node-find)
-          ("C-c n i" . org-roam-node-insert)
-          ("C-c n I" . mifi/org-roam-node-insert-immediate)
-          ("C-c n p" . mifi/org-roam-find-project)
-          ("C-c n t" . mifi/org-roam-capture-task)
-          ("C-c n b" . mifi/org-roam-capture-inbox)
-          :map org-mode-map
-          ("C-M-i" . completion-at-point)
-          :map org-roam-dailies-map
-          ("Y" . org-roam-dailies-capture-yesterday)
-          ("T" . org-roam-dailies-capture-tomorrow))
+            ("C-c n f" . org-roam-node-find)
+            ("C-c n i" . org-roam-node-insert)
+            ("C-c n I" . mifi/org-roam-node-insert-immediate)
+            ("C-c n p" . mifi/org-roam-find-project)
+            ("C-c n t" . mifi/org-roam-capture-task)
+            ("C-c n b" . mifi/org-roam-capture-inbox)
+            :map org-mode-map
+            ("C-M-i" . completion-at-point)
+            :map org-roam-dailies-map
+            ("Y" . org-roam-dailies-capture-yesterday)
+            ("T" . org-roam-dailies-capture-tomorrow))
     :bind-keymap
     ("C-c n d" . org-roam-dailies-map)
     :config
@@ -3607,7 +3604,7 @@ The following snippet sets up a hook for all Org task state changes and then cop
     (add-to-list 'org-after-todo-state-change-hook
       (lambda ()
         (when (equal org-state "DONE")
-        (mifi/org-roam-copy-todo-to-today))))
+          (mifi/org-roam-copy-todo-to-today))))
     (org-roam-db-autosync-mode))
 
 #+end_src
@@ -3628,7 +3625,6 @@ Org-transclusion lets you insert a copy of text content via a file link or ID li
     (define-key global-map (kbd "C-n t") #'org-transclusion-mode))
 
 #+end_src
-
 
 ** Denote
 
@@ -3691,7 +3687,7 @@ Denote’s file-naming scheme is not limited to “notes”. It can be used for 
 
 #+begin_src  emacs-lisp
   ;;; ##########################################################################
-  
+
   (use-package denote
     :custom
     (denote-directory (expand-file-name "notes" user-emacs-directory))
@@ -3825,7 +3821,7 @@ The following are configured for Python development and provide an <<<IDE>>> typ
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
-  
+
   (use-package eglot
     :when (equal custom-ide 'custom-ide-eglot)
     ;; :ensure (:repo "https://github.com/emacs-mirror/emacs" :local-repo "eglot" :branch "master"
@@ -3893,7 +3889,7 @@ Client for Language Server Protocol (v3.14). lsp-mode aims to provide IDE-like e
         ("<tab>" . company-indent-or-complete-common)))
     (mifi/define-rust-lsp-values)
     (lsp-enable-which-key-integration t))
-  
+
 #+end_src
 
 *** LSP UI
@@ -3924,7 +3920,7 @@ This package contains all the higher level UI modules of lsp-mode, like flycheck
     :bind (:map lsp-ui-mode-map
             ("C-c l d" . lsp-ui-doc-focus-frame))
     :hook (lsp-mode . lsp-ui-mode))
-  
+
 #+end_src
 
 *** LSP Treemacs integration
@@ -3972,7 +3968,7 @@ This function is called from the lsp-mode-hook when enering or leaving LSP mode.
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
-  
+
   (defun mifi/define-rust-lsp-values ()
     (setq-default lsp-rust-analyzer-cargo-watch-command "clippy")
     (setq-default lsp-eldoc-render-all t)
@@ -4014,8 +4010,8 @@ Advantages of lsp-bridge:
   (use-package lsp-bridge
     :when (equal custom-ide 'custom-ide-lsp-bridge)
     :ensure ( :host github :repo "manateelazycat/lsp-bridge"
-            :files (:defaults "*.el" "*.py" "acm" "core" "langserver"
-                     "multiserver" "resources") :build (:not compile))
+              :files (:defaults "*.el" "*.py" "acm" "core" "langserver"
+                       "multiserver" "resources") :build (:not compile))
     :custom
     (lsp-bridge-python-lsp-server "pylsp")
     :config
@@ -4026,7 +4022,7 @@ Advantages of lsp-bridge:
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
-  
+
   (use-package markdown-mode
     :when (equal custom-ide 'custom-ide-lsp-bridge))
 
@@ -4049,9 +4045,9 @@ Anaconda-mode provides Code navigation, documentation lookup and completion for 
   (use-package anaconda-mode
     :when (equal custom-ide 'custom-ide-anaconda)
     :bind (:map python-mode-map
-          ("C-c g o" . anaconda-mode-find-definitions-other-frame)
-          ("C-c g g" . anaconda-mode-find-definitions)
-          ("C-c C-x" . next-error))
+            ("C-c g o" . anaconda-mode-find-definitions-other-frame)
+            ("C-c g g" . anaconda-mode-find-definitions)
+            ("C-c C-x" . next-error))
     :config
     (which-key-add-key-based-replacements "C-c g o" "find-defitions-other-window")
     (which-key-add-key-based-replacements "C-c g g" "find-defitions")
@@ -4086,10 +4082,10 @@ C-c C-d displays documentation for the thing under cursor. The documentation wil
     (display-fill-column-indicator-mode 1)
     (highlight-indentation-mode nil)
     :bind (:map python-mode-map
-          ("C-c g a" . elpy-goto-assignment)
-          ("C-c g o" . elpy-goto-definition-other-window)
-          ("C-c g g" . elpy-goto-definition)
-          ("C-c g ?" . elpy-doc))
+            ("C-c g a" . elpy-goto-assignment)
+            ("C-c g o" . elpy-goto-definition-other-window)
+            ("C-c g g" . elpy-goto-definition)
+            ("C-c g ?" . elpy-doc))
     :config
     (use-package jedi)
     (use-package flycheck
@@ -4156,7 +4152,7 @@ Some functions that are used during the initialization of tree-sitter.
   (defun lsp-go-install-save-hooks ()
     (add-hook 'before-save-hook #'lsp-format-buffer t t)
     (add-hook 'before-save-hook #'lsp-organize-imports t t))
-  
+
 #+end_src
 
 **** The main Tree-sitter setup
@@ -4385,6 +4381,9 @@ autopep8 automatically formats Python code to conform to the `PEP 8` style guide
   (defalias 'quote-region
     (kmacro "C-w \" \" <left> C-y <right>"))
 
+  (defalias 'reformat-src-block
+    (kmacro "C-s b e g i n _ s r c SPC e m a c s - l i s p <return> <down> C-c ' C-x h C-c ] C-x h M-x u n t a b <return> C-c ' C-s e n d _ s r c <return> <down>"))
+
   (eval-after-load "python"
     #'(bind-keys :map python-mode-map
         ("C-c C-q" . quote-region)
@@ -4437,11 +4436,11 @@ This is a basic configuration for the TypeScript language so that =.ts= files ac
     (cond
       ((equal debug-adapter 'debug-adapter-dap-mode)
         (bind-keys :map typescript-mode-map
-        ("C-c ." . dap-hydra/body))
+          ("C-c ." . dap-hydra/body))
         (dap-node-setup))
       ((equal debug-adapter 'debug-adapter-dape)
         (bind-keys :map typescript-mode-map
-        ("C-c ." . dape-hydra/body)))))
+          ("C-c ." . dape-hydra/body)))))
 
 #+end_src
 
@@ -4480,8 +4479,8 @@ This is a basic configuration for the TypeScript language so that =.ts= files ac
   (use-package js2-mode
     :hook (js-mode . js2-minor-mode)
     :bind (:map js2-mode-map
-          ("{" . paredit-open-curly)
-          ("}" . paredit-close-curly-and-newline))
+            ("{" . paredit-open-curly)
+            ("}" . paredit-close-curly-and-newline))
     :mode ("\\.js\\'" "\\.mjs\\'" "\\.json$")
     :custom (js2-highlight-level 3))
 
@@ -4508,10 +4507,10 @@ This is a basic configuration for the TypeScript language so that =.ts= files ac
     (unless (file-exists-p "Makefile")
       (set (make-local-variable 'compile-command)
         (let ((file (file-name-nondirectory buffer-file-name)))
-        (format "%s -o %s %s"
-          (if  (equal (file-name-extension file) "cpp") "g++" "gcc" )
-          (file-name-sans-extension file)
-          file)))
+          (format "%s -o %s %s"
+            (if  (equal (file-name-extension file) "cpp") "g++" "gcc" )
+            (file-name-sans-extension file)
+            file)))
       (compile compile-command)))
 
   (global-set-key [f9] 'code-compile)
@@ -4648,12 +4647,12 @@ Much of this configuration was taken from the [[https://robert.kra.hn/posts/rust
     :defer t
     :after rust-mode
     :ensure (:fetcher github :repo "ayrat555/cargo-mode"
-            :files ("*.el" "*.el.in" "dir" "*.info" "*.texi"
-                     "*.texinfo" "doc/dir" "doc/*.info" "doc/*.texi"
-                     "doc/*.texinfo" "lisp/*.el"
-                     (:exclude ".dir-locals.el" "test.el" "tests.el"
-                       "*-test.el" "*-tests.el" "LICENSE" "README*"
-                       "*-pkg.el"))))
+              :files ("*.el" "*.el.in" "dir" "*.info" "*.texi"
+                       "*.texinfo" "doc/dir" "doc/*.info" "doc/*.texi"
+                       "doc/*.texinfo" "lisp/*.el"
+                       (:exclude ".dir-locals.el" "test.el" "tests.el"
+                         "*-test.el" "*-tests.el" "LICENSE" "README*"
+                         "*-pkg.el"))))
 
 #+end_src
 
@@ -4684,7 +4683,7 @@ Make sure that =gopls= and =dlv= are installed. gopls is the Go! (or golang)  la
     :custom
     (compile-command "go build -v && go test -v && go vet")
     :bind (:map go-mode-map
-          ("C-c C-c" . 'compile))
+            ("C-c C-c" . 'compile))
     :config
     (eglot-format-buffer-on-save)
     (define-key (current-local-map) "\C-c\C-c" 'compile)
@@ -4694,7 +4693,7 @@ Make sure that =gopls= and =dlv= are installed. gopls is the Go! (or golang)  la
         (add-hook 'go-mode-hook #'elot-format-buffer-on-save))
       ((equal custom-ide 'custom-ide-lsp)
         (add-hook 'go-mode-hook 'lsp-deferred))))
-  
+
 #+end_src
 
 *** go-eldoc config
@@ -4713,7 +4712,7 @@ for variable, functions and current argument position of function.
     (set-face-attribute 'eldoc-highlight-function-argument nil
       :underline t :foreground "green"
       :weight 'bold))
-  
+
 #+end_src
 
 *** go-guru config
@@ -4726,7 +4725,7 @@ Integration of the Go 'guru' analysis tool into Emacs.
   (use-package go-guru
     :after go-mode
     :hook (go-mode . go-guru-hl-identifier-mode))
-  
+
 #+end_src
 
 ** Other Languages
@@ -4851,7 +4850,7 @@ Please note that DAP is triggered after loading of various languages (for Emacs 
     (bind-keys :map prog-mode-map
       ("C-c ." . dape-hydra/body))
     (mifi/additional-dape-configs))
-  
+
 #+end_src
 
 **** DAPE for TypeScript
@@ -4897,16 +4896,16 @@ This is meant to be evaluated and run once. Calling this function will clone the
     (with-eval-after-load
       (add-to-list 'dape-configs
         `(delve
-         modes (go-mode go-ts-mode)
-         command "dlv"
-         command-args ("dap" "--listen" "127.0.0.1:55878")
-         command-cwd dape-cwd-fn
-         host "127.0.0.1"
-         port 55878
-         :type "debug"  ;; needed to set the adapterID correctly as a string type
-         :request "launch"
-         :cwd dape-cwd-fn
-         :program dape-cwd-fn))))
+           modes (go-mode go-ts-mode)
+           command "dlv"
+           command-args ("dap" "--listen" "127.0.0.1:55878")
+           command-cwd dape-cwd-fn
+           host "127.0.0.1"
+           port 55878
+           :type "debug"  ;; needed to set the adapterID correctly as a string type
+           :request "launch"
+           :cwd dape-cwd-fn
+           :program dape-cwd-fn))))
 
 #+end_src
 
@@ -4929,7 +4928,7 @@ Below are all the necessary functions and definitions for Hydra use under DAPE.
     (interactive)
     (dape-breakpoint-remove-all)
     (mifi/dape-end-debug-session))
-  
+
 #+end_src
 
 ***** DAPE Hydra Definition
@@ -4978,7 +4977,7 @@ Below are all the necessary functions and definitions for Hydra use under DAPE.
       ("x" nil "exit Hydra" :color yellow)
       ("q" mifi/dape-end-debug-session "quit" :color blue)
       ("Q" mifi/dape-delete-all-debug-sessions :color red)))
-  
+
 #+end_src
 
 *** Debug Adapter Protocol (<<<DAP>>>)
@@ -5025,7 +5024,7 @@ The Debug Adapter Protocol makes it possible to implement a generic debugger for
     :config
     (setq dap-python-executable "python3") ;; Otherwise it looks for 'python' else error.
     (setq dap-python-debugger 'debugpy))
-  
+
 #+end_src
 
 **** DAP Setup for Rust and Go :Rust:Go:
@@ -5065,8 +5064,8 @@ Something that is needed for Rust and Go debugging.
     :defer t
     :after dap-mode
     :ensure (:package "dap-cpptools" :source nil :protocol https :inherit t :depth 1 :type git :host github :repo "emacs-lsp/dap-mode"))
-    ;; :config
-    ;; (dap-cpptools-setup))
+  ;; :config
+  ;; (dap-cpptools-setup))
 
 #+end_src
 
@@ -5084,7 +5083,7 @@ Something that is needed for Rust and Go debugging.
     :when (equal debug-adapter 'debug-adapter-dap-mode)
     :disabled
     :hook ((typescript-mode . mifi/setup-dap-node)
-          (js2-mode . mifi/setup-dap-node))
+            (js2-mode . mifi/setup-dap-node))
     ;;:ensure (:host github :repo "emacs-lsp/dap-mode" :files (:defaults "icons" "dap-mode-pkg.el"))
     :after dap-mode
     :config
@@ -5131,7 +5130,7 @@ Something that is needed for Rust and Go debugging.
         :program nil
         :request "launch"
         :name "Python :: Run file (buffer)")))
-  
+
 #+end_src
 
 **** DAP Hydra
@@ -5223,8 +5222,6 @@ Below are all the necessary functions and definitions for Hydra use under DAP.
 
 #+end_src
 
-z
-
 
 * Miscellaneous
 
@@ -5278,11 +5275,11 @@ The following packages are some additional quality of life features.
     :config
     ;; window on the right side
     (add-to-list 'display-buffer-alist '(,mw-thesaurus-buffer-name
-                                        (display-buffer-reuse-window
-                                          display-buffer-in-direction)
-                                        (direction . right)
-                                        (window . root)
-                                        (window-width . 0.3))))
+                                          (display-buffer-reuse-window
+                                            display-buffer-in-direction)
+                                          (direction . right)
+                                          (window . root)
+                                          (window-width . 0.3))))
 
 #+end_src
 
@@ -5293,7 +5290,7 @@ The following packages are some additional quality of life features.
   (use-package solaire-mode
     :after treemacs
     :ensure (:package "solaire-mode" :source "MELPA"
-           :repo "hlissner/emacs-solaire-mode" :fetcher github)
+              :repo "hlissner/emacs-solaire-mode" :fetcher github)
     :hook (elpaca-after-init . solaire-global-mode)
     :config
     (push '(treemacs-window-background-face . solaire-default-face) solaire-mode-remap-alist)
@@ -5314,35 +5311,36 @@ The following packages are some additional quality of life features.
     (golden-ratio-wide-adjust-factor .4)
     (golden-ratio-max-width 100)
     (golden-ratio-exclude-modes '(
-                                 prog-mode
-                                 dashboard-mode
-                                 ;;inferior-emacs-lisp-mode
-                                 ;;inferior-python-mode
-                                 comint-mode
-                                 ;;lisp-interaction-mode
-                                 treemacs-mode
-                                 undo-tree-visualizer-mode
-                                 vundo-mode
-                                 ))
+                                   prog-mode
+                                   dashboard-mode
+                                   ;;inferior-emacs-lisp-mode
+                                   ;;inferior-python-mode
+                                   comint-mode
+                                   ;;lisp-interaction-mode
+                                   treemacs-mode
+                                   undo-tree-visualizer-mode
+                                   vundo-mode
+                                   ))
     (golden-ratio-exclude-buffer-regexp '("dap*"
-                                         "*dape*"
-                                         "*python*"))
+                                           "*dape*"
+                                           "*python*"))
     :config
     (golden-ratio-mode 1))
 
 #+end_src
+
 ** Swap Buffers
 
 This file is for lazy people wanting to swap buffers without typing C-x b on each window.
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
-  
+
   (use-package buffer-move
     :bind (("C-S-<up>"     . buf-move-up)
-          ("C-S-<down>"  . buf-move-down)
-          ("C-S-<left>"  . buf-move-left)
-          ("C-S-<right>" . buf-move-right)))
+            ("C-S-<down>"  . buf-move-down)
+            ("C-S-<left>"  . buf-move-left)
+            ("C-S-<right>" . buf-move-right)))
 
 #+end_src
 
@@ -5390,7 +5388,7 @@ Here are some helpful functions.
     (centaur-tabs-set-icons t)
     (centaur-tabs-set-modified-marker t)
     :bind (("C-c <" . centaur-tabs-backward)
-          ("C-c >" . centaur-tabs-forward))
+            ("C-c >" . centaur-tabs-forward))
     :config ;; Enable centaur-tabs
     (centaur-tabs-mode t))
 
@@ -5458,8 +5456,8 @@ Designate any buffer to “popup” status, and it will stay out of your way. Di
 
   (use-package popper
     :bind (("C-`"   . popper-toggle)
-          ("M-`"   . popper-cycle)
-          ("C-M-`" . popper-toggle-type))
+            ("M-`"   . popper-cycle)
+            ("C-M-`" . popper-toggle-type))
     :init
     (setq popper-reference-buffers
       '("\\*Messages\\*"
@@ -5504,13 +5502,13 @@ Instant Github-flavored Markdown/Org preview using Grip (GitHub Readme Instant P
   (use-package grip-mode
     :ensure t
     :bind (:map markdown-mode-command-map
-           ("g" . grip-mode)))
+            ("g" . grip-mode)))
 
   ;; Or using hooks
   (use-package grip-mode
     :ensure t
     :hook ((markdown-mode org-mode) . grip-mode))
-  
+
 #+end_src
 
 ** MiFi's Minor Mode (MmM)
@@ -5596,18 +5594,18 @@ shown. Plus, some keys are mode specific and will only appear when that major mo
     (when winframe
       (let ((map mmm-keys-minor-mode-map))
         (when enable-thesaurus
-        (bind-keys :map map
+          (bind-keys :map map
             ("M-RET m t" . mw-thesaurus-lookup-dwim)))
         (cond
-        ((equal major-mode 'org-mode)
+          ((equal major-mode 'org-mode)
             (bind-keys :map map
               ("M-RET M-RET" . org-insert-heading)
               ("M-RET o f" . mifi/set-org-fill-column-interactively)
               ("M-RET o l" . org-toggle-link-display)))
-        ((equal major-mode 'python-mode)
+          ((equal major-mode 'python-mode)
             (bind-keys :map map
               ("M-RET P" . 'pydoc-at-point)))
-        (t   ;; Default 
+          (t   ;; Default 
             (unbind-key "M-RET o f" map)
             (unbind-key "M-RET o l" map)
             (unbind-key "M-RET P ?" map)
@@ -5628,7 +5626,7 @@ What's also important with this function is that it calls the ~mifi/mmm-handle-c
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
-  
+
   (defun mifi/mmm-update-menu (&optional winframe)
     (interactive)
     (mifi/mmm-handle-context-keys nil)
@@ -5650,7 +5648,7 @@ These are the hools that update the context-aware menu triggered by various stat
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
-  
+
   ;; Check the keys when:
   ;; - the whick-key menu is displayed
   (add-hook 'which-key-inhibit-display-hook 'mifi/mmm-update-menu)
@@ -5675,15 +5673,15 @@ These are the hools that update the context-aware menu triggered by various stat
     (lambda ()
       (setq-default initial-scratch-message
         (format
-        ";; Hello, World and Happy hacking %s!\n%s\n\n" user-login-name
-        ";; Press M-RET (Meta-RET) to open Mitch's Context Aware Menu"))
+          ";; Hello, World and Happy hacking %s!\n%s\n\n" user-login-name
+          ";; Press M-RET (Meta-RET) to open Mitch's Context Aware Menu"))
       (when dashboard-landing-screen (dashboard-open))))
 
   (when dashboard-landing-screen
     ;; (add-hook 'inferior-emacs-lisp-mode 'dashboard-open) ;; IELM open?
     (add-hook 'elpaca-after-init-hook
-        (lambda ()
-          (add-hook 'lisp-interaction-mode-hook #'dashboard-open))))
+      (lambda ()
+        (add-hook 'lisp-interaction-mode-hook #'dashboard-open))))
 
 #+end_src
 
@@ -5699,9 +5697,9 @@ These are the hools that update the context-aware menu triggered by various stat
       (copy-file
         (expand-file-name "init.el" emacs-config-directory)
         (expand-file-name "init.el" backdir) t)))
-      ;; (copy-file
-      ;;   (expand-file-name "emacs-config.org" emacs-config-directory)
-      ;;   (expand-file-name "emacs-config.org" backdir) t)))
+  ;; (copy-file
+  ;;   (expand-file-name "emacs-config.org" emacs-config-directory)
+  ;;   (expand-file-name "emacs-config.org" backdir) t)))
 
   (add-hook 'kill-emacs-hook #'mifi/cleanup-when-exiting)
 
@@ -5732,7 +5730,7 @@ The following is a list of major mode-hooks variables that are set so that they 
                      treemacs-mode-hook
                      vterm-mode-hook))
       (add-hook mode (lambda () (display-line-numbers-mode 0)))))
-  
+
 #+end_src
 
 ** Supress common warnings
@@ -5746,7 +5744,7 @@ The following is a list of major mode-hooks variables that are set so that they 
                                   (package)
                                   (use-package)
                                   (python-mode)))
-  
+
 #+end_src
 
 ** Lispy Footer
