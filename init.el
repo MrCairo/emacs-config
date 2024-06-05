@@ -1487,18 +1487,27 @@ font size is computed + 20 of this value."
 (defun mifi/load-theme-from-selector (&optional step)
   "Load the theme in `theme-list' indexed by `theme-selector'."
   (interactive)
-  (setq theme-cycle-step nil)
-  (cond
-    ((or (eq step nil) (eq step 0)) (setq theme-cycle-step 0))
-    ((> step 0) (setq theme-cycle-step 1))
-    ((< step 0) (setq theme-cycle-step -1)))
-  (when loaded-theme
-    (disable-theme (intern loaded-theme)))
-  (setq loaded-theme (nth theme-selector theme-list))
-  (setq theme-did-load (load-theme (intern loaded-theme) t))
-  (when (featurep 'org)
-    (mifi/org-font-setup))
-  (set-face-foreground 'line-number "SkyBlue4"))
+  ;; Save value of spacious-padding-mode
+  (let ((spm? (featurep 'spacious-padding)))
+    (if spm?
+      (setq mifi/spm-on-off (default-value 'spacious-padding-mode))
+      (setq mifi/spm-on-off nil))
+    (setq theme-cycle-step nil)
+    (cond
+      ((or (eq step nil) (eq step 0)) (setq theme-cycle-step 0))
+      ((> step 0) (setq theme-cycle-step 1))
+      ((< step 0) (setq theme-cycle-step -1)))
+    (when loaded-theme
+      (when spm?
+	(spacious-padding-mode 0))
+      (disable-theme (intern loaded-theme)))
+    (setq loaded-theme (nth theme-selector theme-list))
+    (setq theme-did-load (load-theme (intern loaded-theme) t))
+    (when (featurep 'org)
+      (mifi/org-font-setup))
+    (when spm?
+      (spacious-padding-mode mifi/spm-on-off))
+    (set-face-foreground 'line-number "SkyBlue4")))
 
 ;;; ##########################################################################
 
@@ -2721,9 +2730,8 @@ font size is computed + 20 of this value."
 (defalias 'quote-region
   (kmacro "C-w \" \" <left> C-y <right>"))
 
-(defalias 're-format-src-block
+(defalias 'reformat-src-block
   (kmacro "C-s b e g i n _ s r c SPC e m a c s - l i s p <return> <down> C-c ' C-x h C-c ] C-x h M-x u n t a b <return> C-c ' C-s e n d _ s r c <return> <down>"))
-
 
 (eval-after-load "python"
   #'(bind-keys :map python-mode-map
