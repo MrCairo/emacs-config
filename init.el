@@ -289,7 +289,7 @@ If additional themes are added, they must be previously installed."
   :type 'string
   :group 'mifi-custom-fonts)
 
-(defcustom variable-pitch-font-family "Helvetica Neue"
+(defcustom variable-pitch-font-family "Helvetica"
   "The font family used as the default proportional font."
   :type 'string
   :group 'mifi-custom-fonts)
@@ -1481,6 +1481,16 @@ font size is computed + 20 of this value."
 
 ;;; ##########################################################################
 
+(defun mifi/reset-if-spacious-padding-mode ()
+  (interactive)
+  (when-let ((spm? (featurep 'spacious-padding))
+	      (spm-on-off (default-value 'spacious-padding-mode)))
+    (spacious-padding-mode 0)
+    (run-with-timer 0.2 nil
+      (lambda (on-off) (spacious-padding-mode on-off)) spm-on-off)))
+
+;;; ##########################################################################
+
 (defvar theme-did-load nil
   "Set to true if the last Theme was loaded.")
 
@@ -1488,26 +1498,19 @@ font size is computed + 20 of this value."
   "Load the theme in `theme-list' indexed by `theme-selector'."
   (interactive)
   ;; Save value of spacious-padding-mode
-  (let ((spm? (featurep 'spacious-padding)))
-    (if spm?
-      (setq mifi/spm-on-off (default-value 'spacious-padding-mode))
-      (setq mifi/spm-on-off nil))
-    (setq theme-cycle-step nil)
-    (cond
-      ((or (eq step nil) (eq step 0)) (setq theme-cycle-step 0))
-      ((> step 0) (setq theme-cycle-step 1))
-      ((< step 0) (setq theme-cycle-step -1)))
-    (when loaded-theme
-      (when spm?
-	(spacious-padding-mode 0))
-      (disable-theme (intern loaded-theme)))
-    (setq loaded-theme (nth theme-selector theme-list))
-    (setq theme-did-load (load-theme (intern loaded-theme) t))
-    (when (featurep 'org)
-      (mifi/org-font-setup))
-    (when spm?
-      (spacious-padding-mode mifi/spm-on-off))
-    (set-face-foreground 'line-number "SkyBlue4")))
+  (setq theme-cycle-step nil)
+  (cond
+    ((or (eq step nil) (eq step 0)) (setq theme-cycle-step 0))
+    ((> step 0) (setq theme-cycle-step 1))
+    ((< step 0) (setq theme-cycle-step -1)))
+  (when loaded-theme
+    (disable-theme (intern loaded-theme)))
+  (setq loaded-theme (nth theme-selector theme-list))
+  (setq theme-did-load (load-theme (intern loaded-theme) t))
+  (when (featurep 'org)
+    (mifi/org-font-setup))
+  (mifi/reset-if-spacious-padding-mode)
+  (set-face-foreground 'line-number "SkyBlue4"))
 
 ;;; ##########################################################################
 
@@ -1831,24 +1834,28 @@ font size is computed + 20 of this value."
 (defun use-small-display-font (&optional force-recenter)
   (interactive)
   (mifi/set-frame-font 0)
+  (mifi/reset-if-spacious-padding-mode)
   (mifi/should-recenter force-recenter))
 
 
 (defun use-medium-display-font (&optional force-recenter)
   (interactive)
   (mifi/set-frame-font 1)
+  (mifi/reset-if-spacious-padding-mode)
   (mifi/should-recenter force-recenter))
 
 
 (defun use-large-display-font (&optional force-recenter)
   (interactive)
   (mifi/set-frame-font 2)
+  (mifi/reset-if-spacious-padding-mode)
   (mifi/should-recenter force-recenter))
 
 
 (defun use-x-large-display-font (&optional force-recenter)
   (interactive)
   (mifi/set-frame-font 3)
+  (mifi/reset-if-spacious-padding-mode)
   (mifi/should-recenter force-recenter))
 
 ;;; ##########################################################################
@@ -2070,7 +2077,7 @@ font size is computed + 20 of this value."
   "Setup the org TODO keywords and colors."
   (setq org-todo-keywords
     '((type
-        "TODO(t)" "WAITING(w)" "IN-PROGRESS(i)"
+        "TODO(t)" "IN-PROGRESS(i)" "WAITING(w)" 
         "RESEARCH(r)" "SOMEDAY(-)" "READING(e)"
         "CONTACT(c)" "|" "DONE(d)" "CANCELLED(C@)")))
 
@@ -2147,6 +2154,18 @@ font size is computed + 20 of this value."
 
 ;;; ##########################################################################
 
+(use-package org-appear
+  :after org
+  :init
+  (setq org-hide-emphasis-markers t)
+  (setq org-appear-autoemphasis t) ;; Enable org-appear on emphasis
+  (setq org-appear-autolinks t) ;; Enable on links
+  (setq org-appear-autosubmarkers t) ;; Enable on sub and superscript
+  :commands (org-appear-mode)
+  :hook (org-mode . org-appear-mode))
+
+;;; ##########################################################################
+
 (with-eval-after-load 'org
   (org-babel-do-load-languages
     'org-babel-load-languages
@@ -2196,6 +2215,9 @@ font size is computed + 20 of this value."
     (face-spec-reset-face face)
     (set-face-foreground face (face-attribute 'default :background nil)))
   (set-face-background 'fringe (face-attribute 'default :background nil))
+  (set-face-attribute 'default nil :family "Menlo")
+  (set-face-attribute 'variable-pitch nil :family "Helvetica")
+  (set-face-attribute 'org-modern-symbol nil :family "DejaVu Sans Mono")
   (setq
     ;;   ;; Edit settings
     ;;   org-auto-align-tags nil
@@ -2203,22 +2225,24 @@ font size is computed + 20 of this value."
     org-catch-invisible-edits 'show-and-error
     org-special-ctrl-a/e t
     org-insert-heading-respect-content t
+    org-modern-star 'replace
 
     ;;   ;; Org styling, hide markup etc.
     org-hide-emphasis-markers nil
     org-pretty-entities t
     org-ellipsis "…"
 
-    ;;   ;; Agenda styling
-    ;;   org-agenda-tags-column 0
-    ;;   org-agenda-block-separator ?─
-    ;;   org-agenda-time-grid
-    ;;   '((daily today require-timed)
-    ;;      (800 1000 1200 1400 1600 1800 2000)
-    ;;      " ┄┄┄┄┄ " "┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄")
-    ;;   org-agenda-current-time-string
-    ;;   "◀── now ─────────────────────────────────────────────────"
+    ;; Agenda styling
+    org-agenda-tags-column 0
+    org-agenda-block-separator ?─
+    org-agenda-time-grid
+    '((daily today require-timed)
+       (800 1000 1200 1400 1600 1800 2000)
+       " ┄┄┄┄┄ " "┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄")
+    org-agenda-current-time-string
+    "◀── now ─────────────────────────────────────────────────"
     )
+  (mifi/reset-if-spacious-padding-mode)
   (global-org-modern-mode))
 
 ;;; ##########################################################################

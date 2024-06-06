@@ -132,6 +132,7 @@ The goal of this Emacs configuration is to make an Emacs configuration that has 
 #+end_src
 
 ** Garbage Collection
+
 #+begin_src emacs-lisp :tangle "early-init.el" 
 
   ;; (use-package gcmh
@@ -144,6 +145,7 @@ The goal of this Emacs configuration is to make an Emacs configuration that has 
 #+end_src
 
 ** Calculate startup time
+
 #+begin_src emacs-lisp :tangle "early-init.el" 
 
   (add-hook 'emacs-startup-hook
@@ -554,7 +556,7 @@ This is a curated selection of themes that I personally like. Most of them are d
     :type 'string
     :group 'mifi-custom-fonts)
 
-  (defcustom variable-pitch-font-family "Helvetica Neue"
+  (defcustom variable-pitch-font-family "Helvetica"
     "The font family used as the default proportional font."
     :type 'string
     :group 'mifi-custom-fonts)
@@ -2370,6 +2372,9 @@ Dired, by default, opens up multiple windows - one for each directory. It would 
 
 
 * Visuals
+
+These packages and functions are used to select from a list of curated themes and also to handle frame size changes.
+
 ** Theme List and Selection
 
 This bit of code contains a list of themes that I like personally and then allows them to be switched between themselves. The index of ~theme-selector~ is what is set in order to access a theme via the ~mifi/load-theme-from-selector()~ function.
@@ -2429,9 +2434,30 @@ This is the main function that allows cycling (up or down) through the list of t
 
 This function simply loads the theme from the theme-list indexed by the ~theme-selector~ variable. Note the advice for ~load-theme~ that deactivates the current theme before activating the new theme. This is done to reset all the colors, a clean slate, before the new theme is activated.
 
+**** Reset spacious-padding
+
+This function is used to reset spacious-padding-mode if it is loaded and active. Reset is performed by turning spacious-padding off and then restoring it to it's original state. The reason for this is that spacious-padding can sometimes get confused and have weird spacing when font-sizes changes - like after a theme switch or display-font change.
+
 #+begin_src emacs-lisp
   ;;; ##########################################################################
 
+  (defun mifi/reset-if-spacious-padding-mode ()
+    (interactive)
+    (when-let ((spm? (featurep 'spacious-padding))
+  	      (spm-on-off (default-value 'spacious-padding-mode)))
+      (spacious-padding-mode 0)
+      (run-with-timer 0.2 nil
+        (lambda (on-off) (spacious-padding-mode on-off)) spm-on-off)))
+  
+#+end_src
+
+**** Load Theme From Selector
+
+This function loads the theme from the =theme-list= indexed by =theme-selector=. Once the theme is loaded, the variable ~theme-did-load~ is set to t, or nil if the theme failed to load.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+  
   (defvar theme-did-load nil
     "Set to true if the last Theme was loaded.")
 
@@ -2439,27 +2465,19 @@ This function simply loads the theme from the theme-list indexed by the ~theme-s
     "Load the theme in `theme-list' indexed by `theme-selector'."
     (interactive)
     ;; Save value of spacious-padding-mode
-    (let ((spm? (featurep 'spacious-padding)))
-      (if spm?
-        (setq mifi/spm-on-off (default-value 'spacious-padding-mode))
-        (setq mifi/spm-on-off nil))
-      (setq theme-cycle-step nil)
-      (cond
-        ((or (eq step nil) (eq step 0)) (setq theme-cycle-step 0))
-        ((> step 0) (setq theme-cycle-step 1))
-        ((< step 0) (setq theme-cycle-step -1)))
-      (when loaded-theme
-        (when spm?
-  	(spacious-padding-mode 0))
-        (disable-theme (intern loaded-theme)))
-      (setq loaded-theme (nth theme-selector theme-list))
-      (setq theme-did-load (load-theme (intern loaded-theme) t))
-      (when (featurep 'org)
-        (mifi/org-font-setup))
-      (when spm?
-        (spacious-padding-mode mifi/spm-on-off))
-      (set-face-foreground 'line-number "SkyBlue4")))
-
+    (setq theme-cycle-step nil)
+    (cond
+      ((or (eq step nil) (eq step 0)) (setq theme-cycle-step 0))
+      ((> step 0) (setq theme-cycle-step 1))
+      ((< step 0) (setq theme-cycle-step -1)))
+    (when loaded-theme
+      (disable-theme (intern loaded-theme)))
+    (setq loaded-theme (nth theme-selector theme-list))
+    (setq theme-did-load (load-theme (intern loaded-theme) t))
+    (when (featurep 'org)
+      (mifi/org-font-setup))
+    (mifi/reset-if-spacious-padding-mode)
+    (set-face-foreground 'line-number "SkyBlue4"))
 #+end_src
 
 *** Theme selection helper functions.
@@ -2864,24 +2882,28 @@ These functions resize the font to some pre-defined values and will optiononally
   (defun use-small-display-font (&optional force-recenter)
     (interactive)
     (mifi/set-frame-font 0)
+    (mifi/reset-if-spacious-padding-mode)
     (mifi/should-recenter force-recenter))
 
 
   (defun use-medium-display-font (&optional force-recenter)
     (interactive)
     (mifi/set-frame-font 1)
+    (mifi/reset-if-spacious-padding-mode)
     (mifi/should-recenter force-recenter))
 
 
   (defun use-large-display-font (&optional force-recenter)
     (interactive)
     (mifi/set-frame-font 2)
+    (mifi/reset-if-spacious-padding-mode)
     (mifi/should-recenter force-recenter))
 
 
   (defun use-x-large-display-font (&optional force-recenter)
     (interactive)
     (mifi/set-frame-font 3)
+    (mifi/reset-if-spacious-padding-mode)
     (mifi/should-recenter force-recenter))
 
 #+end_src
@@ -3153,7 +3175,7 @@ This section contains the basic configuration for =org-mode= plus the configurat
     "Setup the org TODO keywords and colors."
     (setq org-todo-keywords
       '((type
-          "TODO(t)" "WAITING(w)" "IN-PROGRESS(i)"
+          "TODO(t)" "IN-PROGRESS(i)" "WAITING(w)" 
           "RESEARCH(r)" "SOMEDAY(-)" "READING(e)"
           "CONTACT(c)" "|" "DONE(d)" "CANCELLED(C@)")))
 
@@ -3242,44 +3264,25 @@ This section contains the basic configuration for =org-mode= plus the configurat
 #+end_src
 
 
-*** Better Bullets
-[[https://github.com/sabof/org-bullets][org-bullets]] replaces the heading stars in =org-mode= buffers with nicer looking characters that you can control.  Another option for this is [[https://github.com/integral-dw/org-superstar-mode][org-superstar-mode]].
+*** Org-appear
 
-#+begin_src emacs-lisp :tangle no
-    ;;; ##########################################################################
+Org-mode provides a way to toggle visibility of hidden elements such as emphasis markers, links, etc. by customising specific variables, e.g., org-hide-emphasis-markers. However, it is currently not possible to do this interactively and on an element-by-element basis. This package, inspired by org-fragtog, enables automatic visibility toggling depending on cursor position. Hidden element parts appear when the cursor enters an element and disappear when it leaves.
 
-  (use-package org-superstar
-    :after org
-    :custom
-    (org-superstar-leading-bullet " ")
-    (org-superstar-special-todo-items t)
-    (org-superstar-todo-bullet-alist '( ("TODO" . 9744)
-                                        ("INPROG-TODO" . 9744)
-                                        ("HW" . 9744)
-                                        ("STUDY" . 9744)
-                                        ("SOMEDAY" . 9744)
-                                        ("READ" . 9744)
-                                        ("PROJ" . 9744)
-                                        ("CONTACT" . 9744)
-                                        ("DONE" . 9745)))
-    ;; (org-superstar-headline-bullets-list '("✪" "✫" "✦" "✧" "✸" "✺"))
-    :hook (org-mode . org-superstar-mode))
-
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+  
   (use-package org-appear
+    :after org
     :init
     (setq org-hide-emphasis-markers t)
     (setq org-appear-autoemphasis t) ;; Enable org-appear on emphasis
     (setq org-appear-autolinks t) ;; Enable on links
     (setq org-appear-autosubmarkers t) ;; Enable on sub and superscript
     :commands (org-appear-mode)
-    :hook (or-mode . org-appear-mode))
-
-  ;; Automatically change bullet type when indenting
-  ;; Ex: indenting a + makes the bullet a *.
-  (setq org-list-demote-modify-bullet
-    '(("+" ・ "*"）（"*" ・ "-"）（"-" . "+")))
+    :hook (org-mode . org-appear-mode))
 
 #+end_src
+
 
 *** Export Code
 To execute or export code in =org-mode= code blocks, you'll need to set up =org-babel-load-languages= for each language you'd like to use.  [[https://orgmode.org/worg/org-contrib/babel/languages.html][Babel]] documents all of the languages that you can use with =org-babel=.
@@ -3365,6 +3368,9 @@ Note that org-modern is a full replacement for both org-superstar and org-bullet
       (face-spec-reset-face face)
       (set-face-foreground face (face-attribute 'default :background nil)))
     (set-face-background 'fringe (face-attribute 'default :background nil))
+    (set-face-attribute 'default nil :family "Menlo")
+    (set-face-attribute 'variable-pitch nil :family "Helvetica")
+    (set-face-attribute 'org-modern-symbol nil :family "DejaVu Sans Mono")
     (setq
       ;;   ;; Edit settings
       ;;   org-auto-align-tags nil
@@ -3372,22 +3378,24 @@ Note that org-modern is a full replacement for both org-superstar and org-bullet
       org-catch-invisible-edits 'show-and-error
       org-special-ctrl-a/e t
       org-insert-heading-respect-content t
+      org-modern-star 'replace
 
       ;;   ;; Org styling, hide markup etc.
       org-hide-emphasis-markers nil
       org-pretty-entities t
       org-ellipsis "…"
 
-      ;;   ;; Agenda styling
-      ;;   org-agenda-tags-column 0
-      ;;   org-agenda-block-separator ?─
-      ;;   org-agenda-time-grid
-      ;;   '((daily today require-timed)
-      ;;      (800 1000 1200 1400 1600 1800 2000)
-      ;;      " ┄┄┄┄┄ " "┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄")
-      ;;   org-agenda-current-time-string
-      ;;   "◀── now ─────────────────────────────────────────────────"
+      ;; Agenda styling
+      org-agenda-tags-column 0
+      org-agenda-block-separator ?─
+      org-agenda-time-grid
+      '((daily today require-timed)
+         (800 1000 1200 1400 1600 1800 2000)
+         " ┄┄┄┄┄ " "┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄")
+      org-agenda-current-time-string
+      "◀── now ─────────────────────────────────────────────────"
       )
+    (mifi/reset-if-spacious-padding-mode)
     (global-org-modern-mode))
 
 #+end_src
