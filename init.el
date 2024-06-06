@@ -752,15 +752,16 @@ font size is computed + 20 of this value."
 
 (use-package dashboard
   :custom
-  (dashboard-items '(   (recents . 15)
-                      (bookmarks . 10)
-                      (projects . 10)))
+  (dashboard-items '( (recents   . 12)
+                      (bookmarks . 5)
+                      (projects  . 5)
+                      (agenda    . 5)))
   (dashboard-center-content t)
   (dashboard-set-heading-icons t)
   (dashboard-set-file-icons t)
   (dashboard-footer-messages '("Greetings Program!"))
   (dashboard-banner-logo-title "Welcome to Emacs!")
-  (dashboard-startup-banner 'logo)
+  (dashboard-startup-banner (expand-file-name "Emacs-modern-is-sexy-v1.png" user-emacs-directory))
   :bind ("C-c d" . dashboard-open)
   :config
   ;; (setq initial-buffer-choice (lambda () (get-buffer-create dashboard-buffer-name)))
@@ -1993,6 +1994,9 @@ font size is computed + 20 of this value."
 ;;; ##########################################################################
 
 (defun mifi/org-setup-agenda ()
+  "Function to setup basic org-agenda settings."
+  (bind-key "C-c a" 'org-agenda org-mode-map)
+  
   (setq org-agenda-custom-commands
     '(("d" "Dashboard"
         ((agenda "" ((org-deadline-warning-days 7)))

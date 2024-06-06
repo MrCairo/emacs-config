@@ -1,3 +1,14 @@
+;;; early-init.el -*- flycheck-disabled-checkers: (emacs-lisp); lexical-binding: nil -*-
+;;;
+;;; Commentary:
+
+;; Settings/Packages that need to be used early in the initialization process
+;; of the Emacs startup. This file is executed before init.el.
+;;
+;; DO NOT MODIFY this file directly as changes will be overwritten.
+
+;;; Code:
+
 ;;; ##########################################################################
 
 ;; Adjust garbage collection threshold for early startup (see use of gcmh below)
