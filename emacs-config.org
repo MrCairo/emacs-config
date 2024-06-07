@@ -106,7 +106,7 @@ Standard fare and good practice.
 ** Package archives
 
 #+begin_src emacs-lisp :tangle "early-init.el" 
-  ;;; ##########################################################################
+    ;;; ##########################################################################
 
   ;; Adjust garbage collection threshold for early startup (see use of gcmh below)
   (setq gc-cons-threshold (* 100 1024 1024))
@@ -118,6 +118,13 @@ Standard fare and good practice.
 
   (setq package-vc-register-as-project nil) ; Emacs 30
   (add-hook 'package-menu-mode-hook #'hl-line-mode)
+
+  ;; This allows for a set of PROXY variables/settings to be loaded before
+  ;; we actually begin the load.
+  (let
+    ((file (expand-file-name "early-init-proxy.el" user-emacs-directory)))
+    (if (file-exists-p file)
+      (load "early-init-proxy")))
 
   (setq package-archives
     '(( "gnu-elpa" . "https://elpa.gnu.org/packages/")
@@ -134,8 +141,8 @@ Standard fare and good practice.
        ( "gnu-elpa" . 50 )
        ( "melpa-stable" . 40 )
        ( "melpa" . 30 )
-       ( "nongnu" . 10)
        ( "gnu-dev" . 20 )
+       ( "nongnu" . 10)
        ))
 
   (setq gnutls-algorithm-priority "NORMAL:-VERS-TLS1.3") ;; w/o this Emacs freezes when refreshing ELPA
@@ -307,7 +314,7 @@ Elpaca:
   (elpaca elpaca-use-package
     (elpaca-use-package-mode 1)
     (setq elpaca-use-package-by-default t))
-  ;; (use-package emacs :ensure nil :config (setq ring-bell-function #'ignore))
+  ;;    (use-package emacs :ensure nil :config (setq ring-bell-function #'ignore))
 
 #+end_src
 
@@ -1663,7 +1670,7 @@ Counsel takes this further, providing versions of common Emacs commands that are
   ;; Add extensions
   (use-package cape
     :when (equal completion-handler 'comphand-corfu)
-    :after corfu
+    :after curfu
     ;; Bind dedicated completion commands
     ;; Alternative prefix keys: C-c p, M-p, M-+, ...
     :bind ( ("C-c C-p p" . completion-at-point) ;; capf
@@ -1935,7 +1942,7 @@ Embark makes it easy to choose a command to run based on what is near point, bot
 
 We also use [[https://github.com/sebastiencs/company-box][company-box]] to further enhance the look of the completions with icons and better overall presentation.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   ;;; ##########################################################################
 
   ;; Don't use lsp-bridge with company as lsp-bridge already provides the same
@@ -1952,7 +1959,7 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
 #+end_src
 
 
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   ;;; ##########################################################################
 
   ;; Don't use lsp-bridge with company as lsp-bridge already provides the same
@@ -1993,7 +2000,7 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
 
   (use-package company-jedi
     :when  (equal custom-ide 'custom-ide-elpy)
-    :after python company
+    :after (:all python company)
     :config
     (jedi:setup)
     (defun my/company-jedi-python-mode-hook ()
@@ -2002,7 +2009,7 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
 
   (use-package company-anaconda
     :when (equal custom-ide 'custom-ide-anaconda)
-    :after anaconda company
+    :after (:all anaconda company)
     :hook (python-mode . anaconda-mode)
     :config
     (eval-after-load "company"
@@ -3247,7 +3254,6 @@ This section contains the basic configuration for =org-mode= plus the configurat
   ;;; ##########################################################################
 
   (use-package org
-    :pin gnu-elpa
     :preface
     (mifi/org-theme-override-values)
     :commands (org-capture org-agenda)

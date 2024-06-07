@@ -300,5 +300,6 @@
 
 ;; Local Variables:
 ;; no-byte-compile: t
+;; End:
 
 ;;; palenight-deeper-blue-theme.el ends here.

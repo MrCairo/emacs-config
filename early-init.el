@@ -22,6 +22,13 @@
 (setq package-vc-register-as-project nil) ; Emacs 30
 (add-hook 'package-menu-mode-hook #'hl-line-mode)
 
+;; This allows for a set of PROXY variables/settings to be loaded before
+;; we actually begin the load.
+(let
+  ((file (expand-file-name "early-init-proxy.el" user-emacs-directory)))
+  (if (file-exists-p file)
+    (load "early-init-proxy")))
+
 (setq package-archives
   '(( "gnu-elpa" . "https://elpa.gnu.org/packages/")
      ( "nongnu" . "https://elpa.nongnu.org/nongnu/")
@@ -37,8 +44,8 @@
      ( "gnu-elpa" . 50 )
      ( "melpa-stable" . 40 )
      ( "melpa" . 30 )
-     ( "nongnu" . 10)
      ( "gnu-dev" . 20 )
+     ( "nongnu" . 10)
      ))
 
 (setq gnutls-algorithm-priority "NORMAL:-VERS-TLS1.3") ;; w/o this Emacs freezes when refreshing ELPA

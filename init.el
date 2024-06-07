@@ -57,7 +57,7 @@
 (elpaca elpaca-use-package
   (elpaca-use-package-mode 1)
   (setq elpaca-use-package-by-default t))
-;; (use-package emacs :ensure nil :config (setq ring-bell-function #'ignore))
+;;    (use-package emacs :ensure nil :config (setq ring-bell-function #'ignore))
 
 ;;; ##########################################################################
 ;;; Define my customization groups
@@ -971,7 +971,7 @@ font size is computed + 20 of this value."
 ;; Add extensions
 (use-package cape
   :when (equal completion-handler 'comphand-corfu)
-  :after corfu
+  :after curfu
   ;; Bind dedicated completion commands
   ;; Alternative prefix keys: C-c p, M-p, M-+, ...
   :bind ( ("C-c C-p p" . completion-at-point) ;; capf
@@ -1188,11 +1188,24 @@ font size is computed + 20 of this value."
 
 (use-package company
   :unless (equal custom-ide 'custom-ide-lsp-bridge)
+  :bind (:map company-active-map
+          ("C-n". company-select-next)
+          ("C-p". company-select-previous)
+          ("M-<". company-select-first)
+          ("M->". company-select-last)
+          ("<tab>" . company-complete-selection))
   :custom
   (company-minimum-prefix-length 2)
-  (company-idle-delay 0.2)
+  (company-idle-delay 0.5)
   :config
   (global-company-mode +1))
+
+;; IMPORTANT:
+;; Don't use company at all if lsp-bridge is active.
+;; lsp-bridge already provides similar functionality.
+
+;; :config
+;; (add-to-list 'company-backends 'company-yasnippet))
 
 ;;; ##########################################################################
 
@@ -1203,7 +1216,7 @@ font size is computed + 20 of this value."
 
 (use-package company-jedi
   :when  (equal custom-ide 'custom-ide-elpy)
-  :after python company
+  :after (:all python company)
   :config
   (jedi:setup)
   (defun my/company-jedi-python-mode-hook ()
@@ -1212,7 +1225,7 @@ font size is computed + 20 of this value."
 
 (use-package company-anaconda
   :when (equal custom-ide 'custom-ide-anaconda)
-  :after anaconda company
+  :after (:all anaconda company)
   :hook (python-mode . anaconda-mode)
   :config
   (eval-after-load "company"
@@ -2114,7 +2127,6 @@ font size is computed + 20 of this value."
 ;;; ##########################################################################
 
 (use-package org
-  :pin gnu-elpa
   :preface
   (mifi/org-theme-override-values)
   :commands (org-capture org-agenda)
