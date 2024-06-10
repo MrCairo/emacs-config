@@ -460,6 +460,11 @@ font size is computed + 20 of this value."
                                    "Gemfile"
                                    "package.json"))
 
+;; Rebind C-z/C-. to act like vim's repeat previous command ( . )
+(unbind-key "C-z")
+(bind-key "C-." 'repeat)
+(bind-key "C-z" 'repeat-complex-command)
+
 ;;; ##########################################################################
 (setq savehist-file (expand-file-name "savehist" user-emacs-directory))
 (savehist-mode t)
@@ -482,8 +487,8 @@ font size is computed + 20 of this value."
 (column-number-mode 1)
 (tool-bar-mode -1)                   ;; Hide the toolbar
 (global-prettify-symbols-mode 1)     ;; Display pretty symbols (i.e. λ = lambda)
-;; (repeat-mode 1)
-(add-hook 'prog-mode-hook 'display-line-numbers-mode)
+(repeat-mode 0)                      ;; Also in MmM
+;; (add-hook 'prog-mode-hook 'display-line-numbers-mode)
 
 ;;; ##########################################################################
 
@@ -542,8 +547,8 @@ font size is computed + 20 of this value."
     (unless (server-running-p)
       (server-start))))
 
-;; (when (fboundp 'pixel-scroll-precision-mode)
-;;    (pixel-scroll-precision-mode))
+(when (fboundp 'pixel-scroll-precision-mode)
+  (pixel-scroll-precision-mode))
 
 ;;; ##########################################################################
 
@@ -551,27 +556,25 @@ font size is computed + 20 of this value."
   :ensure (:repo "abo-abo/hydra" :fetcher github
             :files (:defaults (:exclude "lv.el"))))
 
-;;; ##########################################################################
+(defun mifi/set-delight ()
+  (interactive)
+  (delight '( (abbrev-mode " Abv" abbrev)
+              (projectile-mode " >>")
+              (eldoc-mode nil "eldoc")
+              (rainbow-mode)
+              (overwrite-mode " Ov" t)
+              (python-mode " Py" :major)
+	      (mmm-keys-minor-mode " MmM")
+              (emacs-lisp-mode "Elisp" :major))))
 
-(defun mifi/set-diminish ()
-  (when (equal custom-project-handler 'custom-project-projectile)
-    (diminish 'projectile-mode "PrM"))
-  (diminish 'anaconda-mode)
-  (diminish 'tree-sitter-mode "ts")
-  (diminish 'lisp-interaction-mode "Lim")
-  (diminish 'counsel-mode)
-  (diminish 'lisp-interaction-mode "iLisp")
-  (diminish 'golden-ratio-mode)
-  (diminish 'mmm-keys-minor-mode "m3k")
-  (diminish 'company-box-mode)
-  (diminish 'company-mode))
-
-(use-package diminish
+(use-package delight
   :config
-  (if (not elpaca-after-init-time)
-    (add-hook 'elpaca-after-init-hook
-      (lambda () (run-with-timer 0.5 nil 'mifi/set-diminish)))
-    (run-with-timer 1.0 nil 'mifi/set-diminsh)))
+  :hook (elpaca-after-init . mifi/set-delight))
+  ;; (if (not elpaca-after-init-time)
+  ;;   (add-hook 'elpaca-after-init-hook
+  ;;     (lambda () (run-with-timer 1.0 nil 'mifi/set-delight)))
+  ;;   ;;else
+  ;;   (run-with-timer 2.0 nil 'mifi/set-delight)))
 
 (use-package dumb-jump
   :config
@@ -579,16 +582,23 @@ font size is computed + 20 of this value."
 
 ;;; ##########################################################################
 
+(defun mifi/after-which-key ()
+  (interactive)
+  (which-key-mode 1)
+  (mifi/define-mmm-minor-mode-map)
+  (mmm-keys-minor-mode 1)
+  (mifi/set-recenter-keys))
+
 (use-package which-key
-  :diminish which-key-mode
+  :delight which-key-mode
   :custom
   (which-key-idle-delay 1)
-  (which-key-prefix-prefix "◉ ")
+  (which-key-prefix-prefix "✪ ")
   (which-key-sort-order 'which-key-key-order-alpha)
   (which-key-min-display-lines 3)
   (which-key-max-display-columns nil)
   :config
-  (which-key-mode)
+  (which-key-mode 1)
   (which-key-setup-minibuffer))
 
 ;;; ##########################################################################
@@ -685,7 +695,7 @@ font size is computed + 20 of this value."
 
 (use-package eldoc-box
   :after eldoc
-  :diminish DocBox
+  :delight DocBox
   :config
   (global-eldoc-mode t))
 
@@ -836,7 +846,7 @@ font size is computed + 20 of this value."
       undo-limit 800000
       undo-strong-limit 12000000
       undo-outer-limit 120000000)
-    :diminish untree
+    :delight untree
     :config
     (global-undo-tree-mode)
     (advice-add 'undo-tree-visualize :around #'undo-tree-split-side-by-side)
@@ -1211,7 +1221,7 @@ font size is computed + 20 of this value."
 
 (use-package company-box
   :after company
-  :diminish cb
+  :delight cb
   :hook (company-mode . company-box-mode))
 
 (use-package company-jedi
@@ -1814,20 +1824,20 @@ font size is computed + 20 of this value."
   ("C-c 3". use-large-display-font)
   ("C-c 4". use-x-large-display-font))
 
-(let ((map global-map))
-  (define-key map (kbd "C-S-c 1")
-    (lambda () (interactive) (use-small-display-font t)))
-  (define-key map (kbd "C-S-c 2")
-    (lambda () (interactive) (use-medium-display-font t)))
-  (define-key map (kbd "C-S-c 3")
-    (lambda () (interactive) (use-large-display-font t)))
-  (define-key map (kbd "C-S-c 4")
-    (lambda () (interactive) (use-x-large-display-font t)))
-  (which-key-add-key-based-replacements "C-S-c 1" "recenter-with-small-font")
-  (which-key-add-key-based-replacements "C-S-c 2" "recenter-with-medium-font")
-  (which-key-add-key-based-replacements "C-S-c 3" "recenter-with-large-font")
-  (which-key-add-key-based-replacements "C-S-c 4" "recenter-with-x-large-font")
-  )
+(defun mifi/set-recenter-keys ()
+  (let ((map global-map))
+    (define-key map (kbd "C-S-c 1")
+      (lambda () (interactive) (use-small-display-font t)))
+    (define-key map (kbd "C-S-c 2")
+      (lambda () (interactive) (use-medium-display-font t)))
+    (define-key map (kbd "C-S-c 3")
+      (lambda () (interactive) (use-large-display-font t)))
+    (define-key map (kbd "C-S-c 4")
+      (lambda () (interactive) (use-x-large-display-font t)))
+    (which-key-add-key-based-replacements "C-S-c 1" "recenter-with-small-font")
+    (which-key-add-key-based-replacements "C-S-c 2" "recenter-with-medium-font")
+    (which-key-add-key-based-replacements "C-S-c 3" "recenter-with-large-font")
+    (which-key-add-key-based-replacements "C-S-c 4" "recenter-with-x-large-font")))
 
 ;;; ##########################################################################
 ;; Frame support functions
@@ -1987,6 +1997,7 @@ font size is computed + 20 of this value."
   (visual-fill-column-mode 1))
 
 (defun mifi/org-mode-setup ()
+  (interactive)
   (org-indent-mode)
   (variable-pitch-mode 1)
   (visual-line-mode 1)
@@ -2006,10 +2017,26 @@ font size is computed + 20 of this value."
 
 ;;; ##########################################################################
 
+(defun mifi/set-org-agenda-directory ()
+  "Sets the org-agenda directory based upon the customized variable and then
+sets the org-agenda-files list to all the files in that directory. The
+directory is relative to the working-files-directory
+(a.k.a user-emacs-directory)."
+  (interactive)
+  (let ((agenda-dir (format "%s/%s"
+	 	      working-files-directory
+		      org-agenda-dirname)))
+    (make-directory agenda-dir t)
+    (custom-set-variables
+      '(org-directory agenda-dir)
+      '(org-agenda-files (list org-directory)))))
+
+;;; ##########################################################################
+
 (defun mifi/org-setup-agenda ()
   "Function to setup basic org-agenda settings."
   (bind-key "C-c a" 'org-agenda org-mode-map)
-  
+  ;; (mifi/set-org-agenda-directory) ;; Where all the org-agenda files live    
   (setq org-agenda-custom-commands
     '(("d" "Dashboard"
         ((agenda "" ((org-deadline-warning-days 7)))
@@ -2350,7 +2377,7 @@ font size is computed + 20 of this value."
 
 (use-package projectile
   :when (equal custom-project-handler 'custom-project-projectile)
-  :diminish Proj
+  :delight Proj
   :config (projectile-mode)
   :bind-keymap
   ("C-c p" . projectile-command-map)
@@ -2408,8 +2435,7 @@ font size is computed + 20 of this value."
   ;; :ensure (:repo "https://github.com/emacs-mirror/emacs" :local-repo "eglot" :branch "master"
   ;;            :files ("lisp/progmodes/eglot.el" "doc/emacs/doclicense.texi" "doc/emacs/docstyle.texi"
   ;;                      "doc/misc/eglot.texi" "etc/EGLOT-NEWS" (:exclude ".git")))
-  :after eldoc track-changes company
-  :after (:any (:all company which-key eldoc) (:any jsonrpc python))
+  :after (:any (:all company which-key eldoc track-changes) (:any jsonrpc python))
   :init
   (setq company-backends
     (cons 'company-capf
@@ -2423,6 +2449,7 @@ font size is computed + 20 of this value."
   ;; (c++-mode . eglot-ensure)
   ;; (prog-mode . eglot-ensure)
   :config
+  (flymake-mode 0)
   (add-to-list 'major-mode-remap-alist '(python-mode . python-ts-mode))
   (which-key-add-key-based-replacements "C-c g r" "find-symbol-reference")
   (which-key-add-key-based-replacements "C-c g o" "find-defitions-other-window")
@@ -2548,6 +2575,7 @@ font size is computed + 20 of this value."
 ;;; ##########################################################################
 
 (use-package anaconda-mode
+  :after which-key
   :when (equal custom-ide 'custom-ide-anaconda)
   :bind (:map python-mode-map
           ("C-c g o" . anaconda-mode-find-definitions-other-frame)
@@ -2579,13 +2607,14 @@ font size is computed + 20 of this value."
           ("C-c g ?" . elpy-doc))
   :config
   (use-package jedi)
-  (use-package flycheck
-    :when (equal custom-ide 'custom-ide-elpy)
-    :after elpy
-    :defer t
-    :diminish FlM
-    ;;:ensure (:host github :repo "flycheck/flycheck")
-    :hook (elpy-mode . flycheck-mode))        (which-key-add-key-based-replacements "C-c g a" "goto-assignment")
+  ;; (use-package flycheck
+  ;;   :when (equal custom-ide 'custom-ide-elpy)
+  ;;   :after elpy
+  ;;   :defer t
+  ;;   :delight "fc"
+  ;;   ;;:ensure (:host github :repo "flycheck/flycheck")
+  ;;   :hook (elpy-mode . flycheck-mode))
+  (which-key-add-key-based-replacements "C-c g a" "goto-assignment")
   (which-key-add-key-based-replacements "C-c g o" "find-defitions-other-window")
   (which-key-add-key-based-replacements "C-c g g" "find-defitions")
   (which-key-add-key-based-replacements "C-c g ?" "eldoc-definition")
@@ -2597,8 +2626,8 @@ font size is computed + 20 of this value."
 ;;; ##########################################################################
 
 (use-package flycheck
-  :unless (equal custom-ide 'custom-ide-elpy)
-  :diminish FlM
+  ;;:unless (equal custom-ide 'custom-ide-elpy)
+  :delight fc
   :defer t
   ;;:ensure (:host github :repo "flycheck/flycheck")
   :config
@@ -2699,6 +2728,7 @@ font size is computed + 20 of this value."
 
 (defun mifi/load-python-file-hook ()
   (python-mode)
+  (flymake-mode 0)
   (when (equal custom-ide 'custom-ide-anaconda)
     (anaconda-mode 1))
   (message ">>> mifi/load-python-file-hook")
@@ -3003,6 +3033,23 @@ font size is computed + 20 of this value."
   :mode ("\\.lisp\\'" . slime-mode)
   :config
   (setq inferior-lisp-program "/opt/homebrew/bin/sbcl"))
+
+;;; ##########################################################################
+
+(use-package swift-mode
+  :defer t
+  :mode ("\\.swift\\'" . swift-mode))
+
+(use-package swift-helpful
+  :ensure (:files ("*.el" "swift-info/*.info"
+                    ("images" "swift-info/images/*.png") "swift-helpful-pkg.el")
+            :host github
+            :repo "danielmartin/swift-helpful"))
+
+(use-package swift-playground-mode :ensure t
+  :init
+  (autoload 'swift-playground-global-mode "swift-playground-mode" nil t)
+  (add-hook 'swift-mode-hook #'swift-playground-global-mode))
 
 ;;; ------------------------------------------------------------------------
 
@@ -3422,6 +3469,47 @@ font size is computed + 20 of this value."
 
 ;;; ##########################################################################
 
+(use-package popper
+  :bind (("C-`"   . popper-toggle)
+          ("M-`"   . popper-cycle)
+          ("C-M-`" . popper-toggle-type))
+  :init
+  (setq popper-reference-buffers
+    '("\\*Messages\\*"
+       "\\*scratch\\*"
+       "\\*ielm\\*"
+       "Output\\*$"
+       "\\*Async Shell Command\\*"
+       "^\\*eshell.*\\*$" eshell-mode ;eshell as a popup
+       "^\\*shell.*\\*$"  shell-mode  ;shell as a popup
+       "^\\*term.*\\*$"   term-mode   ;term as a popup
+       "^\\*vterm.*\\*$"  vterm-mode  ;vterm as a popup
+       help-mode
+       compilation-mode))
+  :config
+  (popper-mode +1)
+  (popper-echo-mode +1))
+
+;;; ##########################################################################
+
+(use-package markdown-mode
+  :ensure t
+  :mode ("README\\.md\\'" . gfm-mode)
+  :init (setq markdown-command "pandoc"))
+
+;;; ##########################################################################
+
+;; Use keybindings
+(use-package grip-mode
+  :bind (:map markdown-mode-command-map
+          ("g" . grip-mode)))
+
+;; ;; Or using hooks
+;; (use-package grip-mode
+;;   :hook ((markdown-mode org-mode) . grip-mode))
+
+;;; ##########################################################################
+
 (defun mifi/set-fill-column-interactively (num)
   "Asks for the fill column."
   (interactive "nfill-column: ")
@@ -3470,10 +3558,9 @@ font size is computed + 20 of this value."
   (define-minor-mode mmm-keys-minor-mode
     "A minor mode so that my key settings override annoying major modes."
     :init-value t
-    :lighter " mmm-keys"))
+    :lighter " MmM"))
 
 (mifi/define-mmm-minor-mode-map)
-(mmm-keys-minor-mode 1)
 
 ;;; ##########################################################################
 
@@ -3530,10 +3617,19 @@ font size is computed + 20 of this value."
 ;; - the user switches windows
 (add-hook 'window-selection-change-functions 'mifi/mmm-handle-context-keys)
 
+;; (add-hook 'which-key-mode-hook #'mifi/after-which-key)
+
+;; (add-hook 'elpaca-after-init-hook #'mifi/after-which-key)
+  ;; (lambda ()
+  ;;   (mifi/after-which-key)
+  ;;   (mifi/define-mmm-minor-mode-map)
+  ;;   (mifi/set-recenter-keys)))
+
 ;;; ##########################################################################
 
 (add-hook 'elpaca-after-init-hook
   (lambda ()
+    (mifi/set-recenter-keys)
     (switch-to-buffer "*scratch*") (end-of-buffer)))
 
 (add-hook 'lisp-interaction-mode-hook

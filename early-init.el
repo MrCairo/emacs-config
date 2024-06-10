@@ -57,7 +57,7 @@
   use-package-always-defer nil)
 
 ;; (use-package gcmh
-;;   :diminish gcmh-mode
+;;   :delight gcmh-mode
 ;;   :config
 ;;   (setq gcmh-idle-delay 5
 ;;     gcmh-high-cons-threshold (* 16 1024 1024))      ; 16mb
