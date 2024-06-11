@@ -568,6 +568,7 @@ font size is computed + 20 of this value."
               (emacs-lisp-mode "Elisp" :major))))
 
 (use-package delight
+  :ensure t
   :config
   :hook (elpaca-after-init . mifi/set-delight))
   ;; (if (not elpaca-after-init-time)
@@ -585,21 +586,27 @@ font size is computed + 20 of this value."
 (defun mifi/after-which-key ()
   (interactive)
   (which-key-mode 1)
+  (which-key-setup-minibuffer)
   (mifi/define-mmm-minor-mode-map)
   (mmm-keys-minor-mode 1)
+  (when (featurep 'prog-mode)
+    (which-key-add-key-based-replacements "C-c g r" "find-symbol-reference")
+    (which-key-add-key-based-replacements "C-c g o" "find-defitions-other-window")
+    (which-key-add-key-based-replacements "C-c g g" "find-defitions")
+    (which-key-add-key-based-replacements "C-c g ?" "eldoc-definition"))
   (mifi/set-recenter-keys))
 
 (use-package which-key
+  :init
+  (add-hook 'emacs-startup-hook #'mifi/after-which-key)
+  :commands which-key-mode
   :delight which-key-mode
   :custom
-  (which-key-idle-delay 1)
+  (which-key-idle-delay 1,0)
   (which-key-prefix-prefix "✪ ")
   (which-key-sort-order 'which-key-key-order-alpha)
   (which-key-min-display-lines 3)
-  (which-key-max-display-columns nil)
-  :config
-  (which-key-mode 1)
-  (which-key-setup-minibuffer))
+  (which-key-max-display-columns nil))
 
 ;;; ##########################################################################
 
@@ -676,16 +683,18 @@ font size is computed + 20 of this value."
 
 ;;; ##########################################################################
 
-;; prevent (emacs) eldoc loaded before Elpaca activation warning.
-;; (Warning only displayed during first Elpaca installation)
-
-(elpaca-process-queues)
-(use-package eldoc
-  :defer t
-  :config
+(defun mifi/setup-eldoc-hooks ()
+  (interactive)
   (add-hook 'emacs-lisp-mode-hook 'eldoc-mode)
   (add-hook 'lisp-interaction-mode-hook 'eldoc-mode)
-  (add-hook 'ielm-mode-hook 'eldoc-mode)
+  (add-hook 'ielm-mode-hook 'eldoc-mode))
+
+;;(elpaca-process-queues)
+(use-package eldoc
+  :init
+  (add-hook 'elpaca-after-init-hook #'mifi/setup-eldoc-hooks)
+  :defer t
+  :config
   ;; Eldoc will try to load/unload a theme which can cause issues with our
   ;; theme loading mechanism. Our theme could fail to load because of this.
   ;; So, to get our themes loading properly, load it here if not already
@@ -772,6 +781,7 @@ font size is computed + 20 of this value."
   (dashboard-footer-messages '("Greetings Program!"))
   (dashboard-banner-logo-title "Welcome to Emacs!")
   (dashboard-startup-banner (expand-file-name "Emacs-modern-is-sexy-v1.png" user-emacs-directory))
+  :commands dashboard-open
   :bind ("C-c d" . dashboard-open)
   :config
   ;; (setq initial-buffer-choice (lambda () (get-buffer-create dashboard-buffer-name)))
@@ -808,6 +818,7 @@ font size is computed + 20 of this value."
 (use-package vundo
   ;;:ensure ( :host github :repo "casouri/vundo")
   :when (equal undo-handler 'undo-handler-vundo)
+  :commands vundo
   :bind
   ("C-x u" . vundo)
   ("C-x r u" . vundo)
@@ -2329,12 +2340,13 @@ directory is relative to the working-files-directory
     (define-key map (kbd "C-c C-d C-k") #'denote-dired-rename-marked-files-with-keywords)
     (define-key map (kbd "C-c C-d C-R") #'denote-dired-rename-marked-files-using-front-matter))
 
-  (if (mifi/minor-mode-is-active 'which-key-mode)
+  (when (bound-and-true-p which-key-mode)
     (which-key-add-key-based-replacements "C-c n f" "denote-find")))
 
 ;;; ##########################################################################
 
 (use-package denote
+  :after which-key
   :custom
   (denote-directory (expand-file-name "notes" user-emacs-directory))
   (denote-save-buffers nil)
@@ -2432,14 +2444,12 @@ directory is relative to the working-files-directory
 
 (use-package eglot
   :when (equal custom-ide 'custom-ide-eglot)
+  :ensure nil
+  :defer t
   ;; :ensure (:repo "https://github.com/emacs-mirror/emacs" :local-repo "eglot" :branch "master"
   ;;            :files ("lisp/progmodes/eglot.el" "doc/emacs/doclicense.texi" "doc/emacs/docstyle.texi"
   ;;                      "doc/misc/eglot.texi" "etc/EGLOT-NEWS" (:exclude ".git")))
-  :after (:any (:all company which-key eldoc track-changes) (:any jsonrpc python))
-  :init
-  (setq company-backends
-    (cons 'company-capf
-      (remove 'company-capf company-backends)))
+  ;; :after (:any jsonrpc python-mode go-mode lisp-mode rustic-mode))
   :hook
   (lisp-mode . eglot-ensure)
   (python-mode . eglot-ensure)
@@ -2449,12 +2459,9 @@ directory is relative to the working-files-directory
   ;; (c++-mode . eglot-ensure)
   ;; (prog-mode . eglot-ensure)
   :config
+  (setq company-backends (cons 'company-capf (remove 'company-capf company-backends)))
   (flymake-mode 0)
   (add-to-list 'major-mode-remap-alist '(python-mode . python-ts-mode))
-  (which-key-add-key-based-replacements "C-c g r" "find-symbol-reference")
-  (which-key-add-key-based-replacements "C-c g o" "find-defitions-other-window")
-  (which-key-add-key-based-replacements "C-c g g" "find-defitions")
-  (which-key-add-key-based-replacements "C-c g ?" "eldoc-definition")
   ;; Eldoc/Eglot will try to load/unload a theme which can cause issues with our
   ;; theme loading mechanism. Our theme could fail to load because of this.  So,
   ;; to get our themes loading properly, load it here if not already loaded.
@@ -2575,21 +2582,18 @@ directory is relative to the working-files-directory
 ;;; ##########################################################################
 
 (use-package anaconda-mode
-  :after which-key
+  :after (:any which-key company)
   :when (equal custom-ide 'custom-ide-anaconda)
   :bind (:map python-mode-map
           ("C-c g o" . anaconda-mode-find-definitions-other-frame)
           ("C-c g g" . anaconda-mode-find-definitions)
           ("C-c C-x" . next-error))
   :config
-  (which-key-add-key-based-replacements "C-c g o" "find-defitions-other-window")
-  (which-key-add-key-based-replacements "C-c g g" "find-defitions")
-  (use-package pyvenv-auto)
-  :hook
-  (if (featurep 'company)
+  (when (featurep 'company)
     (bind-keys :map anaconda-mode-map
       ("<tab>" . company-indent-or-complete-common)))
-  (python-mode-hook . anaconda-eldoc-mode))
+  (use-package pyvenv-auto)
+  :hook (python-mode-hook . anaconda-eldoc-mode))
 
 ;;; ##########################################################################
 
@@ -3046,7 +3050,9 @@ directory is relative to the working-files-directory
             :host github
             :repo "danielmartin/swift-helpful"))
 
-(use-package swift-playground-mode :ensure t
+(use-package swift-playground-mode
+  :ensure ( :package "swift-playground-mode"
+	    :repo "https://gitlab.com/michael.sanders/swift-playground-mode.git")
   :init
   (autoload 'swift-playground-global-mode "swift-playground-mode" nil t)
   (add-hook 'swift-mode-hook #'swift-playground-global-mode))
@@ -3552,7 +3558,7 @@ directory is relative to the working-files-directory
       map)
     "mmm-keys-minor-mode keymap.")
 
-  (which-key-add-key-based-replacements "M-RET |" "display-fill-column")    
+  (which-key-add-key-based-replacements "M-RET |" "display-fill-column")
   (which-key-add-key-based-replacements "M-RET ?" "help-at-point")
 
   (define-minor-mode mmm-keys-minor-mode
@@ -3560,7 +3566,7 @@ directory is relative to the working-files-directory
     :init-value t
     :lighter " MmM"))
 
-(mifi/define-mmm-minor-mode-map)
+;; (mifi/define-mmm-minor-mode-map)
 
 ;;; ##########################################################################
 
