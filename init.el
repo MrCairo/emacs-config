@@ -780,7 +780,8 @@ font size is computed + 20 of this value."
   (dashboard-set-file-icons t)
   (dashboard-footer-messages '("Greetings Program!"))
   (dashboard-banner-logo-title "Welcome to Emacs!")
-  (dashboard-startup-banner (expand-file-name "Emacs-modern-is-sexy-v1.png" user-emacs-directory))
+  ;;(dashboard-startup-banner (expand-file-name "Emacs-modern-is-sexy-v1.png" user-emacs-directory))
+  (dashboar-startup-banner 'logo)
   :commands dashboard-open
   :bind ("C-c d" . dashboard-open)
   :config

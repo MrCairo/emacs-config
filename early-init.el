@@ -27,7 +27,7 @@
 (let
   ((file (expand-file-name "early-init-proxy.el" user-emacs-directory)))
   (if (file-exists-p file)
-    (load "early-init-proxy")))
+    (load file)))
 
 (setq package-archives
   '(( "gnu-elpa" . "https://elpa.gnu.org/packages/")

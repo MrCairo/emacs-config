@@ -124,7 +124,7 @@ Standard fare and good practice.
   (let
     ((file (expand-file-name "early-init-proxy.el" user-emacs-directory)))
     (if (file-exists-p file)
-      (load "early-init-proxy")))
+      (load file)))
 
   (setq package-archives
     '(( "gnu-elpa" . "https://elpa.gnu.org/packages/")
@@ -1325,7 +1325,8 @@ Window numbers for Emacs: Navigate your windows and frames using numbers. This i
     (dashboard-set-file-icons t)
     (dashboard-footer-messages '("Greetings Program!"))
     (dashboard-banner-logo-title "Welcome to Emacs!")
-    (dashboard-startup-banner (expand-file-name "Emacs-modern-is-sexy-v1.png" user-emacs-directory))
+    ;;(dashboard-startup-banner (expand-file-name "Emacs-modern-is-sexy-v1.png" user-emacs-directory))
+    (dashboar-startup-banner 'logo)
     :commands dashboard-open
     :bind ("C-c d" . dashboard-open)
     :config
