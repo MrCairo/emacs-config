@@ -5173,6 +5173,7 @@ This minor mode sets background color to strings that match color names, e.g. #0
   ;;; ##########################################################################
 
   (use-package rainbow-mode
+    :ensure nil
     :hook (prog-mode . (lambda () (rainbow-mode t))))
 
 #+end_src

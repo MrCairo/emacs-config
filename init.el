@@ -3467,6 +3467,7 @@ directory is relative to the working-files-directory
 ;;; ##########################################################################
 
 (use-package rainbow-mode
+  :ensure nil
   :hook (prog-mode . (lambda () (rainbow-mode t))))
 
 ;;; ##########################################################################
