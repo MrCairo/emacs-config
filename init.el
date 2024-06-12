@@ -279,7 +279,7 @@ If additional themes are added, they must be previously installed."
   :type 'natnum)
 
 ;;; Font related
-(defcustom default-font-family "Menlo"
+(defcustom default-font-family "Andale Mono"
   "The font family used as the default font."
   :type 'string
   :group 'mifi-custom-fonts)
@@ -564,7 +564,7 @@ font size is computed + 20 of this value."
               (rainbow-mode)
               (overwrite-mode " Ov" t)
               (python-mode " Py" :major)
-	      (mmm-keys-minor-mode " MmM")
+            (mmm-keys-minor-mode " MmM")
               (emacs-lisp-mode "Elisp" :major))))
 
 (use-package delight
@@ -648,7 +648,7 @@ font size is computed + 20 of this value."
 ;; Macintosh specific configurations.
 (when *is-a-mac*
   (setq mac-command-modifier       'meta
-    mac-option-modifier         nil
+    mac-option-modifier        'super
     mac-control-modifier       'control
     mac-right-command-modifier 'super
     mac-right-control-modifier 'hyper))
@@ -788,6 +788,7 @@ font size is computed + 20 of this value."
   ;; (setq initial-buffer-choice (lambda () (get-buffer-create dashboard-buffer-name)))
   (add-hook 'elpaca-after-init-hook #'dashboard-insert-startupify-lists)
   (add-hook 'elpaca-after-init-hook #'dashboard-initialize)
+  (setq dashboard-startup-banner 'logo)
   (dashboard-setup-startup-hook))
 
 ;;; ##########################################################################
@@ -1520,7 +1521,7 @@ font size is computed + 20 of this value."
 (defun mifi/reset-if-spacious-padding-mode ()
   (interactive)
   (when-let ((spm? (featurep 'spacious-padding))
-	      (spm-on-off (default-value 'spacious-padding-mode)))
+            (spm-on-off (default-value 'spacious-padding-mode)))
     (spacious-padding-mode 0)
     (run-with-timer 0.2 nil
       (lambda (on-off) (spacious-padding-mode on-off)) spm-on-off)))
@@ -2036,8 +2037,8 @@ directory is relative to the working-files-directory
 (a.k.a user-emacs-directory)."
   (interactive)
   (let ((agenda-dir (format "%s/%s"
-	 	      working-files-directory
-		      org-agenda-dirname)))
+                    working-files-directory
+                    org-agenda-dirname)))
     (make-directory agenda-dir t)
     (custom-set-variables
       '(org-directory agenda-dir)
@@ -2102,30 +2103,31 @@ directory is relative to the working-files-directory
 (defun mifi/org-setup-capture-templates ()
   (setq org-capture-templates
     `(("t" "Tasks / Projects")
-       ("tt" "Task" entry (file+olp "~/Projects/Code/emacs-from-scratch/OrgFiles/Tasks.org" "Inbox")
+       
+       ("tt" "Task" entry (file+olp (expand-file-name "OrgFiles/Tasks.org" user-emacs-directory) "Inbox")
          "* TODO %?\n  %U\n  %a\n        %i" :empty-lines 1)
 
        ("j" "Journal Entries")
        ("jj" "Journal" entry
-         (file+olp+datetree "~/Projects/Code/emacs-from-scratch/OrgFiles/Journal.org")
+         (file+olp+datetree (expand-file-name "OrgFiles/Journal.org" user-emacs-directory))
          "\n* %<%I:%M %p> - Journal :journal:\n\n%?\n\n"
          ;; ,(dw/read-file-as-string "~/Notes/Templates/Daily.org")
          :clock-in :clock-resume
          :empty-lines 1)
        ("jm" "Meeting" entry
-         (file+olp+datetree "~/Projects/Code/emacs-from-scratch/OrgFiles/Journal.org")
+         (file+olp+datetree (expand-file-name "OrgFiles/Journal.org" user-emacs-directory))
          "* %<%I:%M %p> - %a :meetings:\n\n%?\n\n"
          :clock-in :clock-resume
          :empty-lines 1)
 
        ("w" "Workflows")
        ("we" "Checking Email" entry (file+olp+datetree
-                                      "~/Projects/Code/emacs-from-scratch/OrgFiles/Journal.org")
+                                      (expand-file-name "OrgFiles/Joural.org" user-emacs-directory))
          "* Checking Email :email:\n\n%?" :clock-in :clock-resume :empty-lines 1)
 
        ("m" "Metrics Capture")
        ("mw" "Weight" table-line (file+headline
-                                   "~/Projects/Code/emacs-from-scratch/OrgFiles/Metrics.org"
+                                   (expand-file-name "OrgFiles/Metrics.org" user-emacs-directory)
                                    "Weight")
          "| %U | %^{Weight} | %^{Notes} |" :kill-buffer t))))
 
@@ -2168,6 +2170,7 @@ directory is relative to the working-files-directory
 (use-package org
   :preface
   (mifi/org-theme-override-values)
+  (add-to-list 'auto-mode-alist '("\\.org\\'" . org-mode))
   :commands (org-capture org-agenda)
   :defer t
   :hook (org-mode . mifi/org-mode-setup)
@@ -2180,7 +2183,6 @@ directory is relative to the working-files-directory
   (org-image-actual-width '(300))
   :bind (:map org-mode-map
           ("C-c e" . org-edit-src-code))
-  :mode ("\\.org\\'" . org-mode)
   :config
   (setq org-hide-emphasis-markers nil)
   ;; Save Org buffers after refiling!
@@ -2270,9 +2272,9 @@ directory is relative to the working-files-directory
     (face-spec-reset-face face)
     (set-face-foreground face (face-attribute 'default :background nil)))
   (set-face-background 'fringe (face-attribute 'default :background nil))
-  (set-face-attribute 'default nil :family "Menlo")
-  (set-face-attribute 'variable-pitch nil :family "Helvetica")
-  (set-face-attribute 'org-modern-symbol nil :family "DejaVu Sans Mono")
+  (set-face-attribute 'default nil :family "Monaco")
+  (set-face-attribute 'variable-pitch nil :family "Helvetica Neue")
+  (set-face-attribute 'org-modern-symbol nil :family "Monaco")
   (setq
     ;;   ;; Edit settings
     ;;   org-auto-align-tags nil
@@ -2443,14 +2445,13 @@ directory is relative to the working-files-directory
 
 ;;; ##########################################################################
 
+;; Consider doing an "M-x eglot-upgrade-eglot" to ensure that you have the most
+;; current eglot (yes, even though it's a built in package).
+
 (use-package eglot
   :when (equal custom-ide 'custom-ide-eglot)
   :ensure nil
   :defer t
-  ;; :ensure (:repo "https://github.com/emacs-mirror/emacs" :local-repo "eglot" :branch "master"
-  ;;            :files ("lisp/progmodes/eglot.el" "doc/emacs/doclicense.texi" "doc/emacs/docstyle.texi"
-  ;;                      "doc/misc/eglot.texi" "etc/EGLOT-NEWS" (:exclude ".git")))
-  ;; :after (:any jsonrpc python-mode go-mode lisp-mode rustic-mode))
   :hook
   (lisp-mode . eglot-ensure)
   (python-mode . eglot-ensure)
@@ -2703,30 +2704,41 @@ directory is relative to the working-files-directory
     ((equal custom-ide 'custom-ide-lsp)
       (bind-keys :map python-mode-map
         ("C-c g r" . lsp-find-references)
-        ("C-c g o" . xref-find-definitions-other-window)
         ("C-c g g" . xref-find-definitions)
+        ("C-c g G" . xref-find-definitions-other-window)
         ("C-c g ?" . eldoc-doc-buffer)))
     ((equal custom-ide 'custom-ide-eglot)
       (bind-keys :map python-mode-map
-        ("C-c g r" . eglot-find-implementation)
-        ("C-c g o" . xref-find-definitions-other-window)
+        ("C-c g i" . eglot-find-implementation)
+        ("C-c g r" . xref-find-references)
+        ("C-c g D" . xref-find-definitions-other-window)
         ("C-c g g" . xref-find-definitions)
+        ("C-c g n" . xref-find-references-and-replace)
         ("C-c g ?" . eldoc-doc-buffer)))
     ((equal custom-ide 'custom-ide-elpy)
       (elpy-enable)
       (bind-keys :map python-mode-map
         ("C-c g a" . elpy-goto-assignment)
-        ("C-c g o" . elpy-goto-definition-other-window)
+        ("C-c g A" . elpy-goto-definition-other-window)
         ("C-c g g" . elpy-goto-definition)
         ("C-c g ?" . elpy-doc)))
     ((equal custom-ide 'custom-ide-lsp-bridge)
       (bind-keys :map python-mode-map
         ("C-c g a" . lsp-bridge-find-reference)
-        ("C-c g o" . lsp-bridge-find-def-other-window)
+        ("C-c g A" . lsp-bridge-find-def-other-window)
         ("C-c g g" . lsp-bridge-find-def)
         ("C-c g i" . lsp-bridge-find-impl)
-        ("C-c g r" . lsp-bridge-rename)
+        ("C-c g n" . lsp-bridge-rename)
         ("C-c g ?" . lsp-bridge-popup-documentation)))
+    ((equal custom-ide 'custom-ide-anaconda)
+      (bind-keys :map python-mode-map
+        ("C-c g a" . anaconda-mode-find-assignments)
+        ("C-c g A" . anaconda-mode-find-assignments-other-window)
+        ("C-c g r" . anaconda-mode-find-references)
+        ("C-c g R" . anaconda-mode-find-references-other-window)
+        ("C-c g g" . anaconda-mode-find-definitions)
+        ("C-c g G" . anaconda-mode-find-definitions-other-window)
+        ("C-c g ?" . anaconda-mode-show-doc)))
     ))
 
 ;;; ##########################################################################
@@ -3053,7 +3065,7 @@ directory is relative to the working-files-directory
 
 (use-package swift-playground-mode
   :ensure ( :package "swift-playground-mode"
-	    :repo "https://gitlab.com/michael.sanders/swift-playground-mode.git")
+          :repo "https://gitlab.com/michael.sanders/swift-playground-mode.git")
   :init
   (autoload 'swift-playground-global-mode "swift-playground-mode" nil t)
   (add-hook 'swift-mode-hook #'swift-playground-global-mode))
