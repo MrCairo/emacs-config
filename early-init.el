@@ -9,6 +9,47 @@
 
 ;;; Code:
 
+;;; ##########################################################################
+
+;; Adjust garbage collection threshold for early startup (see use of gcmh below)
+(setq gc-cons-threshold (* 100 1024 1024))
+
+;; Process performance tuning
+
+(setq read-process-output-max (* 4 1024 1024))
+(setq process-adaptive-read-buffering nil)
+
+(setq package-vc-register-as-project nil) ; Emacs 30
+(add-hook 'package-menu-mode-hook #'hl-line-mode)
+
+;; This allows for a set of PROXY variables/settings to be loaded before
+;; we actually begin the load.
+(let
+  ((file (expand-file-name "early-init-proxy.el" user-emacs-directory)))
+  (if (file-exists-p file)
+    (load file)))
+
+(setq package-archives
+  '(( "gnu-elpa" . "https://elpa.gnu.org/packages/")
+     ( "nongnu" . "https://elpa.nongnu.org/nongnu/")
+     ( "gnu-dev" . "https://elpa.gnu.org/devel/")
+     ( "melpa" . "https://melpa.org/packages/")
+     ( "org" . "https://orgmode.org/elpa/")
+     ( "melpa-stable" . "https://stable.melpa.org/packages/")))
+
+;; Highest number gets priority (what is not mentioned has priority 0)
+(setq package-archive-priorities
+  '(
+     ( "org" . 99 )
+     ( "gnu-elpa" . 50 )
+     ( "melpa-stable" . 40 )
+     ( "melpa" . 30 )
+     ( "gnu-dev" . 20 )
+     ( "nongnu" . 10)
+     ))
+
+(setq gnutls-algorithm-priority "NORMAL:-VERS-TLS1.3") ;; w/o this Emacs freezes when refreshing ELPA
+
 (setq use-package-compute-statistics t
   use-package-verbose t
   use-package-always-ensure nil

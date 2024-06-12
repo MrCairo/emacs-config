@@ -67,19 +67,19 @@
   :group 'Local)
 
 (defgroup mifi-custom-toggles nil
-  "A set of toggles that enable or disable  specific packages."
+  "A set of toggles that enable or disable specific packages or behaviors."
   :group 'mifi-custom)
 
 (defgroup mifi-custom-features nil
-  "Customization from a selection of specific features and handlers."
+  "Customization from a selection of a curated list of features and handlers."
   :group 'mifi-custom)
 
 (defgroup mifi-custom-fonts nil
-  "Customization of fonts and sizes."
+  "Customization of fonts and font sizes."
   :group 'mifi-custom)
 
 (defgroup mifi-custom-theming nil
-  "Custom theming values."
+  "Custom theming list and list index values."
   :group 'mifi-custom)
 
 ;;; ##########################################################################
@@ -399,6 +399,12 @@ font size is computed + 20 of this value."
 ;;; directory.
 (make-directory working-files-directory t)
 
+;;; user-emacs-directory always ends in a "/" so we need to make the
+;;; working-files-directory act the same since it becomes the new
+;;; user-emacs-directory. So, add a "/" if there isn't one already.
+(unless (string-suffix-p "/" working-files-directory)
+  (setq working-files-directory (concat working-files-directory "/")))
+
 ;;; Point the user-emacs-directory to the new working directory
 (setq user-emacs-directory working-files-directory)
 
@@ -536,8 +542,8 @@ font size is computed + 20 of this value."
 
 (setq register-preview-delay 0) ;; Show registers ASAP
 (set-register ?O (cons 'file (concat emacs-config-directory "emacs-config.org")))
-
 (set-register ?G '(file . "~/Developer/game-dev/GB_asm"))
+(set-register ?S '(file . (concat emacs-config-directory "org-files/important-scripts.org")))
 
 ;;; ##########################################################################
 ;; Allow access from emacsclient
@@ -559,23 +565,26 @@ font size is computed + 20 of this value."
 (defun mifi/set-delight ()
   (interactive)
   (delight '( (abbrev-mode " Abv" abbrev)
-              (projectile-mode " >>")
-              (eldoc-mode nil "eldoc")
-              (rainbow-mode)
+	      (anaconda-mode)
+	      (buffer-face-mode "Buff")
+	      (company-box-mode)
+	      (company-mode)
+	      (counsel-mode)
+	      (golden-ratio-mode " 𝜑")
+	      (lisp-interaction-mode " iLisp")
+	      (mmm-keys-minor-mode " m3")
+	      (projectile-mode " ->")
+	      (tree-sitter-mode " ts")
+              (eldoc-mode nil " eldoc")
               (overwrite-mode " Ov" t)
               (python-mode " Py" :major)
-            (mmm-keys-minor-mode " MmM")
+              (rainbow-mode " 🌈")
               (emacs-lisp-mode "Elisp" :major))))
 
 (use-package delight
   :ensure t
   :config
   :hook (elpaca-after-init . mifi/set-delight))
-  ;; (if (not elpaca-after-init-time)
-  ;;   (add-hook 'elpaca-after-init-hook
-  ;;     (lambda () (run-with-timer 1.0 nil 'mifi/set-delight)))
-  ;;   ;;else
-  ;;   (run-with-timer 2.0 nil 'mifi/set-delight)))
 
 (use-package dumb-jump
   :config
@@ -639,47 +648,56 @@ font size is computed + 20 of this value."
 (use-package visual-fill-column :after org)
 
 ;;; ##########################################################################
+;;; Default keys are C-M-= or C-M--
 
 (use-package default-text-scale
   :hook (elpaca-after-init . default-text-scale-mode))
 
 ;;; ##########################################################################
 
-;; Macintosh specific configurations.
-(when *is-a-mac*
-  (setq mac-command-modifier       'meta
-    mac-option-modifier        'super
-    mac-control-modifier       'control
-    mac-right-command-modifier 'super
-    mac-right-control-modifier 'hyper))
+(defun mifi/set-mac-modifier-keys ()
+  (interactive)
+  ;; Macintosh specific configurations.
+  (when *is-a-mac*
+    (setq mac-command-modifier   'meta
+      mac-option-modifier        'super
+      mac-control-modifier       'control
+      mac-right-command-modifier 'super
+      mac-right-control-modifier 'hyper)))
+
+(add-hook 'elpaca-after-init-hook #'mifi/set-mac-modifier-keys)
 
 ;;; ##########################################################################
 
-(bind-key "C-c ]" 'indent-region prog-mode-map)
-(bind-key "C-c }" 'indent-region prog-mode-map)
-(bind-key "C-x C-j" 'dired-jump)
+(defun mifi/setup-global-keybindings ()
+  (interactive)
+  (bind-key "C-c ]" 'indent-region prog-mode-map)
+  (bind-key "C-c }" 'indent-region prog-mode-map)
+  (bind-key "C-x C-j" 'dired-jump)
 
-(use-package evil-nerd-commenter
-  :bind ("M-/" . evilnc-comment-or-uncomment-lines))
+  (use-package evil-nerd-commenter
+    :bind ("M-/" . evilnc-comment-or-uncomment-lines))
 
-;;
-;; A little better than just the typical "C-x o"
-;; windmove is a built-in Emacs package.
-;;
-(global-set-key (kbd "C-c <left>")  'windmove-left)
-(global-set-key (kbd "C-c <right>") 'windmove-right)
-(global-set-key (kbd "C-c <up>")    'windmove-up)
-(global-set-key (kbd "C-c <down>")  'windmove-down)
+  ;;
+  ;; A little better than just the typical "C-x o"
+  ;; windmove is a built-in Emacs package.
+  ;;
+  (global-set-key (kbd "C-c <left>")  'windmove-left)
+  (global-set-key (kbd "C-c <right>") 'windmove-right)
+  (global-set-key (kbd "C-c <up>")    'windmove-up)
+  (global-set-key (kbd "C-c <down>")  'windmove-down)
 
-;;
-;; Ctl-mouse to adjust/scale fonts will be disabled.
-;; I personally like this since it was all to easy to accidentally
-;; change the size of the font.
-;;
-(global-unset-key (kbd "C-<mouse-4>"))
-(global-unset-key (kbd "C-<mouse-5>"))
-(global-unset-key (kbd "C-<wheel-down>"))
-(global-unset-key (kbd "C-<wheel-up>"))
+  ;;
+  ;; Ctl-mouse to adjust/scale fonts will be disabled.
+  ;; I personally like this since it was all to easy to accidentally
+  ;; change the size of the font.
+  ;;
+  (global-unset-key (kbd "C-<mouse-4>"))
+  (global-unset-key (kbd "C-<mouse-5>"))
+  (global-unset-key (kbd "C-<wheel-down>"))
+  (global-unset-key (kbd "C-<wheel-up>")))
+
+(add-hook 'elpaca-after-init-hook #'mifi/setup-global-keybindings)
 
 ;;; ##########################################################################
 
@@ -780,15 +798,14 @@ font size is computed + 20 of this value."
   (dashboard-set-file-icons t)
   (dashboard-footer-messages '("Greetings Program!"))
   (dashboard-banner-logo-title "Welcome to Emacs!")
-  ;;(dashboard-startup-banner (expand-file-name "Emacs-modern-is-sexy-v1.png" user-emacs-directory))
-  (dashboar-startup-banner 'logo)
   :commands dashboard-open
   :bind ("C-c d" . dashboard-open)
   :config
   ;; (setq initial-buffer-choice (lambda () (get-buffer-create dashboard-buffer-name)))
   (add-hook 'elpaca-after-init-hook #'dashboard-insert-startupify-lists)
   (add-hook 'elpaca-after-init-hook #'dashboard-initialize)
-  (setq dashboard-startup-banner 'logo)
+  ;;-or- (expand-file-name "Emacs-modern-is-sexy-v1.png" user-emacs-directory)
+  (setq dashboard-startup-banner (expand-file-name "Emacs-modern-is-sexy-v1.png" user-emacs-directory))
   (dashboard-setup-startup-hook))
 
 ;;; ##########################################################################
@@ -1053,6 +1070,8 @@ font size is computed + 20 of this value."
   (vertico-multiform-mode 1)
   :config
   (vertico-mode)
+  (when (featurep 'prescient)
+    (vertico-prescient-mode 1))
   ;; :bind ("C-x C-f" . ido-find-file)
   ;; Clean up file path when typing
   :hook ((rfn-eshadow-update-overlay . vertico-directory-tidy)
@@ -1160,6 +1179,7 @@ font size is computed + 20 of this value."
 ;; This has to be evaluated at the end of the init since it's possible that the
 ;; completion-handler variable will not yet be defined at this point in the
 ;; init phase using elpaca.
+
 (add-hook 'elpaca-after-init-hook
   (lambda ()
     (when (equal completion-handler 'comphand-built-in)
@@ -1221,6 +1241,8 @@ font size is computed + 20 of this value."
   (company-minimum-prefix-length 2)
   (company-idle-delay 0.5)
   :config
+  (when (featurep 'prescient)
+    (company-prescient-mode 1))
   (global-company-mode +1))
 
 ;; IMPORTANT:
@@ -3578,7 +3600,7 @@ directory is relative to the working-files-directory
   (define-minor-mode mmm-keys-minor-mode
     "A minor mode so that my key settings override annoying major modes."
     :init-value t
-    :lighter " MmM"))
+    :lighter " m3"))
 
 ;; (mifi/define-mmm-minor-mode-map)
 

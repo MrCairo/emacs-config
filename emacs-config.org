@@ -56,8 +56,6 @@ The goal of this Emacs configuration is to make an Emacs configuration that has 
 :END:
 
 
-* README:
-
 --------------------------------------------------------------------------------
 
 - This configuration requires Emacs 29.1+. It has been tested with Emacs 29.1 - 29.3 and Emacs 30.0.50
@@ -83,7 +81,7 @@ The goal of this Emacs configuration is to make an Emacs configuration that has 
 
 This is where all of the settings/setup goes for the ~early-init.el~ file.
 
-*NOTE:* that each source header line has =:tangle "early-init.el"= . This is required for anything going to the early-init.el file. If it's not present, the code will be tangled to the default location of init.el.
+*NOTE:* that each source header line has =:tangle "early-init.el"= . This is required for anything going to the early-init.el file. If  it's not present, the code will be tangled to the default location of init.el.
 
 ** Lispy Header for early-init.el
 
@@ -103,7 +101,7 @@ Standard fare and good practice.
 
 #+end_src
 
-** COMMENT Package archives
+** Package archives
 
 #+begin_src emacs-lisp :tangle "early-init.el" 
   ;;; ##########################################################################
@@ -232,7 +230,7 @@ Standard fare and good practice.
 
 * Elpaca bootstrap
 
-This section just sets up the starting part of the ~init.el~ file. These includes Elpaca bootrapping and other types of global setup.
+Using the Elpaca package management system. While the typical ~use-package~ works fine, Elpaca makes it so packages are loaded asynchronously instead.
 
 ** Lispy Header
 This is the standard format of a =lisp= header that should appear for all =lisp= scripts. It also indicates that the ~init.el~ file is generated from this ~Configure.org~ file.
@@ -339,19 +337,19 @@ These are the groups used by this Emacs config for customization.
     :group 'Local)
 
   (defgroup mifi-custom-toggles nil
-    "A set of toggles that enable or disable  specific packages."
+    "A set of toggles that enable or disable specific packages or behaviors."
     :group 'mifi-custom)
 
   (defgroup mifi-custom-features nil
-    "Customization from a selection of specific features and handlers."
+    "Customization from a selection of a curated list of features and handlers."
     :group 'mifi-custom)
 
   (defgroup mifi-custom-fonts nil
-    "Customization of fonts and sizes."
+    "Customization of fonts and font sizes."
     :group 'mifi-custom)
 
   (defgroup mifi-custom-theming nil
-    "Custom theming values."
+    "Custom theming list and list index values."
     :group 'mifi-custom)
 
 #+end_src
@@ -723,6 +721,12 @@ By default, the =user-emacs-directory= points to the .emacs.d* directory from wh
   ;;; directory.
   (make-directory working-files-directory t)
 
+  ;;; user-emacs-directory always ends in a "/" so we need to make the
+  ;;; working-files-directory act the same since it becomes the new
+  ;;; user-emacs-directory. So, add a "/" if there isn't one already.
+  (unless (string-suffix-p "/" working-files-directory)
+    (setq working-files-directory (concat working-files-directory "/")))
+
   ;;; Point the user-emacs-directory to the new working directory
   (setq user-emacs-directory working-files-directory)
 
@@ -755,6 +759,8 @@ This directory is expected to be in the ~emacs-config-direcory~ dir. This can be
 
 *** Add site-lisp entries to load-path
 
+The =site-lisp= directory in the ~emacs-config-directory~ can hold local (site) specific packages that are not available through the standard package archives.
+
 #+begin_src emacs-lisp
   ;;; ##########################################################################
 
@@ -775,7 +781,7 @@ This directory is expected to be in the ~emacs-config-direcory~ dir. This can be
 
 ** Better Defaults
 
-These are global variables that effect the behavior of Emacs in general.
+These are global variables that effect the behavior of Emacs in general. These values represent a better set of defaults than the standard, vanilla values.
 
 #+begin_src emacs-lisp
 
@@ -814,7 +820,7 @@ These are global variables that effect the behavior of Emacs in general.
 
 ** Save History
 
-Keeps a persistent history file across Emacs restarts. It's also saved into the ~user-emacs-directory~ so it's not tied to a specific Emacs installation.
+Keeps a persistent history file across Emacs restarts. It's also saved into the ~user-emacs-directory~ so it's not tied to a specific Emacs installation directory.
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
@@ -914,8 +920,8 @@ These are just some common registers that I have just so I can bookmark files an
 
   (setq register-preview-delay 0) ;; Show registers ASAP
   (set-register ?O (cons 'file (concat emacs-config-directory "emacs-config.org")))
-
   (set-register ?G '(file . "~/Developer/game-dev/GB_asm"))
+  (set-register ?S '(file . (concat emacs-config-directory "org-files/important-scripts.org")))
 
 #+end_src
 
@@ -958,62 +964,41 @@ The Hydra is vanquished once Hercules, any binding that isn't the Hydra's head, 
 
 #+end_src
 
-** Diminish
-#+begin_src emacs-lisp :tangle no
-  ;;; ##########################################################################
-
-  (defun mifi/set-diminish ()
-    (when (equal custom-project-handler 'custom-project-projectile)
-      (diminish 'projectile-mode "PrM"))
-    (Diminish 'anaconda-mode)
-    (diminish 'tree-sitter-mode "ts")
-    (diminish 'lisp-interaction-mode "Lim")
-    (diminish 'counsel-mode)
-    (diminish 'lisp-interaction-mode "iLisp")
-    (diminish 'golden-ratio-mode)
-    (diminish 'mmm-keys-minor-mode "MmM")
-    (diminish 'projectile-mode "Pr")
-    (diminish 'company-box-mode)
-    (diminish 'company-mode))
-
-  (use-package diminish
-    :config
-    (if (not elpaca-after-init-time)
-      (add-hook 'elpaca-after-init-hook
-        (lambda () (run-with-timer 2.0 nil 'mifi/set-diminish)))
-      (run-with-timer 3.0 nil 'mifi/set-diminsh)))
-
-
-#+end_src
-
 ** Delight
+Delight enables you to customise the mode names displayed in the mode line. It's different from =diminish= in that this can be configured to work with both major and minor modes.
 
 #+begin_src emacs-lisp
 
   (defun mifi/set-delight ()
     (interactive)
     (delight '( (abbrev-mode " Abv" abbrev)
-                (projectile-mode " >>")
-                (eldoc-mode nil "eldoc")
-                (rainbow-mode)
+  	      (anaconda-mode)
+  	      (buffer-face-mode "Buff")
+  	      (company-box-mode)
+  	      (company-mode)
+  	      (counsel-mode)
+  	      (golden-ratio-mode " 𝜑")
+  	      (lisp-interaction-mode " iLisp")
+  	      (mmm-keys-minor-mode " m3")
+  	      (projectile-mode " ->")
+  	      (tree-sitter-mode " ts")
+                (eldoc-mode nil " eldoc")
                 (overwrite-mode " Ov" t)
                 (python-mode " Py" :major)
-              (mmm-keys-minor-mode " MmM")
+                (rainbow-mode " 🌈")
                 (emacs-lisp-mode "Elisp" :major))))
 
   (use-package delight
     :ensure t
     :config
     :hook (elpaca-after-init . mifi/set-delight))
-    ;; (if (not elpaca-after-init-time)
-    ;;   (add-hook 'elpaca-after-init-hook
-    ;;     (lambda () (run-with-timer 1.0 nil 'mifi/set-delight)))
-    ;;   ;;else
-    ;;   (run-with-timer 2.0 nil 'mifi/set-delight)))
 
 #+end_src
 
 ** Dumb Jump
+
+Dumb Jump is an Emacs "jump to definition" package with support for 50+ programming languages that favors "just working". This means minimal -- and ideally zero -- configuration with absolutely no stored indexes (TAGS) or persistent background processes.
+
 #+begin_src emacs-lisp
 
   (use-package dumb-jump
@@ -1106,9 +1091,15 @@ We use [[https://github.com/joostkremers/visual-fill-column][visual-fill-column]
 
 ** Default Text Scale
 
+This package provides commands for increasing or decreasing the default font size in all GUI Emacs frames -- it is like an Emacs-wide version of text-scale-mode.
+
++ It works by adjusting the height of the default face in the user theme, which is always combined with any other loaded themes.
++ It's handy for quickly adjusting the font size for readability or impromptu screen-sharing.
+
 #+begin_src emacs-lisp
   ;;; ##########################################################################
-
+  ;;; Default keys are C-M-= or C-M--
+  
   (use-package default-text-scale
     :hook (elpaca-after-init . default-text-scale-mode))
 
@@ -1116,49 +1107,60 @@ We use [[https://github.com/joostkremers/visual-fill-column][visual-fill-column]
 
 ** Mac Specific
 
+This function is called after Elpaca has initialized and, if this machine is a Macintosh, will setup the mack keyboard keys.
+
 #+begin_src emacs-lisp
   ;;; ##########################################################################
 
-  ;; Macintosh specific configurations.
-  (when *is-a-mac*
-    (setq mac-command-modifier       'meta
-      mac-option-modifier        'super
-      mac-control-modifier       'control
-      mac-right-command-modifier 'super
-      mac-right-control-modifier 'hyper))
+  (defun mifi/set-mac-modifier-keys ()
+    (interactive)
+    ;; Macintosh specific configurations.
+    (when *is-a-mac*
+      (setq mac-command-modifier   'meta
+        mac-option-modifier        'super
+        mac-control-modifier       'control
+        mac-right-command-modifier 'super
+        mac-right-control-modifier 'hyper)))
+
+  (add-hook 'elpaca-after-init-hook #'mifi/set-mac-modifier-keys)
 
 #+end_src
 
 ** Global key-binding
+These are key-bindings that are done at a global level.
+
 #+begin_src emacs-lisp
   ;;; ##########################################################################
 
-  (bind-key "C-c ]" 'indent-region prog-mode-map)
-  (bind-key "C-c }" 'indent-region prog-mode-map)
-  (bind-key "C-x C-j" 'dired-jump)
+  (defun mifi/setup-global-keybindings ()
+    (interactive)
+    (bind-key "C-c ]" 'indent-region prog-mode-map)
+    (bind-key "C-c }" 'indent-region prog-mode-map)
+    (bind-key "C-x C-j" 'dired-jump)
 
-  (use-package evil-nerd-commenter
-    :bind ("M-/" . evilnc-comment-or-uncomment-lines))
+    (use-package evil-nerd-commenter
+      :bind ("M-/" . evilnc-comment-or-uncomment-lines))
 
-  ;;
-  ;; A little better than just the typical "C-x o"
-  ;; windmove is a built-in Emacs package.
-  ;;
-  (global-set-key (kbd "C-c <left>")  'windmove-left)
-  (global-set-key (kbd "C-c <right>") 'windmove-right)
-  (global-set-key (kbd "C-c <up>")    'windmove-up)
-  (global-set-key (kbd "C-c <down>")  'windmove-down)
+    ;;
+    ;; A little better than just the typical "C-x o"
+    ;; windmove is a built-in Emacs package.
+    ;;
+    (global-set-key (kbd "C-c <left>")  'windmove-left)
+    (global-set-key (kbd "C-c <right>") 'windmove-right)
+    (global-set-key (kbd "C-c <up>")    'windmove-up)
+    (global-set-key (kbd "C-c <down>")  'windmove-down)
 
-  ;;
-  ;; Ctl-mouse to adjust/scale fonts will be disabled.
-  ;; I personally like this since it was all to easy to accidentally
-  ;; change the size of the font.
-  ;;
-  (global-unset-key (kbd "C-<mouse-4>"))
-  (global-unset-key (kbd "C-<mouse-5>"))
-  (global-unset-key (kbd "C-<wheel-down>"))
-  (global-unset-key (kbd "C-<wheel-up>"))
+    ;;
+    ;; Ctl-mouse to adjust/scale fonts will be disabled.
+    ;; I personally like this since it was all to easy to accidentally
+    ;; change the size of the font.
+    ;;
+    (global-unset-key (kbd "C-<mouse-4>"))
+    (global-unset-key (kbd "C-<mouse-5>"))
+    (global-unset-key (kbd "C-<wheel-down>"))
+    (global-unset-key (kbd "C-<wheel-up>")))
 
+  (add-hook 'elpaca-after-init-hook #'mifi/setup-global-keybindings)
 #+end_src
 
 ** Eldoc
@@ -1284,7 +1286,8 @@ aliasing of the icons.
 #+end_src
 
 ** Winum
-Window numbers for Emacs: Navigate your windows and frames using numbers. This is not only handy but used by Treemacs.
+Window numbers for Emacs: Navigate your windows and frames using numbers. This is not only handy but used by Treemacs to select the Treemacs panel with the keyboard.
+
 #+begin_src emacs-lisp
   ;;; ##########################################################################
   ;;; Window Number
@@ -1300,6 +1303,7 @@ Window numbers for Emacs: Navigate your windows and frames using numbers. This i
 
 ** Dashboard
 <<<Dashboard>>> is an extensible Emacs startup screen showing you what’s most important.
+
 *** Value of dashboard-startup-banner can be:
 **** =nil= to display no banner
 **** ='official= which displays the official emacs logo
@@ -1311,6 +1315,7 @@ Window numbers for Emacs: Navigate your windows and frames using numbers. This i
 **** a cons of '("path/to/your/image.png" . "path/to/your/text.txt")
 
 *** Dashboard Setup
+
 #+begin_src emacs-lisp
   ;;; ##########################################################################
 
@@ -1332,7 +1337,7 @@ Window numbers for Emacs: Navigate your windows and frames using numbers. This i
     (add-hook 'elpaca-after-init-hook #'dashboard-insert-startupify-lists)
     (add-hook 'elpaca-after-init-hook #'dashboard-initialize)
     ;;-or- (expand-file-name "Emacs-modern-is-sexy-v1.png" user-emacs-directory)
-    (setq dashboard-startup-banner 'logo)
+    (setq dashboard-startup-banner (expand-file-name "Emacs-modern-is-sexy-v1.png" user-emacs-directory))
     (dashboard-setup-startup-hook))
 
 #+end_src
@@ -1377,7 +1382,7 @@ The JSON-RPC protocol is used to communicate with many different types of server
 
 ** Local packages
 
-These are packages located in the ~"lisp"~ directory within the emacs-config-directory.
+These are packages located in the ~"lisp"~ directory within the emacs-config-directory. This is a dedicated area to use in order to load/configure these packages if so desired. Not required, just a convenience.
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
@@ -1724,6 +1729,8 @@ Counsel takes this further, providing versions of common Emacs commands that are
     (vertico-multiform-mode 1)
     :config
     (vertico-mode)
+    (when (featurep 'prescient)
+      (vertico-prescient-mode 1))
     ;; :bind ("C-x C-f" . ido-find-file)
     ;; Clean up file path when typing
     :hook ((rfn-eshadow-update-overlay . vertico-directory-tidy)
@@ -1858,6 +1865,7 @@ vertico-posframe is an vertico extension, which lets vertico use posframe to sho
 #+end_src
 
 *** Built-In (Ido)
+
 Enable the IDO handler everywhere.
 
 #+begin_src emacs-lisp
@@ -1866,6 +1874,7 @@ Enable the IDO handler everywhere.
   ;; This has to be evaluated at the end of the init since it's possible that the
   ;; completion-handler variable will not yet be defined at this point in the
   ;; init phase using elpaca.
+  
   (add-hook 'elpaca-after-init-hook
     (lambda ()
       (when (equal completion-handler 'comphand-built-in)
@@ -1943,6 +1952,8 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
     (company-minimum-prefix-length 2)
     (company-idle-delay 0.5)
     :config
+    (when (featurep 'prescient)
+      (company-prescient-mode 1))
     (global-company-mode +1))
 
   ;; IMPORTANT:
@@ -5327,7 +5338,7 @@ This is a set of keymaps that do the same things as the popup menu. Both are her
     (define-minor-mode mmm-keys-minor-mode
       "A minor mode so that my key settings override annoying major modes."
       :init-value t
-      :lighter " MmM"))
+      :lighter " m3"))
 
   ;; (mifi/define-mmm-minor-mode-map)
 
