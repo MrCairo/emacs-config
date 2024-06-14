@@ -50,8 +50,8 @@
 
 (setq gnutls-algorithm-priority "NORMAL:-VERS-TLS1.3") ;; w/o this Emacs freezes when refreshing ELPA
 
-(setq use-package-compute-statistics t
-  use-package-verbose t
+(setq use-package-compute-statistics nil
+  use-package-verbose nil
   use-package-always-ensure nil
   use-package-always-demand nil
   use-package-always-defer nil)
