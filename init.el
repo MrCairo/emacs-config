@@ -1017,7 +1017,7 @@ font size is computed + 20 of this value."
           ([backtab]    . corfu-previous)
           ("S-<return>" . corfu-insert)
           ("RET"        . nil))
-  :hook (elpaca-after-init . global-corfu-mode)
+  :hook (prog-mode . corfu-mode)
   :config
   (corfu-prescient-mode t)
   (corfu-history-mode t)
@@ -2322,9 +2322,6 @@ directory is relative to the working-files-directory
     (face-spec-reset-face face)
     (set-face-foreground face (face-attribute 'default :background nil)))
   (set-face-background 'fringe (face-attribute 'default :background nil))
-  (set-face-attribute 'default nil :family "Monaco")
-  (set-face-attribute 'variable-pitch nil :family "Helvetica Neue")
-  (set-face-attribute 'org-modern-symbol nil :family "Monaco")
   (setq
     ;;   ;; Edit settings
     ;;   org-auto-align-tags nil

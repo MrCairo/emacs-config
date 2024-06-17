@@ -6,7 +6,7 @@
 #+PROPERTY: header-args:emacs-lisp :tangle ./init.el :results silent :exports code :mkdirp yes
 #+modified-date: <2024-06-14 Fri>
 
-* Welcome!
+* Synopsis
 
 This ORG file will configure the  ~init.el~  file based upon all of the =emacs-lisp= source blocks. The =emacs-lisp= source blocks are defined in an organized order. While these blocks can generally be moved around, there are some order dependencies. So it's generally best that this order be preserved to prevent any compile-time issues.
 
@@ -70,6 +70,14 @@ The goal of this Emacs configuration is to make an Emacs configuration that has 
 - When starting this Configuration for the very first time, set the =use-package-always-ensure= variable to =t=. This will force all packages to be installed even if deferred. Make sure to set this value back to =nil= after everything is loaded otherwise Emacs startup time will be impacted. This can be found in the [[Bootstrap straight][Bootstrap straight]] section.
 
 - Take a look a the [[Custom enable flags][Custom Variables]] and [[Customization groups][Groups]] section to see what options exist. It's important to note that these variables need to be adhered to.  Another thing to note is that the various =enable*= flags are not used as =:if= option in =use-package= statement. Instead, a lisp conditional statement is used so that the package is actually never loaded or installed. This improves overall startup performance.
+
+- *Known Issues:*
+  1. When switching between Emacs versions, completely delete the =elpaca= directory.*
+     + This is necessary since some of the compiled files between versions don't always work and will cause issues when Emacs runs.
+       + /This is a TODO item for the future to be able to auto-delete and reload all of =elpaca= at startup./
+
+  2. Only after a complete re-install of =elpaca=, sometimes some packages don't completely install correctly. In this case, just do a
+     =restart-emacs= to get everything to load and initialize correctly.
 
 - *Shout out to the many people in the Emacs community from which a lot of this configuration took inspiration from.*
 
@@ -1664,7 +1672,7 @@ Swiper is an alternative to isearch that uses Ivy to show an overview of all mat
             ([backtab]    . corfu-previous)
             ("S-<return>" . corfu-insert)
             ("RET"        . nil))
-    :hook (elpaca-after-init . global-corfu-mode)
+    :hook (prog-mode . corfu-mode)
     :config
     (corfu-prescient-mode t)
     (corfu-history-mode t)
@@ -3444,9 +3452,6 @@ Note that org-modern is a full replacement for both org-superstar and org-bullet
       (face-spec-reset-face face)
       (set-face-foreground face (face-attribute 'default :background nil)))
     (set-face-background 'fringe (face-attribute 'default :background nil))
-    (set-face-attribute 'default nil :family "Monaco")
-    (set-face-attribute 'variable-pitch nil :family "Helvetica Neue")
-    (set-face-attribute 'org-modern-symbol nil :family "Monaco")
     (setq
       ;;   ;; Edit settings
       ;;   org-auto-align-tags nil
