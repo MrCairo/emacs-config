@@ -61,45 +61,45 @@
 ;;; ##########################################################################
 ;;; Define my customization groups
 
-(defgroup mifi-custom nil
+(defgroup mifi-config nil
   "M.R. Fisher's configuration section."
   :group 'Local)
 
-(defgroup mifi-custom-toggles nil
+(defgroup mifi-config-toggles nil
   "A set of toggles that enable or disable specific packages or behaviors."
-  :group 'mifi-custom)
+  :group 'mifi-config)
 
-(defgroup mifi-custom-features nil
+(defgroup mifi-config-features nil
   "Customization from a selection of a curated list of features and handlers."
-  :group 'mifi-custom)
+  :group 'mifi-config)
 
-(defgroup mifi-custom-fonts nil
+(defgroup mifi-config-fonts nil
   "Customization of fonts and font sizes."
-  :group 'mifi-custom)
+  :group 'mifi-config)
 
-(defgroup mifi-custom-theming nil
+(defgroup mifi-config-theming nil
   "Custom theming list and list index values."
-  :group 'mifi-custom)
+  :group 'mifi-config)
 
 ;;; ##########################################################################
 
 (defcustom custom-docs-dir "~/Documents/Emacs-Related"
   "A directory used to store documents and customized data."
   :type 'string
-  :group 'mifi-custom)
+  :group 'mifi-config)
 
 (defcustom working-files-directory
   (expand-file-name "emacs-working-files" custom-docs-dir)
   "The directory where to store Emacs working files."
   :type 'string
-  :group 'mifi-custom)
+  :group 'mifi-config)
 
 (defcustom custom-org-fill-column 120
   "The fill column width for Org mode text.
     Note that the text is also centered on the screen so that should
     be taken into consideration when providing a width."
   :type 'natnum
-  :group 'mifi-custom)
+  :group 'mifi-config)
 
 ;;; ##########################################################################
 ;;; Feature Toggles
@@ -108,50 +108,50 @@
   "If set to t, the z80-mode and other GameBoy related packages
     will be enabled."
   :type 'boolean
-  :group 'mifi-custom-toggles)
+  :group 'mifi-config-toggles)
 
 (defcustom enable-ts nil
   "Set to t to enable TypeScript handling."
   :type 'boolean
-  :group 'mifi-custom-toggles)
+  :group 'mifi-config-toggles)
 
 (defcustom enable-centaur-tabs nil
   "Set to t to enable `centaur-tabs' which uses tabs to represent open buffer."
   :type 'boolean
-  :group 'mifi-custom-toggles)
+  :group 'mifi-config-toggles)
 
 (defcustom enable-neotree nil
   "Set to t to enable the `neotree' package."
   :type 'boolean
-  :group 'mifi-custom-toggles)
+  :group 'mifi-config-toggles)
 
 (defcustom enable-golden-ratio nil
   "Set to t to enable `golden-ratio-mode' which resizes the active buffer
    window to the dimensions of a golden-rectangle"
   :type 'boolean
-  :group 'mifi-custom-toggles)
+  :group 'mifi-config-toggles)
 
 (defcustom enable-org-fill-column-centering nil
   "Set to t to center the visual-fill column of the Org display."
   :type 'boolean
-  :group 'mifi-custom-toggles)
+  :group 'mifi-config-toggles)
 
 (defcustom enable-embark nil
   "Set to t to enable the Embark package."
   :type 'boolean
-  :group 'mifi-custom-toggles)
+  :group 'mifi-config-toggles)
 
 (defcustom enable-thesaurus t
   "When set to t, enables the Merriam-Webster Thesaurus."
   :type 'boolean
-  :group 'mifi-custom-toggles)
+  :group 'mifi-config-toggles)
 
 ;; Keep as defvar until the frameset save/restore process works better.
 (defcustom enable-frameset-restore t
   "Set to t to enable restoring the last Emacs window size and position
    upon startup."
   :type 'boolean
-  :group 'mifi-custom-toggles)
+  :group 'mifi-config-toggles)
 
 ;;; ##########################################################################
 
@@ -179,7 +179,7 @@ interpreter.
            (const :tag "*scratch*" landing-mode-scratch)
            (const :tag "IELM" landing-mode-ielm)
 	   (const :tag "eshell" landing-mode-eshell))
-  :group 'mifi-custom-features)
+  :group 'mifi-config-features)
 
 (defcustom undo-handler 'undo-handler-vundo
   "Select the undo handler to use.
@@ -195,7 +195,7 @@ Finally, the standard undo handler can also be chosen."
            (const :tag "Vundo (default)" undo-handler-vundo)
            (const :tag "Undo-tree" undo-handler-undo-tree)
            (const :tag "Built-in" undo-handler-built-in))
-  :group 'mifi-custom-features)
+  :group 'mifi-config-features)
 
 (defcustom completion-handler 'comphand-vertico
   "Select the default minibuffer completion handler.
@@ -215,7 +215,7 @@ alternative to isearch that uses Ivy to show an overview of all matches."
            (const :tag "Vertico, Corfu, Cape, Consult completion system." comphand-vertico)
            (const :tag "Ivy, Counsel, Swiper completion systems" comphand-ivy-counsel)
            (const :tag "Built-in Ido" comphand-built-in))
-  :group 'mifi-custom-features)
+  :group 'mifi-config-features)
 
 (defcustom debug-adapter 'debug-adapter-dape
   "Select the debug adapter to use for debugging applications.  dap-mode is an
@@ -230,7 +230,7 @@ dap-mode."
   :type '(radio
            (const :tag "Debug Adapter Protocol (DAP)" debug-adapter-dap-mode)
            (const :tag "Debug Adapter Protocol for Emacs (DAPE)" debug-adapter-dape))
-  :group 'mifi-custom-features)
+  :group 'mifi-config-features)
 
 (defcustom custom-ide 'custom-ide-eglot
   "Select which IDE will be used for Python development.
@@ -254,13 +254,13 @@ configurable but has a host of great feaures that just work."
            (const :tag "Language Server Protocol (LSP)" custom-ide-lsp)
            (const :tag "LSP Bridge (standalone)" custom-ide-lsp-bridge)
            (const :tag "Python Anaconda-mode for Emacs" custom-ide-anaconda))
-  :group 'mifi-custom-features)
+  :group 'mifi-config-features)
 
 (defcustom custom-project-handler 'custom-project-project
   "Select which project handler to use."
   :type '(radio (const :tag "Projectile" custom-project-projectile)
            (const :tag "Built-in project" custom-project-project))
-  :group 'mifi-custom-features)
+  :group 'mifi-config-features)
 
 ;;; ##########################################################################
 ;;; Theming related
@@ -281,81 +281,81 @@ configurable but has a host of great feaures that just work."
 
   "My personal list of themes to cycle through indexed by `theme-selector'.
 If additional themes are added, they must be previously installed."
-  :group 'mifi-custom-theming
+  :group 'mifi-config-theming
   :type '(repeat string))
 
 (defcustom default-terminal-theme "sanityinc-tomorrow-bright"
   "The default theme used for a terminal invocation of Emacs."
-  :group 'mifi-custom-theming
+  :group 'mifi-config-theming
   :type 'string)
 
 (defcustom theme-selector 0
   "The index into the list of custom themes."
-  :group 'mifi-custom-theming
+  :group 'mifi-config-theming
   :type 'natnum)
 
 ;;; Font related
 (defcustom default-font-family "Andale Mono"
   "The font family used as the default font."
   :type 'string
-  :group 'mifi-custom-fonts)
+  :group 'mifi-config-fonts)
 
 (defcustom mono-spaced-font-family "Andale Mono"
   "The font family used as the mono-spaced font."
   :type 'string
-  :group 'mifi-custom-fonts)
+  :group 'mifi-config-fonts)
 
 (defcustom variable-pitch-font-family "Helvetica"
   "The font family used as the default proportional font."
   :type 'string
-  :group 'mifi-custom-fonts)
+  :group 'mifi-config-fonts)
 
 (defcustom small-mono-font-size 150
   "The small font size in pixels."
   :type 'natnum
-  :group 'mifi-custom-fonts)
+  :group 'mifi-config-fonts)
 
 (defcustom medium-mono-font-size 170
   "The medium font size in pixels."
   :type 'natnum
-  :group 'mifi-custom-fonts)
+  :group 'mifi-config-fonts)
 
 (defcustom large-mono-font-size 190
   "The large font size in pixels."
   :type 'natnum
-  :group 'mifi-custom-fonts)
+  :group 'mifi-config-fonts)
 
 (defcustom x-large-mono-font-size 220
   "The extra-large font size in pixels."
   :type 'natnum
-  :group 'mifi-custom-fonts)
+  :group 'mifi-config-fonts)
 
 (defcustom small-variable-font-size 170
   "The small font size in pixels."
   :type 'natnum
-  :group 'mifi-custom-fonts)
+  :group 'mifi-config-fonts)
 
 (defcustom medium-variable-font-size 190
   "The small font size in pixels."
   :type 'natnum
-  :group 'mifi-custom-fonts)
+  :group 'mifi-config-fonts)
 
 (defcustom large-variable-font-size 210
   "The small font size in pixels."
   :type 'natnum
-  :group 'mifi-custom-fonts)
+  :group 'mifi-config-fonts)
 
 (defcustom x-large-variable-font-size 240
   "The small font size in pixels."
   :type 'natnum
-  :group 'mifi-custom-fonts)
+  :group 'mifi-config-fonts)
 
 (defcustom custom-default-font-size 170
   "A place to store the most current (face-attribute 'default :height).  This
 is specifically for the mono-spaced and default font. The variable type-face
 font size is computed + 20 of this value."
   :type 'natnum
-  :group 'mifi-custom-fonts)
+  :group 'mifi-config-fonts)
 
 (defvar custom-default-mono-font-size 170
   "Storage for the current mono-spaced font height.")
@@ -638,7 +638,6 @@ font size is computed + 20 of this value."
 (defun mifi/after-which-key ()
   (interactive)
   (which-key-mode 1)
-  (which-key-setup-minibuffer)
   (mifi/define-mmm-minor-mode-map)
   (mmm-keys-minor-mode 1)
   (when (featurep 'prog-mode)
@@ -655,11 +654,12 @@ font size is computed + 20 of this value."
   :commands which-key-mode
   :delight which-key-mode
   :custom
+  (which-key-popup-type 'side-window)
+  (which-key-preserve-window-configuration t)
   (which-key-idle-delay 1,0)
   (which-key-prefix-prefix "✪ ")
-  (which-key-sort-order 'which-key-key-order-alpha)
-  (which-key-min-display-lines 3)
-  (which-key-max-display-columns nil))
+  ;; (which-key-sort-order 'which-key-key-order-alpha)
+  (which-key-min-display-lines 3))
 
 ;;; ##########################################################################
 
