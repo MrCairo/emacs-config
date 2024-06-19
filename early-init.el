@@ -13,6 +13,7 @@
 
 ;; Adjust garbage collection threshold for early startup (see use of gcmh below)
 (setq gc-cons-threshold (* 100 1024 1024))
+(setq package-enable-at-startup nil)
 
 ;; Process performance tuning
 

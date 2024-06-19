@@ -57,7 +57,6 @@
 (elpaca elpaca-use-package
   (elpaca-use-package-mode 1)
   (setq use-package-always-ensure t))
-;;    (use-package emacs :ensure nil :config (setq ring-bell-function #'ignore))
 
 ;;; ##########################################################################
 ;;; Define my customization groups
@@ -453,19 +452,20 @@ font size is computed + 20 of this value."
   dired-dwim-target t       ;; try to guess target directory
   use-short-answers t
   truncate-partial-width-windows 1 ;; truncate lines in partial-width windows
-  backup-inhibited t         ;; disable backup (No ~ tilde files)
+  backup-inhibited t        ;; disable backup (No ~ tilde files)
   auto-save-default nil     ;; disable auto save
   global-auto-revert-mode 1 ;; Refresh buffer if file has changed
-  global-auto-revert-non-file-buffers t
-  history-length 25          ;; Reasonable buffer length
+  global-eldoc-mode t       ;; Enabled in all buffers
+  history-length 25         ;; Reasonable buffer length
   inhibit-startup-message t ;; Hide the startup message
   inhibit-startup-screent t
   lisp-indent-offset '2     ;; emacs lisp tab size
-  visible-bell t             ;; Set up the visible bell
-  truncate-lines 1           ;; long lines of text do not wrap
+  visible-bell t            ;; Set up the visible bell
+  truncate-lines 1          ;; long lines of text do not wrap
   sentence-end-double-space nil
-  fill-column 79             ;; Default line limit for fills
+  fill-column 79            ;; Default line limit for fills
   ;; Triggers project for directories with any of the following files:
+  global-auto-revert-non-file-buffers t
   project-vc-extra-root-markers '(".dir-locals.el"
                                    "requirements.txt"
                                    "Gemfile"
@@ -559,10 +559,23 @@ font size is computed + 20 of this value."
   (pixel-scroll-precision-mode))
 
 ;;; ##########################################################################
+;; helpful package
 
-(use-package hydra
-  :ensure (:repo "abo-abo/hydra" :fetcher github
-            :files (:defaults (:exclude "lv.el"))))
+(use-package helpful
+  :ensure (:wait t) :demand t
+  :commands (helpful-callable helpful-variable helpful-command helpful-key)
+  :custom
+  (when (equal completion-handler 'comphand-ivy-counsel)
+    (counsel-describe-function-function #'helpful-callable)
+    (counsel-describe-variable-function #'helpful-variable))
+  :config
+  (when (equal completion-handler 'comphand-ivy-counsel)
+    (bind-keys
+      ([remap describe-function] . counsel-describe-function)
+      ([remap describe-variable] . counsel-describe-variable)))
+  (bind-keys
+    ([remap describe-command] . helpful-command)
+    ([remap describe-key] . helpful-key)))
 
 (defun mifi/set-delight ()
   (interactive)
@@ -577,7 +590,7 @@ font size is computed + 20 of this value."
 	      (mmm-keys-minor-mode " m3")
 	      (projectile-mode " ->")
 	      (tree-sitter-mode " ts")
-              (eldoc-mode nil " eldoc")
+              ;;(eldoc-mode nil " eldoc")
               (overwrite-mode " Ov" t)
               (python-mode " Py" :major)
               (rainbow-mode " 🌈")
@@ -593,6 +606,25 @@ font size is computed + 20 of this value."
   :after xref :ensure t
   :config
   (add-hook 'xref-backend-functions #'dumb-jump-xref-activate))
+
+;;; ##########################################################################
+
+(defun mifi/setup-hooks-for-eldoc ()
+  (interactive)
+  (add-hook 'emacs-lisp-mode-hook 'eldoc-mode)
+  (add-hook 'lisp-interaction-mode-hook 'eldoc-mode)
+  (add-hook 'ielm-mode-hook 'eldoc-mode)
+  ;; Eldoc will try to load/unload a theme which can cause issues with our
+  ;; theme loading mechanism. Our theme could fail to load because of this.
+  ;; So, to get our themes loading properly, load it here if not already
+  ;; loaded.
+  (unless theme-did-load
+    (mifi/load-theme-from-selector)))
+
+(use-package eldoc-box
+  :ensure t
+  :delight DocBox
+  :hook (elpaca-after-init . mifi/setup-hooks-for-eldoc))
 
 ;;; ##########################################################################
 
@@ -612,7 +644,7 @@ font size is computed + 20 of this value."
 (use-package which-key
   :init
   (add-hook 'emacs-startup-hook #'mifi/after-which-key)
-  :ensure t :demand t
+  :ensure (:wait t) :demand t
   :commands which-key-mode
   :delight which-key-mode
   :custom
@@ -621,6 +653,12 @@ font size is computed + 20 of this value."
   (which-key-sort-order 'which-key-key-order-alpha)
   (which-key-min-display-lines 3)
   (which-key-max-display-columns nil))
+
+;;; ##########################################################################
+
+(use-package hydra
+  :ensure (:repo "abo-abo/hydra" :fetcher github
+            :files (:defaults (:exclude "lv.el"))))
 
 ;;; ##########################################################################
 
@@ -713,32 +751,6 @@ font size is computed + 20 of this value."
 (add-hook 'elpaca-after-init-hook #'mifi/setup-global-keybindings)
 
 ;;; ##########################################################################
-
-(defun mifi/setup-eldoc-hooks ()
-  (interactive)
-  (add-hook 'emacs-lisp-mode-hook 'eldoc-mode)
-  (add-hook 'lisp-interaction-mode-hook 'eldoc-mode)
-  (add-hook 'ielm-mode-hook 'eldoc-mode)
-  ;; Eldoc will try to load/unload a theme which can cause issues with our
-  ;; theme loading mechanism. Our theme could fail to load because of this.
-  ;; So, to get our themes loading properly, load it here if not already
-  ;; loaded.
-  (unless theme-did-load
-    (mifi/load-theme-from-selector)))
-
-(use-package eldoc
-  :init
-  (add-hook 'elpaca-after-init-hook #'mifi/setup-eldoc-hooks)
-  :defer t)
-
-(use-package eldoc-box
-  :after eldoc
-  :ensure t
-  :delight DocBox
-  :config
-  (global-eldoc-mode t))
-
-;;; ##########################################################################
 ;;; Automatic Package Updates
 
 (use-package auto-package-update
@@ -827,17 +839,6 @@ font size is computed + 20 of this value."
   :config
   (dolist (hook '(text-mode-hook prog-mode-hook org-mode-hook))
     (add-hook hook #'jinx-mode)))
-
-;;; ------------------------------------------------------------------------
-(use-package jsonrpc
-  :ensure t
-  :config
-  ;; For some odd reason, it is possible that jsonrpc will try to load a
-  ;; theme. (jsonrpc/lisp/custom.el:1362). If our theme hasn't been loaded
-  ;; yet, go ahead and try. This could prevent a startup without the theme
-  ;; properly loaded.
-  (unless theme-did-load
-    (mifi/load-theme-from-selector)))
 
 ;;; ##########################################################################
 ;; These are packages located in the site-lisp or lisp directories in the
@@ -994,8 +995,62 @@ font size is computed + 20 of this value."
 
 ;;; ##########################################################################
 
+;; Don't use lsp-bridge with company as lsp-bridge already provides the same
+;; features. They actually collide.
+
+(use-package company
+  :unless (equal custom-ide 'custom-ide-lsp-bridge)
+  :ensure (:wait t)
+  :bind (:map company-active-map
+          ("C-n". company-select-next)
+          ("C-p". company-select-previous)
+          ("M-<". company-select-first)
+          ("M->". company-select-last)
+          ("<tab>" . company-complete-selection))
+  :custom
+  (company-minimum-prefix-length 2)
+  (company-idle-delay 0.5)
+  :config
+  (when (featurep 'prescient)
+    (company-prescient-mode 1))
+  (global-company-mode +1))
+
+;; IMPORTANT:
+;; Don't use company at all if lsp-bridge is active.
+;; lsp-bridge already provides similar functionality.
+
+;; :config
+;; (add-to-list 'company-backends 'company-yasnippet))
+
+;;; ##########################################################################
+
+(use-package company-box
+  :after company
+  :delight cb
+  :hook (company-mode . company-box-mode))
+
+(use-package company-jedi
+  :when  (equal custom-ide 'custom-ide-elpy)
+  :after (:all python company)
+  :config
+  (jedi:setup)
+  (defun my/company-jedi-python-mode-hook ()
+    (add-to-list 'company-backends 'company-jedi))
+  (add-hook 'python-mode-hook 'my/company-jedi-python-mode-hook))
+
+(use-package company-anaconda
+  :when (equal custom-ide 'custom-ide-anaconda)
+  :after (:all anaconda company)
+  :hook (python-mode . anaconda-mode)
+  :config
+  (eval-after-load "company"
+    '(add-to-list 'company-backends 'company-anaconda)))
+
+;;; ##########################################################################
+
 ;;;; Code Completion
 (use-package corfu
+  :disabled
   :when (equal completion-handler 'comphand-vertico)
   :after vertico
   ;; Optional customizations
@@ -1248,59 +1303,6 @@ font size is computed + 20 of this value."
   ;;:ensure t ; only need to install it, embark loads it after consult if found
   :hook
   (embark-collect-mode . consult-preview-at-point-mode))
-
-;;; ##########################################################################
-
-;; Don't use lsp-bridge with company as lsp-bridge already provides the same
-;; features. They actually collide.
-
-(use-package company
-  :unless (equal custom-ide 'custom-ide-lsp-bridge)
-  :ensure t
-  :bind (:map company-active-map
-          ("C-n". company-select-next)
-          ("C-p". company-select-previous)
-          ("M-<". company-select-first)
-          ("M->". company-select-last)
-          ("<tab>" . company-complete-selection))
-  :custom
-  (company-minimum-prefix-length 2)
-  (company-idle-delay 0.5)
-  :config
-  (when (featurep 'prescient)
-    (company-prescient-mode 1))
-  (global-company-mode +1))
-
-;; IMPORTANT:
-;; Don't use company at all if lsp-bridge is active.
-;; lsp-bridge already provides similar functionality.
-
-;; :config
-;; (add-to-list 'company-backends 'company-yasnippet))
-
-;;; ##########################################################################
-
-(use-package company-box
-  :after company
-  :delight cb
-  :hook (company-mode . company-box-mode))
-
-(use-package company-jedi
-  :when  (equal custom-ide 'custom-ide-elpy)
-  :after (:all python company)
-  :config
-  (jedi:setup)
-  (defun my/company-jedi-python-mode-hook ()
-    (add-to-list 'company-backends 'company-jedi))
-  (add-hook 'python-mode-hook 'my/company-jedi-python-mode-hook))
-
-(use-package company-anaconda
-  :when (equal custom-ide 'custom-ide-anaconda)
-  :after (:all anaconda company)
-  :hook (python-mode . anaconda-mode)
-  :config
-  (eval-after-load "company"
-    '(add-to-list 'company-backends 'company-anaconda)))
 
 ;;; ##########################################################################
 
@@ -1672,6 +1674,7 @@ font size is computed + 20 of this value."
 ;;; ##########################################################################
 
 (add-to-list 'custom-theme-load-path (expand-file-name "Themes" custom-docs-dir))
+(add-to-list 'custom-theme-load-path (expand-file-name "lisp" emacs-config-directory))
 
 (mifi/org-theme-override-values)
 (use-package tron-legacy-theme :defer t)
@@ -1826,7 +1829,7 @@ font size is computed + 20 of this value."
 ;; with the default font size. Startup works without this but it's nice to see
 ;; the window expand early...
 
-(add-hook 'emacs-startup-hook
+(add-hook 'elpaca-after-init-hook
   (lambda ()
     (when (display-graphic-p)
       (mifi/update-face-attribute)
@@ -2260,18 +2263,6 @@ directory is relative to the working-files-directory
 
 ;;; ##########################################################################
 
-(use-package org-appear
-  :after org
-  :init
-  (setq org-hide-emphasis-markers t)
-  (setq org-appear-autoemphasis t) ;; Enable org-appear on emphasis
-  (setq org-appear-autolinks t) ;; Enable on links
-  (setq org-appear-autosubmarkers t) ;; Enable on sub and superscript
-  :commands (org-appear-mode)
-  :hook (org-mode . org-appear-mode))
-
-;;; ##########################################################################
-
 (with-eval-after-load 'org
   (org-babel-do-load-languages
     'org-babel-load-languages
@@ -2509,7 +2500,6 @@ directory is relative to the working-files-directory
   ;; (c++-mode . eglot-ensure)
   ;; (prog-mode . eglot-ensure)
   :config
-  (setq company-backends (cons 'company-capf (remove 'company-capf company-backends)))
   (flymake-mode 0)
   (add-to-list 'major-mode-remap-alist '(python-mode . python-ts-mode))
   ;; Eldoc/Eglot will try to load/unload a theme which can cause issues with our
@@ -2623,11 +2613,6 @@ directory is relative to the working-files-directory
   (lsp-bridge-python-lsp-server "pylsp")
   :config
   (global-lsp-bridge-mode))
-
-;;; ##########################################################################
-
-(use-package markdown-mode
-  :when (equal custom-ide 'custom-ide-lsp-bridge))
 
 ;;; ##########################################################################
 
@@ -3018,11 +3003,6 @@ directory is relative to the working-files-directory
   (add-hook 'before-save-hook 'lsp-format-buffer nil t))
 
 ;;; ##########################################################################
-;; for Cargo.toml and other config files
-
-(use-package toml-mode :ensure)
-
-;;; ##########################################################################
 
 ;; (use-package graphql-mode)
 (use-package rust-mode
@@ -3037,7 +3017,11 @@ directory is relative to the working-files-directory
   (setq rust-format-on-save t))
 
 (use-package rust-playground :ensure t :after rust-mode)
-(use-package toml-mode :ensure t :after rust-mode)
+
+;;; ##########################################################################
+;; for Cargo.toml and other config files
+
+(use-package toml-mode :ensure t)
 
 ;;; ##########################################################################
 
@@ -3126,12 +3110,7 @@ directory is relative to the working-files-directory
 
 (use-package dape
   :when (equal debug-adapter 'debug-adapter-dape)
-  :init
-  (define-dape-hydra)
-  :after (:any python go-mode)
-  ;; To use window configuration like gud (gdb-mi)
-  ;; :init
-  ;; (setq dape-buffer-window-arrangement 'gud)
+  :after (:any python go)
   :custom
   (dape-buffer-window-arrangement 'right)  ;; Info buffers to the right
   :config
@@ -3412,23 +3391,16 @@ directory is relative to the working-files-directory
     ("q" mifi/dap-end-debug-session "quit" :color blue)
     ("Q" mifi/dap-delete-all-debug-sessions :color red)))
 
-;;; ##########################################################################
-;; helpful package
-
-(use-package helpful
-  :commands (helpful-callable helpful-variable helpful-command helpful-key)
-  :custom
-  (when (equal completion-handler 'comphand-ivy-counsel)
-    (counsel-describe-function-function #'helpful-callable)
-    (counsel-describe-variable-function #'helpful-variable))
+;;; ------------------------------------------------------------------------
+(use-package jsonrpc
+  :ensure t
   :config
-  (when (equal completion-handler 'comphand-ivy-counsel)
-    (bind-keys
-      ([remap describe-function] . counsel-describe-function)
-      ([remap describe-variable] . counsel-describe-variable)))
-  (bind-keys
-    ([remap describe-command] . helpful-command)
-    ([remap describe-key] . helpful-key)))
+  ;; For some odd reason, it is possible that jsonrpc will try to load a
+  ;; theme. (jsonrpc/lisp/custom.el:1362). If our theme hasn't been loaded
+  ;; yet, go ahead and try. This could prevent a startup without the theme
+  ;; properly loaded.
+  (unless theme-did-load
+    (mifi/load-theme-from-selector)))
 
 (use-package mw-thesaurus
   :when enable-thesaurus
@@ -3709,24 +3681,26 @@ directory is relative to the working-files-directory
 
 ;;; ##########################################################################
 
+(defun mifi/config-landing ()
+  (add-hook 'lisp-interaction-mode-hook
+    (lambda ()
+      (setq-default initial-scratch-message
+        (format
+          ";; Hello, World and Happy hacking %s!\n%s\n\n" user-login-name
+          ";; Press M-RET (Meta-RET) to open Mitch's Context Aware Menu"))
+      (when dashboard-landing-screen
+	(dashboard-open)))))
+  ;; (when dashboard-landing-screen
+  ;;   ;; (add-hook 'inferior-emacs-lisp-mode 'dashboard-open) ;; IELM open?
+  ;;   (add-hook 'elpaca-after-init-hook
+  ;;     (lambda ()
+  ;;       (add-hook 'lisp-interaction-mode-hook #'dashboard-open)))))
+
 (add-hook 'elpaca-after-init-hook
   (lambda ()
+    (mifi/config-landing)
     (mifi/set-recenter-keys)
     (switch-to-buffer "*scratch*") (end-of-buffer)))
-
-(add-hook 'lisp-interaction-mode-hook
-  (lambda ()
-    (setq-default initial-scratch-message
-      (format
-        ";; Hello, World and Happy hacking %s!\n%s\n\n" user-login-name
-        ";; Press M-RET (Meta-RET) to open Mitch's Context Aware Menu"))
-    (when dashboard-landing-screen (dashboard-open))))
-
-(when dashboard-landing-screen
-  ;; (add-hook 'inferior-emacs-lisp-mode 'dashboard-open) ;; IELM open?
-  (add-hook 'elpaca-after-init-hook
-    (lambda ()
-      (add-hook 'lisp-interaction-mode-hook #'dashboard-open))))
 
 ;;; ##########################################################################
 

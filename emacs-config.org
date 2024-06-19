@@ -115,6 +115,7 @@ Standard fare and good practice.
 
   ;; Adjust garbage collection threshold for early startup (see use of gcmh below)
   (setq gc-cons-threshold (* 100 1024 1024))
+  (setq package-enable-at-startup nil)
 
   ;; Process performance tuning
 
@@ -319,7 +320,6 @@ Elpaca:
   (elpaca elpaca-use-package
     (elpaca-use-package-mode 1)
     (setq use-package-always-ensure t))
-  ;;    (use-package emacs :ensure nil :config (setq ring-bell-function #'ignore))
 
 #+end_src
 
@@ -804,19 +804,20 @@ These are global variables that effect the behavior of Emacs in general. These v
     dired-dwim-target t       ;; try to guess target directory
     use-short-answers t
     truncate-partial-width-windows 1 ;; truncate lines in partial-width windows
-    backup-inhibited t         ;; disable backup (No ~ tilde files)
+    backup-inhibited t        ;; disable backup (No ~ tilde files)
     auto-save-default nil     ;; disable auto save
     global-auto-revert-mode 1 ;; Refresh buffer if file has changed
-    global-auto-revert-non-file-buffers t
-    history-length 25          ;; Reasonable buffer length
+    global-eldoc-mode t       ;; Enabled in all buffers
+    history-length 25         ;; Reasonable buffer length
     inhibit-startup-message t ;; Hide the startup message
     inhibit-startup-screent t
     lisp-indent-offset '2     ;; emacs lisp tab size
-    visible-bell t             ;; Set up the visible bell
-    truncate-lines 1           ;; long lines of text do not wrap
+    visible-bell t            ;; Set up the visible bell
+    truncate-lines 1          ;; long lines of text do not wrap
     sentence-end-double-space nil
-    fill-column 79             ;; Default line limit for fills
+    fill-column 79            ;; Default line limit for fills
     ;; Triggers project for directories with any of the following files:
+    global-auto-revert-non-file-buffers t
     project-vc-extra-root-markers '(".dir-locals.el"
                                      "requirements.txt"
                                      "Gemfile"
@@ -955,20 +956,33 @@ Handle the case of starting the Emacs server when Emacs is started as a foregrou
 
 * Universal Packages
 
-These are the common packages that I pretty much use universally in my normal Emacs workflow. It excludes packages that can be customized through my =mifi-custom= variables as they are generally in their own section
-** Hydra
+These are the common packages that I pretty much use universally in my normal Emacs workflow. It excludes packages that can be customized through my =mifi-custom= variables as they are generally in their own section.
 
-This is a package for GNU Emacs that can be used to tie related commands into a family of short bindings with a common prefix - a Hydra. Once you summon the Hydra through the prefixed binding (the body + any one head), all heads can be called in succession with only a short extension.
+It's also important to note that some of these packages are required to be loaded prior to packages later on in this configuration.
 
-The Hydra is vanquished once Hercules, any binding that isn't the Hydra's head, arrives. Note that Hercules, besides vanquishing the Hydra, will still serve his original purpose, calling his proper command. This makes the Hydra very seamless, it's like a minor mode that disables itself auto-magically.
+** Helpful Help Commands
+
+[[https://github.com/Wilfred/helpful][Helpful]] adds a lot of very helpful (get it?) information to Emacs' =describe-= command buffers. For example, if you use =describe-function=, you will not only get the documentation about the function, you will also see the source code of the function and where it gets used in other places in the Emacs configuration. It is very useful for figuring out how things work in Emacs.
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
+  ;; helpful package
 
-  (use-package hydra
-    :ensure (:repo "abo-abo/hydra" :fetcher github
-              :files (:defaults (:exclude "lv.el"))))
-
+  (use-package helpful
+    :ensure (:wait t) :demand t
+    :commands (helpful-callable helpful-variable helpful-command helpful-key)
+    :custom
+    (when (equal completion-handler 'comphand-ivy-counsel)
+      (counsel-describe-function-function #'helpful-callable)
+      (counsel-describe-variable-function #'helpful-variable))
+    :config
+    (when (equal completion-handler 'comphand-ivy-counsel)
+      (bind-keys
+        ([remap describe-function] . counsel-describe-function)
+        ([remap describe-variable] . counsel-describe-variable)))
+    (bind-keys
+      ([remap describe-command] . helpful-command)
+      ([remap describe-key] . helpful-key)))
 
 #+end_src
 
@@ -991,7 +1005,7 @@ Delight enables you to customise the mode names displayed in the mode line. It's
   	      (mmm-keys-minor-mode " m3")
   	      (projectile-mode " ->")
   	      (tree-sitter-mode " ts")
-                (eldoc-mode nil " eldoc")
+                ;;(eldoc-mode nil " eldoc")
                 (overwrite-mode " Ov" t)
                 (python-mode " Py" :major)
                 (rainbow-mode " 🌈")
@@ -1018,6 +1032,32 @@ Dumb Jump is an Emacs "jump to definition" package with support for 50+ programm
 
 #+end_src
 
+** Eldoc
+
+This package displays ElDoc documentations in a childframe. The childframe is selectable and scrollable with mouse, even though the cursor is hidden. 
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (defun mifi/setup-hooks-for-eldoc ()
+    (interactive)
+    (add-hook 'emacs-lisp-mode-hook 'eldoc-mode)
+    (add-hook 'lisp-interaction-mode-hook 'eldoc-mode)
+    (add-hook 'ielm-mode-hook 'eldoc-mode)
+    ;; Eldoc will try to load/unload a theme which can cause issues with our
+    ;; theme loading mechanism. Our theme could fail to load because of this.
+    ;; So, to get our themes loading properly, load it here if not already
+    ;; loaded.
+    (unless theme-did-load
+      (mifi/load-theme-from-selector)))
+
+  (use-package eldoc-box
+    :ensure t
+    :delight DocBox
+    :hook (elpaca-after-init . mifi/setup-hooks-for-eldoc))
+    
+#+end_src
+
 ** Which Key
 
 [[Https://github.com/justbur/emacs-which-key][which-key]] is a useful UI panel that appears when you start pressing any key binding in Emacs to offer you all possible completions for the prefix. For example, if you press =C-c= (hold control and press the letter =c=), a panel will appear at the bottom of the frame displaying all of the bindings under that prefix and which command they run. This is very useful for learning the possible key bindings in the mode of your current buffer.
@@ -1041,7 +1081,7 @@ Dumb Jump is an Emacs "jump to definition" package with support for 50+ programm
   (use-package which-key
     :init
     (add-hook 'emacs-startup-hook #'mifi/after-which-key)
-    :ensure t :demand t
+    :ensure (:wait t) :demand t
     :commands which-key-mode
     :delight which-key-mode
     :custom
@@ -1050,6 +1090,22 @@ Dumb Jump is an Emacs "jump to definition" package with support for 50+ programm
     (which-key-sort-order 'which-key-key-order-alpha)
     (which-key-min-display-lines 3)
     (which-key-max-display-columns nil))
+
+#+end_src
+
+** Hydra
+
+This is a package for GNU Emacs that can be used to tie related commands into a family of short bindings with a common prefix - a Hydra. Once you summon the Hydra through the prefixed binding (the body + any one head), all heads can be called in succession with only a short extension.
+
+The Hydra is vanquished once Hercules, any binding that isn't the Hydra's head, arrives. Note that Hercules, besides vanquishing the Hydra, will still serve his original purpose, calling his proper command. This makes the Hydra very seamless, it's like a minor mode that disables itself auto-magically.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package hydra
+    :ensure (:repo "abo-abo/hydra" :fetcher github
+              :files (:defaults (:exclude "lv.el"))))
+
 
 #+end_src
 
@@ -1185,39 +1241,6 @@ These are key-bindings that are done at a global level.
     (global-unset-key (kbd "C-<wheel-up>")))
 
   (add-hook 'elpaca-after-init-hook #'mifi/setup-global-keybindings)
-#+end_src
-
-** Eldoc
-
-This package displays ElDoc documentations in a childframe. The childframe is selectable and scrollable with mouse, even though the cursor is hidden. 
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (defun mifi/setup-eldoc-hooks ()
-    (interactive)
-    (add-hook 'emacs-lisp-mode-hook 'eldoc-mode)
-    (add-hook 'lisp-interaction-mode-hook 'eldoc-mode)
-    (add-hook 'ielm-mode-hook 'eldoc-mode)
-    ;; Eldoc will try to load/unload a theme which can cause issues with our
-    ;; theme loading mechanism. Our theme could fail to load because of this.
-    ;; So, to get our themes loading properly, load it here if not already
-    ;; loaded.
-    (unless theme-did-load
-      (mifi/load-theme-from-selector)))
-
-  (use-package eldoc
-    :init
-    (add-hook 'elpaca-after-init-hook #'mifi/setup-eldoc-hooks)
-    :defer t)
-
-  (use-package eldoc-box
-    :after eldoc
-    :ensure t
-    :delight DocBox
-    :config
-    (global-eldoc-mode t))
-
 #+end_src
 
 ** Automatic Package Updates
@@ -1380,24 +1403,6 @@ Jinx is a fast just-in-time spell-checker for Emacs. Jinx highlights misspelled 
     (dolist (hook '(text-mode-hook prog-mode-hook org-mode-hook))
       (add-hook hook #'jinx-mode)))
 
-
-#+end_src
-
-** JSON-RPC
-
-The JSON-RPC protocol is used to communicate with many different types of server. This is required for the DAPE and DAP Debug Adapters as well as Eglot.
-
-#+begin_src emacs-lisp
-  ;;; ------------------------------------------------------------------------
-  (use-package jsonrpc
-    :ensure t
-    :config
-    ;; For some odd reason, it is possible that jsonrpc will try to load a
-    ;; theme. (jsonrpc/lisp/custom.el:1362). If our theme hasn't been loaded
-    ;; yet, go ahead and try. This could prevent a startup without the theme
-    ;; properly loaded.
-    (unless theme-did-load
-      (mifi/load-theme-from-selector)))
 
 #+end_src
 
@@ -1642,6 +1647,73 @@ Swiper is an alternative to isearch that uses Ivy to show an overview of all mat
 
 #+end_src
 
+*** Company Mode
+
+[[http://company-mode.github.io/][Company Mode]] provides a nicer in-buffer completion interface than =completion-at-point= which is more reminiscent of what you would expect from an IDE. We add a simple configuration to make the keybindings a little more useful (=TAB= now completes the selection and initiates completion at the current location if needed).
+
+We also use [[https://github.com/sebastiencs/company-box][company-box]] to further enhance the look of the completions with icons and better overall presentation.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  ;; Don't use lsp-bridge with company as lsp-bridge already provides the same
+  ;; features. They actually collide.
+
+  (use-package company
+    :unless (equal custom-ide 'custom-ide-lsp-bridge)
+    :ensure (:wait t)
+    :bind (:map company-active-map
+            ("C-n". company-select-next)
+            ("C-p". company-select-previous)
+            ("M-<". company-select-first)
+            ("M->". company-select-last)
+            ("<tab>" . company-complete-selection))
+    :custom
+    (company-minimum-prefix-length 2)
+    (company-idle-delay 0.5)
+    :config
+    (when (featurep 'prescient)
+      (company-prescient-mode 1))
+    (global-company-mode +1))
+
+  ;; IMPORTANT:
+  ;; Don't use company at all if lsp-bridge is active.
+  ;; lsp-bridge already provides similar functionality.
+
+  ;; :config
+  ;; (add-to-list 'company-backends 'company-yasnippet))
+
+#+end_src
+
+**** Company Packages
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package company-box
+    :after company
+    :delight cb
+    :hook (company-mode . company-box-mode))
+
+  (use-package company-jedi
+    :when  (equal custom-ide 'custom-ide-elpy)
+    :after (:all python company)
+    :config
+    (jedi:setup)
+    (defun my/company-jedi-python-mode-hook ()
+      (add-to-list 'company-backends 'company-jedi))
+    (add-hook 'python-mode-hook 'my/company-jedi-python-mode-hook))
+
+  (use-package company-anaconda
+    :when (equal custom-ide 'custom-ide-anaconda)
+    :after (:all anaconda company)
+    :hook (python-mode . anaconda-mode)
+    :config
+    (eval-after-load "company"
+      '(add-to-list 'company-backends 'company-anaconda)))
+
+#+end_src
+
 *** Corfu
 
 <<<Corfu>>> enhances in-buffer completion with a small completion popup. The current candidates are shown in a popup below or above the point. The candidates can be selected by moving up and down. Corfu is the minimalistic in-buffer completion counterpart of the Vertico minibuffer UI.
@@ -1651,6 +1723,7 @@ Swiper is an alternative to isearch that uses Ivy to show an overview of all mat
 
   ;;;; Code Completion
   (use-package corfu
+    :disabled
     :when (equal completion-handler 'comphand-vertico)
     :after vertico
     ;; Optional customizations
@@ -1966,72 +2039,6 @@ Embark makes it easy to choose a command to run based on what is near point, bot
 
 #+end_src
 
-*** Company Mode
-
-[[http://company-mode.github.io/][Company Mode]] provides a nicer in-buffer completion interface than =completion-at-point= which is more reminiscent of what you would expect from an IDE. We add a simple configuration to make the keybindings a little more useful (=TAB= now completes the selection and initiates completion at the current location if needed).
-
-We also use [[https://github.com/sebastiencs/company-box][company-box]] to further enhance the look of the completions with icons and better overall presentation.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  ;; Don't use lsp-bridge with company as lsp-bridge already provides the same
-  ;; features. They actually collide.
-
-  (use-package company
-    :unless (equal custom-ide 'custom-ide-lsp-bridge)
-    :ensure t
-    :bind (:map company-active-map
-            ("C-n". company-select-next)
-            ("C-p". company-select-previous)
-            ("M-<". company-select-first)
-            ("M->". company-select-last)
-            ("<tab>" . company-complete-selection))
-    :custom
-    (company-minimum-prefix-length 2)
-    (company-idle-delay 0.5)
-    :config
-    (when (featurep 'prescient)
-      (company-prescient-mode 1))
-    (global-company-mode +1))
-
-  ;; IMPORTANT:
-  ;; Don't use company at all if lsp-bridge is active.
-  ;; lsp-bridge already provides similar functionality.
-
-  ;; :config
-  ;; (add-to-list 'company-backends 'company-yasnippet))
-
-#+end_src
-
-**** Company Packages
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package company-box
-    :after company
-    :delight cb
-    :hook (company-mode . company-box-mode))
-
-  (use-package company-jedi
-    :when  (equal custom-ide 'custom-ide-elpy)
-    :after (:all python company)
-    :config
-    (jedi:setup)
-    (defun my/company-jedi-python-mode-hook ()
-      (add-to-list 'company-backends 'company-jedi))
-    (add-hook 'python-mode-hook 'my/company-jedi-python-mode-hook))
-
-  (use-package company-anaconda
-    :when (equal custom-ide 'custom-ide-anaconda)
-    :after (:all anaconda company)
-    :hook (python-mode . anaconda-mode)
-    :config
-    (eval-after-load "company"
-      '(add-to-list 'company-backends 'company-anaconda)))
-
-#+end_src
 ** Terminals
 *** term-mode
 
@@ -2633,6 +2640,7 @@ Color Theming (or just <<<theming>>>) is a curated list of theming packages.
   ;;; ##########################################################################
 
   (add-to-list 'custom-theme-load-path (expand-file-name "Themes" custom-docs-dir))
+  (add-to-list 'custom-theme-load-path (expand-file-name "lisp" emacs-config-directory))
 
   (mifi/org-theme-override-values)
   (use-package tron-legacy-theme :defer t)
@@ -2820,7 +2828,7 @@ A better version of variable-pitch mode. This keeps certain faces (defined in mi
   ;; with the default font size. Startup works without this but it's nice to see
   ;; the window expand early...
 
-  (add-hook 'emacs-startup-hook
+  (add-hook 'elpaca-after-init-hook
     (lambda ()
       (when (display-graphic-p)
         (mifi/update-face-attribute)
@@ -3357,25 +3365,6 @@ This section contains the basic configuration for =org-mode= plus the configurat
 
 #+end_src
 
-*** Org-appear
-
-Org-mode provides a way to toggle visibility of hidden elements such as emphasis markers, links, etc. by customising specific variables, e.g., org-hide-emphasis-markers. However, it is currently not possible to do this interactively and on an element-by-element basis. This package, inspired by org-fragtog, enables automatic visibility toggling depending on cursor position. Hidden element parts appear when the cursor enters an element and disappear when it leaves.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-  
-  (use-package org-appear
-    :after org
-    :init
-    (setq org-hide-emphasis-markers t)
-    (setq org-appear-autoemphasis t) ;; Enable org-appear on emphasis
-    (setq org-appear-autolinks t) ;; Enable on links
-    (setq org-appear-autosubmarkers t) ;; Enable on sub and superscript
-    :commands (org-appear-mode)
-    :hook (org-mode . org-appear-mode))
-
-#+end_src
-
 *** Export Code
 
 To execute or export code in =org-mode= code blocks, you'll need to set up =org-babel-load-languages= for each language you'd like to use. [[https://orgmode.org/worg/org-contrib/babel/languages.html][Babel]] documents all of the languages that you can use with =org-babel=.
@@ -3714,7 +3703,6 @@ The following are configured for Python development and provide an <<<IDE>>> typ
     ;; (c++-mode . eglot-ensure)
     ;; (prog-mode . eglot-ensure)
     :config
-    (setq company-backends (cons 'company-capf (remove 'company-capf company-backends)))
     (flymake-mode 0)
     (add-to-list 'major-mode-remap-alist '(python-mode . python-ts-mode))
     ;; Eldoc/Eglot will try to load/unload a theme which can cause issues with our
@@ -3890,14 +3878,6 @@ Advantages of lsp-bridge:
 
 #+end_src
 
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package markdown-mode
-    :when (equal custom-ide 'custom-ide-lsp-bridge))
-
-#+end_src
 
 *** Anaconda-mode :deprecation_warning:
 
@@ -4492,17 +4472,6 @@ Much of this configuration was taken from the [[https://robert.kra.hn/posts/rust
 
 #+end_src
 
-**** Cargo and Cargo.toml packages
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-  ;; for Cargo.toml and other config files
-
-  (use-package toml-mode :ensure)
-
-
-#+end_src
-
 **** Rust-mode configuration
 
 #+begin_src emacs-lisp
@@ -4521,9 +4490,20 @@ Much of this configuration was taken from the [[https://robert.kra.hn/posts/rust
     (setq rust-format-on-save t))
 
   (use-package rust-playground :ensure t :after rust-mode)
-  (use-package toml-mode :ensure t :after rust-mode)
 
 #+end_src
+
+**** Cargo and Cargo.toml packages
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+  ;; for Cargo.toml and other config files
+
+  (use-package toml-mode :ensure t)
+
+
+#+end_src
+
 
 **** Cargo-mode configuration
 
@@ -4728,12 +4708,7 @@ Please note that DAPE is triggered after loading of various languages (for Emacs
 
   (use-package dape
     :when (equal debug-adapter 'debug-adapter-dape)
-    :init
-    (define-dape-hydra)
-    :after (:any python go-mode)
-    ;; To use window configuration like gud (gdb-mi)
-    ;; :init
-    ;; (setq dape-buffer-window-arrangement 'gud)
+    :after (:any python go)
     :custom
     (dape-buffer-window-arrangement 'right)  ;; Info buffers to the right
     :config
@@ -5096,28 +5071,21 @@ Below are all the necessary functions and definitions for Hydra use under DAP.
 
 The following packages are some additional quality of life features.
 
-** Helpful Help Commands
+** JSON-RPC
 
-[[https://github.com/Wilfred/helpful][Helpful]] adds a lot of very helpful (get it?) information to Emacs' =describe-= command buffers. For example, if you use =describe-function=, you will not only get the documentation about the function, you will also see the source code of the function and where it gets used in other places in the Emacs configuration. It is very useful for figuring out how things work in Emacs.
+The JSON-RPC protocol is used to communicate with many different types of server. This is required for the DAPE and DAP Debug Adapters as well as Eglot.
 
 #+begin_src emacs-lisp
-  ;;; ##########################################################################
-  ;; helpful package
-
-  (use-package helpful
-    :commands (helpful-callable helpful-variable helpful-command helpful-key)
-    :custom
-    (when (equal completion-handler 'comphand-ivy-counsel)
-      (counsel-describe-function-function #'helpful-callable)
-      (counsel-describe-variable-function #'helpful-variable))
+  ;;; ------------------------------------------------------------------------
+  (use-package jsonrpc
+    :ensure t
     :config
-    (when (equal completion-handler 'comphand-ivy-counsel)
-      (bind-keys
-        ([remap describe-function] . counsel-describe-function)
-        ([remap describe-variable] . counsel-describe-variable)))
-    (bind-keys
-      ([remap describe-command] . helpful-command)
-      ([remap describe-key] . helpful-key)))
+    ;; For some odd reason, it is possible that jsonrpc will try to load a
+    ;; theme. (jsonrpc/lisp/custom.el:1362). If our theme hasn't been loaded
+    ;; yet, go ahead and try. This could prevent a startup without the theme
+    ;; properly loaded.
+    (unless theme-did-load
+      (mifi/load-theme-from-selector)))
 
 #+end_src
 
@@ -5521,24 +5489,26 @@ These are the hools that update the context-aware menu triggered by various stat
 #+begin_src emacs-lisp
   ;;; ##########################################################################
 
+  (defun mifi/config-landing ()
+    (add-hook 'lisp-interaction-mode-hook
+      (lambda ()
+        (setq-default initial-scratch-message
+          (format
+            ";; Hello, World and Happy hacking %s!\n%s\n\n" user-login-name
+            ";; Press M-RET (Meta-RET) to open Mitch's Context Aware Menu"))
+        (when dashboard-landing-screen
+  	(dashboard-open)))))
+    ;; (when dashboard-landing-screen
+    ;;   ;; (add-hook 'inferior-emacs-lisp-mode 'dashboard-open) ;; IELM open?
+    ;;   (add-hook 'elpaca-after-init-hook
+    ;;     (lambda ()
+    ;;       (add-hook 'lisp-interaction-mode-hook #'dashboard-open)))))
+
   (add-hook 'elpaca-after-init-hook
     (lambda ()
+      (mifi/config-landing)
       (mifi/set-recenter-keys)
       (switch-to-buffer "*scratch*") (end-of-buffer)))
-
-  (add-hook 'lisp-interaction-mode-hook
-    (lambda ()
-      (setq-default initial-scratch-message
-        (format
-          ";; Hello, World and Happy hacking %s!\n%s\n\n" user-login-name
-          ";; Press M-RET (Meta-RET) to open Mitch's Context Aware Menu"))
-      (when dashboard-landing-screen (dashboard-open))))
-
-  (when dashboard-landing-screen
-    ;; (add-hook 'inferior-emacs-lisp-mode 'dashboard-open) ;; IELM open?
-    (add-hook 'elpaca-after-init-hook
-      (lambda ()
-        (add-hook 'lisp-interaction-mode-hook #'dashboard-open))))
 
 #+end_src
 
