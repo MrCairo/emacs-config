@@ -83,16 +83,6 @@
 
 ;;; ##########################################################################
 
-(defcustom dashboard-landing-screen t
-  "If set to t, the `dashboard' package will be displayed once emacs has
-finished initializing. If this value is nil, then the *scratch* buffer will be
-shown instead.
-
-The Dashboard will be in the *dashboard* buffer and can also be opened using
-\"C-c d\" or \"M-RET d\" from anywhere even if this value is nil."
-  :type 'boolean
-  :group 'mifi-custom)
-
 (defcustom custom-docs-dir "~/Documents/Emacs-Related"
   "A directory used to store documents and customized data."
   :type 'string
@@ -164,6 +154,32 @@ The Dashboard will be in the *dashboard* buffer and can also be opened using
   :group 'mifi-custom-toggles)
 
 ;;; ##########################################################################
+
+(defcustom default-landing-mode 'landing-mode-scratch
+  "Select which landing screen to end up on once Emacs has finished
+launching.
+
+Dashboard provides an overview of items and tasks such as recent files,
+agendas, projects, and bookmarks. The Dashboard appears in the *dashboard*
+buffer and can also be opened using \"C-c d\" or \"M-RET d\" from anywhere
+with the MmM mode enabled.
+
+Scratch is the standard *scratch* buffer that Emacs provides but has a slightly
+different startup message. It continues to be a place to write things or test
+out Lisp expressions.
+
+IELM (Inferior Emacs Lisp Mode) is a more interactive Lisp environment over the
+*scratch* buffer.
+
+eshell is the Emacs shell environment that is part terminal and part Lisp
+interpreter.
+"
+  :type '(radio
+           (const :tag "Dashboard" landing-mode-dashboard)
+           (const :tag "*scratch*" landing-mode-scratch)
+           (const :tag "IELM" landing-mode-ielm)
+	   (const :tag "eshell" landing-mode-eshell))
+  :group 'mifi-custom-features)
 
 (defcustom undo-handler 'undo-handler-vundo
   "Select the undo handler to use.
@@ -559,20 +575,11 @@ font size is computed + 20 of this value."
   (pixel-scroll-precision-mode))
 
 ;;; ##########################################################################
-;; helpful package
 
 (use-package helpful
-  :ensure (:wait t) :demand t
-  :commands (helpful-callable helpful-variable helpful-command helpful-key)
-  :custom
-  (when (equal completion-handler 'comphand-ivy-counsel)
-    (counsel-describe-function-function #'helpful-callable)
-    (counsel-describe-variable-function #'helpful-variable))
+  :ensure t
+  ;; :commands (helpful-callable helpful-variable helpful-command helpful-key)
   :config
-  (when (equal completion-handler 'comphand-ivy-counsel)
-    (bind-keys
-      ([remap describe-function] . counsel-describe-function)
-      ([remap describe-variable] . counsel-describe-variable)))
   (bind-keys
     ([remap describe-command] . helpful-command)
     ([remap describe-key] . helpful-key)))
@@ -970,7 +977,7 @@ font size is computed + 20 of this value."
 (use-package counsel
   :when (equal completion-handler 'comphand-ivy-counsel)
   :after ivy
-  :ensure t
+  :defer t
   :bind ( ("C-M-j" . 'counsel-switch-buffer)
           ("M-x" . 'counsel-M-x)
           ("M-g o" . 'counsel-outline)
@@ -981,6 +988,12 @@ font size is computed + 20 of this value."
   :custom
   (counsel-linux-app-format-function #'counsel-linux-app-format-function-name-only)
   :config
+  (bind-keys
+    ([remap describe-function] . counsel-describe-function)
+    ([remap describe-variable] . counsel-describe-variable))
+  (when (featurep 'helpful)
+    (setq counsel-describe-function-function #'helpful-callable)
+    (setq counsel-describe-variable-function #'helpful-variable))
   (counsel-mode 1))
 
 ;;; ##########################################################################
@@ -1255,13 +1268,13 @@ font size is computed + 20 of this value."
 
 ;; This has to be evaluated at the end of the init since it's possible that the
 ;; completion-handler variable will not yet be defined at this point in the
-;; init phase using elpaca.
+;; init phase usi\ng elpaca.
 
 (add-hook 'elpaca-after-init-hook
   (lambda ()
     (use-package ido
       :when (equal completion-handler 'comphand-built-in)
-      :ensure t
+      :ensure nil
       :config
       (ido-everywhere t))))
 
@@ -3682,25 +3695,27 @@ directory is relative to the working-files-directory
 ;;; ##########################################################################
 
 (defun mifi/config-landing ()
-  (add-hook 'lisp-interaction-mode-hook
-    (lambda ()
-      (setq-default initial-scratch-message
-        (format
-          ";; Hello, World and Happy hacking %s!\n%s\n\n" user-login-name
-          ";; Press M-RET (Meta-RET) to open Mitch's Context Aware Menu"))
-      (when dashboard-landing-screen
-	(dashboard-open)))))
-  ;; (when dashboard-landing-screen
-  ;;   ;; (add-hook 'inferior-emacs-lisp-mode 'dashboard-open) ;; IELM open?
-  ;;   (add-hook 'elpaca-after-init-hook
-  ;;     (lambda ()
-  ;;       (add-hook 'lisp-interaction-mode-hook #'dashboard-open)))))
+  (setq-default initial-scratch-message
+    (format
+      ";; Hello, World and Happy hacking %s!\n%s\n\n" user-login-name
+      ";; Press M-RET (Meta-RET) to open Mitch's Context Aware Menu"))
+  (cond
+    ((equal default-landing-mode 'landing-mode-dashboard)
+      (dashboard-open))
+    ((equal default-landing-mode 'landing-mode-scratch)
+      (switch-to-buffer "*scratch*")
+      (end-of-buffer))
+    ((equal default-landing-mode 'landing-mode-ielm)
+      (ielm))
+    ((equal default-landing-mode 'landing-mode-eshell)
+      (eshell)))  )
+  ;; (add-hook 'lisp-interaction-mode-hook
+  ;;   (lambda ())))
 
 (add-hook 'elpaca-after-init-hook
   (lambda ()
     (mifi/config-landing)
-    (mifi/set-recenter-keys)
-    (switch-to-buffer "*scratch*") (end-of-buffer)))
+    (mifi/set-recenter-keys)))
 
 ;;; ##########################################################################
 
