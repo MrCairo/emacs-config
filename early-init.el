@@ -13,6 +13,7 @@
 
 ;; Adjust garbage collection threshold for early startup (see use of gcmh below)
 (setq gc-cons-threshold (* 100 1024 1024))
+(setq package-enable-at-startup nil)
 
 ;; Process performance tuning
 
@@ -27,7 +28,7 @@
 (let
   ((file (expand-file-name "early-init-proxy.el" user-emacs-directory)))
   (if (file-exists-p file)
-    (load "early-init-proxy")))
+    (load file)))
 
 (setq package-archives
   '(( "gnu-elpa" . "https://elpa.gnu.org/packages/")
@@ -50,14 +51,14 @@
 
 (setq gnutls-algorithm-priority "NORMAL:-VERS-TLS1.3") ;; w/o this Emacs freezes when refreshing ELPA
 
-(setq use-package-compute-statistics t
-  use-package-verbose t
+(setq use-package-compute-statistics nil
+  use-package-verbose nil
   use-package-always-ensure nil
   use-package-always-demand nil
   use-package-always-defer nil)
 
 ;; (use-package gcmh
-;;   :diminish gcmh-mode
+;;   :delight gcmh-mode
 ;;   :config
 ;;   (setq gcmh-idle-delay 5
 ;;     gcmh-high-cons-threshold (* 16 1024 1024))      ; 16mb

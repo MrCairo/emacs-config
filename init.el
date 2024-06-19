@@ -56,8 +56,7 @@
 (elpaca `(,@elpaca-order))
 (elpaca elpaca-use-package
   (elpaca-use-package-mode 1)
-  (setq elpaca-use-package-by-default t))
-;;    (use-package emacs :ensure nil :config (setq ring-bell-function #'ignore))
+  (setq use-package-always-ensure t))
 
 ;;; ##########################################################################
 ;;; Define my customization groups
@@ -67,32 +66,22 @@
   :group 'Local)
 
 (defgroup mifi-custom-toggles nil
-  "A set of toggles that enable or disable  specific packages."
+  "A set of toggles that enable or disable specific packages or behaviors."
   :group 'mifi-custom)
 
 (defgroup mifi-custom-features nil
-  "Customization from a selection of specific features and handlers."
+  "Customization from a selection of a curated list of features and handlers."
   :group 'mifi-custom)
 
 (defgroup mifi-custom-fonts nil
-  "Customization of fonts and sizes."
+  "Customization of fonts and font sizes."
   :group 'mifi-custom)
 
 (defgroup mifi-custom-theming nil
-  "Custom theming values."
+  "Custom theming list and list index values."
   :group 'mifi-custom)
 
 ;;; ##########################################################################
-
-(defcustom dashboard-landing-screen t
-  "If set to t, the `dashboard' package will be displayed once emacs has
-finished initializing. If this value is nil, then the *scratch* buffer will be
-shown instead.
-
-The Dashboard will be in the *dashboard* buffer and can also be opened using
-\"C-c d\" or \"M-RET d\" from anywhere even if this value is nil."
-  :type 'boolean
-  :group 'mifi-custom)
 
 (defcustom custom-docs-dir "~/Documents/Emacs-Related"
   "A directory used to store documents and customized data."
@@ -166,6 +155,32 @@ The Dashboard will be in the *dashboard* buffer and can also be opened using
 
 ;;; ##########################################################################
 
+(defcustom default-landing-mode 'landing-mode-scratch
+  "Select which landing screen to end up on once Emacs has finished
+launching.
+
+Dashboard provides an overview of items and tasks such as recent files,
+agendas, projects, and bookmarks. The Dashboard appears in the *dashboard*
+buffer and can also be opened using \"C-c d\" or \"M-RET d\" from anywhere
+with the MmM mode enabled.
+
+Scratch is the standard *scratch* buffer that Emacs provides but has a slightly
+different startup message. It continues to be a place to write things or test
+out Lisp expressions.
+
+IELM (Inferior Emacs Lisp Mode) is a more interactive Lisp environment over the
+*scratch* buffer.
+
+eshell is the Emacs shell environment that is part terminal and part Lisp
+interpreter.
+"
+  :type '(radio
+           (const :tag "Dashboard" landing-mode-dashboard)
+           (const :tag "*scratch*" landing-mode-scratch)
+           (const :tag "IELM" landing-mode-ielm)
+	   (const :tag "eshell" landing-mode-eshell))
+  :group 'mifi-custom-features)
+
 (defcustom undo-handler 'undo-handler-vundo
   "Select the undo handler to use.
 
@@ -185,8 +200,10 @@ Finally, the standard undo handler can also be chosen."
 (defcustom completion-handler 'comphand-vertico
   "Select the default minibuffer completion handler.
 
-Vertico provides a performant and minimalistic vertical completion UI based on
-the default completion system.
+Vertico provides a performant and minimalistic minibuffer vertical completion
+UI based on the default completion system. Corfu provides a
+completion-at-point feature in main buffers. Cape provides Corfu with
+additional completion-at-point backends to use.
 
 Ivy is a generic completion mechanism for Emacs. While it operates similarly to
 other completion schemes such as icomplete-mode, Ivy aims to be more efficient,
@@ -195,9 +212,8 @@ also includes Counsel. Counsel provides completion versions of common Emacs
 commands that are customised to make the best use of Ivy.  Swiper is an
 alternative to isearch that uses Ivy to show an overview of all matches."
   :type '(radio
-           (const :tag "Vertico completion system." comphand-vertico)
+           (const :tag "Vertico, Corfu, Cape, Consult completion system." comphand-vertico)
            (const :tag "Ivy, Counsel, Swiper completion systems" comphand-ivy-counsel)
-           (const :tag "Cofu completion systems" comphand-corfu)
            (const :tag "Built-in Ido" comphand-built-in))
   :group 'mifi-custom-features)
 
@@ -279,7 +295,7 @@ If additional themes are added, they must be previously installed."
   :type 'natnum)
 
 ;;; Font related
-(defcustom default-font-family "Menlo"
+(defcustom default-font-family "Andale Mono"
   "The font family used as the default font."
   :type 'string
   :group 'mifi-custom-fonts)
@@ -344,6 +360,9 @@ font size is computed + 20 of this value."
 (defvar custom-default-mono-font-size 170
   "Storage for the current mono-spaced font height.")
 
+(defvar theme-did-load nil
+  "Set to true if the last Theme was loaded.")
+
 ;;; ##########################################################################
 
 (defun mifi/validate-variable-pitch-font ()
@@ -399,6 +418,12 @@ font size is computed + 20 of this value."
 ;;; directory.
 (make-directory working-files-directory t)
 
+;;; user-emacs-directory always ends in a "/" so we need to make the
+;;; working-files-directory act the same since it becomes the new
+;;; user-emacs-directory. So, add a "/" if there isn't one already.
+(unless (string-suffix-p "/" working-files-directory)
+  (setq working-files-directory (concat working-files-directory "/")))
+
 ;;; Point the user-emacs-directory to the new working directory
 (setq user-emacs-directory working-files-directory)
 
@@ -441,24 +466,31 @@ font size is computed + 20 of this value."
   window-resize-pixelwise t
   frame-resize-pixelwise t
   dired-dwim-target t       ;; try to guess target directory
+  use-short-answers t
   truncate-partial-width-windows 1 ;; truncate lines in partial-width windows
-  backup-inhibited t         ;; disable backup (No ~ tilde files)
+  backup-inhibited t        ;; disable backup (No ~ tilde files)
   auto-save-default nil     ;; disable auto save
   global-auto-revert-mode 1 ;; Refresh buffer if file has changed
-  global-auto-revert-non-file-buffers t
-  history-length 25          ;; Reasonable buffer length
+  global-eldoc-mode t       ;; Enabled in all buffers
+  history-length 25         ;; Reasonable buffer length
   inhibit-startup-message t ;; Hide the startup message
   inhibit-startup-screent t
   lisp-indent-offset '2     ;; emacs lisp tab size
-  visible-bell t             ;; Set up the visible bell
-  truncate-lines 1           ;; long lines of text do not wrap
+  visible-bell t            ;; Set up the visible bell
+  truncate-lines 1          ;; long lines of text do not wrap
   sentence-end-double-space nil
-  fill-column 79             ;; Default line limit for fills
+  fill-column 79            ;; Default line limit for fills
   ;; Triggers project for directories with any of the following files:
+  global-auto-revert-non-file-buffers t
   project-vc-extra-root-markers '(".dir-locals.el"
                                    "requirements.txt"
                                    "Gemfile"
                                    "package.json"))
+
+;; Rebind C-z/C-. to act like vim's repeat previous command ( . )
+(unbind-key "C-z")
+(bind-key "C-." 'repeat)
+(bind-key "C-z" 'repeat-complex-command)
 
 ;;; ##########################################################################
 (setq savehist-file (expand-file-name "savehist" user-emacs-directory))
@@ -475,15 +507,12 @@ font size is computed + 20 of this value."
 ;; (global-display-line-numbers-mode 1) ;; Line numbers appear everywhere
 ;; A cool mode to revert a window configuration
 (winner-mode 1)
-
-;; Change "yes" or "no" responses to just require "y" or "n"
-(fset 'yes-or-no-p 'y-or-n-p)
 (save-place-mode 1)                  ;; Remember where we were last editing a file.
 (column-number-mode 1)
 (tool-bar-mode -1)                   ;; Hide the toolbar
 (global-prettify-symbols-mode 1)     ;; Display pretty symbols (i.e. λ = lambda)
-;; (repeat-mode 1)
-(add-hook 'prog-mode-hook 'display-line-numbers-mode)
+(repeat-mode 0)                      ;; Also in MmM
+;; (add-hook 'prog-mode-hook 'display-line-numbers-mode)
 
 ;;; ##########################################################################
 
@@ -531,8 +560,8 @@ font size is computed + 20 of this value."
 
 (setq register-preview-delay 0) ;; Show registers ASAP
 (set-register ?O (cons 'file (concat emacs-config-directory "emacs-config.org")))
-
 (set-register ?G '(file . "~/Developer/game-dev/GB_asm"))
+(set-register ?S (cons 'file (concat emacs-config-directory "org-files/important-scripts.org")))
 
 ;;; ##########################################################################
 ;; Allow access from emacsclient
@@ -542,54 +571,101 @@ font size is computed + 20 of this value."
     (unless (server-running-p)
       (server-start))))
 
-;; (when (fboundp 'pixel-scroll-precision-mode)
-;;    (pixel-scroll-precision-mode))
+(when (fboundp 'pixel-scroll-precision-mode)
+  (pixel-scroll-precision-mode))
+
+;;; ##########################################################################
+
+(use-package helpful
+  :ensure t
+  ;; :commands (helpful-callable helpful-variable helpful-command helpful-key)
+  :config
+  (bind-keys
+    ([remap describe-command] . helpful-command)
+    ([remap describe-key] . helpful-key)))
+
+(defun mifi/set-delight ()
+  (interactive)
+  (delight '( (abbrev-mode " Abv" abbrev)
+	      (anaconda-mode)
+	      (buffer-face-mode "Buff")
+	      (company-box-mode)
+	      (company-mode)
+	      (counsel-mode)
+	      (golden-ratio-mode " 𝜑")
+	      (lisp-interaction-mode " iLisp")
+	      (mmm-keys-minor-mode " m3")
+	      (projectile-mode " ->")
+	      (tree-sitter-mode " ts")
+              ;;(eldoc-mode nil " eldoc")
+              (overwrite-mode " Ov" t)
+              (python-mode " Py" :major)
+              (rainbow-mode " 🌈")
+              (emacs-lisp-mode "Elisp" :major))))
+
+(use-package delight
+  :ensure t
+  :config
+  :hook (elpaca-after-init . mifi/set-delight))
+
+(use-package xref :ensure nil)
+(use-package dumb-jump
+  :after xref :ensure t
+  :config
+  (add-hook 'xref-backend-functions #'dumb-jump-xref-activate))
+
+;;; ##########################################################################
+
+(defun mifi/setup-hooks-for-eldoc ()
+  (interactive)
+  (add-hook 'emacs-lisp-mode-hook 'eldoc-mode)
+  (add-hook 'lisp-interaction-mode-hook 'eldoc-mode)
+  (add-hook 'ielm-mode-hook 'eldoc-mode)
+  ;; Eldoc will try to load/unload a theme which can cause issues with our
+  ;; theme loading mechanism. Our theme could fail to load because of this.
+  ;; So, to get our themes loading properly, load it here if not already
+  ;; loaded.
+  (unless theme-did-load
+    (mifi/load-theme-from-selector)))
+
+(use-package eldoc-box
+  :ensure t
+  :delight DocBox
+  :hook (elpaca-after-init . mifi/setup-hooks-for-eldoc))
+
+;;; ##########################################################################
+
+(defun mifi/after-which-key ()
+  (interactive)
+  (which-key-mode 1)
+  (which-key-setup-minibuffer)
+  (mifi/define-mmm-minor-mode-map)
+  (mmm-keys-minor-mode 1)
+  (when (featurep 'prog-mode)
+    (which-key-add-key-based-replacements "C-c g r" "find-symbol-reference")
+    (which-key-add-key-based-replacements "C-c g o" "find-defitions-other-window")
+    (which-key-add-key-based-replacements "C-c g g" "find-defitions")
+    (which-key-add-key-based-replacements "C-c g ?" "eldoc-definition"))
+  (mifi/set-recenter-keys))
+
+(use-package which-key
+  :init
+  (add-hook 'emacs-startup-hook #'mifi/after-which-key)
+  :ensure (:wait t) :demand t
+  :commands which-key-mode
+  :delight which-key-mode
+  :custom
+  (which-key-idle-delay 1,0)
+  (which-key-prefix-prefix "✪ ")
+  (which-key-sort-order 'which-key-key-order-alpha)
+  (which-key-min-display-lines 3)
+  (which-key-max-display-columns nil))
 
 ;;; ##########################################################################
 
 (use-package hydra
   :ensure (:repo "abo-abo/hydra" :fetcher github
             :files (:defaults (:exclude "lv.el"))))
-
-;;; ##########################################################################
-
-(defun mifi/set-diminish ()
-  (when (equal custom-project-handler 'custom-project-projectile)
-    (diminish 'projectile-mode "PrM"))
-  (diminish 'anaconda-mode)
-  (diminish 'tree-sitter-mode "ts")
-  (diminish 'lisp-interaction-mode "Lim")
-  (diminish 'counsel-mode)
-  (diminish 'lisp-interaction-mode "iLisp")
-  (diminish 'golden-ratio-mode)
-  (diminish 'mmm-keys-minor-mode "m3k")
-  (diminish 'company-box-mode)
-  (diminish 'company-mode))
-
-(use-package diminish
-  :config
-  (if (not elpaca-after-init-time)
-    (add-hook 'elpaca-after-init-hook
-      (lambda () (run-with-timer 0.5 nil 'mifi/set-diminish)))
-    (run-with-timer 1.0 nil 'mifi/set-diminsh)))
-
-(use-package dumb-jump
-  :config
-  (add-hook 'xref-backend-functions #'dumb-jump-xref-activate))
-
-;;; ##########################################################################
-
-(use-package which-key
-  :diminish which-key-mode
-  :custom
-  (which-key-idle-delay 1)
-  (which-key-prefix-prefix "◉ ")
-  (which-key-sort-order 'which-key-key-order-alpha)
-  (which-key-min-display-lines 3)
-  (which-key-max-display-columns nil)
-  :config
-  (which-key-mode)
-  (which-key-setup-minibuffer))
 
 ;;; ##########################################################################
 
@@ -602,6 +678,7 @@ font size is computed + 20 of this value."
 ;;; ##########################################################################
 
 (use-package anzu
+  :ensure t
   :custom
   (anzu-mode-lighter "")
   (anzu-deactivate-region t)
@@ -619,75 +696,66 @@ font size is computed + 20 of this value."
 
 ;;; ##########################################################################
 
-(use-package visual-fill-column :after org)
+(use-package visual-fill-column
+  :ensure nil
+  :after org)
+
+(use-package writeroom-mode
+  :defer t
+  :after visual-fill-column)
 
 ;;; ##########################################################################
+;;; Default keys are C-M-= or C-M--
 
 (use-package default-text-scale
+  :ensure t
   :hook (elpaca-after-init . default-text-scale-mode))
 
 ;;; ##########################################################################
 
-;; Macintosh specific configurations.
-(when *is-a-mac*
-  (setq mac-command-modifier       'meta
-    mac-option-modifier         nil
-    mac-control-modifier       'control
-    mac-right-command-modifier 'super
-    mac-right-control-modifier 'hyper))
+(defun mifi/set-mac-modifier-keys ()
+  (interactive)
+  ;; Macintosh specific configurations.
+  (when *is-a-mac*
+    (setq mac-command-modifier   'meta
+      mac-option-modifier        'super
+      mac-control-modifier       'control
+      mac-right-command-modifier 'super
+      mac-right-control-modifier 'hyper)))
+
+(add-hook 'elpaca-after-init-hook #'mifi/set-mac-modifier-keys)
 
 ;;; ##########################################################################
 
-(bind-key "C-c ]" 'indent-region prog-mode-map)
-(bind-key "C-c }" 'indent-region prog-mode-map)
-(bind-key "C-x C-j" 'dired-jump)
+(defun mifi/setup-global-keybindings ()
+  (interactive)
+  (bind-key "C-c ]" 'indent-region prog-mode-map)
+  (bind-key "C-c }" 'indent-region prog-mode-map)
+  (bind-key "C-x C-j" 'dired-jump)
 
-(use-package evil-nerd-commenter
-  :bind ("M-/" . evilnc-comment-or-uncomment-lines))
+  (use-package evil-nerd-commenter
+    :bind ("M-/" . evilnc-comment-or-uncomment-lines))
 
-;;
-;; A little better than just the typical "C-x o"
-;; windmove is a built-in Emacs package.
-;;
-(global-set-key (kbd "C-c <left>")  'windmove-left)
-(global-set-key (kbd "C-c <right>") 'windmove-right)
-(global-set-key (kbd "C-c <up>")    'windmove-up)
-(global-set-key (kbd "C-c <down>")  'windmove-down)
+  ;;
+  ;; A little better than just the typical "C-x o"
+  ;; windmove is a built-in Emacs package.
+  ;;
+  (global-set-key (kbd "C-c <left>")  'windmove-left)
+  (global-set-key (kbd "C-c <right>") 'windmove-right)
+  (global-set-key (kbd "C-c <up>")    'windmove-up)
+  (global-set-key (kbd "C-c <down>")  'windmove-down)
 
-;;
-;; Ctl-mouse to adjust/scale fonts will be disabled.
-;; I personally like this since it was all to easy to accidentally
-;; change the size of the font.
-;;
-(global-unset-key (kbd "C-<mouse-4>"))
-(global-unset-key (kbd "C-<mouse-5>"))
-(global-unset-key (kbd "C-<wheel-down>"))
-(global-unset-key (kbd "C-<wheel-up>"))
+  ;;
+  ;; Ctl-mouse to adjust/scale fonts will be disabled.
+  ;; I personally like this since it was all to easy to accidentally
+  ;; change the size of the font.
+  ;;
+  (global-unset-key (kbd "C-<mouse-4>"))
+  (global-unset-key (kbd "C-<mouse-5>"))
+  (global-unset-key (kbd "C-<wheel-down>"))
+  (global-unset-key (kbd "C-<wheel-up>")))
 
-;;; ##########################################################################
-
-;; prevent (emacs) eldoc loaded before Elpaca activation warning.
-;; (Warning only displayed during first Elpaca installation)
-
-(elpaca-process-queues)
-(use-package eldoc
-  :defer t
-  :config
-  (add-hook 'emacs-lisp-mode-hook 'eldoc-mode)
-  (add-hook 'lisp-interaction-mode-hook 'eldoc-mode)
-  (add-hook 'ielm-mode-hook 'eldoc-mode)
-  ;; Eldoc will try to load/unload a theme which can cause issues with our
-  ;; theme loading mechanism. Our theme could fail to load because of this.
-  ;; So, to get our themes loading properly, load it here if not already
-  ;; loaded.
-  (unless theme-did-load
-    (mifi/load-theme-from-selector)))
-
-(use-package eldoc-box
-  :after eldoc
-  :diminish DocBox
-  :config
-  (global-eldoc-mode t))
+(add-hook 'elpaca-after-init-hook #'mifi/setup-global-keybindings)
 
 ;;; ##########################################################################
 ;;; Automatic Package Updates
@@ -730,6 +798,7 @@ font size is computed + 20 of this value."
 ;;; ##########################################################################
 
 (use-package all-the-icons
+  :ensure t
   :when (display-graphic-p))
 
 ;;; ##########################################################################
@@ -742,10 +811,7 @@ font size is computed + 20 of this value."
 ;;; Window Number
 
 (use-package winum
-  ;; :vc syntax below works, just for testing. Elpaca handles it for now.
-  ;; :vc ( :url "https://github.com/deb0ch/emacs-winum"
-  ;;  :branch "master"
-  ;;  :main-file "winum.el")
+  :ensure t
   :config (winum-mode))
 
 ;;; ##########################################################################
@@ -761,12 +827,14 @@ font size is computed + 20 of this value."
   (dashboard-set-file-icons t)
   (dashboard-footer-messages '("Greetings Program!"))
   (dashboard-banner-logo-title "Welcome to Emacs!")
-  (dashboard-startup-banner (expand-file-name "Emacs-modern-is-sexy-v1.png" user-emacs-directory))
+  :commands dashboard-open
   :bind ("C-c d" . dashboard-open)
   :config
   ;; (setq initial-buffer-choice (lambda () (get-buffer-create dashboard-buffer-name)))
   (add-hook 'elpaca-after-init-hook #'dashboard-insert-startupify-lists)
   (add-hook 'elpaca-after-init-hook #'dashboard-initialize)
+  ;;-or- (expand-file-name "Emacs-modern-is-sexy-v1.png" user-emacs-directory)
+  (setq dashboard-startup-banner (expand-file-name "Emacs-modern-is-sexy-v1.png" user-emacs-directory))
   (dashboard-setup-startup-hook))
 
 ;;; ##########################################################################
@@ -779,16 +847,6 @@ font size is computed + 20 of this value."
   (dolist (hook '(text-mode-hook prog-mode-hook org-mode-hook))
     (add-hook hook #'jinx-mode)))
 
-;;; ------------------------------------------------------------------------
-(use-package jsonrpc
-  :config
-  ;; For some odd reason, it is possible that jsonrpc will try to load a
-  ;; theme. (jsonrpc/lisp/custom.el:1362). If our theme hasn't been loaded
-  ;; yet, go ahead and try. This could prevent a startup without the theme
-  ;; properly loaded.
-  (unless theme-did-load
-    (mifi/load-theme-from-selector)))
-
 ;;; ##########################################################################
 ;; These are packages located in the site-lisp or lisp directories in the
 ;; 'emacs-config-directory'
@@ -798,6 +856,8 @@ font size is computed + 20 of this value."
 (use-package vundo
   ;;:ensure ( :host github :repo "casouri/vundo")
   :when (equal undo-handler 'undo-handler-vundo)
+  :ensure t
+  :commands vundo
   :bind
   ("C-x u" . vundo)
   ("C-x r u" . vundo)
@@ -827,6 +887,7 @@ font size is computed + 20 of this value."
 ;;
 (when (equal undo-handler 'undo-handler-undo-tree)
   (use-package undo-tree
+    :ensure t
     :init
     (setq undo-tree-visualizer-timestamps nil
       undo-tree-visualizer-diff t
@@ -836,7 +897,7 @@ font size is computed + 20 of this value."
       undo-limit 800000
       undo-strong-limit 12000000
       undo-outer-limit 120000000)
-    :diminish untree
+    :delight untree
     :config
     (global-undo-tree-mode)
     (advice-add 'undo-tree-visualize :around #'undo-tree-split-side-by-side)
@@ -847,13 +908,16 @@ font size is computed + 20 of this value."
 
 ;;; ##########################################################################
 
-(use-package prescient)
+(use-package prescient
+  :ensure t)
 
 ;;; ##########################################################################
 
 (use-package orderless
   :when (or (equal completion-handler 'comphand-vertico)
           (equal completion-handler 'comphand-ivy-counsel))
+  :after (:any ivy swiper vertico counsel)
+  :ensure t
   :custom
   (completion-styles '(orderless basic))
   (completion-category-overrides '((file (styles basic partial-completion)))))
@@ -863,6 +927,7 @@ font size is computed + 20 of this value."
 
 (use-package ivy
   :when (equal completion-handler 'comphand-ivy-counsel)
+  :ensure t
   :bind (("C-s" . swiper)
           :map ivy-minibuffer-map
             ;;; ("TAB" . ivy-alt-done)
@@ -904,12 +969,15 @@ font size is computed + 20 of this value."
 
 (use-package swiper
   :when (equal completion-handler 'comphand-ivy-counsel)
-  :after ivy)
+  :after ivy
+  :ensure t)
 
 ;;; ##########################################################################
 
 (use-package counsel
   :when (equal completion-handler 'comphand-ivy-counsel)
+  :after ivy
+  :defer t
   :bind ( ("C-M-j" . 'counsel-switch-buffer)
           ("M-x" . 'counsel-M-x)
           ("M-g o" . 'counsel-outline)
@@ -920,6 +988,12 @@ font size is computed + 20 of this value."
   :custom
   (counsel-linux-app-format-function #'counsel-linux-app-format-function-name-only)
   :config
+  (bind-keys
+    ([remap describe-function] . counsel-describe-function)
+    ([remap describe-variable] . counsel-describe-variable))
+  (when (featurep 'helpful)
+    (setq counsel-describe-function-function #'helpful-callable)
+    (setq counsel-describe-variable-function #'helpful-variable))
   (counsel-mode 1))
 
 ;;; ##########################################################################
@@ -934,9 +1008,64 @@ font size is computed + 20 of this value."
 
 ;;; ##########################################################################
 
+;; Don't use lsp-bridge with company as lsp-bridge already provides the same
+;; features. They actually collide.
+
+(use-package company
+  :unless (equal custom-ide 'custom-ide-lsp-bridge)
+  :ensure (:wait t)
+  :bind (:map company-active-map
+          ("C-n". company-select-next)
+          ("C-p". company-select-previous)
+          ("M-<". company-select-first)
+          ("M->". company-select-last)
+          ("<tab>" . company-complete-selection))
+  :custom
+  (company-minimum-prefix-length 2)
+  (company-idle-delay 0.5)
+  :config
+  (when (featurep 'prescient)
+    (company-prescient-mode 1))
+  (global-company-mode +1))
+
+;; IMPORTANT:
+;; Don't use company at all if lsp-bridge is active.
+;; lsp-bridge already provides similar functionality.
+
+;; :config
+;; (add-to-list 'company-backends 'company-yasnippet))
+
+;;; ##########################################################################
+
+(use-package company-box
+  :after company
+  :delight cb
+  :hook (company-mode . company-box-mode))
+
+(use-package company-jedi
+  :when  (equal custom-ide 'custom-ide-elpy)
+  :after (:all python company)
+  :config
+  (jedi:setup)
+  (defun my/company-jedi-python-mode-hook ()
+    (add-to-list 'company-backends 'company-jedi))
+  (add-hook 'python-mode-hook 'my/company-jedi-python-mode-hook))
+
+(use-package company-anaconda
+  :when (equal custom-ide 'custom-ide-anaconda)
+  :after (:all anaconda company)
+  :hook (python-mode . anaconda-mode)
+  :config
+  (eval-after-load "company"
+    '(add-to-list 'company-backends 'company-anaconda)))
+
+;;; ##########################################################################
+
 ;;;; Code Completion
 (use-package corfu
-  :when (equal completion-handler 'comphand-corfu)
+  :disabled
+  :when (equal completion-handler 'comphand-vertico)
+  :after vertico
   ;; Optional customizations
   :custom
   (corfu-cycle t)                  ; Allows cycling through candidates
@@ -949,18 +1078,18 @@ font size is computed + 20 of this value."
   (corfu-on-exact-match nil)       ; Don't auto expand tempel snippets
   ;; Optionally use TAB for cycling, default is `corfu-complete'.
   :bind (:map corfu-map
-          ("M-SPC"          . corfu-insert-separator)
-          ("TAB"            . corfu-next)
-          ([tab]            . corfu-next)
-          ("S-TAB"          . corfu-previous)
+          ("M-SPC"      . corfu-insert-separator)
+          ("TAB"        . corfu-next)
+          ([tab]        . corfu-next)
+          ("S-TAB"      . corfu-previous)
           ([backtab]    . corfu-previous)
           ("S-<return>" . corfu-insert)
-          ("RET"            . nil))
-  :init
-  (global-corfu-mode)
-  (corfu-history-mode)
-  (corfu-popupinfo-mode) ; Popup completion info
+          ("RET"        . nil))
+  :hook (prog-mode . corfu-mode)
   :config
+  (corfu-prescient-mode t)
+  (corfu-history-mode t)
+  (corfu-popupinfo-mode) ; Popup completion info
   (add-hook 'eshell-mode-hook
     (lambda () (setq-local corfu-quit-at-boundary t
                  corfu-quit-no-match t
@@ -970,8 +1099,8 @@ font size is computed + 20 of this value."
 ;;; ##########################################################################
 ;; Add extensions
 (use-package cape
-  :when (equal completion-handler 'comphand-corfu)
-  :after curfu
+  :when (equal completion-handler 'comphand-vertico)
+  :after corfu
   ;; Bind dedicated completion commands
   ;; Alternative prefix keys: C-c p, M-p, M-+, ...
   :bind ( ("C-c C-p p" . completion-at-point) ;; capf
@@ -1007,22 +1136,21 @@ font size is computed + 20 of this value."
   ;;(add-hook 'completion-at-point-functions #'cape-abbrev)
   ;;(add-hook 'completion-at-point-functions #'cape-dict)
   ;;(add-hook 'completion-at-point-functions #'cape-elisp-symbol)
-  ;;(add-hook 'completion-at-point-functions #'cape-line)
+  (add-hook 'completion-at-point-functions #'cape-line)
   )
 
 ;;; ##########################################################################
 
 (use-package corfu-prescient
-  :when (equal completion-handler 'comphand-corfu)
-  :after (corfu prescient))
+  :ensure t
+  :when (equal completion-handler 'comphand-vertico)
+  :after corfu prescient)
 
 ;;; ##########################################################################
 
 (use-package vertico
   :when (equal completion-handler 'comphand-vertico)
-  :demand t
-  ;;:wait t
-  ;;:ensure (:repo "minad/vertico" :files (:defaults "extensions/vertico-*.el") :fetcher github)
+  :ensure t
   :custom
   (recentf-mode t)
   (vertico-count 12)
@@ -1030,6 +1158,8 @@ font size is computed + 20 of this value."
   (vertico-multiform-mode 1)
   :config
   (vertico-mode)
+  (when (featurep 'prescient)
+    (vertico-prescient-mode 0))
   ;; :bind ("C-x C-f" . ido-find-file)
   ;; Clean up file path when typing
   :hook ((rfn-eshadow-update-overlay . vertico-directory-tidy)
@@ -1039,8 +1169,7 @@ font size is computed + 20 of this value."
 ;;; ##########################################################################
 
 (use-package marginalia
-  ;; :when (equal completion-handler 'comphand-vertico)
-  ;; :after vertico
+  :ensure t
   :custom
   (marginalia-max-relative-age 0)
   (marginalia-align 'left)
@@ -1059,6 +1188,7 @@ font size is computed + 20 of this value."
 (use-package consult
   :when (equal completion-handler 'comphand-vertico)
   :after vertico
+  :ensure t
   :bind
   ([remap switch-to-buffer] . consult-buffer)
   ([remap switch-to-buffer-other-window] . consult-buffer-other-window)
@@ -1108,12 +1238,14 @@ font size is computed + 20 of this value."
 
 (use-package vertico-prescient
   :when (equal completion-handler 'comphand-vertico)
+  :ensure t
   :after vertico prescient)
 
 ;;; ##########################################################################
 
 (use-package vertico-posframe
   :when (equal completion-handler 'comphand-vertico)
+  :ensure t
   :after vertico
   :custom
   (setq vertico-multiform-commands
@@ -1136,10 +1268,14 @@ font size is computed + 20 of this value."
 
 ;; This has to be evaluated at the end of the init since it's possible that the
 ;; completion-handler variable will not yet be defined at this point in the
-;; init phase using elpaca.
+;; init phase usi\ng elpaca.
+
 (add-hook 'elpaca-after-init-hook
   (lambda ()
-    (when (equal completion-handler 'comphand-built-in)
+    (use-package ido
+      :when (equal completion-handler 'comphand-built-in)
+      :ensure nil
+      :config
       (ido-everywhere t))))
 
 ;;; ##########################################################################
@@ -1180,56 +1316,6 @@ font size is computed + 20 of this value."
   ;;:ensure t ; only need to install it, embark loads it after consult if found
   :hook
   (embark-collect-mode . consult-preview-at-point-mode))
-
-;;; ##########################################################################
-
-;; Don't use lsp-bridge with company as lsp-bridge already provides the same
-;; features. They actually collide.
-
-(use-package company
-  :unless (equal custom-ide 'custom-ide-lsp-bridge)
-  :bind (:map company-active-map
-          ("C-n". company-select-next)
-          ("C-p". company-select-previous)
-          ("M-<". company-select-first)
-          ("M->". company-select-last)
-          ("<tab>" . company-complete-selection))
-  :custom
-  (company-minimum-prefix-length 2)
-  (company-idle-delay 0.5)
-  :config
-  (global-company-mode +1))
-
-;; IMPORTANT:
-;; Don't use company at all if lsp-bridge is active.
-;; lsp-bridge already provides similar functionality.
-
-;; :config
-;; (add-to-list 'company-backends 'company-yasnippet))
-
-;;; ##########################################################################
-
-(use-package company-box
-  :after company
-  :diminish cb
-  :hook (company-mode . company-box-mode))
-
-(use-package company-jedi
-  :when  (equal custom-ide 'custom-ide-elpy)
-  :after (:all python company)
-  :config
-  (jedi:setup)
-  (defun my/company-jedi-python-mode-hook ()
-    (add-to-list 'company-backends 'company-jedi))
-  (add-hook 'python-mode-hook 'my/company-jedi-python-mode-hook))
-
-(use-package company-anaconda
-  :when (equal custom-ide 'custom-ide-anaconda)
-  :after (:all anaconda company)
-  :hook (python-mode . anaconda-mode)
-  :config
-  (eval-after-load "company"
-    '(add-to-list 'company-backends 'company-anaconda)))
 
 ;;; ##########################################################################
 
@@ -1324,6 +1410,7 @@ font size is computed + 20 of this value."
 
 (use-package dired-single
   :after dired
+  :ensure t
   :config
   (mifi/dired-single-keymap-init))
 
@@ -1498,15 +1585,12 @@ font size is computed + 20 of this value."
 (defun mifi/reset-if-spacious-padding-mode ()
   (interactive)
   (when-let ((spm? (featurep 'spacious-padding))
-	      (spm-on-off (default-value 'spacious-padding-mode)))
+            (spm-on-off (default-value 'spacious-padding-mode)))
     (spacious-padding-mode 0)
     (run-with-timer 0.2 nil
       (lambda (on-off) (spacious-padding-mode on-off)) spm-on-off)))
 
 ;;; ##########################################################################
-
-(defvar theme-did-load nil
-  "Set to true if the last Theme was loaded.")
 
 (defun mifi/load-theme-from-selector (&optional step)
   "Load the theme in `theme-list' indexed by `theme-selector'."
@@ -1603,6 +1687,7 @@ font size is computed + 20 of this value."
 ;;; ##########################################################################
 
 (add-to-list 'custom-theme-load-path (expand-file-name "Themes" custom-docs-dir))
+(add-to-list 'custom-theme-load-path (expand-file-name "lisp" emacs-config-directory))
 
 (mifi/org-theme-override-values)
 (use-package tron-legacy-theme :defer t)
@@ -1753,9 +1838,11 @@ font size is computed + 20 of this value."
     :height (+ custom-default-font-size 20)
     :weight 'medium))
 
-;; This is done so that the Emacs window is sized early in the init phase along with the default font size.
-;; Startup works without this but it's nice to see the window expand early...
-(add-hook 'emacs-startup-hook
+;; This is done so that the Emacs window is sized early in the init phase along
+;; with the default font size. Startup works without this but it's nice to see
+;; the window expand early...
+
+(add-hook 'elpaca-after-init-hook
   (lambda ()
     (when (display-graphic-p)
       (mifi/update-face-attribute)
@@ -1814,20 +1901,20 @@ font size is computed + 20 of this value."
   ("C-c 3". use-large-display-font)
   ("C-c 4". use-x-large-display-font))
 
-(let ((map global-map))
-  (define-key map (kbd "C-S-c 1")
-    (lambda () (interactive) (use-small-display-font t)))
-  (define-key map (kbd "C-S-c 2")
-    (lambda () (interactive) (use-medium-display-font t)))
-  (define-key map (kbd "C-S-c 3")
-    (lambda () (interactive) (use-large-display-font t)))
-  (define-key map (kbd "C-S-c 4")
-    (lambda () (interactive) (use-x-large-display-font t)))
-  (which-key-add-key-based-replacements "C-S-c 1" "recenter-with-small-font")
-  (which-key-add-key-based-replacements "C-S-c 2" "recenter-with-medium-font")
-  (which-key-add-key-based-replacements "C-S-c 3" "recenter-with-large-font")
-  (which-key-add-key-based-replacements "C-S-c 4" "recenter-with-x-large-font")
-  )
+(defun mifi/set-recenter-keys ()
+  (let ((map global-map))
+    (define-key map (kbd "C-S-c 1")
+      (lambda () (interactive) (use-small-display-font t)))
+    (define-key map (kbd "C-S-c 2")
+      (lambda () (interactive) (use-medium-display-font t)))
+    (define-key map (kbd "C-S-c 3")
+      (lambda () (interactive) (use-large-display-font t)))
+    (define-key map (kbd "C-S-c 4")
+      (lambda () (interactive) (use-x-large-display-font t)))
+    (which-key-add-key-based-replacements "C-S-c 1" "recenter-with-small-font")
+    (which-key-add-key-based-replacements "C-S-c 2" "recenter-with-medium-font")
+    (which-key-add-key-based-replacements "C-S-c 3" "recenter-with-large-font")
+    (which-key-add-key-based-replacements "C-S-c 4" "recenter-with-x-large-font")))
 
 ;;; ##########################################################################
 ;; Frame support functions
@@ -1896,6 +1983,7 @@ font size is computed + 20 of this value."
        :right-divider-width 10
        :scroll-bar-width 8
        :fringe-width 8))
+  :ensure t
   :config
   (spacious-padding-mode t))
 
@@ -1987,6 +2075,7 @@ font size is computed + 20 of this value."
   (visual-fill-column-mode 1))
 
 (defun mifi/org-mode-setup ()
+  (interactive)
   (org-indent-mode)
   (variable-pitch-mode 1)
   (visual-line-mode 1)
@@ -2006,10 +2095,26 @@ font size is computed + 20 of this value."
 
 ;;; ##########################################################################
 
+(defun mifi/set-org-agenda-directory ()
+  "Sets the org-agenda directory based upon the customized variable and then
+sets the org-agenda-files list to all the files in that directory. The
+directory is relative to the working-files-directory
+(a.k.a user-emacs-directory)."
+  (interactive)
+  (let ((agenda-dir (format "%s/%s"
+                      working-files-directory
+                    org-agenda-dirname)))
+    (make-directory agenda-dir t)
+    (custom-set-variables
+      '(org-directory agenda-dir)
+      '(org-agenda-files (list org-directory)))))
+
+;;; ##########################################################################
+
 (defun mifi/org-setup-agenda ()
   "Function to setup basic org-agenda settings."
   (bind-key "C-c a" 'org-agenda org-mode-map)
-  
+  ;; (mifi/set-org-agenda-directory) ;; Where all the org-agenda files live    
   (setq org-agenda-custom-commands
     '(("d" "Dashboard"
         ((agenda "" ((org-deadline-warning-days 7)))
@@ -2063,30 +2168,31 @@ font size is computed + 20 of this value."
 (defun mifi/org-setup-capture-templates ()
   (setq org-capture-templates
     `(("t" "Tasks / Projects")
-       ("tt" "Task" entry (file+olp "~/Projects/Code/emacs-from-scratch/OrgFiles/Tasks.org" "Inbox")
+       
+       ("tt" "Task" entry (file+olp (expand-file-name "OrgFiles/Tasks.org" user-emacs-directory) "Inbox")
          "* TODO %?\n  %U\n  %a\n        %i" :empty-lines 1)
 
        ("j" "Journal Entries")
        ("jj" "Journal" entry
-         (file+olp+datetree "~/Projects/Code/emacs-from-scratch/OrgFiles/Journal.org")
+         (file+olp+datetree (expand-file-name "OrgFiles/Journal.org" user-emacs-directory))
          "\n* %<%I:%M %p> - Journal :journal:\n\n%?\n\n"
          ;; ,(dw/read-file-as-string "~/Notes/Templates/Daily.org")
          :clock-in :clock-resume
          :empty-lines 1)
        ("jm" "Meeting" entry
-         (file+olp+datetree "~/Projects/Code/emacs-from-scratch/OrgFiles/Journal.org")
+         (file+olp+datetree (expand-file-name "OrgFiles/Journal.org" user-emacs-directory))
          "* %<%I:%M %p> - %a :meetings:\n\n%?\n\n"
          :clock-in :clock-resume
          :empty-lines 1)
 
        ("w" "Workflows")
        ("we" "Checking Email" entry (file+olp+datetree
-                                      "~/Projects/Code/emacs-from-scratch/OrgFiles/Journal.org")
+                                      (expand-file-name "OrgFiles/Joural.org" user-emacs-directory))
          "* Checking Email :email:\n\n%?" :clock-in :clock-resume :empty-lines 1)
 
        ("m" "Metrics Capture")
        ("mw" "Weight" table-line (file+headline
-                                   "~/Projects/Code/emacs-from-scratch/OrgFiles/Metrics.org"
+                                   (expand-file-name "OrgFiles/Metrics.org" user-emacs-directory)
                                    "Weight")
          "| %U | %^{Weight} | %^{Notes} |" :kill-buffer t))))
 
@@ -2129,6 +2235,7 @@ font size is computed + 20 of this value."
 (use-package org
   :preface
   (mifi/org-theme-override-values)
+  (add-to-list 'auto-mode-alist '("\\.org\\'" . org-mode))
   :commands (org-capture org-agenda)
   :defer t
   :hook (org-mode . mifi/org-mode-setup)
@@ -2141,7 +2248,6 @@ font size is computed + 20 of this value."
   (org-image-actual-width '(300))
   :bind (:map org-mode-map
           ("C-c e" . org-edit-src-code))
-  :mode ("\\.org\\'" . org-mode)
   :config
   (setq org-hide-emphasis-markers nil)
   ;; Save Org buffers after refiling!
@@ -2167,18 +2273,6 @@ font size is computed + 20 of this value."
   (yas-global-mode t)
   (define-key global-map (kbd "C-c j")
     (lambda () (interactive) (org-capture nil "jj"))))
-
-;;; ##########################################################################
-
-(use-package org-appear
-  :after org
-  :init
-  (setq org-hide-emphasis-markers t)
-  (setq org-appear-autoemphasis t) ;; Enable org-appear on emphasis
-  (setq org-appear-autolinks t) ;; Enable on links
-  (setq org-appear-autosubmarkers t) ;; Enable on sub and superscript
-  :commands (org-appear-mode)
-  :hook (org-mode . org-appear-mode))
 
 ;;; ##########################################################################
 
@@ -2219,6 +2313,7 @@ font size is computed + 20 of this value."
 (use-package org-modern
   :when (display-graphic-p)
   :after org
+  :ensure t
   :hook (org-mode . org-modern-mode)
   :config
   ;; Add frame borders and window dividers
@@ -2231,9 +2326,6 @@ font size is computed + 20 of this value."
     (face-spec-reset-face face)
     (set-face-foreground face (face-attribute 'default :background nil)))
   (set-face-background 'fringe (face-attribute 'default :background nil))
-  (set-face-attribute 'default nil :family "Menlo")
-  (set-face-attribute 'variable-pitch nil :family "Helvetica")
-  (set-face-attribute 'org-modern-symbol nil :family "DejaVu Sans Mono")
   (setq
     ;;   ;; Edit settings
     ;;   org-auto-align-tags nil
@@ -2302,12 +2394,14 @@ font size is computed + 20 of this value."
     (define-key map (kbd "C-c C-d C-k") #'denote-dired-rename-marked-files-with-keywords)
     (define-key map (kbd "C-c C-d C-R") #'denote-dired-rename-marked-files-using-front-matter))
 
-  (if (mifi/minor-mode-is-active 'which-key-mode)
+  (when (bound-and-true-p which-key-mode)
     (which-key-add-key-based-replacements "C-c n f" "denote-find")))
 
 ;;; ##########################################################################
 
 (use-package denote
+  :defer t
+  :after which-key
   :custom
   (denote-directory (expand-file-name "notes" user-emacs-directory))
   (denote-save-buffers nil)
@@ -2350,7 +2444,7 @@ font size is computed + 20 of this value."
 
 (use-package projectile
   :when (equal custom-project-handler 'custom-project-projectile)
-  :diminish Proj
+  :delight Proj
   :config (projectile-mode)
   :bind-keymap
   ("C-c p" . projectile-command-map)
@@ -2403,17 +2497,13 @@ font size is computed + 20 of this value."
 
 ;;; ##########################################################################
 
+;; Consider doing an "M-x eglot-upgrade-eglot" to ensure that you have the most
+;; current eglot (yes, even though it's a built in package).
+
 (use-package eglot
   :when (equal custom-ide 'custom-ide-eglot)
-  ;; :ensure (:repo "https://github.com/emacs-mirror/emacs" :local-repo "eglot" :branch "master"
-  ;;            :files ("lisp/progmodes/eglot.el" "doc/emacs/doclicense.texi" "doc/emacs/docstyle.texi"
-  ;;                      "doc/misc/eglot.texi" "etc/EGLOT-NEWS" (:exclude ".git")))
-  :after eldoc track-changes company
-  :after (:any (:all company which-key eldoc) (:any jsonrpc python))
-  :init
-  (setq company-backends
-    (cons 'company-capf
-      (remove 'company-capf company-backends)))
+  :ensure nil
+  :defer t
   :hook
   (lisp-mode . eglot-ensure)
   (python-mode . eglot-ensure)
@@ -2423,11 +2513,8 @@ font size is computed + 20 of this value."
   ;; (c++-mode . eglot-ensure)
   ;; (prog-mode . eglot-ensure)
   :config
+  (flymake-mode 0)
   (add-to-list 'major-mode-remap-alist '(python-mode . python-ts-mode))
-  (which-key-add-key-based-replacements "C-c g r" "find-symbol-reference")
-  (which-key-add-key-based-replacements "C-c g o" "find-defitions-other-window")
-  (which-key-add-key-based-replacements "C-c g g" "find-defitions")
-  (which-key-add-key-based-replacements "C-c g ?" "eldoc-definition")
   ;; Eldoc/Eglot will try to load/unload a theme which can cause issues with our
   ;; theme loading mechanism. Our theme could fail to load because of this.  So,
   ;; to get our themes loading properly, load it here if not already loaded.
@@ -2542,26 +2629,19 @@ font size is computed + 20 of this value."
 
 ;;; ##########################################################################
 
-(use-package markdown-mode
-  :when (equal custom-ide 'custom-ide-lsp-bridge))
-
-;;; ##########################################################################
-
 (use-package anaconda-mode
+  :after (:any which-key company)
   :when (equal custom-ide 'custom-ide-anaconda)
   :bind (:map python-mode-map
           ("C-c g o" . anaconda-mode-find-definitions-other-frame)
           ("C-c g g" . anaconda-mode-find-definitions)
           ("C-c C-x" . next-error))
   :config
-  (which-key-add-key-based-replacements "C-c g o" "find-defitions-other-window")
-  (which-key-add-key-based-replacements "C-c g g" "find-defitions")
-  (use-package pyvenv-auto)
-  :hook
-  (if (featurep 'company)
+  (when (featurep 'company)
     (bind-keys :map anaconda-mode-map
       ("<tab>" . company-indent-or-complete-common)))
-  (python-mode-hook . anaconda-eldoc-mode))
+  (use-package pyvenv-auto)
+  :hook (python-mode-hook . anaconda-eldoc-mode))
 
 ;;; ##########################################################################
 
@@ -2579,13 +2659,14 @@ font size is computed + 20 of this value."
           ("C-c g ?" . elpy-doc))
   :config
   (use-package jedi)
-  (use-package flycheck
-    :when (equal custom-ide 'custom-ide-elpy)
-    :after elpy
-    :defer t
-    :diminish FlM
-    ;;:ensure (:host github :repo "flycheck/flycheck")
-    :hook (elpy-mode . flycheck-mode))        (which-key-add-key-based-replacements "C-c g a" "goto-assignment")
+  ;; (use-package flycheck
+  ;;   :when (equal custom-ide 'custom-ide-elpy)
+  ;;   :after elpy
+  ;;   :defer t
+  ;;   :delight "fc"
+  ;;   ;;:ensure (:host github :repo "flycheck/flycheck")
+  ;;   :hook (elpy-mode . flycheck-mode))
+  (which-key-add-key-based-replacements "C-c g a" "goto-assignment")
   (which-key-add-key-based-replacements "C-c g o" "find-defitions-other-window")
   (which-key-add-key-based-replacements "C-c g g" "find-defitions")
   (which-key-add-key-based-replacements "C-c g ?" "eldoc-definition")
@@ -2597,8 +2678,8 @@ font size is computed + 20 of this value."
 ;;; ##########################################################################
 
 (use-package flycheck
-  :unless (equal custom-ide 'custom-ide-elpy)
-  :diminish FlM
+  ;;:unless (equal custom-ide 'custom-ide-elpy)
+  :delight fc
   :defer t
   ;;:ensure (:host github :repo "flycheck/flycheck")
   :config
@@ -2645,7 +2726,7 @@ font size is computed + 20 of this value."
 ;;; ##########################################################################
 
 (use-package treesit-auto
-  :demand t
+  :demand t :ensure t
   :config
   (global-treesit-auto-mode))
 
@@ -2669,36 +2750,48 @@ font size is computed + 20 of this value."
     ((equal custom-ide 'custom-ide-lsp)
       (bind-keys :map python-mode-map
         ("C-c g r" . lsp-find-references)
-        ("C-c g o" . xref-find-definitions-other-window)
         ("C-c g g" . xref-find-definitions)
+        ("C-c g G" . xref-find-definitions-other-window)
         ("C-c g ?" . eldoc-doc-buffer)))
     ((equal custom-ide 'custom-ide-eglot)
       (bind-keys :map python-mode-map
-        ("C-c g r" . eglot-find-implementation)
-        ("C-c g o" . xref-find-definitions-other-window)
+        ("C-c g i" . eglot-find-implementation)
+        ("C-c g r" . xref-find-references)
+        ("C-c g D" . xref-find-definitions-other-window)
         ("C-c g g" . xref-find-definitions)
+        ("C-c g n" . xref-find-references-and-replace)
         ("C-c g ?" . eldoc-doc-buffer)))
     ((equal custom-ide 'custom-ide-elpy)
       (elpy-enable)
       (bind-keys :map python-mode-map
         ("C-c g a" . elpy-goto-assignment)
-        ("C-c g o" . elpy-goto-definition-other-window)
+        ("C-c g A" . elpy-goto-definition-other-window)
         ("C-c g g" . elpy-goto-definition)
         ("C-c g ?" . elpy-doc)))
     ((equal custom-ide 'custom-ide-lsp-bridge)
       (bind-keys :map python-mode-map
         ("C-c g a" . lsp-bridge-find-reference)
-        ("C-c g o" . lsp-bridge-find-def-other-window)
+        ("C-c g A" . lsp-bridge-find-def-other-window)
         ("C-c g g" . lsp-bridge-find-def)
         ("C-c g i" . lsp-bridge-find-impl)
-        ("C-c g r" . lsp-bridge-rename)
+        ("C-c g n" . lsp-bridge-rename)
         ("C-c g ?" . lsp-bridge-popup-documentation)))
+    ((equal custom-ide 'custom-ide-anaconda)
+      (bind-keys :map python-mode-map
+        ("C-c g a" . anaconda-mode-find-assignments)
+        ("C-c g A" . anaconda-mode-find-assignments-other-window)
+        ("C-c g r" . anaconda-mode-find-references)
+        ("C-c g R" . anaconda-mode-find-references-other-window)
+        ("C-c g g" . anaconda-mode-find-definitions)
+        ("C-c g G" . anaconda-mode-find-definitions-other-window)
+        ("C-c g ?" . anaconda-mode-show-doc)))
     ))
 
 ;;; ##########################################################################
 
 (defun mifi/load-python-file-hook ()
   (python-mode)
+  (flymake-mode 0)
   (when (equal custom-ide 'custom-ide-anaconda)
     (anaconda-mode 1))
   (message ">>> mifi/load-python-file-hook")
@@ -2923,11 +3016,6 @@ font size is computed + 20 of this value."
   (add-hook 'before-save-hook 'lsp-format-buffer nil t))
 
 ;;; ##########################################################################
-;; for Cargo.toml and other config files
-
-(use-package toml-mode :ensure)
-
-;;; ##########################################################################
 
 ;; (use-package graphql-mode)
 (use-package rust-mode
@@ -2942,7 +3030,11 @@ font size is computed + 20 of this value."
   (setq rust-format-on-save t))
 
 (use-package rust-playground :ensure t :after rust-mode)
-(use-package toml-mode :ensure t :after rust-mode)
+
+;;; ##########################################################################
+;; for Cargo.toml and other config files
+
+(use-package toml-mode :ensure t)
 
 ;;; ##########################################################################
 
@@ -3004,16 +3096,34 @@ font size is computed + 20 of this value."
   :config
   (setq inferior-lisp-program "/opt/homebrew/bin/sbcl"))
 
+;;; ##########################################################################
+
+(use-package swift-mode
+  :defer t
+  :mode ("\\.swift\\'" . swift-mode))
+
+(use-package swift-helpful
+  :defer t
+  :after swift-mode
+  :ensure (:files ("*.el" "swift-info/*.info"
+                    ("images" "swift-info/images/*.png") "swift-helpful-pkg.el")
+            :host github
+            :repo "danielmartin/swift-helpful"))
+
+(use-package swift-playground-mode
+  :defer t
+  :after swift-mode
+  :ensure ( :package "swift-playground-mode"
+          :repo "https://gitlab.com/michael.sanders/swift-playground-mode.git")
+  :init
+  (autoload 'swift-playground-global-mode "swift-playground-mode" nil t)
+  (add-hook 'swift-mode-hook #'swift-playground-global-mode))
+
 ;;; ------------------------------------------------------------------------
 
 (use-package dape
   :when (equal debug-adapter 'debug-adapter-dape)
-  :init
-  (define-dape-hydra)
-  :after (:any python go-mode)
-  ;; To use window configuration like gud (gdb-mi)
-  ;; :init
-  ;; (setq dape-buffer-window-arrangement 'gud)
+  :after (:any python go)
   :custom
   (dape-buffer-window-arrangement 'right)  ;; Info buffers to the right
   :config
@@ -3153,7 +3263,9 @@ font size is computed + 20 of this value."
   :when (equal debug-adapter 'debug-adapter-dap-mode)
   :defer t
   :after dap-mode
-  :ensure (:package "dap-lldb" :source nil :protocol https :inherit t :depth 1 :type git :host github :repo "emacs-lsp/dap-mode")
+  :ensure ( :package "dap-lldb" :source nil :protocol https
+	    :inherit t :depth 1 :type git
+	    :host github :repo "emacs-lsp/dap-mode")
   :custom
   (dap-lldb-debug-program "~/Developer/command-line-unix/llvm/lldb-build/bin/lldb-dap")
   :config
@@ -3168,7 +3280,9 @@ font size is computed + 20 of this value."
 
 (use-package dap-gdb-lldb
   :when (equal debug-adapter 'debug-adapter-dap-mode)
-  :ensure (:package "dap-gdb-lldb" :source nil :protocol https :inherit t :depth 1 :type git :host github :repo "emacs-lsp/dap-mode")
+  :ensure ( :package "dap-gdb-lldb" :source nil :protocol https
+	    :inherit t :depth 1 :type git :host github
+	    :repo "emacs-lsp/dap-mode")
   :defer t
   :after dap-lldb
   :config
@@ -3178,7 +3292,9 @@ font size is computed + 20 of this value."
   :when (equal debug-adapter 'debug-adapter-dap-mode)
   :defer t
   :after dap-mode
-  :ensure (:package "dap-cpptools" :source nil :protocol https :inherit t :depth 1 :type git :host github :repo "emacs-lsp/dap-mode"))
+  :ensure ( :package "dap-cpptools" :source nil :protocol https
+	    :inherit t :depth 1 :type git :host github
+	    :repo "emacs-lsp/dap-mode"))
 ;; :config
 ;; (dap-cpptools-setup))
 
@@ -3239,7 +3355,7 @@ font size is computed + 20 of this value."
   (defhydra dap-hydra (:color pink :hint nil :foreign-keys run)
     "
   ^Stepping^            ^Switch^                 ^Breakpoints^          ^Debug^                     ^Eval
-  ^^^^^^^^----------------------------------------------------------------------------------------------------------------
+  ^^^^^^^^-----------------------------------------------------------------------------------------------------------------
   _._: Next            _ss_: Session            _bb_: Toggle           _dd_: Debug                 _ee_: Eval
   _/_: Step in         _st_: Thread             _bd_: Delete           _dr_: Debug recent          _er_: Eval region
   _,_: Step out        _sf_: Stack frame        _ba_: Add              _dl_: Debug last            _es_: Eval thing at point
@@ -3288,23 +3404,16 @@ font size is computed + 20 of this value."
     ("q" mifi/dap-end-debug-session "quit" :color blue)
     ("Q" mifi/dap-delete-all-debug-sessions :color red)))
 
-;;; ##########################################################################
-;; helpful package
-
-(use-package helpful
-  :commands (helpful-callable helpful-variable helpful-command helpful-key)
-  :custom
-  (when (equal completion-handler 'comphand-ivy-counsel)
-    (counsel-describe-function-function #'helpful-callable)
-    (counsel-describe-variable-function #'helpful-variable))
+;;; ------------------------------------------------------------------------
+(use-package jsonrpc
+  :ensure t
   :config
-  (when (equal completion-handler 'comphand-ivy-counsel)
-    (bind-keys
-      ([remap describe-function] . counsel-describe-function)
-      ([remap describe-variable] . counsel-describe-variable)))
-  (bind-keys
-    ([remap describe-command] . helpful-command)
-    ([remap describe-key] . helpful-key)))
+  ;; For some odd reason, it is possible that jsonrpc will try to load a
+  ;; theme. (jsonrpc/lisp/custom.el:1362). If our theme hasn't been loaded
+  ;; yet, go ahead and try. This could prevent a startup without the theme
+  ;; properly loaded.
+  (unless theme-did-load
+    (mifi/load-theme-from-selector)))
 
 (use-package mw-thesaurus
   :when enable-thesaurus
@@ -3401,6 +3510,7 @@ font size is computed + 20 of this value."
 ;;; ##########################################################################
 
 (use-package pulsar
+  :ensure t
   :config
   (pulsar-global-mode)
   :custom
@@ -3413,12 +3523,57 @@ font size is computed + 20 of this value."
 ;;; ##########################################################################
 
 (use-package rainbow-mode
+  :ensure nil
   :hook (prog-mode . (lambda () (rainbow-mode t))))
 
 ;;; ##########################################################################
 
 (use-package highlight-defined
+  :defer t
+  :ensure t
+  :after prog-mode
   :hook (emacs-lisp-mode . highlight-defined-mode))
+
+;;; ##########################################################################
+
+(use-package popper
+  :bind (("C-`"   . popper-toggle)
+          ("M-`"   . popper-cycle)
+          ("C-M-`" . popper-toggle-type))
+  :init
+  (setq popper-reference-buffers
+    '("\\*Messages\\*"
+       "\\*scratch\\*"
+       "\\*ielm\\*"
+       "Output\\*$"
+       "\\*Async Shell Command\\*"
+       "^\\*eshell.*\\*$" eshell-mode ;eshell as a popup
+       "^\\*shell.*\\*$"  shell-mode  ;shell as a popup
+       "^\\*term.*\\*$"   term-mode   ;term as a popup
+       "^\\*vterm.*\\*$"  vterm-mode  ;vterm as a popup
+       help-mode
+       compilation-mode))
+  :config
+  (popper-mode +1)
+  (popper-echo-mode +1))
+
+;;; ##########################################################################
+
+(use-package markdown-mode
+  :ensure t
+  :mode ("README\\.md\\'" . gfm-mode)
+  :init (setq markdown-command "pandoc"))
+
+;;; ##########################################################################
+
+;; Use keybindings
+(use-package grip-mode
+  :bind (:map markdown-mode-command-map
+          ("g" . grip-mode)))
+
+;; ;; Or using hooks
+;; (use-package grip-mode
+;;   :hook ((markdown-mode org-mode) . grip-mode))
 
 ;;; ##########################################################################
 
@@ -3464,16 +3619,15 @@ font size is computed + 20 of this value."
       map)
     "mmm-keys-minor-mode keymap.")
 
-  (which-key-add-key-based-replacements "M-RET |" "display-fill-column")    
+  (which-key-add-key-based-replacements "M-RET |" "display-fill-column")
   (which-key-add-key-based-replacements "M-RET ?" "help-at-point")
 
   (define-minor-mode mmm-keys-minor-mode
     "A minor mode so that my key settings override annoying major modes."
     :init-value t
-    :lighter " mmm-keys"))
+    :lighter " m3"))
 
-(mifi/define-mmm-minor-mode-map)
-(mmm-keys-minor-mode 1)
+;; (mifi/define-mmm-minor-mode-map)
 
 ;;; ##########################################################################
 
@@ -3530,25 +3684,38 @@ font size is computed + 20 of this value."
 ;; - the user switches windows
 (add-hook 'window-selection-change-functions 'mifi/mmm-handle-context-keys)
 
+;; (add-hook 'which-key-mode-hook #'mifi/after-which-key)
+
+;; (add-hook 'elpaca-after-init-hook #'mifi/after-which-key)
+  ;; (lambda ()
+  ;;   (mifi/after-which-key)
+  ;;   (mifi/define-mmm-minor-mode-map)
+  ;;   (mifi/set-recenter-keys)))
+
 ;;; ##########################################################################
+
+(defun mifi/config-landing ()
+  (setq-default initial-scratch-message
+    (format
+      ";; Hello, World and Happy hacking %s!\n%s\n\n" user-login-name
+      ";; Press M-RET (Meta-RET) to open Mitch's Context Aware Menu"))
+  (cond
+    ((equal default-landing-mode 'landing-mode-dashboard)
+      (dashboard-open))
+    ((equal default-landing-mode 'landing-mode-scratch)
+      (switch-to-buffer "*scratch*")
+      (end-of-buffer))
+    ((equal default-landing-mode 'landing-mode-ielm)
+      (ielm))
+    ((equal default-landing-mode 'landing-mode-eshell)
+      (eshell)))  )
+  ;; (add-hook 'lisp-interaction-mode-hook
+  ;;   (lambda ())))
 
 (add-hook 'elpaca-after-init-hook
   (lambda ()
-    (switch-to-buffer "*scratch*") (end-of-buffer)))
-
-(add-hook 'lisp-interaction-mode-hook
-  (lambda ()
-    (setq-default initial-scratch-message
-      (format
-        ";; Hello, World and Happy hacking %s!\n%s\n\n" user-login-name
-        ";; Press M-RET (Meta-RET) to open Mitch's Context Aware Menu"))
-    (when dashboard-landing-screen (dashboard-open))))
-
-(when dashboard-landing-screen
-  ;; (add-hook 'inferior-emacs-lisp-mode 'dashboard-open) ;; IELM open?
-  (add-hook 'elpaca-after-init-hook
-    (lambda ()
-      (add-hook 'lisp-interaction-mode-hook #'dashboard-open))))
+    (mifi/config-landing)
+    (mifi/set-recenter-keys)))
 
 ;;; ##########################################################################
 
