@@ -256,10 +256,10 @@ configurable but has a host of great feaures that just work."
            (const :tag "Python Anaconda-mode for Emacs" custom-ide-anaconda))
   :group 'mifi-config-features)
 
-(defcustom custom-project-handler 'custom-project-project
+(defcustom custom-project-handler 'custom-project-project-el
   "Select which project handler to use."
   :type '(radio (const :tag "Projectile" custom-project-projectile)
-           (const :tag "Built-in project" custom-project-project))
+           (const :tag "Built-in project.el" custom-project-project-el))
   :group 'mifi-config-features)
 
 ;;; ##########################################################################
@@ -295,12 +295,12 @@ If additional themes are added, they must be previously installed."
   :type 'natnum)
 
 ;;; Font related
-(defcustom default-font-family "Andale Mono"
+(defcustom default-font-family "Courier New"
   "The font family used as the default font."
   :type 'string
   :group 'mifi-config-fonts)
 
-(defcustom mono-spaced-font-family "Andale Mono"
+(defcustom mono-spaced-font-family "Monaco"
   "The font family used as the mono-spaced font."
   :type 'string
   :group 'mifi-config-fonts)
@@ -824,7 +824,7 @@ font size is computed + 20 of this value."
                       (agenda    . 5)))
   (dashboard-center-content t)
   (dashboard-set-heading-icons t)
-  (dashboard-set-file-icons t)
+  (dashboard-set-file-icons t)  
   (dashboard-footer-messages '("Greetings Program!"))
   (dashboard-banner-logo-title "Welcome to Emacs!")
   :commands dashboard-open
@@ -833,7 +833,8 @@ font size is computed + 20 of this value."
   ;; (setq initial-buffer-choice (lambda () (get-buffer-create dashboard-buffer-name)))
   (add-hook 'elpaca-after-init-hook #'dashboard-insert-startupify-lists)
   (add-hook 'elpaca-after-init-hook #'dashboard-initialize)
-  ;;-or- (expand-file-name "Emacs-modern-is-sexy-v1.png" user-emacs-directory)
+  (when (equal custom-project-handler 'custom-project-projectile)
+    (setq dashboard-projects-backend 'projectile))
   (setq dashboard-startup-banner (expand-file-name "Emacs-modern-is-sexy-v1.png" user-emacs-directory))
   (dashboard-setup-startup-hook))
 
@@ -1420,7 +1421,7 @@ font size is computed + 20 of this value."
 (use-package treemacs
   :after (:all winum ace-window)
   :bind (:map global-map
-          ("M-0"         . treemacs-select-window)
+          ("M-0"       . treemacs-select-window)
           ("C-x t 1"   . treemacs-delete-other-windows)
           ("C-x t t"   . treemacs)
           ("C-x t d"   . treemacs-select-directory)
@@ -1871,26 +1872,22 @@ font size is computed + 20 of this value."
     ((equal mifi/font-size-slot 3)
       (setq custom-default-font-size mifi/x-large-font-size
         custom-default-mono-font-size mifi/x-large-mono-font-size
-        mifi/default-variable-font-size (+ custom-default-font-size 20)
-        mifi/font-size-slot 2)
+        mifi/default-variable-font-size (+ custom-default-font-size 20))
       (mifi/update-face-attribute))
     ((equal mifi/font-size-slot 2)
       (setq custom-default-font-size mifi/large-font-size
         custom-default-mono-font-size mifi/large-mono-font-size
-        mifi/default-variable-font-size (+ custom-default-font-size 20)
-        mifi/font-size-slot 1)
+        mifi/default-variable-font-size (+ custom-default-font-size 20))
       (mifi/update-face-attribute))
     ((equal mifi/font-size-slot 1)
       (setq custom-default-font-size mifi/medium-font-size
         custom-default-mono-font-size mifi/medium-mono-font-size
-        mifi/default-variable-font-size (+ custom-default-font-size 20)
-        mifi/font-size-slot 0)
+        mifi/default-variable-font-size (+ custom-default-font-size 20))
       (mifi/update-face-attribute))
     ((equal mifi/font-size-slot 0)
       (setq custom-default-font-size mifi/small-font-size
         custom-default-mono-font-size mifi/small-mono-font-size
-        mifi/default-variable-font-size (+ custom-default-font-size 20)
-        mifi/font-size-slot 3)
+        mifi/default-variable-font-size (+ custom-default-font-size 20))
       (mifi/update-face-attribute))))
 
 ;;; ##########################################################################
@@ -1930,12 +1927,18 @@ font size is computed + 20 of this value."
     ;;else
     (unless enable-frameset-restore (mifi/frame-recenter))))
 
+(defun mifi/update-other-modes-font ()
+  "This updates/calls functions to update mode font sizes."
+  (when (featurep 'org)
+    (mifi/org-font-setup)))
+
 ;;; ##########################################################################
 
 (defun use-small-display-font (&optional force-recenter)
   (interactive)
   (mifi/set-frame-font 0)
   (mifi/reset-if-spacious-padding-mode)
+  (mifi/update-other-modes-font)
   (mifi/should-recenter force-recenter))
 
 
@@ -1943,6 +1946,7 @@ font size is computed + 20 of this value."
   (interactive)
   (mifi/set-frame-font 1)
   (mifi/reset-if-spacious-padding-mode)
+  (mifi/update-other-modes-font)
   (mifi/should-recenter force-recenter))
 
 
@@ -1950,6 +1954,7 @@ font size is computed + 20 of this value."
   (interactive)
   (mifi/set-frame-font 2)
   (mifi/reset-if-spacious-padding-mode)
+  (mifi/update-other-modes-font)
   (mifi/should-recenter force-recenter))
 
 
@@ -1957,6 +1962,7 @@ font size is computed + 20 of this value."
   (interactive)
   (mifi/set-frame-font 3)
   (mifi/reset-if-spacious-padding-mode)
+  (mifi/update-other-modes-font)
   (mifi/should-recenter force-recenter))
 
 ;;; ##########################################################################
@@ -2018,6 +2024,12 @@ font size is computed + 20 of this value."
     :font mono-spaced-font-family
     :height custom-default-mono-font-size
     :inherit '(shadow fixed-pitch))
+
+  (set-face-attribute 'org-verbatim nil
+    :foreground 'unspecified
+    :font mono-spaced-font-family
+    :height custom-default-mono-font-size
+    :inherit 'fixed-pitch)
 
   (set-face-attribute 'org-table nil
     :foreground 'unspecified
@@ -2469,13 +2481,14 @@ directory is relative to the working-files-directory
     (cons 'go-module root)))
 
 (use-package project
-  :when (equal custom-project-handler 'custom-project-project)
+  :when (equal custom-project-handler 'custom-project-project-el)
   :ensure nil
-  :defer t
   :config
-  (cl-defmethod project-root ((project (head go-module)))
-    (cdr project))
-  (add-hook 'project-find-functions #'project-find-go-module))
+  (setq project-vc-extra-root-markers '(".project.el" ".projectile" )))
+  ;; (when (featurep 'go-mode
+  ;; (cl-defmethod project-root ((project (head go-module)))
+  ;;   (cdr project))
+  ;; (add-hook 'project-find-functions #'project-find-go-module))
 
 ;;; ##########################################################################
 ;;; Emacs Polyglot is the Emacs LSP client that stays out of your way:
@@ -3130,8 +3143,8 @@ directory is relative to the working-files-directory
   (define-dape-hydra)
   (message "prepare-dape end")
   (bind-keys :map prog-mode-map
-    ("C-c ." . dape-hydra/body))
-  (mifi/additional-dape-configs))
+    ("C-c ." . dape-hydra/body)))
+  ;;(mifi/additional-dape-configs))
 
 ;;; ##########################################################################
 

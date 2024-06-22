@@ -553,10 +553,10 @@ These are features that basically have multiple-choice options instead of being 
              (const :tag "Python Anaconda-mode for Emacs" custom-ide-anaconda))
     :group 'mifi-config-features)
 
-  (defcustom custom-project-handler 'custom-project-project
+  (defcustom custom-project-handler 'custom-project-project-el
     "Select which project handler to use."
     :type '(radio (const :tag "Projectile" custom-project-projectile)
-             (const :tag "Built-in project" custom-project-project))
+             (const :tag "Built-in project.el" custom-project-project-el))
     :group 'mifi-config-features)
 
 #+end_src
@@ -599,12 +599,12 @@ This is a curated selection of themes that I personally like. Most of them are d
     :type 'natnum)
 
   ;;; Font related
-  (defcustom default-font-family "Andale Mono"
+  (defcustom default-font-family "Courier New"
     "The font family used as the default font."
     :type 'string
     :group 'mifi-config-fonts)
 
-  (defcustom mono-spaced-font-family "Andale Mono"
+  (defcustom mono-spaced-font-family "Monaco"
     "The font family used as the mono-spaced font."
     :type 'string
     :group 'mifi-config-fonts)
@@ -1378,7 +1378,7 @@ Window numbers for Emacs: Navigate your windows and frames using numbers. This i
                         (agenda    . 5)))
     (dashboard-center-content t)
     (dashboard-set-heading-icons t)
-    (dashboard-set-file-icons t)
+    (dashboard-set-file-icons t)  
     (dashboard-footer-messages '("Greetings Program!"))
     (dashboard-banner-logo-title "Welcome to Emacs!")
     :commands dashboard-open
@@ -1387,7 +1387,8 @@ Window numbers for Emacs: Navigate your windows and frames using numbers. This i
     ;; (setq initial-buffer-choice (lambda () (get-buffer-create dashboard-buffer-name)))
     (add-hook 'elpaca-after-init-hook #'dashboard-insert-startupify-lists)
     (add-hook 'elpaca-after-init-hook #'dashboard-initialize)
-    ;;-or- (expand-file-name "Emacs-modern-is-sexy-v1.png" user-emacs-directory)
+    (when (equal custom-project-handler 'custom-project-projectile)
+      (setq dashboard-projects-backend 'projectile))
     (setq dashboard-startup-banner (expand-file-name "Emacs-modern-is-sexy-v1.png" user-emacs-directory))
     (dashboard-setup-startup-hook))
 
@@ -2301,7 +2302,7 @@ Dired, by default, opens up multiple windows - one for each directory. It would 
   (use-package treemacs
     :after (:all winum ace-window)
     :bind (:map global-map
-            ("M-0"         . treemacs-select-window)
+            ("M-0"       . treemacs-select-window)
             ("C-x t 1"   . treemacs-delete-other-windows)
             ("C-x t t"   . treemacs)
             ("C-x t d"   . treemacs-select-directory)
@@ -2885,26 +2886,22 @@ This little function toggles between a larger font size and the default font siz
       ((equal mifi/font-size-slot 3)
         (setq custom-default-font-size mifi/x-large-font-size
           custom-default-mono-font-size mifi/x-large-mono-font-size
-          mifi/default-variable-font-size (+ custom-default-font-size 20)
-          mifi/font-size-slot 2)
+          mifi/default-variable-font-size (+ custom-default-font-size 20))
         (mifi/update-face-attribute))
       ((equal mifi/font-size-slot 2)
         (setq custom-default-font-size mifi/large-font-size
           custom-default-mono-font-size mifi/large-mono-font-size
-          mifi/default-variable-font-size (+ custom-default-font-size 20)
-          mifi/font-size-slot 1)
+          mifi/default-variable-font-size (+ custom-default-font-size 20))
         (mifi/update-face-attribute))
       ((equal mifi/font-size-slot 1)
         (setq custom-default-font-size mifi/medium-font-size
           custom-default-mono-font-size mifi/medium-mono-font-size
-          mifi/default-variable-font-size (+ custom-default-font-size 20)
-          mifi/font-size-slot 0)
+          mifi/default-variable-font-size (+ custom-default-font-size 20))
         (mifi/update-face-attribute))
       ((equal mifi/font-size-slot 0)
         (setq custom-default-font-size mifi/small-font-size
           custom-default-mono-font-size mifi/small-mono-font-size
-          mifi/default-variable-font-size (+ custom-default-font-size 20)
-          mifi/font-size-slot 3)
+          mifi/default-variable-font-size (+ custom-default-font-size 20))
         (mifi/update-face-attribute))))
 
 #+end_src
@@ -2960,6 +2957,19 @@ These functions are used to configure the main frame font size. Based upon a mon
 
 #+end_src
 
+***** Update other mode fonts if needed
+
+This is for things like Org mode
+
+#+begin_src emacs-lisp
+
+  (defun mifi/update-other-modes-font ()
+    "This updates/calls functions to update mode font sizes."
+    (when (featurep 'org)
+      (mifi/org-font-setup)))
+
+#+end_src
+
 ***** Select Display Font and optionally Recenter
 
 These functions resize the font to some pre-defined values and will optiononally resize and recenter the window. (see =mifi-config= defcustom variables for the pre-defined font sizes and font families).
@@ -2971,6 +2981,7 @@ These functions resize the font to some pre-defined values and will optiononally
     (interactive)
     (mifi/set-frame-font 0)
     (mifi/reset-if-spacious-padding-mode)
+    (mifi/update-other-modes-font)
     (mifi/should-recenter force-recenter))
 
 
@@ -2978,6 +2989,7 @@ These functions resize the font to some pre-defined values and will optiononally
     (interactive)
     (mifi/set-frame-font 1)
     (mifi/reset-if-spacious-padding-mode)
+    (mifi/update-other-modes-font)
     (mifi/should-recenter force-recenter))
 
 
@@ -2985,6 +2997,7 @@ These functions resize the font to some pre-defined values and will optiononally
     (interactive)
     (mifi/set-frame-font 2)
     (mifi/reset-if-spacious-padding-mode)
+    (mifi/update-other-modes-font)
     (mifi/should-recenter force-recenter))
 
 
@@ -2992,6 +3005,7 @@ These functions resize the font to some pre-defined values and will optiononally
     (interactive)
     (mifi/set-frame-font 3)
     (mifi/reset-if-spacious-padding-mode)
+    (mifi/update-other-modes-font)
     (mifi/should-recenter force-recenter))
 
 #+end_src
@@ -3083,6 +3097,12 @@ This function sets up the fonts faces that are used within org-mode.
       :font mono-spaced-font-family
       :height custom-default-mono-font-size
       :inherit '(shadow fixed-pitch))
+
+    (set-face-attribute 'org-verbatim nil
+      :foreground 'unspecified
+      :font mono-spaced-font-family
+      :height custom-default-mono-font-size
+      :inherit 'fixed-pitch)
 
     (set-face-attribute 'org-table nil
       :foreground 'unspecified
@@ -3646,13 +3666,14 @@ This is the default built-in project system. For those not needing the full-feat
       (cons 'go-module root)))
 
   (use-package project
-    :when (equal custom-project-handler 'custom-project-project)
+    :when (equal custom-project-handler 'custom-project-project-el)
     :ensure nil
-    :defer t
     :config
-    (cl-defmethod project-root ((project (head go-module)))
-      (cdr project))
-    (add-hook 'project-find-functions #'project-find-go-module))
+    (setq project-vc-extra-root-markers '(".project.el" ".projectile" )))
+    ;; (when (featurep 'go-mode
+    ;; (cl-defmethod project-root ((project (head go-module)))
+    ;;   (cdr project))
+    ;; (add-hook 'project-find-functions #'project-find-go-module))
 
 #+end_src
 
@@ -4728,8 +4749,8 @@ Please note that DAPE is triggered after loading of various languages (for Emacs
     (define-dape-hydra)
     (message "prepare-dape end")
     (bind-keys :map prog-mode-map
-      ("C-c ." . dape-hydra/body))
-    (mifi/additional-dape-configs))
+      ("C-c ." . dape-hydra/body)))
+    ;;(mifi/additional-dape-configs))
 
 #+end_src
 
