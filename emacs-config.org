@@ -10,7 +10,11 @@
 
 This ORG file will configure the  ~init.el~  file based upon all of the =emacs-lisp= source blocks. The =emacs-lisp= source blocks are defined in an organized order. While these blocks can generally be moved around, there are some order dependencies. So it's generally best that this order be preserved to prevent any compile-time issues.
 
-The goal of this Emacs configuration is to make an Emacs configuration that has a good collection of popular options. So far, the following collections of options are included here:
+The goal of this Emacs configuration is to make an Emacs configuration that has a good collection of popular options. I actually use these different sets of packages based upon my work. Sometimes, Vertico, Consult, Corfu don't provide the right experience so I switch to Ivy. The same is true with debuggers. I prefer DAPE but sometimes it doesn't work as well as DAP/LSP, and so on.
+
+While I'm trying to make a config that appeals to other people, most of what you see in here is for my personal dev projects in Python and other language and it also includes a sizeable amount of elisp to continuously fiddle with.
+
+So far, the following collections of options are included here:
 
 :Features:
 - Landing Screen Options ::
@@ -83,7 +87,6 @@ The goal of this Emacs configuration is to make an Emacs configuration that has 
 
   --------------------------------------------------------------------------------
   
-
 * early-init.el
 
 This is where all of the settings/setup goes for the ~early-init.el~ file.
@@ -159,8 +162,8 @@ Standard fare and good practice.
 
 #+begin_src emacs-lisp :tangle "early-init.el" 
 
-  (setq use-package-compute-statistics nil
-    use-package-verbose nil
+  (setq use-package-compute-statistics t
+    use-package-verbose t
     use-package-always-ensure nil
     use-package-always-demand nil
     use-package-always-defer nil)
@@ -324,14 +327,9 @@ Elpaca:
 #+end_src
 
 
-* Customizable Variables
+* Customizable Values
 
-Set various variables to =t= to turn on a specific feature or =nil= to disable it. Changing any of these values will require a restart of ~emacs~ since these values are inspected only during startup.
-
-*Note:* There are no thorough dependency check done if any of these values is enabled or disabled. There has been some effort, for example, to enable a keymap if ~dap~ or ~dape~ is enabled. But if something enabled requires some not obvious package to be installed, this isn't checked.
-
-Other variables are also defined here that define other emacs behaviors and defaults.
-
+Variables that define the operational behavior 
 ** Customization groups
 These are the groups used by this Emacs config for customization.
 
@@ -2289,7 +2287,89 @@ Dired, by default, opens up multiple windows - one for each directory. It would 
     :ensure t
     :config
     (mifi/dired-single-keymap-init))
+  
 #+end_src
+
+**** Special ediff with dired
+
+Virtical Split comparison of two files selected from the dired window.
+(www.youtube.com/@emacselements)
+
+***** Supporting Functions
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+  
+  (defun mifi/dired-ediff-marked-files ()
+    "Compare two marked files in Dired with ediff."
+    (interactive)
+    (let ((marked-files (dired-get-marked-files)))
+      (unless (= (length marked-files) 2)
+        (error "You need to mark exactly two files to compare."))
+      (ediff-files (car marked-files) (cadr marked-files))))
+
+  (defun mifi/ediff-bsh ()
+    "Function to be called before any buffers or window setup for
+        ediff."
+    (setq mifi/ediff-bwin-config (current-window-configuration))
+    (when (characterp mifi/ediff-bwin-reg)
+      (set-register mifi/ediff-bwin-reg
+        (list mifi/ediff-bwin-config (point-marker)))))
+
+  (defun mifi/ediff-ash ()
+    "Function to be called after buffers and window setup for ediff."
+    (setq mifi/ediff-awin-config (current-window-configuration))
+    (when (characterp mifi/ediff-awin-reg)
+      (set-register mifi/ediff-awin-reg
+        (list mifi/ediff-awin-config (point-marker)))))
+
+  (defun mifi/ediff-qh ()
+    "Function to be called when ediff quits."
+    (when mifi/ediff-bwin-config
+      (set-window-configuration mifi/ediff-bwin-config)))
+
+#+end_src
+
+***** Customized Variables
+
+#+begin_src emacs-lisp
+  ;; Restore window configuration after ediff exits
+  ;;   URL: https://www.emacswiki.org/emacs/EdiffMode
+
+  (defvar mifi/ediff-bwin-config nil "Window configuration before ediff.")
+  (defcustom mifi/ediff-bwin-reg ?b
+    "*Register to be set up to hold `mifi/ediff-bwin-config' configuration.")
+
+  (defvar mifi/ediff-awin-config nil "Window configuration after ediff.")
+  (defcustom mifi/ediff-awin-reg ?e
+    "*Register to be used to hold `mifi/ediff-awin-config' window configuration.")
+
+#+end_src
+
+***** Dired and ediff configuration
+
+#+begin_src emacs-lisp
+
+  (use-package dired
+    :ensure nil  ;; local package hint for elpaca
+    :no-require t
+    :bind (:map dired-mode-map
+  	  ("=" . mifi/dired-ediff-marked-files)))
+
+  (use-package ediff
+    :ensure nil ;; local package hint for elpaca
+    :no-require t
+    :custom
+    (ediff-diff-options "-w")
+    ;; Split windows so that they are compared horizontally
+    (ediff-split-window-function 'split-window-horizontally)
+    :hook
+    (ediff-before-setup . mifi/ediff-bsh)
+    (ediff-after-setup-window . (lambda () (mifi/ediff-ash 'append)))
+    (ediff-quit . mifi/ediff-qh))
+
+#+end_src
+
 
 *** Treemacs
 

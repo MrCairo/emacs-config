@@ -1416,6 +1416,65 @@ font size is computed + 20 of this value."
   (mifi/dired-single-keymap-init))
 
 ;;; ##########################################################################
+
+(defun mifi/dired-ediff-marked-files ()
+  "Compare two marked files in Dired with ediff."
+  (interactive)
+  (let ((marked-files (dired-get-marked-files)))
+    (unless (= (length marked-files) 2)
+      (error "You need to mark exactly two files to compare."))
+    (ediff-files (car marked-files) (cadr marked-files))))
+
+(defun mifi/ediff-bsh ()
+  "Function to be called before any buffers or window setup for
+      ediff."
+  (setq mifi/ediff-bwin-config (current-window-configuration))
+  (when (characterp mifi/ediff-bwin-reg)
+    (set-register mifi/ediff-bwin-reg
+      (list mifi/ediff-bwin-config (point-marker)))))
+
+(defun mifi/ediff-ash ()
+  "Function to be called after buffers and window setup for ediff."
+  (setq mifi/ediff-awin-config (current-window-configuration))
+  (when (characterp mifi/ediff-awin-reg)
+    (set-register mifi/ediff-awin-reg
+      (list mifi/ediff-awin-config (point-marker)))))
+
+(defun mifi/ediff-qh ()
+  "Function to be called when ediff quits."
+  (when mifi/ediff-bwin-config
+    (set-window-configuration mifi/ediff-bwin-config)))
+
+;; Restore window configuration after ediff exits
+;;   URL: https://www.emacswiki.org/emacs/EdiffMode
+
+(defvar mifi/ediff-bwin-config nil "Window configuration before ediff.")
+(defcustom mifi/ediff-bwin-reg ?b
+  "*Register to be set up to hold `mifi/ediff-bwin-config' configuration.")
+
+(defvar mifi/ediff-awin-config nil "Window configuration after ediff.")
+(defcustom mifi/ediff-awin-reg ?e
+  "*Register to be used to hold `mifi/ediff-awin-config' window configuration.")
+
+(use-package dired
+  :ensure nil  ;; local package hint for elpaca
+  :no-require t
+  :bind (:map dired-mode-map
+	  ("=" . mifi/dired-ediff-marked-files)))
+
+(use-package ediff
+  :ensure nil ;; local package hint for elpaca
+  :no-require t
+  :custom
+  (ediff-diff-options "-w")
+  ;; Split windows so that they are compared horizontally
+  (ediff-split-window-function 'split-window-horizontally)
+  :hook
+  (ediff-before-setup . mifi/ediff-bsh)
+  (ediff-after-setup-window . (lambda () (mifi/ediff-ash 'append)))
+  (ediff-quit . mifi/ediff-qh))
+
+;;; ##########################################################################
 ;;; Treemacs
 
 (use-package treemacs
