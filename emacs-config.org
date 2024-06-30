@@ -2163,7 +2163,7 @@ For more thoughts on Eshell, check out these articles by Pierre Neidhardt:
     :after eshell)
 
   (use-package eshell
-    :ensure
+    :ensure nil
     :defer t
     :hook (eshell-first-time-mode . mifi/configure-eshell)
     :config
@@ -5415,13 +5415,58 @@ Designate any buffer to “popup” status, and it will stay out of your way. Di
 
 markdown-mode is a major mode for editing Markdown-formatted text. The latest stable version is markdown-mode 2.5, released on Feb 12, 2022. See the release notes for details. markdown-mode is free software, licensed under the GNU GPL, version 3 or later.
 
+It's important to note that ~multimarkdown~ is set as the ~markdown-command~. This is an external program that was loaded via brew. Another option is ~pandoc~ and ~markdown.pl~. In each case, these are external and, whatever is chosen, needs to appear as the ~markdown-command~.
+
+*** external markdown-command
+
+#+begin_src bash :tangle no
+  brew install multiparkdown
+#+end_src
+
+*** markdown-mode package
+
 #+begin_src emacs-lisp
   ;;; ##########################################################################
 
   (use-package markdown-mode
     :ensure t
-    :mode ("README\\.md\\'" . gfm-mode)
-    :init (setq markdown-command "pandoc"))
+    :mode (("README\\.md\\'" . gfm-mode)
+           ("\\.md\\'" . markdown-mode)
+           ("\\.markdown\\'" . markdown-mode))
+    :init (setq markdown-command "multimarkdown"))
+
+#+end_src
+
+** Markdown Preview Mode
+Markdown preview in emacs features:
+
++ on save/idle preview update
++ scroll sync
++ custom/extra css and javascript
++ remote preview
++ multiple simultaneous previews
+  
+#+begin_src emacs-lisp
+
+  ;; markdown-preview-mode is depent upon:
+  ;; +  markdown-mode.el
+  ;; +  websocket.el
+  ;; +  web-server.el
+
+  (add-hook 'elpaca-after-init-hook
+    (lambda ()
+      ;; These packages should be in the `lisp' directory.
+      (use-package websocket :ensure nil)
+      (use-package simple-httpd :ensure t)))
+
+  (use-package markdown-preview-mode
+    :after (:all websocket web-server markdown-mode)
+    :defer t
+    :config
+    (add-to-list 'markdown-preview-stylesheets
+      "https://raw.githubusercontent.com/richleland/pygments-css/master/emacs.css")
+    (add-to-list 'markdown-preview-javascript
+      "http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-MML-AM_CHTML"))
 
 #+end_src
 
@@ -5440,6 +5485,19 @@ Instant Github-flavored Markdown/Org preview using Grip (GitHub Readme Instant P
   ;; ;; Or using hooks
   ;; (use-package grip-mode
   ;;   :hook ((markdown-mode org-mode) . grip-mode))
+
+#+end_src
+
+** Simple-httpd
+A simple Emacs web server.
+
+This used to be httpd.el but there are already several of these out there already of varying usefulness. Since the name change, it's been stripped down to simply serve files and directory listings. Client requests are sanitized so this should be safe, but I make no guarantees.
+
+#+begin_src emacs-lisp
+
+  (use-package simple-httpd
+    :ensure t
+    :defer t)
 
 #+end_src
 
@@ -5483,6 +5541,8 @@ This is a set of keymaps that do the same things as the popup menu. Both are her
         (bind-keys :map map
           ("M-RET $" . jinx-correct)
           ("M-RET ?" . eldoc-box-help-at-point)
+  	("M-RET M s" . markdown-preview-mode)
+  	("M-RET M e" . markdown-preview-cleanup)
           ("M-RET S e" . eshell)
           ("M-RET S i" . ielm)
           ("M-RET S v" . vterm-other-window)
@@ -5506,7 +5566,7 @@ This is a set of keymaps that do the same things as the popup menu. Both are her
     (define-minor-mode mmm-keys-minor-mode
       "A minor mode so that my key settings override annoying major modes."
       :init-value t
-      :lighter " m3"))
+      :lighter " MmM"))
 
   ;; (mifi/define-mmm-minor-mode-map)
 
@@ -5525,7 +5585,7 @@ For those menus that would normally show up as either =prefix= or =lambda=, give
       (let ((map mmm-keys-minor-mode-map))
         (when enable-thesaurus
           (bind-keys :map map
-            ("M-RET m t" . mw-thesaurus-lookup-dwim)))
+            ("M-RET t t" . mw-thesaurus-lookup-dwim)))
         (cond
           ((equal major-mode 'org-mode)
             (bind-keys :map map
@@ -5542,7 +5602,7 @@ For those menus that would normally show up as either =prefix= or =lambda=, give
             (unbind-key "M-RET M-RET" map)))))
 
     ;; Override default menu text with better things
-    (which-key-add-key-based-replacements "M-RET m t" "thesaurus-at-point")
+    (which-key-add-key-based-replacements "M-RET t t" "thesaurus-at-point")
     (which-key-add-key-based-replacements "M-RET o" "org-menu")
     (which-key-add-key-based-replacements "M-RET o f" "set-org-fill-column"))
 
@@ -5560,11 +5620,12 @@ What's also important with this function is that it calls the ~mifi/mmm-handle-c
   (defun mifi/mmm-update-menu (&optional winframe)
     (interactive)
     (mifi/mmm-handle-context-keys nil)
+    (which-key-add-key-based-replacements "M-RET M" "markdown-preview")
     (which-key-add-key-based-replacements "M-RET S" "shells")
     (which-key-add-key-based-replacements "M-RET T" "theme-keys")
     (which-key-add-key-based-replacements "M-RET P" "python-menu")
     (which-key-add-key-based-replacements "M-RET e" "treemacs-toggle")
-    (which-key-add-key-based-replacements "M-RET m" "Thesaurus")
+    (which-key-add-key-based-replacements "M-RET t" "Thesaurus")
     (which-key-add-key-based-replacements "M-RET f" "set-fill-column")
     (which-key-add-key-based-replacements "M-RET j" "jump-to-register")
     (which-key-add-key-based-replacements "M-RET C-g" "Exit menu")

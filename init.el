@@ -1362,7 +1362,7 @@ font size is computed + 20 of this value."
   :after eshell)
 
 (use-package eshell
-  :ensure
+  :ensure nil
   :defer t
   :hook (eshell-first-time-mode . mifi/configure-eshell)
   :config
@@ -3633,8 +3633,30 @@ directory is relative to the working-files-directory
 
 (use-package markdown-mode
   :ensure t
-  :mode ("README\\.md\\'" . gfm-mode)
-  :init (setq markdown-command "pandoc"))
+  :mode (("README\\.md\\'" . gfm-mode)
+         ("\\.md\\'" . markdown-mode)
+         ("\\.markdown\\'" . markdown-mode))
+  :init (setq markdown-command "multimarkdown"))
+
+;; markdown-preview-mode is depent upon:
+;; +  markdown-mode.el
+;; +  websocket.el
+;; +  web-server.el
+
+(add-hook 'elpaca-after-init-hook
+  (lambda ()
+    ;; These packages should be in the `lisp' directory.
+    (use-package websocket :ensure nil)
+    (use-package simple-httpd :ensure t)))
+
+(use-package markdown-preview-mode
+  :after (:all websocket web-server markdown-mode)
+  :defer t
+  :config
+  (add-to-list 'markdown-preview-stylesheets
+    "https://raw.githubusercontent.com/richleland/pygments-css/master/emacs.css")
+  (add-to-list 'markdown-preview-javascript
+    "http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-MML-AM_CHTML"))
 
 ;;; ##########################################################################
 
@@ -3646,6 +3668,10 @@ directory is relative to the working-files-directory
 ;; ;; Or using hooks
 ;; (use-package grip-mode
 ;;   :hook ((markdown-mode org-mode) . grip-mode))
+
+(use-package simple-httpd
+  :ensure t
+  :defer t)
 
 ;;; ##########################################################################
 
@@ -3674,6 +3700,8 @@ directory is relative to the working-files-directory
       (bind-keys :map map
         ("M-RET $" . jinx-correct)
         ("M-RET ?" . eldoc-box-help-at-point)
+	("M-RET M s" . markdown-preview-mode)
+	("M-RET M e" . markdown-preview-cleanup)
         ("M-RET S e" . eshell)
         ("M-RET S i" . ielm)
         ("M-RET S v" . vterm-other-window)
@@ -3697,7 +3725,7 @@ directory is relative to the working-files-directory
   (define-minor-mode mmm-keys-minor-mode
     "A minor mode so that my key settings override annoying major modes."
     :init-value t
-    :lighter " m3"))
+    :lighter " MmM"))
 
 ;; (mifi/define-mmm-minor-mode-map)
 
@@ -3709,7 +3737,7 @@ directory is relative to the working-files-directory
     (let ((map mmm-keys-minor-mode-map))
       (when enable-thesaurus
         (bind-keys :map map
-          ("M-RET m t" . mw-thesaurus-lookup-dwim)))
+          ("M-RET t t" . mw-thesaurus-lookup-dwim)))
       (cond
         ((equal major-mode 'org-mode)
           (bind-keys :map map
@@ -3726,7 +3754,7 @@ directory is relative to the working-files-directory
           (unbind-key "M-RET M-RET" map)))))
 
   ;; Override default menu text with better things
-  (which-key-add-key-based-replacements "M-RET m t" "thesaurus-at-point")
+  (which-key-add-key-based-replacements "M-RET t t" "thesaurus-at-point")
   (which-key-add-key-based-replacements "M-RET o" "org-menu")
   (which-key-add-key-based-replacements "M-RET o f" "set-org-fill-column"))
 
@@ -3735,11 +3763,12 @@ directory is relative to the working-files-directory
 (defun mifi/mmm-update-menu (&optional winframe)
   (interactive)
   (mifi/mmm-handle-context-keys nil)
+  (which-key-add-key-based-replacements "M-RET M" "markdown-preview")
   (which-key-add-key-based-replacements "M-RET S" "shells")
   (which-key-add-key-based-replacements "M-RET T" "theme-keys")
   (which-key-add-key-based-replacements "M-RET P" "python-menu")
   (which-key-add-key-based-replacements "M-RET e" "treemacs-toggle")
-  (which-key-add-key-based-replacements "M-RET m" "Thesaurus")
+  (which-key-add-key-based-replacements "M-RET t" "Thesaurus")
   (which-key-add-key-based-replacements "M-RET f" "set-fill-column")
   (which-key-add-key-based-replacements "M-RET j" "jump-to-register")
   (which-key-add-key-based-replacements "M-RET C-g" "Exit menu")
