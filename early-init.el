@@ -11,13 +11,12 @@
 
 ;;; ##########################################################################
 
-;; Adjust garbage collection threshold for early startup (see use of gcmh below)
 (setq gc-cons-threshold (* 100 1024 1024))
 (setq package-enable-at-startup nil)
 
 ;; Process performance tuning
 
-(setq read-process-output-max (* 4 1024 1024))
+(setq read-process-output-max (* 16 1024 1024))
 (setq process-adaptive-read-buffering nil)
 
 (setq package-vc-register-as-project nil) ; Emacs 30
@@ -27,7 +26,7 @@
 ;; we actually begin the load.
 (let
   ((file (expand-file-name "early-init-proxy.el" user-emacs-directory)))
-  (if (file-exists-p file)
+  (when (file-exists-p file)
     (load file)))
 
 (setq package-archives
@@ -61,8 +60,12 @@
 ;;   :delight gcmh-mode
 ;;   :config
 ;;   (setq gcmh-idle-delay 5
-;;     gcmh-high-cons-threshold (* 16 1024 1024))      ; 16mb
+;;     gcmh-high-cons-threshold (* 100 1024 1024))      ; 100mb
 ;;   (gcmh-mode 1))
+
+;;; Set high for initial load.
+;; (setq gc-cons-threshold (* 128 1024 1024))
+;; (setq gc-cons-percentage 0.3)
 
 (add-hook 'emacs-startup-hook
   (lambda ()

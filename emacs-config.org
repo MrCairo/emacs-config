@@ -4,7 +4,7 @@
 #+OPTIONS: toc:nil h:4
 #+STARTUP: showeverything
 #+PROPERTY: header-args:emacs-lisp :tangle ./init.el :results silent :exports code :mkdirp yes
-#+modified-date: <2024-06-19 Wed>
+#+modified-date: <2024-06-29 Sat>
 
 * Synopsis
 
@@ -41,6 +41,7 @@ So far, the following collections of options are included here:
   + Elpy
   + Eglot
   + Stand-alone LSP
+  + Merlin / Tuareg for OCaml
   + LSP Bridge (experimental)
   + Anaconda-mode for Python
     
@@ -87,6 +88,7 @@ So far, the following collections of options are included here:
 
   --------------------------------------------------------------------------------
   
+
 * early-init.el
 
 This is where all of the settings/setup goes for the ~early-init.el~ file.
@@ -116,13 +118,12 @@ Standard fare and good practice.
 #+begin_src emacs-lisp :tangle "early-init.el" 
   ;;; ##########################################################################
 
-  ;; Adjust garbage collection threshold for early startup (see use of gcmh below)
   (setq gc-cons-threshold (* 100 1024 1024))
   (setq package-enable-at-startup nil)
 
   ;; Process performance tuning
 
-  (setq read-process-output-max (* 4 1024 1024))
+  (setq read-process-output-max (* 16 1024 1024))
   (setq process-adaptive-read-buffering nil)
 
   (setq package-vc-register-as-project nil) ; Emacs 30
@@ -132,7 +133,7 @@ Standard fare and good practice.
   ;; we actually begin the load.
   (let
     ((file (expand-file-name "early-init-proxy.el" user-emacs-directory)))
-    (if (file-exists-p file)
+    (when (file-exists-p file)
       (load file)))
 
   (setq package-archives
@@ -170,6 +171,19 @@ Standard fare and good practice.
 
 #+end_src
 
+** use-package-ensure-system-packages
+This package enables the =:ensure-system-package= within a =use-package= statement that allows the enforcement that system binaries (or files) exist alongside the actual =use-package= declaration. So, if there is need to ensure that, for example, =ruby-lint= was installed the inclusion of the value:
+
+    ~(ruby-lint . "gem install ruby-lint")~
+
+This will check for the binary =ruby-lint= exists in the path and if not, ="gem install ruby-lint"= would be called to install =ruby-lint=
+
+#+begin_src emacs-lisp
+
+  (use-package use-package-ensure-system-package)
+
+#+end_src
+
 ** Garbage Collection
 
 #+begin_src emacs-lisp :tangle "early-init.el" 
@@ -178,14 +192,18 @@ Standard fare and good practice.
   ;;   :delight gcmh-mode
   ;;   :config
   ;;   (setq gcmh-idle-delay 5
-  ;;     gcmh-high-cons-threshold (* 16 1024 1024))      ; 16mb
+  ;;     gcmh-high-cons-threshold (* 100 1024 1024))      ; 100mb
   ;;   (gcmh-mode 1))
 
 #+end_src
 
-** Calculate startup time
+** Calculate startup time and restore gc-cons-percentage
 
-#+begin_src emacs-lisp :tangle "early-init.el" 
+#+begin_src emacs-lisp :tangle "early-init.el"
+
+  ;;; Set high for initial load.
+  ;; (setq gc-cons-threshold (* 128 1024 1024))
+  ;; (setq gc-cons-percentage 0.3)
 
   (add-hook 'emacs-startup-hook
     (lambda ()
@@ -262,6 +280,9 @@ This is the standard format of a =lisp= header that should appear for all =lisp=
 
 #+end_src
 
+
+
+
 ** Elpaca Bootstrap
 
 Elpaca is an elisp package manager. It allows users to find, install, update, and remove third-party packages for Emacs. It is a replacement for the built-in Emacs package manager, package.el.
@@ -284,7 +305,7 @@ Elpaca:
   (defvar elpaca-builds-directory (expand-file-name "builds/" elpaca-directory))
   (defvar elpaca-repos-directory (expand-file-name "repos/" elpaca-directory))
   (defvar elpaca-order '(elpaca :repo "https://github.com/progfolio/elpaca.git"
-                          :ref nil :depth 1
+                          :ref nil :depth 1 :branch "feat/vars-keyword"
                           :files (:defaults "elpaca-test.el" (:exclude "extensions"))
                           :build (:not elpaca--activate-package)))
   (let* ((repo  (expand-file-name "elpaca/" elpaca-repos-directory))
@@ -403,6 +424,11 @@ Thes values toggle the availability of specific packages. These options are not 
     :type 'boolean
     :group 'mifi-config-toggles)
 
+  (defcustom enable-ocaml nil
+    "Set to t to enable inclusion of OCaml support: Merlin, Tuareg."
+    :type 'boolean
+    :group 'mifi-config-toggles)
+
   (defcustom enable-centaur-tabs nil
     "Set to t to enable `centaur-tabs' which uses tabs to represent open buffer."
     :type 'boolean
@@ -467,13 +493,12 @@ These are features that basically have multiple-choice options instead of being 
   ,*scratch* buffer.
 
   eshell is the Emacs shell environment that is part terminal and part Lisp
-  interpreter.
-  "
+  interpreter."
     :type '(radio
              (const :tag "Dashboard" landing-mode-dashboard)
              (const :tag "*scratch*" landing-mode-scratch)
              (const :tag "IELM" landing-mode-ielm)
-  	   (const :tag "eshell" landing-mode-eshell))
+    	   (const :tag "eshell" landing-mode-eshell))
     :group 'mifi-config-features)
 
   (defcustom undo-handler 'undo-handler-vundo
@@ -555,6 +580,27 @@ These are features that basically have multiple-choice options instead of being 
     "Select which project handler to use."
     :type '(radio (const :tag "Projectile" custom-project-projectile)
              (const :tag "Built-in project.el" custom-project-project-el))
+    :group 'mifi-config-features)
+
+  (defcustom custom-note-system 'custom-note-system-denote
+    "Select which note-taking/knowledge system will be used.
+
+  The simpler, more efficient and lightweight for just simple note is `denote'.
+  `Denote' is a simple note-taking tool for Emacs. It is based on the idea that
+  notes should follow a predictable and descriptive file-naming scheme. The file
+  name must offer a clear indication of what the note is about, without reference
+  to any other metadata. Denote basically streamlines the creation of such files
+  while providing facilities to link between them.
+
+  A more full-featured note and other productivity tools like agenda, and todo is
+  `org-roam'. Org-roam allows for effortless non-hierarchical note-taking: with
+  Org-roam, notes flow naturally, making note-taking fun and easy. Org-roam
+  augments the Org-mode syntax, and will work for anyone already using Org-mode
+  for their personal wiki."
+    :type '(radio
+  	   (const :tag "Denote" custom-note-system-denote)
+             (const :tag "Org-roam" custom-note-system-org-roam)
+  	   (const :tag "None" custom-note-system-none))
     :group 'mifi-config-features)
 
 #+end_src
@@ -691,7 +737,6 @@ Look for a proportional font that is available on the OS. If the actual default 
         (when (not (equal variable-pitch-font variable-pitch-font-family))
           (setq variable-pitch-font-family variable-pitch-font))
         (message "---- Can't find a variable-pitch font to use.")))
-
     (message (format ">>> variable-pitch font is %s" variable-pitch-font-family)))
 
 #+end_src
@@ -718,7 +763,6 @@ Look for a proportional font that is available on the OS. If the actual default 
           (setq mono-spaced-font-family monospace-font)
           (setq default-font-family monospace-font))
         (message "---- Can't find a monospace font to use.")))
-
     (message (format ">>> monospace font is %s" mono-spaced-font-family)))
 
 #+end_src
@@ -777,6 +821,8 @@ This directory is expected to be in the ~emacs-config-direcory~ dir. This can be
   ;;; ##########################################################################
 
   (add-to-list 'load-path (expand-file-name "lisp" emacs-config-directory))
+  ;; mostly for OCaml
+  (add-to-list 'load-path (expand-file-name "" emacs-config-directory))
   (add-to-list 'custom-theme-load-path (expand-file-name "Themes" custom-docs-dir))
 
 #+end_src
@@ -974,6 +1020,29 @@ These are the common packages that I pretty much use universally in my normal Em
 
 It's also important to note that some of these packages are required to be loaded prior to packages later on in this configuration.
 
+** System-packages
+This is a collection of functions to make handling installed system packages more convenient through Emacs.
+
+#+begin_src emacs-lisp
+
+  (use-package system-packages :ensure t)
+
+#+end_src
+
+** Simple-httpd
+A simple Emacs web server.
+
+This used to be httpd.el but there are already several of these out there already of varying usefulness. Since the name change, it's been stripped down to simply serve files and directory listings. Client requests are sanitized so this should be safe, but I make no guarantees.
+
+#+begin_src emacs-lisp
+
+  ;; All kept in local /lisp directory.
+  ;; (use-package web-server-status-codes :ensure nil)
+  ;; (use-package simple-httpd :ensure nil)
+  ;; (use-package web-server :ensure nil)
+
+#+end_src
+
 ** Helpful Help Commands
 
 [[https://github.com/Wilfred/helpful][Helpful]] adds a lot of very helpful (get it?) information to Emacs' =describe-= command buffers. For example, if you use =describe-function=, you will not only get the documentation about the function, you will also see the source code of the function and where it gets used in other places in the Emacs configuration. It is very useful for figuring out how things work in Emacs.
@@ -1073,7 +1142,8 @@ This package displays ElDoc documentations in a childframe. The childframe is se
   (defun mifi/after-which-key ()
     (interactive)
     (which-key-mode 1)
-    (mifi/define-mmm-minor-mode-map)
+    (which-key-add-key-based-replacements "M-RET |" "display-fill-column")
+    (which-key-add-key-based-replacements "M-RET ?" "help-at-point")
     (mmm-keys-minor-mode 1)
     (when (featurep 'prog-mode)
       (which-key-add-key-based-replacements "C-c g r" "find-symbol-reference")
@@ -1083,12 +1153,11 @@ This package displays ElDoc documentations in a childframe. The childframe is se
     (mifi/set-recenter-keys))
 
   (use-package which-key
-    :init
-    (add-hook 'emacs-startup-hook #'mifi/after-which-key)
     :ensure (:wait t) :demand t
     :commands which-key-mode
     :delight which-key-mode
     :custom
+    (add-hook 'elpaca-after-init-hook #'mifi/after-which-key)
     (which-key-popup-type 'side-window)
     (which-key-preserve-window-configuration t)
     (which-key-idle-delay 1,0)
@@ -1203,7 +1272,7 @@ This function is called after Elpaca has initialized and, if this machine is a M
       (setq mac-command-modifier   'meta
         mac-option-modifier        'super
         mac-control-modifier       'control
-        mac-right-command-modifier 'super
+        mac-right-command-modifier 'meta
         mac-right-control-modifier 'hyper)))
 
   (add-hook 'elpaca-after-init-hook #'mifi/set-mac-modifier-keys)
@@ -1222,9 +1291,6 @@ These are key-bindings that are done at a global level.
     (bind-key "C-c ]" 'indent-region prog-mode-map)
     (bind-key "C-c }" 'indent-region prog-mode-map)
     (bind-key "C-x C-j" 'dired-jump)
-
-    (use-package evil-nerd-commenter
-      :bind ("M-/" . evilnc-comment-or-uncomment-lines))
 
     ;;
     ;; A little better than just the typical "C-x o"
@@ -1245,7 +1311,11 @@ These are key-bindings that are done at a global level.
     (global-unset-key (kbd "C-<wheel-down>"))
     (global-unset-key (kbd "C-<wheel-up>")))
 
-  (add-hook 'elpaca-after-init-hook #'mifi/setup-global-keybindings)
+  (use-package evil-nerd-commenter
+    :bind ("M-/" . evilnc-comment-or-uncomment-lines))
+
+  (add-hook 'emacs-startup-hook #'mifi/setup-global-keybindings)
+
 #+end_src
 
 ** Automatic Package Updates
@@ -1682,11 +1752,13 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
             ("<tab>" . company-complete-selection))
     :custom
     (company-minimum-prefix-length 2)
-    (company-idle-delay 0.5)
+    (company-idle-delay 0.5)  
     :config
-    (when (featurep 'prescient)
-      (company-prescient-mode 1))
-    (global-company-mode +1))
+    (add-hook 'elpaca-after-init-hook
+      (lambda ()
+        (when (featurep 'prescient)
+  	(company-prescient-mode 1))
+        (global-company-mode +1))))
 
   ;; IMPORTANT:
   ;; Don't use company at all if lsp-bridge is active.
@@ -3600,6 +3672,193 @@ Org-transclusion lets you insert a copy of text content via a file link or ID li
 
 #+end_src
 
+** Org-mode Roam
+Org Mode is known to be a great tool not just for writing and personal notes but also TODO lists, project planning, time tracking, and more. Once you start to become really invested in Org Mode you’ll eventually have to come up with a system for managing your Org files so that it’s easy to store and find the information you need.
+
+Org Roam is an extension to Org Mode which solves a couple of the biggest problems that I’ve personally had when using Org for personal notes:
+
+- How many Org files do I need?
+- How do I decide where to put things in my Org files?
+
+Org Roam solves these problems by making it easy to create topic-focused Org Files and link them together so that you can treat the information as nodes in a network rather than as hierarchical documents. You can think of it like a personal wiki!
+
+#+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
+  ;; (use-package emacsql)
+  ;; (use-package emacsql-sqlite)
+
+  (use-package org-roam
+    ;; :demand t  ;; Ensure org-roam is loaded by default
+    :when (equal custom-note-system 'custom-note-system-org-roam)    
+    :init
+    (setq org-roam-v2-ack t)
+    :defer t
+    :custom
+    (org-roam-directory (expand-file-name "RoamNotes" custom-docs-dir))
+    (org-roam-completion-everywhere t)
+    :bind (("C-c n l" . org-roam-buffer-toggle)
+            ("C-c n f" . org-roam-node-find)
+            ("C-c n i" . org-roam-node-insert)
+            ("C-c n I" . org-roam-node-insert-immediate)
+            ("C-c n p" . my/org-roam-find-project)
+            ("C-c n t" . my/org-roam-capture-task)
+            ("C-c n b" . my/org-roam-capture-inbox)
+            :map org-mode-map
+            ("C-M-i" . completion-at-point)
+            :map org-roam-dailies-map
+            ("Y" . org-roam-dailies-capture-yesterday)
+            ("T" . org-roam-dailies-capture-tomorrow))
+    :bind-keymap
+    ("C-c n d" . org-roam-dailies-map)
+    :config
+    (require 'org-roam-dailies) ;; Ensure the keymap is available
+    (my/org-roam-refresh-agenda-list)
+    (add-to-list 'org-after-todo-state-change-hook
+      (lambda ()
+        (when (equal org-state "DONE")
+          (my/org-roam-copy-todo-to-today))))
+    (org-roam-db-autosync-mode))
+
+  (defun org-roam-node-insert-immediate (arg &rest args)
+    (interactive "P")
+    (let ((args (push arg args))
+           (org-roam-capture-templates
+             (list (append (car org-roam-capture-templates)
+                     '(:immediate-finish t)))))
+      (apply #'org-roam-node-insert args)))
+
+  #+end_src
+
+*** Org Agenda from Roam Notes
+One of the most useful features of Org Mode is the agenda view. You can actually use your Org Roam notes as the source for this view!
+
+Typically you won’t want to pull in all of your Org Roam notes, so we’ll only use the notes with a specific tag like Project.
+
+Here is a snippet that will find all the notes with a specific tag and then set your org-agenda-list with the corresponding note files.
+
+#+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
+  ;; The buffer you put this code in must have lexical-binding set to t!
+  ;; See the final configuration at the end for more details.
+
+  (defun my/org-roam-filter-by-tag (tag-name)
+      (lambda (node)
+          (member tag-name (org-roam-node-tags node))))
+
+  (defun my/org-roam-list-notes-by-tag (tag-name)
+      (mapcar #'org-roam-node-file
+          (seq-filter
+              (my/org-roam-filter-by-tag tag-name)
+              (org-roam-node-list))))
+
+  (defun my/org-roam-refresh-agenda-list ()
+      (interactive)
+      (setq org-agenda-files (my/org-roam-list-notes-by-tag "Project")))
+
+  ;; Build the agenda list the first time for the session
+  
+#+end_src
+
+*** Selecting from a list of notes
+
+The org-roam-node-find function gives us the ability to filter the list of notes that get displayed for selection. We can define our own function that shows a selection list for notes that have a specific tag like Project which we talked about before. This can be useful to set up a keybinding to quickly select from a specific set of notes! One added benefit is that we can override the set of capture templates that get used when a new note gets created. This means that we can automatically create a new note with our project capture template if the note doesn’t already exist!
+
+#+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
+
+  (defun my/org-roam-project-finalize-hook ()
+      "Adds the captured project file to `org-agenda-files' if the
+  capture was not aborted."
+      ;; Remove the hook since it was added temporarily
+      (remove-hook 'org-capture-after-finalize-hook #'my/org-roam-project-finalize-hook)
+
+      ;; Add project file to the agenda list if the capture was confirmed
+      (unless org-note-abort
+          (with-current-buffer (org-capture-get :buffer)
+              (add-to-list 'org-agenda-files (buffer-file-name)))))
+
+  (defun my/org-roam-find-project ()
+      (interactive)
+      ;; Add the project file to the agenda after capture is finished
+      (add-hook 'org-capture-after-finalize-hook #'my/org-roam-project-finalize-hook)
+
+      ;; Select a project file to open, creating it if necessary
+      (org-roam-node-find
+          nil
+          nil
+          (my/org-roam-filter-by-tag "Project")
+          :templates
+          '(("p" "project" plain "* Goals\n\n%?\n\n* Tasks\n\n** TODO Add initial tasks\n\n* Dates\n\n"
+                :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n#+category: ${title}\n#+filetags: Project")
+                :unnarrowed t))))
+
+  (global-set-key (kbd "C-c n p") #'my/org-roam-find-project)
+#+end_src
+
+*** Keep and inbox of notes and tasks
+If you want to quickly capture new notes and tasks with a single keybinding into a place that you can review later, we can use org-roam-capture- to capture to a single-specific file like Inbox.org!
+
+Even though this file won’t have the timestamped filename, it will still be treated as a node in your Org Roam notes.
+#+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
+
+  (defun my/org-roam-capture-inbox ()
+      (interactive)
+      (org-roam-capture- :node (org-roam-node-create)
+          :templates '(("i" "inbox" plain "* %?"
+                           :if-new (file+head "Inbox.org" "#+title: Inbox\n")))))
+  
+#+end_src
+
+*** Capture a task
+If you’ve set up project note files like we mentioned earlier, you can set up a capture template that allows you to quickly capture tasks for any project.
+
+Much like the example before, we can either select a project that exists or automatically create a project note when it doesn’t exist yet.
+
+#+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
+
+  (defun my/org-roam-capture-task ()
+      (interactive)
+      ;; Add the project file to the agenda after capture is finished
+      (add-hook 'org-capture-after-finalize-hook #'my/org-roam-project-finalize-hook)
+
+      ;; Capture the new task, creating the project file if necessary
+      (org-roam-capture- :node (org-roam-node-read nil
+                                   (my/org-roam-filter-by-tag "Project"))
+          :templates '(("p" "project" plain "** TODO %?"
+                           :if-new
+                           (file+head+olp "%<%Y%m%d%H%M%S>-${slug}.org"
+                               "#+title: ${title}\n#+category: ${title}\n#+filetags: Project"
+                               ("Tasks"))))))
+#+end_src
+
+*** Todo
+The following snippet sets up a hook for all Org task state changes and then copies the completed (DONE) entry to today’s note file
+
+#+begin_src emacs-lisp
+  ;;; --------------------------------------------------------------------------
+
+  (defun my/org-roam-copy-todo-to-today ()
+      (interactive)
+      (let ((org-refile-keep t) ;; Set this to nil to delete the original!
+               (org-roam-dailies-capture-templates
+                   '(("t" "tasks" entry "%?"
+                         :if-new (file+head+olp "%<%Y-%m-%d>.org" "#+title: %<%Y-%m-%d>\n" ("Tasks")))))
+               (org-after-refile-insert-hook #'save-buffer)
+               today-file pos)
+          (save-window-excursion
+              (org-roam-dailies--capture (current-time) t)
+              (setq today-file (buffer-file-name))
+              (setq pos (point)))
+
+          ;; Only refile if the target file is different than the current file
+          (unless (equal (file-truename today-file)
+                      (file-truename (buffer-file-name)))
+              (org-refile nil nil (list "Tasks" today-file nil pos)))))
+
+#+end_src
+
 ** Denote
 
 Denote aims to be a simple-to-use, focused-in-scope, and effective note-taking and file-naming tool for Emacs.
@@ -3663,8 +3922,10 @@ Denote’s file-naming scheme is not limited to “notes”. It can be used for 
   ;;; ##########################################################################
 
   (use-package denote
-    :defer t
-    :after which-key
+    :when (equal custom-note-system 'custom-note-system-denote)
+    :ensure ( :host github :repo "protesilaos/denote"
+              :files (:defaults "*.el"))
+    ;; :after which-key dired
     :custom
     (denote-directory (expand-file-name "notes" user-emacs-directory))
     (denote-save-buffers nil)
@@ -3684,12 +3945,10 @@ Denote’s file-naming scheme is not limited to “notes”. It can be used for 
         (thread-last denote-directory (expand-file-name "attachments"))
         (expand-file-name "books" user-emacs-directory)))
     :config
-    (add-hook 'find-file-hook #'denote-link-buttonize-buffer)
+    ;; (add-hook 'find-file-hook #'denote-link-buttonize-buffer)
     (add-hook 'dired-mode-hook #'denote-dired-mode-in-directories)
     (denote-rename-buffer-mode 1)
-
     (mifi/define-denote-keymap) ;; Define the keymap for Denote.
-
     (with-eval-after-load 'org-capture
       (setq denote-org-capture-specifiers "%l\n%i\n%?")
       (add-to-list 'org-capture-templates
@@ -3992,7 +4251,6 @@ Advantages of lsp-bridge:
 
 #+end_src
 
-
 *** Anaconda-mode :deprecation_warning:
 
 Anaconda-mode provides Code navigation, documentation lookup and completion for Python. *Note* To use this package, you need to install =setuptools=
@@ -4125,7 +4383,7 @@ Some functions that are used during the initialization of tree-sitter.
 
   (use-package tree-sitter
     :defer t
-    :after (:any python python-mode lisp-mode)
+    :after (:any python python-mode lisp-mode merlin-mode)
     :config
     ;; Activate tree-sitter globally (minor mode registered on every buffer)
     (global-tree-sitter-mode)
@@ -4143,7 +4401,9 @@ Some functions that are used during the initialization of tree-sitter.
     (js2-mode . lsp-deferred))
 
   (use-package tree-sitter-langs
+    :ensure t
     :after tree-sitter)
+
 #+end_src
 
 ***** Treesit-auto
@@ -4348,6 +4608,7 @@ autopep8 automatically formats Python code to conform to the `PEP 8` style guide
 
 **** Python Keybinding
 ***** Helpful Macros
+
 #+begin_src emacs-lisp
   ;;; ##########################################################################
 
@@ -4458,6 +4719,8 @@ This is a basic configuration for the TypeScript language so that =.ts= files ac
   ;;; ##########################################################################
 
   (use-package js2-mode
+    ;;:after simple-httpd
+    :ensure nil
     :hook (js-mode . js2-minor-mode)
     :bind (:map js2-mode-map
             ("{" . paredit-open-curly)
@@ -4465,9 +4728,13 @@ This is a basic configuration for the TypeScript language so that =.ts= files ac
     :mode ("\\.js\\'" "\\.mjs\\'" "\\.json$")
     :custom (js2-highlight-level 3))
 
-  (use-package ac-js2
-    :after js2-mode
-    :hook (js2-mode . ac-js2-mode))
+  ;; (use-package skewer-mode
+  ;;   :ensure nil
+  ;;   :after js2-mode)
+
+  ;; (use-package ac-js2
+  ;;   :after js2-mode skewer-mode
+  ;;   :hook (js2-mode . ac-js2-mode))
 
 #+end_src
 
@@ -4496,6 +4763,7 @@ This is a basic configuration for the TypeScript language so that =.ts= files ac
 
   (global-set-key [f9] 'code-compile)
   (add-to-list 'auto-mode-alist '("\\.c\\'" . mifi/load-c-file-hook))
+  
 #+end_src
 
 **** GameBoy Development
@@ -4613,7 +4881,7 @@ Much of this configuration was taken from the [[https://robert.kra.hn/posts/rust
   ;;; ##########################################################################
   ;; for Cargo.toml and other config files
 
-  (use-package toml-mode :ensure t)
+  (use-package toml-mode :ensure t :defer t :after rust-mode)
 
 
 #+end_src
@@ -4708,23 +4976,161 @@ Integration of the Go 'guru' analysis tool into Emacs.
 
 #+end_src
 
-*** Other Languages
-Lesser used or lesser known languages.
+*** OCaml ([[https://ocaml.org][ocaml.org]])
 
-**** Lisp
+An industrial-strength functional programming language with an emphasis on expressiveness and safety
 
-Lisp support is handled by SLIME which is the “Superior Lisp Interaction Mode for Emacs”. SLIME extends Emacs with support for interactive programming in Common Lisp. The features are centered around slime-mode, an Emacs minor-mode that complements the standard lisp-mode. While lisp-mode supports editing Lisp source files, slime-mode adds support for interacting with a running Common Lisp process for compilation, debugging, documentation lookup, and so on. Extensive documentation can be found [[https://slime.common-lisp.dev/doc/html/][at this link]].
+OCaml mixes power and pragmatism in a way that makes it ideal for building complex software systems. What makes OCaml special is that it occupies a sweet spot in programming language design. It provides a combination of efficiency, expressiveness, and practicality that is matched by no other language. That is in large part because OCaml is an elegant combination of language features that have been developed over the last 40 years. These include:
 
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
++ Generational garbage collection for automatic memory management.
++ First-class functions that can be passed around like ordinary values, as seen in JavaScript, Common Lisp, and C#.
++ Static type-checking to increase performance and reduce the number of runtime errors, as found in Java and C#.
++ Parametric polymorphism, which enables the construction of abstractions that work across different data types, similar to generics in Java and C# and templates in C++.
++ Good support for immutable programming, i.e., programming without making destructive updates to data structures. This is present in traditional functional languages like Scheme, and it's also found in distributed, big-data frameworks like Hadoop.
++ Type inference, so you don’t need to annotate every function parameter, return type, and variable. Instead, types are inferred based on how a value is used. Available in a limited form in C# with implicitly-typed local variables and in C++11 with its auto keyword.
++ Algebraic data types and pattern matching to define and manipulate complex data structures, also available in Scala and F#.
 
-  (use-package slime
-    :defer t
-    :mode ("\\.lisp\\'" . slime-mode)
-    :config
-    (setq inferior-lisp-program "/opt/homebrew/bin/sbcl"))
+**** HOWTO Install OPAM if necessary
+
+The OCaml package manager manually. This will fetch the latest version.
+
+#+begin_src bash
+
+  bash -c "sh <(curl -fsSL https://raw.githubusercontent.com/ocaml/opam/master/shell/install.sh)"
 
 #+end_src
+
+This is an easy way to install =opam= using ~brew~
+
+#+begin_src emacs-lisp
+
+  (use-package opam-installer
+    :when enable-ocaml
+    :ensure nil
+    :ensure-system-package (opam . "brew install opam"))
+
+#+end_src
+
+**** HOWTO Install Merlin / Taureg
+
+Merlin is an editor service that provides advanced IDE features for OCaml.
+
+#+begin_src bash
+
+  opam update             # (optional) check latests releases
+  opam install tuareg     # For Emacs only
+  opam install merlin     # Install merlin and it's dependencies
+  opam user-setup install # Emacs and VIM auto-configuration
+
+#+end_src
+
+**** Load the user-setup.el
+
+#+begin_src emacs-lisp
+
+  (defun mifi/opam-user-setup ()
+    (interactive)
+    (use-package opam-user-setup
+      :unless (featurep 'opam-user-setup) ;; Don't allow to be run twice!
+      :when enable-ocaml
+      ;;:defer t
+      :ensure nil))
+
+  (let
+    ((file (expand-file-name "opam-user-setup.el" emacs-config-directory)))
+    (when (file-exists-p file)
+      (add-hook 'elpaca-after-init-hook 'mifi/opam-user-setup)))
+
+#+end_src
+
+**** Configure Merlin / merlin-eldoc / merlin-company
+
+Merlin is an editor service that provides advanced IDE features for OCaml.
+
+#+begin_src emacs-lisp
+
+  (use-package ocaml-ts-mode
+    :disabled
+    :after tree-sitter opam-user-setup
+    :when enable-ocaml
+    :ensure ( :package "ocaml-ts-mode" :source nil :protocol https :inherit t :depth 1
+   	    :fetcher github :repo "terrateamio/ocaml-ts-mode"
+    	    :files ("ocaml-ts-mode.el")))
+
+  (use-package merlin
+    :when enable-ocaml
+    :ensure t
+    :defer t
+    :mode
+    ("\\.ml\\'" . merlin-mode)
+    ("\\.mli\\'" . merlin-mode)
+    :after opam-user-setup)
+
+  (use-package merlin-eldoc
+    :when enable-ocaml
+    :ensure t
+    :defer t
+    :after merlin)
+
+  (use-package merlin-company
+    :when (and enable-ocaml (not (equal custom-ide 'custom-ide-lsp-bridge)))
+    :ensure t
+    :defer t
+    :after merlin company
+    :config
+    (add-hook 'merlin-mode-hook 'company-mode)
+    (with-eval-after-load 'company
+      (add-to-list 'company-backends 'merlin-company-backend)))
+
+#+end_src
+
+**** Configure caml and Tuareg
+
+*Tuareg: an Emacs OCaml mode*
+
+This archive contains files to help editing OCaml code, to highlight important parts of the code, to run an OCaml REPL (also called toplevel), and to run the OCaml debugger within Emacs.
+
+#+begin_src emacs-lisp
+
+  ;; (let ((opam-share (ignore-errors (car (process-lines "opam" "var" "share")))))
+  ;;   (when (and (and opam-share (file-directory-p opam-share)) enable-ocaml)
+  ;;     (add-to-list 'load-path (expand-file-name "emacs/site-lisp" opam-share))
+  ;;     (autoload 'merlin-mode "merlin" nil t nil)
+  ;;     (add-hook 'caml-mode-hook 'merlin-mode t)))
+
+  (use-package ocp-indent
+    :when enable-ocaml
+    :after opam-user-setup
+    :ensure (:package "ocp-indent" :source nil :protocol https :inherit t :depth 1
+  	    :fetcher github :repo "OCamlPro/ocp-indent"
+  	    :files ("tools/ocp-indent.el")))
+
+  (use-package tuareg
+    :when enable-ocaml
+    :after opam-user-setup
+    :defer t
+    :custom
+    (tuareg-indent-align-with-first-arg t)
+    :ensure (:package "tuareg" :source nil :protocol https :inherit t :depth 1
+   	    :fetcher github :repo "ocaml/tuareg"
+   	    :files ("*.el" "*.el.in" "dir" "*.info" "*.texi" "*.texinfo"
+   		     "doc/dir" "doc/*.info" "doc/*.texi" "doc/*.texinfo"
+   		     "lisp/*.el"
+   		     (:exclude ".dir-locals.el" "test.el" "tests.el"
+   		       "*-test.el" "*-tests.el" "LICENSE" "README*" "*-pkg.el")))
+    :config
+    (add-hook 'tuareg-mode-hook
+      (lambda()
+        (merlin-mode t)
+        (setq tuareg-mode-name "🐫")
+        (when (functionp 'prettify-symbols-mode)
+          (prettify-symbols-mode)))))
+
+#+end_src
+
+*** Other Languages
+
+Lesser used or lesser known languages.
 
 **** Swift / Swift Playground
 
@@ -4754,6 +5160,20 @@ Lisp support is handled by SLIME which is the “Superior Lisp Interaction Mode 
 
 #+end_src
 
+**** Lisp
+
+Lisp support is handled by SLIME which is the “Superior Lisp Interaction Mode for Emacs”. SLIME extends Emacs with support for interactive programming in Common Lisp. The features are centered around slime-mode, an Emacs minor-mode that complements the standard lisp-mode. While lisp-mode supports editing Lisp source files, slime-mode adds support for interacting with a running Common Lisp process for compilation, debugging, documentation lookup, and so on. Extensive documentation can be found [[https://slime.common-lisp.dev/doc/html/][at this link]].
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package slime
+    :defer t
+    :mode ("\\.lisp\\'" . slime-mode)
+    :config
+    (setq inferior-lisp-program "/opt/homebrew/bin/sbcl"))
+
+#+end_src
 ** Debug Support
 *** Debug Adapter Protocol for Emacs (<<<DAPE>>>)
 
@@ -5330,6 +5750,7 @@ A tree plugin like NerdTree for Vim
   ;;; ##########################################################################
 
   (use-package diff-hl
+    :after track-changes
     :config
     (global-diff-hl-mode))
 
@@ -5428,12 +5849,25 @@ It's important to note that ~multimarkdown~ is set as the ~markdown-command~. Th
 #+begin_src emacs-lisp
   ;;; ##########################################################################
 
+  ;; (defun mifi/load-web-support ()
+  ;;   (use-package web-server-status-codes :ensure nil)
+  ;;   (use-package simple-httpd
+  ;;     :preface (setq warning-minimum-level :emergency)
+  ;;     :ensure nil
+  ;;     :config (setq warning-minimum-level :warning))
+  ;;   (use-package websocket :ensure nil)
+  ;;   (use-package web-server :ensure nil))
+    
+
   (use-package markdown-mode
     :ensure t
+    ;;:defer t
     :mode (("README\\.md\\'" . gfm-mode)
            ("\\.md\\'" . markdown-mode)
            ("\\.markdown\\'" . markdown-mode))
     :init (setq markdown-command "multimarkdown"))
+    ;;:hook (elpaca-after-init . mifi/load-web-support))
+    
 
 #+end_src
 
@@ -5446,18 +5880,12 @@ Markdown preview in emacs features:
 + remote preview
 + multiple simultaneous previews
   
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 
   ;; markdown-preview-mode is depent upon:
   ;; +  markdown-mode.el
   ;; +  websocket.el
   ;; +  web-server.el
-
-  (add-hook 'elpaca-after-init-hook
-    (lambda ()
-      ;; These packages should be in the `lisp' directory.
-      (use-package websocket :ensure nil)
-      (use-package simple-httpd :ensure t)))
 
   (use-package markdown-preview-mode
     :after (:all websocket web-server markdown-mode)
@@ -5485,19 +5913,6 @@ Instant Github-flavored Markdown/Org preview using Grip (GitHub Readme Instant P
   ;; ;; Or using hooks
   ;; (use-package grip-mode
   ;;   :hook ((markdown-mode org-mode) . grip-mode))
-
-#+end_src
-
-** Simple-httpd
-A simple Emacs web server.
-
-This used to be httpd.el but there are already several of these out there already of varying usefulness. Since the name change, it's been stripped down to simply serve files and directory listings. Client requests are sanitized so this should be safe, but I make no guarantees.
-
-#+begin_src emacs-lisp
-
-  (use-package simple-httpd
-    :ensure t
-    :defer t)
 
 #+end_src
 
@@ -5560,15 +5975,12 @@ This is a set of keymaps that do the same things as the popup menu. Both are her
         map)
       "mmm-keys-minor-mode keymap.")
 
-    (which-key-add-key-based-replacements "M-RET |" "display-fill-column")
-    (which-key-add-key-based-replacements "M-RET ?" "help-at-point")
-
     (define-minor-mode mmm-keys-minor-mode
       "A minor mode so that my key settings override annoying major modes."
       :init-value t
       :lighter " MmM"))
 
-  ;; (mifi/define-mmm-minor-mode-map)
+  (mifi/define-mmm-minor-mode-map)
 
 #+end_src
 
@@ -5642,20 +6054,18 @@ These are the hools that update the context-aware menu triggered by various stat
 
   ;; Check the keys when:
   ;; - the whick-key menu is displayed
-  (add-hook 'which-key-inhibit-display-hook 'mifi/mmm-update-menu)
-  ;; - the user updates/changes the buffer - like loading a file
-  ;;   (but not switching to a new buffer)
-  (add-hook 'window-buffer-change-functions 'mifi/mmm-handle-context-keys)
-  ;; - the user switches windows
-  (add-hook 'window-selection-change-functions 'mifi/mmm-handle-context-keys)
-
-  ;; (add-hook 'which-key-mode-hook #'mifi/after-which-key)
-
-  ;; (add-hook 'elpaca-after-init-hook #'mifi/after-which-key)
-    ;; (lambda ()
-    ;;   (mifi/after-which-key)
-    ;;   (mifi/define-mmm-minor-mode-map)
-    ;;   (mifi/set-recenter-keys)))
+  (add-hook 'elpaca-after-init-hook
+    (lambda ()
+      (add-hook 'which-key-inhibit-display-hook 'mifi/mmm-update-menu)
+      ;; - the user updates/changes the buffer - like loading a file
+      ;;   (but not switching to a new buffer)
+      (add-hook 'window-buffer-change-functions 'mifi/mmm-handle-context-keys)
+      ;; - the user switches windows
+      (add-hook 'window-selection-change-functions 'mifi/mmm-handle-context-keys)
+      ;; (add-hook 'which-key-mode-hook #'mifi/after-which-key)
+      (mifi/after-which-key)
+      (mifi/define-mmm-minor-mode-map)
+      (mifi/set-recenter-keys)))
 
 #+end_src
 
@@ -5665,22 +6075,26 @@ These are the hools that update the context-aware menu triggered by various stat
   ;;; ##########################################################################
 
   (defun mifi/config-landing ()
-    (setq-default initial-scratch-message
-      (format
-        ";; Hello, World and Happy hacking %s!\n%s\n\n" user-login-name
-        ";; Press M-RET (Meta-RET) to open Mitch's Context Aware Menu"))
+    ;; (setq-default initial-scratch-message
+    ;;   (format
+    ;;     ";; Hello, World and Happy hacking %s!\n%s\n\n" user-login-name
+    ;;     ";; Press M-RET (Meta-RET) to open Mitch's Context Aware Menu"))
     (cond
       ((equal default-landing-mode 'landing-mode-dashboard)
         (dashboard-open))
       ((equal default-landing-mode 'landing-mode-scratch)
         (switch-to-buffer "*scratch*")
+        (erase-buffer)
+        (beginning-of-buffer)
+        (insert (format
+  		";; Well Met and Happy hacking %s!\n%s\n\n" user-login-name
+  		";; Press M-RET (Meta-RET) to open Mitch's Context Aware Menu"))
         (end-of-buffer))
+
       ((equal default-landing-mode 'landing-mode-ielm)
         (ielm))
       ((equal default-landing-mode 'landing-mode-eshell)
-        (eshell)))  )
-    ;; (add-hook 'lisp-interaction-mode-hook
-    ;;   (lambda ())))
+        (eshell))))
 
   (add-hook 'elpaca-after-init-hook
     (lambda ()
@@ -5694,16 +6108,29 @@ These are the hools that update the context-aware menu triggered by various stat
 #+begin_src emacs-lisp
   ;;; ##########################################################################
 
-  (defun mifi/cleanup-when-exiting ()
+  (defun mifi/backup-file (file)
+    "Backup the file from the configuration directory into the
+  backup directory. If a file already exists in the backup directory, the old
+  file is renamed with a ~ at the end before the new file is copied."
     (let ((backdir (format "%s/config-backup" working-files-directory)))
       (make-directory backdir t)
-      ;; Backup init.el
-      (copy-file
-        (expand-file-name "init.el" emacs-config-directory)
-        (expand-file-name "init.el" backdir) t)))
-  ;; (copy-file
-  ;;   (expand-file-name "emacs-config.org" emacs-config-directory)
-  ;;   (expand-file-name "emacs-config.org" backdir) t)))
+      ;; --------------------------------------------------
+      (when (file-exists-p (format "%s/%s" backdir file))
+        (copy-file
+  	(expand-file-name file backdir)
+  	(expand-file-name (format "%s~" file) backdir) t))
+      (when (file-exists-p (format "%s/%s" emacs-config-directory file))
+        (copy-file
+  	(expand-file-name file emacs-config-directory)
+  	(expand-file-name file backdir) t))))
+
+  (defun mifi/cleanup-when-exiting ()
+    "Backup Emacs initialization files for recovery. If old files exist, they are
+  backed up as tilde (~) files."
+    (progn
+      (mifi/backup-file "early-init.el")
+      (mifi/backup-file "init.el")
+      (mifi/backup-file "emacs-config.org")))
 
   (add-hook 'kill-emacs-hook #'mifi/cleanup-when-exiting)
 
@@ -5760,6 +6187,21 @@ The standard =lisp= footer that should appear at the end of every =lisp= source 
   ;;; init.el ends here.
 
 #+end_src
+
+** OCaml special import
+
+This is normally installed as part of the ocaml / Merlin setup. This is added here but commented out. The actual =require= is done in the OCaml Language configuration section
+
+#+begin_src emacs-lisp
+
+  ;; ## added by OPAM user-setup for emacs / base ## 56ab50dc8996d2bb95e7856a6eddb17b ## you can edit, but keep this line
+  ;;-- This is already handled in the OCaml language config above...
+  ;; (require 'opam-user-setup "~/.emacs.d/opam-user-setup.el")
+  ;; ## end of OPAM user-setup addition for emacs / base ## keep this line
+
+#+end_src
+
+
 
 # Local Variables:
 # jinx-local-words: "Elpaca Flycheck Treesit el init"
