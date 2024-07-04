@@ -224,20 +224,34 @@ Because in macOS, Emacs could be started outside of a shell (like an application
   ;;; ##########################################################################
   (defconst *is-a-mac* (eq system-type 'darwin))
 
-  (defun mifi/setup-exec-path ()
-    ;; A list of customized executable paths. This is just something I (mifi)
-    ;; do personally rather than have another package do it for me. For the
-    ;; most part, the paths are typical on a Mac and with homebrew installed.
+  (defun mifi/setup-path-from-exec-path ()
+    "Sets the environment PATH from the the `exec-path' list using the OS's
+  defined path-separator."
     (interactive)
-    (setq exec-path '( "/Users/strider/.cargo/bin"
-                       "/Users/strider/.local/bin"
-                       "/opt/homebrew/bin" "/opt/homebrew/sbin"
-                       "/usr/bin" "/bin" "/usr/sbin" "/sbin"
-                       "/usr/local/bin" "/opt/local/bin"
-                       "/Library/Frameworks/Python.framework/Versions/Current/bin"))
-
     (let ((path-from-exec-path (string-join exec-path path-separator)))
       (setenv "PATH" path-from-exec-path)))
+
+  (defun mifi/setup-exec-path ()
+    "A list of customized executable paths for standard Linux and macOS
+  (and possibly) other UN*X type environments."
+    (interactive)
+    (cond
+      ((eq system-type 'darwin)
+        (setq exec-path
+          '( "~/.cargo/bin" "~/.local/bin"
+             "/opt/homebrew/bin" "/opt/homebrew/sbin"
+             "/Library/Frameworks/Python.framework/Versions/Current/bin"
+             "/usr/local/sbin" "/usr/local/bin" "/usr/sbin" "/usr/bin"
+             "/sbin" "/bin" "/opt/local/bin")))
+      ((eq system-type 'gnu/linux)
+        (setq exec-path
+          '( "/usr/local/sbin" "/usr/local/bin" "/usr/sbin" "/usr/bin"
+             "/sbin" "/bin" "/usr/local/games" "/usr/games")))
+      (t ;; default to something
+        (setq exec-path '( "/usr/local/sbin" "/usr/local/bin"
+                           "/usr/sbin" "/usr/bin"))))
+
+    (mifi/setup-path-from-exec-path))
 
   (setq browse-url-firefox-program
     "/Applications/Firefox.app/Contents/MacOS/firefox")
@@ -498,7 +512,7 @@ These are features that basically have multiple-choice options instead of being 
              (const :tag "Dashboard" landing-mode-dashboard)
              (const :tag "*scratch*" landing-mode-scratch)
              (const :tag "IELM" landing-mode-ielm)
-    	   (const :tag "eshell" landing-mode-eshell))
+           (const :tag "eshell" landing-mode-eshell))
     :group 'mifi-config-features)
 
   (defcustom undo-handler 'undo-handler-vundo
@@ -598,9 +612,9 @@ These are features that basically have multiple-choice options instead of being 
   augments the Org-mode syntax, and will work for anyone already using Org-mode
   for their personal wiki."
     :type '(radio
-  	   (const :tag "Denote" custom-note-system-denote)
+             (const :tag "Denote" custom-note-system-denote)
              (const :tag "Org-roam" custom-note-system-org-roam)
-  	   (const :tag "None" custom-note-system-none))
+             (const :tag "None" custom-note-system-none))
     :group 'mifi-config-features)
 
 #+end_src
@@ -1069,16 +1083,16 @@ Delight enables you to customise the mode names displayed in the mode line. It's
   (defun mifi/set-delight ()
     (interactive)
     (delight '( (abbrev-mode " Abv" abbrev)
-  	      (anaconda-mode)
-  	      (buffer-face-mode "Buff")
-  	      (company-box-mode)
-  	      (company-mode)
-  	      (counsel-mode)
-  	      (golden-ratio-mode " 𝜑")
-  	      (lisp-interaction-mode " iLisp")
-  	      (mmm-keys-minor-mode " m3")
-  	      (projectile-mode " ->")
-  	      (tree-sitter-mode " ts")
+              (anaconda-mode)
+              (buffer-face-mode "Buff")
+              (company-box-mode "CBox")
+              (company-mode "Com")
+              (counsel-mode)
+              (golden-ratio-mode " 𝜑")
+              (lisp-interaction-mode " iLisp")
+              (mmm-keys-minor-mode " m3")
+              (projectile-mode " ->")
+              (tree-sitter-mode " ts")
                 ;;(eldoc-mode nil " eldoc")
                 (overwrite-mode " Ov" t)
                 (python-mode " Py" :major)
@@ -1130,41 +1144,6 @@ This package displays ElDoc documentations in a childframe. The childframe is se
     :delight DocBox
     :hook (elpaca-after-init . mifi/setup-hooks-for-eldoc))
     
-#+end_src
-
-** Which Key
-
-[[Https://github.com/justbur/emacs-which-key][which-key]] is a useful UI panel that appears when you start pressing any key binding in Emacs to offer you all possible completions for the prefix. For example, if you press =C-c= (hold control and press the letter =c=), a panel will appear at the bottom of the frame displaying all of the bindings under that prefix and which command they run. This is very useful for learning the possible key bindings in the mode of your current buffer.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (defun mifi/after-which-key ()
-    (interactive)
-    (which-key-mode 1)
-    (which-key-add-key-based-replacements "M-RET |" "display-fill-column")
-    (which-key-add-key-based-replacements "M-RET ?" "help-at-point")
-    (mmm-keys-minor-mode 1)
-    (when (featurep 'prog-mode)
-      (which-key-add-key-based-replacements "C-c g r" "find-symbol-reference")
-      (which-key-add-key-based-replacements "C-c g o" "find-defitions-other-window")
-      (which-key-add-key-based-replacements "C-c g g" "find-defitions")
-      (which-key-add-key-based-replacements "C-c g ?" "eldoc-definition"))
-    (mifi/set-recenter-keys))
-
-  (use-package which-key
-    :ensure (:wait t) :demand t
-    :commands which-key-mode
-    :delight which-key-mode
-    :custom
-    (add-hook 'elpaca-after-init-hook #'mifi/after-which-key)
-    (which-key-popup-type 'side-window)
-    (which-key-preserve-window-configuration t)
-    (which-key-idle-delay 1,0)
-    (which-key-prefix-prefix "✪ ")
-    ;; (which-key-sort-order 'which-key-key-order-alpha)
-    (which-key-min-display-lines 3))
-
 #+end_src
 
 ** Hydra
@@ -1482,6 +1461,41 @@ Jinx is a fast just-in-time spell-checker for Emacs. Jinx highlights misspelled 
 
 #+end_src
 
+** Which Key
+
+[[Https://github.com/justbur/emacs-which-key][which-key]] is a useful UI panel that appears when you start pressing any key binding in Emacs to offer you all possible completions for the prefix. For example, if you press =C-c= (hold control and press the letter =c=), a panel will appear at the bottom of the frame displaying all of the bindings under that prefix and which command they run. This is very useful for learning the possible key bindings in the mode of your current buffer.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (defun mifi/after-which-key ()
+    (interactive)
+    (which-key-mode 1)
+    (which-key-add-key-based-replacements "M-RET |" "display-fill-column")
+    (which-key-add-key-based-replacements "M-RET ?" "help-at-point")
+    (mmm-keys-minor-mode 1)
+    (when (featurep 'prog-mode)
+      (which-key-add-key-based-replacements "C-c g r" "find-symbol-reference")
+      (which-key-add-key-based-replacements "C-c g o" "find-defitions-other-window")
+      (which-key-add-key-based-replacements "C-c g g" "find-defitions")
+      (which-key-add-key-based-replacements "C-c g ?" "eldoc-definition"))
+    (mifi/set-recenter-keys))
+
+  (use-package which-key
+    :ensure (:wait t)
+    :commands which-key-mode
+    :delight which-key-mode
+    :custom
+    (add-hook 'elpaca-after-init-hook #'mifi/after-which-key)
+    (which-key-popup-type 'side-window)
+    (which-key-preserve-window-configuration t)
+    (which-key-idle-delay 1,0)
+    (which-key-prefix-prefix "✪ ")
+    ;; (which-key-sort-order 'which-key-key-order-alpha)
+    (which-key-min-display-lines 3))
+
+#+end_src
+
 ** Local packages
 
 These are packages located in the ~"lisp"~ directory within the emacs-config-directory. This is a dedicated area to use in order to load/configure these packages if so desired. Not required, just a convenience.
@@ -1757,7 +1771,7 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
     (add-hook 'elpaca-after-init-hook
       (lambda ()
         (when (featurep 'prescient)
-  	(company-prescient-mode 1))
+        (company-prescient-mode 1))
         (global-company-mode +1))))
 
   ;; IMPORTANT:
@@ -1776,7 +1790,7 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
 
   (use-package company-box
     :after company
-    :delight cb
+    :delight 'cb
     :hook (company-mode . company-box-mode))
 
   (use-package company-jedi
@@ -2426,7 +2440,7 @@ Virtical Split comparison of two files selected from the dired window.
     :ensure nil  ;; local package hint for elpaca
     :no-require t
     :bind (:map dired-mode-map
-  	  ("=" . mifi/dired-ediff-marked-files)))
+          ("=" . mifi/dired-ediff-marked-files)))
 
   (use-package ediff
     :ensure nil ;; local package hint for elpaca
@@ -4338,7 +4352,7 @@ This is more support for a language rather than a langage itself
 
   (use-package flycheck
     ;;:unless (equal custom-ide 'custom-ide-elpy)
-    :delight fc
+    :delight 'fc
     :defer t
     ;;:ensure (:host github :repo "flycheck/flycheck")
     :config
@@ -4996,31 +5010,75 @@ The OCaml package manager manually. This will fetch the latest version.
 
 #+begin_src bash
 
-  bash -c "sh <(curl -fsSL https://raw.githubusercontent.com/ocaml/opam/master/shell/install.sh)"
+  bash -c "sh <(curl -fsSL https://raw.githubusercontent.com/ocaml/opam/master/shell/install.sh) --version 2.2.0"
 
 #+end_src
 
-This is an easy way to install =opam= using ~brew~
+This is an easy way to install =opam= using ~brew~ but it may not be the most current. The shell script above is the best way to go.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp 
 
-  (use-package opam-installer
-    :when enable-ocaml
-    :ensure nil
-    :ensure-system-package (opam . "brew install opam"))
+  (let
+    ((installer "bash -c \"sh <(curl -fsSL https://raw.githubusercontent.com/ocaml/opam/master/shell/install.sh) --version 2.2.0\""))
+    (use-package opam-installer
+      :when enable-ocaml
+      :ensure nil
+      :ensure-system-package (opam . installer)))
 
 #+end_src
+
+**** The .ocamlinit file
+
+This should be added/appended to anything in the existing file.
+
+#+begin_src shell
+
+  sig=" ## Added by Emacs config for Ocaml "
+  count=$(grep -l "${sig}" ~/.ocamlinit)
+
+  if [ -z $count ]; then
+      printf "
+  (*${sig}*)
+  #require \"core.top\";;
+  #require \"ppx_jane\";;
+  open Base;;
+  (* ## End Emacs custom config *)
+  " >> ~/.ocamlinit
+  fi
+
+#+end_src
+
+#+RESULTS:
 
 **** HOWTO Install Merlin / Taureg
 
 Merlin is an editor service that provides advanced IDE features for OCaml.
 
+#+begin_src shell
+
+  opam update -y             # (optional) check latests releases
+  opam install tuareg -y     # For Emacs only
+  opam install merlin -y     # Install merlin and it's dependencies
+  opam user-setup install -y # Emacs and VIM auto-configuration
+
+#+end_src
+
+**** Install Ocaml LSP Server
+
+This is not 100% necessary since Ocaml can use =merlin= directly instead of fronting with an LSP server. But, we install it for any flexibility it may provide.
+
+#+begin_src shell
+
+  opam install ocaml-lsp-server -y
+
+#+end_src
+
+
+**** Code Formatter and Builder
+
 #+begin_src bash
 
-  opam update             # (optional) check latests releases
-  opam install tuareg     # For Emacs only
-  opam install merlin     # Install merlin and it's dependencies
-  opam user-setup install # Emacs and VIM auto-configuration
+  opam install ocamlformat dune -y
 
 #+end_src
 
@@ -5033,13 +5091,28 @@ Merlin is an editor service that provides advanced IDE features for OCaml.
     (use-package opam-user-setup
       :unless (featurep 'opam-user-setup) ;; Don't allow to be run twice!
       :when enable-ocaml
-      ;;:defer t
-      :ensure nil))
+      :ensure nil
+      :config
+      (add-to-list 'exec-path "~/.opam/default/bin")
+      (mifi/setup-path-from-exec-path)))
 
   (let
     ((file (expand-file-name "opam-user-setup.el" emacs-config-directory)))
     (when (file-exists-p file)
       (add-hook 'elpaca-after-init-hook 'mifi/opam-user-setup)))
+
+#+end_src
+
+**** Setup path to ~opam~ installed emacs lisp modules
+
+#+begin_src emacs-lisp
+  
+  (let ((opam-share (ignore-errors (car (process-lines "opam" "var" "share")))))
+    (when (and (and opam-share (file-directory-p opam-share)) enable-ocaml)
+      (add-to-list 'load-path (expand-file-name "emacs/site-lisp" opam-share))))
+      ;;(autoload 'merlin-mode "merlin" nil t nil)
+      ;;(add-hook 'tuareg-mode-hook 'merlin-mode t)
+      ;;(add-hook 'caml-mode-hook 'merlin-mode t)))
 
 #+end_src
 
@@ -5049,34 +5122,17 @@ Merlin is an editor service that provides advanced IDE features for OCaml.
 
 #+begin_src emacs-lisp
 
-  (use-package ocaml-ts-mode
-    :disabled
-    :after tree-sitter opam-user-setup
-    :when enable-ocaml
-    :ensure ( :package "ocaml-ts-mode" :source nil :protocol https :inherit t :depth 1
-   	    :fetcher github :repo "terrateamio/ocaml-ts-mode"
-    	    :files ("ocaml-ts-mode.el")))
-
   (use-package merlin
-    :when enable-ocaml
-    :ensure t
-    :defer t
-    :mode
-    ("\\.ml\\'" . merlin-mode)
-    ("\\.mli\\'" . merlin-mode)
+    :when enable-ocaml :ensure nil :defer t
+    :delight " 🪄" 
     :after opam-user-setup)
 
   (use-package merlin-eldoc
-    :when enable-ocaml
-    :ensure t
-    :defer t
-    :after merlin)
+    :when enable-ocaml :ensure nil :defer t :after merlin)
 
   (use-package merlin-company
     :when (and enable-ocaml (not (equal custom-ide 'custom-ide-lsp-bridge)))
-    :ensure t
-    :defer t
-    :after merlin company
+    :ensure nil :defer t :after merlin company
     :config
     (add-hook 'merlin-mode-hook 'company-mode)
     (with-eval-after-load 'company
@@ -5092,39 +5148,58 @@ This archive contains files to help editing OCaml code, to highlight important p
 
 #+begin_src emacs-lisp
 
-  ;; (let ((opam-share (ignore-errors (car (process-lines "opam" "var" "share")))))
-  ;;   (when (and (and opam-share (file-directory-p opam-share)) enable-ocaml)
-  ;;     (add-to-list 'load-path (expand-file-name "emacs/site-lisp" opam-share))
-  ;;     (autoload 'merlin-mode "merlin" nil t nil)
-  ;;     (add-hook 'caml-mode-hook 'merlin-mode t)))
+  (defun mifi/tuareg-mode-hook ()
+    (merlin-mode t)
+    (setq tuareg-mode-name "🐫")
+    (when (functionp 'prettify-symbols-mode)
+      (prettify-symbols-mode)))
+
+  (use-package tuareg
+    :when enable-ocaml :after opam-user-setup :defer t :ensure t
+    :hook (tuareg-mode . mifi/tuareg-mode-hook)
+    :mode
+    ("\\.ml\\'" . tuareg-mode)
+    ("\\.mli\\'" . tuareg-mode)
+    :custom
+    (tuareg-indent-align-with-first-arg t))
+
+#+end_src
+
+**** Other OCaml Related Packages
+
+Here are some other packages that are useful when using OCaml.
+
+#+begin_src emacs-lisp
 
   (use-package ocp-indent
     :when enable-ocaml
     :after opam-user-setup
-    :ensure (:package "ocp-indent" :source nil :protocol https :inherit t :depth 1
-  	    :fetcher github :repo "OCamlPro/ocp-indent"
-  	    :files ("tools/ocp-indent.el")))
+    :ensure-system-package
+    ("~/.opam/default/lib/ocp-indent" . "opam install ocp-indent -y")
+    :ensure (:inherit t :depth 1
+             :fetcher github :repo "OCamlPro/ocp-indent"
+             :files ("tools/ocp-indent.el")))
 
-  (use-package tuareg
-    :when enable-ocaml
-    :after opam-user-setup
-    :defer t
-    :custom
-    (tuareg-indent-align-with-first-arg t)
-    :ensure (:package "tuareg" :source nil :protocol https :inherit t :depth 1
-   	    :fetcher github :repo "ocaml/tuareg"
-   	    :files ("*.el" "*.el.in" "dir" "*.info" "*.texi" "*.texinfo"
-   		     "doc/dir" "doc/*.info" "doc/*.texi" "doc/*.texinfo"
-   		     "lisp/*.el"
-   		     (:exclude ".dir-locals.el" "test.el" "tests.el"
-   		       "*-test.el" "*-tests.el" "LICENSE" "README*" "*-pkg.el")))
-    :config
-    (add-hook 'tuareg-mode-hook
-      (lambda()
-        (merlin-mode t)
-        (setq tuareg-mode-name "🐫")
-        (when (functionp 'prettify-symbols-mode)
-          (prettify-symbols-mode)))))
+  (use-package dune
+    :ensure t)
+
+  (use-package ocamlformat
+    :when enable-ocaml :ensure t
+    :after (:any merlin tuareg)
+    :bind ("<f6>" . ocamlformat)
+    :ensure-system-package
+    ("~/.opam/default/lib/ocamlformat" . "opam install ocamlformat -y")
+    :custom (ocamlformat-enable 'enable-outside-detected-project))
+
+  ;; (use-package flycheck-ocaml
+  ;;   :ensure t
+  ;;   :config
+  ;;   (add-hook 'tuareg-mode-hook
+  ;;     (lambda ()
+  ;;       ;; disable Merlin's own error checking
+  ;;       (setq-local merlin-error-after-save nil)
+  ;;       ;; enable Flycheck checker
+  ;;       (flycheck-ocaml-setup))))
 
 #+end_src
 
@@ -5440,8 +5515,8 @@ Something that is needed for Rust and Go debugging.
     :defer t
     :after dap-mode
     :ensure ( :package "dap-lldb" :source nil :protocol https
-  	    :inherit t :depth 1 :type git
-  	    :host github :repo "emacs-lsp/dap-mode")
+              :inherit t :depth 1 :type git
+              :host github :repo "emacs-lsp/dap-mode")
     :custom
     (dap-lldb-debug-program "~/Developer/command-line-unix/llvm/lldb-build/bin/lldb-dap")
     :config
@@ -5457,8 +5532,8 @@ Something that is needed for Rust and Go debugging.
   (use-package dap-gdb-lldb
     :when (equal debug-adapter 'debug-adapter-dap-mode)
     :ensure ( :package "dap-gdb-lldb" :source nil :protocol https
-  	    :inherit t :depth 1 :type git :host github
-  	    :repo "emacs-lsp/dap-mode")
+              :inherit t :depth 1 :type git :host github
+              :repo "emacs-lsp/dap-mode")
     :defer t
     :after dap-lldb
     :config
@@ -5469,8 +5544,8 @@ Something that is needed for Rust and Go debugging.
     :defer t
     :after dap-mode
     :ensure ( :package "dap-cpptools" :source nil :protocol https
-  	    :inherit t :depth 1 :type git :host github
-  	    :repo "emacs-lsp/dap-mode"))
+              :inherit t :depth 1 :type git :host github
+              :repo "emacs-lsp/dap-mode"))
   ;; :config
   ;; (dap-cpptools-setup))
 
@@ -5956,8 +6031,8 @@ This is a set of keymaps that do the same things as the popup menu. Both are her
         (bind-keys :map map
           ("M-RET $" . jinx-correct)
           ("M-RET ?" . eldoc-box-help-at-point)
-  	("M-RET M s" . markdown-preview-mode)
-  	("M-RET M e" . markdown-preview-cleanup)
+        ("M-RET M s" . markdown-preview-mode)
+        ("M-RET M e" . markdown-preview-cleanup)
           ("M-RET S e" . eshell)
           ("M-RET S i" . ielm)
           ("M-RET S v" . vterm-other-window)
@@ -6087,8 +6162,8 @@ These are the hools that update the context-aware menu triggered by various stat
         (erase-buffer)
         (beginning-of-buffer)
         (insert (format
-  		";; Well Met and Happy hacking %s!\n%s\n\n" user-login-name
-  		";; Press M-RET (Meta-RET) to open Mitch's Context Aware Menu"))
+                ";; Well Met and Happy hacking %s!\n%s\n\n" user-login-name
+                ";; Press M-RET (Meta-RET) to open Mitch's Context Aware Menu"))
         (end-of-buffer))
 
       ((equal default-landing-mode 'landing-mode-ielm)
@@ -6117,12 +6192,12 @@ These are the hools that update the context-aware menu triggered by various stat
       ;; --------------------------------------------------
       (when (file-exists-p (format "%s/%s" backdir file))
         (copy-file
-  	(expand-file-name file backdir)
-  	(expand-file-name (format "%s~" file) backdir) t))
+        (expand-file-name file backdir)
+        (expand-file-name (format "%s~" file) backdir) t))
       (when (file-exists-p (format "%s/%s" emacs-config-directory file))
         (copy-file
-  	(expand-file-name file emacs-config-directory)
-  	(expand-file-name file backdir) t))))
+        (expand-file-name file emacs-config-directory)
+        (expand-file-name file backdir) t))))
 
   (defun mifi/cleanup-when-exiting ()
     "Backup Emacs initialization files for recovery. If old files exist, they are

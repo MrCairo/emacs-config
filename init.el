@@ -162,115 +162,114 @@
 
 ;;; ##########################################################################
 
-  (defcustom default-landing-mode 'landing-mode-scratch
-    "Select which landing screen to end up on once Emacs has finished
-  launching.
+(defcustom default-landing-mode 'landing-mode-scratch
+  "Select which landing screen to end up on once Emacs has finished
+launching.
 
-  Dashboard provides an overview of items and tasks such as recent files,
-  agendas, projects, and bookmarks. The Dashboard appears in the *dashboard*
-  buffer and can also be opened using \"C-c d\" or \"M-RET d\" from anywhere
-  with the MmM mode enabled.
+Dashboard provides an overview of items and tasks such as recent files,
+agendas, projects, and bookmarks. The Dashboard appears in the *dashboard*
+buffer and can also be opened using \"C-c d\" or \"M-RET d\" from anywhere
+with the MmM mode enabled.
 
-  Scratch is the standard *scratch* buffer that Emacs provides but has a slightly
-  different startup message. It continues to be a place to write things or test
-  out Lisp expressions.
+Scratch is the standard *scratch* buffer that Emacs provides but has a slightly
+different startup message. It continues to be a place to write things or test
+out Lisp expressions.
 
-  IELM (Inferior Emacs Lisp Mode) is a more interactive Lisp environment over the
-  *scratch* buffer.
+IELM (Inferior Emacs Lisp Mode) is a more interactive Lisp environment over the
+*scratch* buffer.
 
-  eshell is the Emacs shell environment that is part terminal and part Lisp
-  interpreter.
-  "
-    :type '(radio
-             (const :tag "Dashboard" landing-mode-dashboard)
-             (const :tag "*scratch*" landing-mode-scratch)
-             (const :tag "IELM" landing-mode-ielm)
-  	   (const :tag "eshell" landing-mode-eshell))
-    :group 'mifi-config-features)
+eshell is the Emacs shell environment that is part terminal and part Lisp
+interpreter."
+  :type '(radio
+           (const :tag "Dashboard" landing-mode-dashboard)
+           (const :tag "*scratch*" landing-mode-scratch)
+           (const :tag "IELM" landing-mode-ielm)
+         (const :tag "eshell" landing-mode-eshell))
+  :group 'mifi-config-features)
 
-  (defcustom undo-handler 'undo-handler-vundo
-    "Select the undo handler to use.
+(defcustom undo-handler 'undo-handler-vundo
+  "Select the undo handler to use.
 
-  Vundo is a minimalistic undo handler that provides a simple, graphical undo
-  horizontal tree.
+Vundo is a minimalistic undo handler that provides a simple, graphical undo
+horizontal tree.
 
-  Undo-tree is a very mature and full featured undo handler. It also has the
-  capability to persist undo history across Emacs sessions.
+Undo-tree is a very mature and full featured undo handler. It also has the
+capability to persist undo history across Emacs sessions.
 
-  Finally, the standard undo handler can also be chosen."
-    :type '(radio
-             (const :tag "Vundo (default)" undo-handler-vundo)
-             (const :tag "Undo-tree" undo-handler-undo-tree)
-             (const :tag "Built-in" undo-handler-built-in))
-    :group 'mifi-config-features)
+Finally, the standard undo handler can also be chosen."
+  :type '(radio
+           (const :tag "Vundo (default)" undo-handler-vundo)
+           (const :tag "Undo-tree" undo-handler-undo-tree)
+           (const :tag "Built-in" undo-handler-built-in))
+  :group 'mifi-config-features)
 
-  (defcustom completion-handler 'comphand-vertico
-    "Select the default minibuffer completion handler.
+(defcustom completion-handler 'comphand-vertico
+  "Select the default minibuffer completion handler.
 
-  Vertico provides a performant and minimalistic minibuffer vertical completion
-  UI based on the default completion system. Corfu provides a
-  completion-at-point feature in main buffers. Cape provides Corfu with
-  additional completion-at-point backends to use.
+Vertico provides a performant and minimalistic minibuffer vertical completion
+UI based on the default completion system. Corfu provides a
+completion-at-point feature in main buffers. Cape provides Corfu with
+additional completion-at-point backends to use.
 
-  Ivy is a generic completion mechanism for Emacs. While it operates similarly to
-  other completion schemes such as icomplete-mode, Ivy aims to be more efficient,
-  smaller, simpler, and smoother to use yet highly customizable.  The Ivy package
-  also includes Counsel. Counsel provides completion versions of common Emacs
-  commands that are customised to make the best use of Ivy.  Swiper is an
-  alternative to isearch that uses Ivy to show an overview of all matches."
-    :type '(radio
-             (const :tag "Vertico, Corfu, Cape, Consult completion system." comphand-vertico)
-             (const :tag "Ivy, Counsel, Swiper completion systems" comphand-ivy-counsel)
-             (const :tag "Built-in Ido" comphand-built-in))
-    :group 'mifi-config-features)
+Ivy is a generic completion mechanism for Emacs. While it operates similarly to
+other completion schemes such as icomplete-mode, Ivy aims to be more efficient,
+smaller, simpler, and smoother to use yet highly customizable.  The Ivy package
+also includes Counsel. Counsel provides completion versions of common Emacs
+commands that are customised to make the best use of Ivy.  Swiper is an
+alternative to isearch that uses Ivy to show an overview of all matches."
+  :type '(radio
+           (const :tag "Vertico, Corfu, Cape, Consult completion system." comphand-vertico)
+           (const :tag "Ivy, Counsel, Swiper completion systems" comphand-ivy-counsel)
+           (const :tag "Built-in Ido" comphand-built-in))
+  :group 'mifi-config-features)
 
-  (defcustom debug-adapter 'debug-adapter-dape
-    "Select the debug adapter to use for debugging applications.  dap-mode is an
-  Emacs client/library for Debug Adapter Protocol is a wire protocol for
-  communication between client and Debug Server. It’s similar to the LSP but
-  provides integration with debug server.
+(defcustom debug-adapter 'debug-adapter-dape
+  "Select the debug adapter to use for debugging applications.  dap-mode is an
+Emacs client/library for Debug Adapter Protocol is a wire protocol for
+communication between client and Debug Server. It’s similar to the LSP but
+provides integration with debug server.
 
-  dape (Debug Adapter Protocol for Emacs) is similar to dap-mode but is
-  implemented entirely in Emacs Lisp. There are no other external dependencies
-  with DAPE. DAPE supports most popular languages, however, not as many as
-  dap-mode."
-    :type '(radio
-             (const :tag "Debug Adapter Protocol (DAP)" debug-adapter-dap-mode)
-             (const :tag "Debug Adapter Protocol for Emacs (DAPE)" debug-adapter-dape))
-    :group 'mifi-config-features)
+dape (Debug Adapter Protocol for Emacs) is similar to dap-mode but is
+implemented entirely in Emacs Lisp. There are no other external dependencies
+with DAPE. DAPE supports most popular languages, however, not as many as
+dap-mode."
+  :type '(radio
+           (const :tag "Debug Adapter Protocol (DAP)" debug-adapter-dap-mode)
+           (const :tag "Debug Adapter Protocol for Emacs (DAPE)" debug-adapter-dape))
+  :group 'mifi-config-features)
 
-  (defcustom custom-ide 'custom-ide-eglot
-    "Select which IDE will be used for Python development.
+(defcustom custom-ide 'custom-ide-eglot
+  "Select which IDE will be used for Python development.
 
-  Elpy is an Emacs package to bring powerful Python editing to Emacs. It
-  combines and configures a number of other packages, both written in Emacs
-  Lisp as well as Python. Elpy is fully documented at
-  https://elpy.readthedocs.io/en/latest/index.html.
+Elpy is an Emacs package to bring powerful Python editing to Emacs. It
+combines and configures a number of other packages, both written in Emacs
+Lisp as well as Python. Elpy is fully documented at
+https://elpy.readthedocs.io/en/latest/index.html.
 
-  Eglot/LSP Eglot is the Emacs client for the Language Server Protocol
-  (LSP). Eglot provides infrastructure and a set of commands for enriching the
-  source code editing capabilities of Emacs via LSP. Eglot itself is
-  completely language-agnostic, but it can support any programming language
-  for which there is a language server and an Emacs major mode.
+Eglot/LSP Eglot is the Emacs client for the Language Server Protocol
+(LSP). Eglot provides infrastructure and a set of commands for enriching the
+source code editing capabilities of Emacs via LSP. Eglot itself is
+completely language-agnostic, but it can support any programming language
+for which there is a language server and an Emacs major mode.
 
-  Anaconda-mode is another IDE for Python very much like Elpy. It is not as
-  configurable but has a host of great feaures that just work."
-    :type '(radio
-             (const :tag "Elpy: Emacs Lisp Python Environment" custom-ide-elpy)
-             (const :tag "Emacs Polyglot (Eglot)" custom-ide-eglot)
-             (const :tag "Language Server Protocol (LSP)" custom-ide-lsp)
-             (const :tag "LSP Bridge (standalone)" custom-ide-lsp-bridge)
-             (const :tag "Python Anaconda-mode for Emacs" custom-ide-anaconda))
-    :group 'mifi-config-features)
+Anaconda-mode is another IDE for Python very much like Elpy. It is not as
+configurable but has a host of great feaures that just work."
+  :type '(radio
+           (const :tag "Elpy: Emacs Lisp Python Environment" custom-ide-elpy)
+           (const :tag "Emacs Polyglot (Eglot)" custom-ide-eglot)
+           (const :tag "Language Server Protocol (LSP)" custom-ide-lsp)
+           (const :tag "LSP Bridge (standalone)" custom-ide-lsp-bridge)
+           (const :tag "Python Anaconda-mode for Emacs" custom-ide-anaconda))
+  :group 'mifi-config-features)
 
-  (defcustom custom-project-handler 'custom-project-project-el
-    "Select which project handler to use."
-    :type '(radio (const :tag "Projectile" custom-project-projectile)
-             (const :tag "Built-in project.el" custom-project-project-el))
-    :group 'mifi-config-features)
+(defcustom custom-project-handler 'custom-project-project-el
+  "Select which project handler to use."
+  :type '(radio (const :tag "Projectile" custom-project-projectile)
+           (const :tag "Built-in project.el" custom-project-project-el))
+  :group 'mifi-config-features)
 
-  (defcustom custom-note-system 'custom-note-system-denote
-    "Select which note-taking/knowledge system will be used.
+(defcustom custom-note-system 'custom-note-system-denote
+  "Select which note-taking/knowledge system will be used.
 
 The simpler, more efficient and lightweight for just simple note is `denote'.
 `Denote' is a simple note-taking tool for Emacs. It is based on the idea that
@@ -284,11 +283,11 @@ A more full-featured note and other productivity tools like agenda, and todo is
 Org-roam, notes flow naturally, making note-taking fun and easy. Org-roam
 augments the Org-mode syntax, and will work for anyone already using Org-mode
 for their personal wiki."
-    :type '(radio
-	     (const :tag "Denote" custom-note-system-denote)
-             (const :tag "Org-roam" custom-note-system-org-roam)
-	     (const :tag "None" custom-note-system-none))
-    :group 'mifi-config-features)
+  :type '(radio
+           (const :tag "Denote" custom-note-system-denote)
+           (const :tag "Org-roam" custom-note-system-org-roam)
+           (const :tag "None" custom-note-system-none))
+  :group 'mifi-config-features)
 
 ;;; ##########################################################################
 ;;; Theming related
@@ -622,16 +621,16 @@ font size is computed + 20 of this value."
 (defun mifi/set-delight ()
   (interactive)
   (delight '( (abbrev-mode " Abv" abbrev)
-	      (anaconda-mode)
-	      (buffer-face-mode "Buff")
-	      (company-box-mode)
-	      (company-mode)
-	      (counsel-mode)
-	      (golden-ratio-mode " 𝜑")
-	      (lisp-interaction-mode " iLisp")
-	      (mmm-keys-minor-mode " m3")
-	      (projectile-mode " ->")
-	      (tree-sitter-mode " ts")
+            (anaconda-mode)
+            (buffer-face-mode "Buff")
+            (company-box-mode "CBox")
+            (company-mode "Com")
+            (counsel-mode)
+            (golden-ratio-mode " 𝜑")
+            (lisp-interaction-mode " iLisp")
+            (mmm-keys-minor-mode " m3")
+            (projectile-mode " ->")
+            (tree-sitter-mode " ts")
               ;;(eldoc-mode nil " eldoc")
               (overwrite-mode " Ov" t)
               (python-mode " Py" :major)
@@ -667,34 +666,6 @@ font size is computed + 20 of this value."
   :ensure t
   :delight DocBox
   :hook (elpaca-after-init . mifi/setup-hooks-for-eldoc))
-
-;;; ##########################################################################
-
-(defun mifi/after-which-key ()
-  (interactive)
-  (which-key-mode 1)
-  (which-key-add-key-based-replacements "M-RET |" "display-fill-column")
-  (which-key-add-key-based-replacements "M-RET ?" "help-at-point")
-  (mmm-keys-minor-mode 1)
-  (when (featurep 'prog-mode)
-    (which-key-add-key-based-replacements "C-c g r" "find-symbol-reference")
-    (which-key-add-key-based-replacements "C-c g o" "find-defitions-other-window")
-    (which-key-add-key-based-replacements "C-c g g" "find-defitions")
-    (which-key-add-key-based-replacements "C-c g ?" "eldoc-definition"))
-  (mifi/set-recenter-keys))
-
-(use-package which-key
-  :ensure (:wait t) :demand t
-  :commands which-key-mode
-  :delight which-key-mode
-  :custom
-  (add-hook 'elpaca-after-init-hook #'mifi/after-which-key)
-  (which-key-popup-type 'side-window)
-  (which-key-preserve-window-configuration t)
-  (which-key-idle-delay 1,0)
-  (which-key-prefix-prefix "✪ ")
-  ;; (which-key-sort-order 'which-key-key-order-alpha)
-  (which-key-min-display-lines 3))
 
 ;;; ##########################################################################
 
@@ -884,6 +855,34 @@ font size is computed + 20 of this value."
     (add-hook hook #'jinx-mode)))
 
 ;;; ##########################################################################
+
+(defun mifi/after-which-key ()
+  (interactive)
+  (which-key-mode 1)
+  (which-key-add-key-based-replacements "M-RET |" "display-fill-column")
+  (which-key-add-key-based-replacements "M-RET ?" "help-at-point")
+  (mmm-keys-minor-mode 1)
+  (when (featurep 'prog-mode)
+    (which-key-add-key-based-replacements "C-c g r" "find-symbol-reference")
+    (which-key-add-key-based-replacements "C-c g o" "find-defitions-other-window")
+    (which-key-add-key-based-replacements "C-c g g" "find-defitions")
+    (which-key-add-key-based-replacements "C-c g ?" "eldoc-definition"))
+  (mifi/set-recenter-keys))
+
+(use-package which-key
+  :ensure (:wait t)
+  :commands which-key-mode
+  :delight which-key-mode
+  :custom
+  (add-hook 'elpaca-after-init-hook #'mifi/after-which-key)
+  (which-key-popup-type 'side-window)
+  (which-key-preserve-window-configuration t)
+  (which-key-idle-delay 1,0)
+  (which-key-prefix-prefix "✪ ")
+  ;; (which-key-sort-order 'which-key-key-order-alpha)
+  (which-key-min-display-lines 3))
+
+;;; ##########################################################################
 ;; These are packages located in the site-lisp or lisp directories in the
 ;; 'emacs-config-directory'
 
@@ -1063,7 +1062,7 @@ font size is computed + 20 of this value."
   (add-hook 'elpaca-after-init-hook
     (lambda ()
       (when (featurep 'prescient)
-	(company-prescient-mode 1))
+      (company-prescient-mode 1))
       (global-company-mode +1))))
 
 ;; IMPORTANT:
@@ -1077,7 +1076,7 @@ font size is computed + 20 of this value."
 
 (use-package company-box
   :after company
-  :delight cb
+  :delight 'cb
   :hook (company-mode . company-box-mode))
 
 (use-package company-jedi
@@ -1497,7 +1496,7 @@ font size is computed + 20 of this value."
   :ensure nil  ;; local package hint for elpaca
   :no-require t
   :bind (:map dired-mode-map
-	  ("=" . mifi/dired-ediff-marked-files)))
+        ("=" . mifi/dired-ediff-marked-files)))
 
 (use-package ediff
   :ensure nil ;; local package hint for elpaca
@@ -2926,7 +2925,7 @@ capture was not aborted."
 
 (use-package flycheck
   ;;:unless (equal custom-ide 'custom-ide-elpy)
-  :delight fc
+  :delight 'fc
   :defer t
   ;;:ensure (:host github :repo "flycheck/flycheck")
   :config
@@ -3342,90 +3341,95 @@ capture was not aborted."
   :after go-mode
   :hook (go-mode . go-guru-hl-identifier-mode))
 
-(use-package opam-installer
-  :when enable-ocaml
-  :ensure nil
-  :ensure-system-package (opam . "brew install opam"))
+(let
+  ((installer "bash -c \"sh <(curl -fsSL https://raw.githubusercontent.com/ocaml/opam/master/shell/install.sh) --version 2.2.0\""))
+  (use-package opam-installer
+    :when enable-ocaml
+    :ensure nil
+    :ensure-system-package (opam . installer)))
 
 (defun mifi/opam-user-setup ()
   (interactive)
   (use-package opam-user-setup
     :unless (featurep 'opam-user-setup) ;; Don't allow to be run twice!
     :when enable-ocaml
-    ;;:defer t
-    :ensure nil))
+    :ensure nil
+    :config
+    (add-to-list 'exec-path "~/.opam/default/bin")
+    (mifi/setup-path-from-exec-path)))
 
 (let
   ((file (expand-file-name "opam-user-setup.el" emacs-config-directory)))
   (when (file-exists-p file)
     (add-hook 'elpaca-after-init-hook 'mifi/opam-user-setup)))
 
-(use-package ocaml-ts-mode
-  :disabled
-  :after tree-sitter opam-user-setup
-  :when enable-ocaml
-  :ensure ( :package "ocaml-ts-mode" :source nil :protocol https :inherit t :depth 1
- 	    :fetcher github :repo "terrateamio/ocaml-ts-mode"
-  	    :files ("ocaml-ts-mode.el")))
+(let ((opam-share (ignore-errors (car (process-lines "opam" "var" "share")))))
+  (when (and (and opam-share (file-directory-p opam-share)) enable-ocaml)
+    (add-to-list 'load-path (expand-file-name "emacs/site-lisp" opam-share))))
+    ;;(autoload 'merlin-mode "merlin" nil t nil)
+    ;;(add-hook 'tuareg-mode-hook 'merlin-mode t)
+    ;;(add-hook 'caml-mode-hook 'merlin-mode t)))
 
 (use-package merlin
-  :when enable-ocaml
-  :ensure t
-  :defer t
-  :mode
-  ("\\.ml\\'" . merlin-mode)
-  ("\\.mli\\'" . merlin-mode)
+  :when enable-ocaml :ensure nil :defer t
+  :delight " 🪄" 
   :after opam-user-setup)
 
 (use-package merlin-eldoc
-  :when enable-ocaml
-  :ensure t
-  :defer t
-  :after merlin)
+  :when enable-ocaml :ensure nil :defer t :after merlin)
 
 (use-package merlin-company
   :when (and enable-ocaml (not (equal custom-ide 'custom-ide-lsp-bridge)))
-  :ensure t
-  :defer t
-  :after merlin company
+  :ensure nil :defer t :after merlin company
   :config
   (add-hook 'merlin-mode-hook 'company-mode)
   (with-eval-after-load 'company
     (add-to-list 'company-backends 'merlin-company-backend)))
 
-;; (let ((opam-share (ignore-errors (car (process-lines "opam" "var" "share")))))
-;;   (when (and (and opam-share (file-directory-p opam-share)) enable-ocaml)
-;;     (add-to-list 'load-path (expand-file-name "emacs/site-lisp" opam-share))
-;;     (autoload 'merlin-mode "merlin" nil t nil)
-;;     (add-hook 'caml-mode-hook 'merlin-mode t)))
+(defun mifi/tuareg-mode-hook ()
+  (merlin-mode t)
+  (setq tuareg-mode-name "🐫")
+  (when (functionp 'prettify-symbols-mode)
+    (prettify-symbols-mode)))
+
+(use-package tuareg
+  :when enable-ocaml :after opam-user-setup :defer t :ensure t
+  :hook (tuareg-mode . mifi/tuareg-mode-hook)
+  :mode
+  ("\\.ml\\'" . tuareg-mode)
+  ("\\.mli\\'" . tuareg-mode)
+  :custom
+  (tuareg-indent-align-with-first-arg t))
 
 (use-package ocp-indent
   :when enable-ocaml
   :after opam-user-setup
-  :ensure (:package "ocp-indent" :source nil :protocol https :inherit t :depth 1
-	    :fetcher github :repo "OCamlPro/ocp-indent"
-	    :files ("tools/ocp-indent.el")))
+  :ensure-system-package
+  ("~/.opam/default/lib/ocp-indent" . "opam install ocp-indent -y")
+  :ensure (:inherit t :depth 1
+           :fetcher github :repo "OCamlPro/ocp-indent"
+           :files ("tools/ocp-indent.el")))
 
-(use-package tuareg
-  :when enable-ocaml
-  :after opam-user-setup
-  :defer t
-  :custom
-  (tuareg-indent-align-with-first-arg t)
-  :ensure (:package "tuareg" :source nil :protocol https :inherit t :depth 1
- 	    :fetcher github :repo "ocaml/tuareg"
- 	    :files ("*.el" "*.el.in" "dir" "*.info" "*.texi" "*.texinfo"
- 		     "doc/dir" "doc/*.info" "doc/*.texi" "doc/*.texinfo"
- 		     "lisp/*.el"
- 		     (:exclude ".dir-locals.el" "test.el" "tests.el"
- 		       "*-test.el" "*-tests.el" "LICENSE" "README*" "*-pkg.el")))
-  :config
-  (add-hook 'tuareg-mode-hook
-    (lambda()
-      (merlin-mode t)
-      (setq tuareg-mode-name "🐫")
-      (when (functionp 'prettify-symbols-mode)
-        (prettify-symbols-mode)))))
+(use-package dune
+  :ensure t)
+
+(use-package ocamlformat
+  :when enable-ocaml :ensure t
+  :after (:any merlin tuareg)
+  :bind ("<f6>" . ocamlformat)
+  :ensure-system-package
+  ("~/.opam/default/lib/ocamlformat" . "opam install ocamlformat -y")
+  :custom (ocamlformat-enable 'enable-outside-detected-project))
+
+;; (use-package flycheck-ocaml
+;;   :ensure t
+;;   :config
+;;   (add-hook 'tuareg-mode-hook
+;;     (lambda ()
+;;       ;; disable Merlin's own error checking
+;;       (setq-local merlin-error-after-save nil)
+;;       ;; enable Flycheck checker
+;;       (flycheck-ocaml-setup))))
 
 ;;; ##########################################################################
 
@@ -3603,8 +3607,8 @@ capture was not aborted."
   :defer t
   :after dap-mode
   :ensure ( :package "dap-lldb" :source nil :protocol https
-	    :inherit t :depth 1 :type git
-	    :host github :repo "emacs-lsp/dap-mode")
+            :inherit t :depth 1 :type git
+            :host github :repo "emacs-lsp/dap-mode")
   :custom
   (dap-lldb-debug-program "~/Developer/command-line-unix/llvm/lldb-build/bin/lldb-dap")
   :config
@@ -3620,8 +3624,8 @@ capture was not aborted."
 (use-package dap-gdb-lldb
   :when (equal debug-adapter 'debug-adapter-dap-mode)
   :ensure ( :package "dap-gdb-lldb" :source nil :protocol https
-	    :inherit t :depth 1 :type git :host github
-	    :repo "emacs-lsp/dap-mode")
+            :inherit t :depth 1 :type git :host github
+            :repo "emacs-lsp/dap-mode")
   :defer t
   :after dap-lldb
   :config
@@ -3632,8 +3636,8 @@ capture was not aborted."
   :defer t
   :after dap-mode
   :ensure ( :package "dap-cpptools" :source nil :protocol https
-	    :inherit t :depth 1 :type git :host github
-	    :repo "emacs-lsp/dap-mode"))
+            :inherit t :depth 1 :type git :host github
+            :repo "emacs-lsp/dap-mode"))
 ;; :config
 ;; (dap-cpptools-setup))
 
@@ -3956,8 +3960,8 @@ capture was not aborted."
       (bind-keys :map map
         ("M-RET $" . jinx-correct)
         ("M-RET ?" . eldoc-box-help-at-point)
-	("M-RET M s" . markdown-preview-mode)
-	("M-RET M e" . markdown-preview-cleanup)
+      ("M-RET M s" . markdown-preview-mode)
+      ("M-RET M e" . markdown-preview-cleanup)
         ("M-RET S e" . eshell)
         ("M-RET S i" . ielm)
         ("M-RET S v" . vterm-other-window)
@@ -4059,8 +4063,8 @@ capture was not aborted."
       (erase-buffer)
       (beginning-of-buffer)
       (insert (format
-		";; Well Met and Happy hacking %s!\n%s\n\n" user-login-name
-		";; Press M-RET (Meta-RET) to open Mitch's Context Aware Menu"))
+              ";; Well Met and Happy hacking %s!\n%s\n\n" user-login-name
+              ";; Press M-RET (Meta-RET) to open Mitch's Context Aware Menu"))
       (end-of-buffer))
 
     ((equal default-landing-mode 'landing-mode-ielm)
@@ -4084,12 +4088,12 @@ file is renamed with a ~ at the end before the new file is copied."
     ;; --------------------------------------------------
     (when (file-exists-p (format "%s/%s" backdir file))
       (copy-file
-	(expand-file-name file backdir)
-	(expand-file-name (format "%s~" file) backdir) t))
+      (expand-file-name file backdir)
+      (expand-file-name (format "%s~" file) backdir) t))
     (when (file-exists-p (format "%s/%s" emacs-config-directory file))
       (copy-file
-	(expand-file-name file emacs-config-directory)
-	(expand-file-name file backdir) t))))
+      (expand-file-name file emacs-config-directory)
+      (expand-file-name file backdir) t))))
 
 (defun mifi/cleanup-when-exiting ()
   "Backup Emacs initialization files for recovery. If old files exist, they are

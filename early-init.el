@@ -79,20 +79,34 @@
 ;;; ##########################################################################
 (defconst *is-a-mac* (eq system-type 'darwin))
 
-(defun mifi/setup-exec-path ()
-  ;; A list of customized executable paths. This is just something I (mifi)
-  ;; do personally rather than have another package do it for me. For the
-  ;; most part, the paths are typical on a Mac and with homebrew installed.
+(defun mifi/setup-path-from-exec-path ()
+  "Sets the environment PATH from the the `exec-path' list using the OS's
+defined path-separator."
   (interactive)
-  (setq exec-path '( "/Users/strider/.cargo/bin"
-                     "/Users/strider/.local/bin"
-                     "/opt/homebrew/bin" "/opt/homebrew/sbin"
-                     "/usr/bin" "/bin" "/usr/sbin" "/sbin"
-                     "/usr/local/bin" "/opt/local/bin"
-                     "/Library/Frameworks/Python.framework/Versions/Current/bin"))
-
   (let ((path-from-exec-path (string-join exec-path path-separator)))
     (setenv "PATH" path-from-exec-path)))
+
+(defun mifi/setup-exec-path ()
+  "A list of customized executable paths for standard Linux and macOS
+(and possibly) other UN*X type environments."
+  (interactive)
+  (cond
+    ((eq system-type 'darwin)
+      (setq exec-path
+        '( "~/.cargo/bin" "~/.local/bin"
+           "/opt/homebrew/bin" "/opt/homebrew/sbin"
+           "/Library/Frameworks/Python.framework/Versions/Current/bin"
+           "/usr/local/sbin" "/usr/local/bin" "/usr/sbin" "/usr/bin"
+           "/sbin" "/bin" "/opt/local/bin")))
+    ((eq system-type 'gnu/linux)
+      (setq exec-path
+        '( "/usr/local/sbin" "/usr/local/bin" "/usr/sbin" "/usr/bin"
+           "/sbin" "/bin" "/usr/local/games" "/usr/games")))
+    (t ;; default to something
+      (setq exec-path '( "/usr/local/sbin" "/usr/local/bin"
+                         "/usr/sbin" "/usr/bin"))))
+
+  (mifi/setup-path-from-exec-path))
 
 (setq browse-url-firefox-program
   "/Applications/Firefox.app/Contents/MacOS/firefox")
