@@ -1,3 +1,5 @@
+(use-package use-package-ensure-system-package)
+
 ;;; init.el -*- flycheck-disabled-checkers: (emacs-lisp); lexical-binding: nil -*-
 ;;;
 ;;; Commentary:
@@ -18,7 +20,7 @@
 (defvar elpaca-builds-directory (expand-file-name "builds/" elpaca-directory))
 (defvar elpaca-repos-directory (expand-file-name "repos/" elpaca-directory))
 (defvar elpaca-order '(elpaca :repo "https://github.com/progfolio/elpaca.git"
-                        :ref nil :depth 1
+                        :ref nil :depth 1 :branch "feat/vars-keyword"
                         :files (:defaults "elpaca-test.el" (:exclude "extensions"))
                         :build (:not elpaca--activate-package)))
 (let* ((repo  (expand-file-name "elpaca/" elpaca-repos-directory))
@@ -61,45 +63,45 @@
 ;;; ##########################################################################
 ;;; Define my customization groups
 
-(defgroup mifi-custom nil
+(defgroup mifi-config nil
   "M.R. Fisher's configuration section."
   :group 'Local)
 
-(defgroup mifi-custom-toggles nil
+(defgroup mifi-config-toggles nil
   "A set of toggles that enable or disable specific packages or behaviors."
-  :group 'mifi-custom)
+  :group 'mifi-config)
 
-(defgroup mifi-custom-features nil
+(defgroup mifi-config-features nil
   "Customization from a selection of a curated list of features and handlers."
-  :group 'mifi-custom)
+  :group 'mifi-config)
 
-(defgroup mifi-custom-fonts nil
+(defgroup mifi-config-fonts nil
   "Customization of fonts and font sizes."
-  :group 'mifi-custom)
+  :group 'mifi-config)
 
-(defgroup mifi-custom-theming nil
+(defgroup mifi-config-theming nil
   "Custom theming list and list index values."
-  :group 'mifi-custom)
+  :group 'mifi-config)
 
 ;;; ##########################################################################
 
 (defcustom custom-docs-dir "~/Documents/Emacs-Related"
   "A directory used to store documents and customized data."
   :type 'string
-  :group 'mifi-custom)
+  :group 'mifi-config)
 
 (defcustom working-files-directory
   (expand-file-name "emacs-working-files" custom-docs-dir)
   "The directory where to store Emacs working files."
   :type 'string
-  :group 'mifi-custom)
+  :group 'mifi-config)
 
 (defcustom custom-org-fill-column 120
   "The fill column width for Org mode text.
     Note that the text is also centered on the screen so that should
     be taken into consideration when providing a width."
   :type 'natnum
-  :group 'mifi-custom)
+  :group 'mifi-config)
 
 ;;; ##########################################################################
 ;;; Feature Toggles
@@ -108,50 +110,55 @@
   "If set to t, the z80-mode and other GameBoy related packages
     will be enabled."
   :type 'boolean
-  :group 'mifi-custom-toggles)
+  :group 'mifi-config-toggles)
 
 (defcustom enable-ts nil
   "Set to t to enable TypeScript handling."
   :type 'boolean
-  :group 'mifi-custom-toggles)
+  :group 'mifi-config-toggles)
+
+(defcustom enable-ocaml nil
+  "Set to t to enable inclusion of OCaml support: Merlin, Tuareg."
+  :type 'boolean
+  :group 'mifi-config-toggles)
 
 (defcustom enable-centaur-tabs nil
   "Set to t to enable `centaur-tabs' which uses tabs to represent open buffer."
   :type 'boolean
-  :group 'mifi-custom-toggles)
+  :group 'mifi-config-toggles)
 
 (defcustom enable-neotree nil
   "Set to t to enable the `neotree' package."
   :type 'boolean
-  :group 'mifi-custom-toggles)
+  :group 'mifi-config-toggles)
 
 (defcustom enable-golden-ratio nil
   "Set to t to enable `golden-ratio-mode' which resizes the active buffer
    window to the dimensions of a golden-rectangle"
   :type 'boolean
-  :group 'mifi-custom-toggles)
+  :group 'mifi-config-toggles)
 
 (defcustom enable-org-fill-column-centering nil
   "Set to t to center the visual-fill column of the Org display."
   :type 'boolean
-  :group 'mifi-custom-toggles)
+  :group 'mifi-config-toggles)
 
 (defcustom enable-embark nil
   "Set to t to enable the Embark package."
   :type 'boolean
-  :group 'mifi-custom-toggles)
+  :group 'mifi-config-toggles)
 
 (defcustom enable-thesaurus t
   "When set to t, enables the Merriam-Webster Thesaurus."
   :type 'boolean
-  :group 'mifi-custom-toggles)
+  :group 'mifi-config-toggles)
 
 ;; Keep as defvar until the frameset save/restore process works better.
 (defcustom enable-frameset-restore t
   "Set to t to enable restoring the last Emacs window size and position
    upon startup."
   :type 'boolean
-  :group 'mifi-custom-toggles)
+  :group 'mifi-config-toggles)
 
 ;;; ##########################################################################
 
@@ -172,14 +179,13 @@ IELM (Inferior Emacs Lisp Mode) is a more interactive Lisp environment over the
 *scratch* buffer.
 
 eshell is the Emacs shell environment that is part terminal and part Lisp
-interpreter.
-"
+interpreter."
   :type '(radio
            (const :tag "Dashboard" landing-mode-dashboard)
            (const :tag "*scratch*" landing-mode-scratch)
            (const :tag "IELM" landing-mode-ielm)
-	   (const :tag "eshell" landing-mode-eshell))
-  :group 'mifi-custom-features)
+           (const :tag "eshell" landing-mode-eshell))
+  :group 'mifi-config-features)
 
 (defcustom undo-handler 'undo-handler-vundo
   "Select the undo handler to use.
@@ -195,7 +201,7 @@ Finally, the standard undo handler can also be chosen."
            (const :tag "Vundo (default)" undo-handler-vundo)
            (const :tag "Undo-tree" undo-handler-undo-tree)
            (const :tag "Built-in" undo-handler-built-in))
-  :group 'mifi-custom-features)
+  :group 'mifi-config-features)
 
 (defcustom completion-handler 'comphand-vertico
   "Select the default minibuffer completion handler.
@@ -215,7 +221,7 @@ alternative to isearch that uses Ivy to show an overview of all matches."
            (const :tag "Vertico, Corfu, Cape, Consult completion system." comphand-vertico)
            (const :tag "Ivy, Counsel, Swiper completion systems" comphand-ivy-counsel)
            (const :tag "Built-in Ido" comphand-built-in))
-  :group 'mifi-custom-features)
+  :group 'mifi-config-features)
 
 (defcustom debug-adapter 'debug-adapter-dape
   "Select the debug adapter to use for debugging applications.  dap-mode is an
@@ -230,7 +236,7 @@ dap-mode."
   :type '(radio
            (const :tag "Debug Adapter Protocol (DAP)" debug-adapter-dap-mode)
            (const :tag "Debug Adapter Protocol for Emacs (DAPE)" debug-adapter-dape))
-  :group 'mifi-custom-features)
+  :group 'mifi-config-features)
 
 (defcustom custom-ide 'custom-ide-eglot
   "Select which IDE will be used for Python development.
@@ -254,13 +260,34 @@ configurable but has a host of great feaures that just work."
            (const :tag "Language Server Protocol (LSP)" custom-ide-lsp)
            (const :tag "LSP Bridge (standalone)" custom-ide-lsp-bridge)
            (const :tag "Python Anaconda-mode for Emacs" custom-ide-anaconda))
-  :group 'mifi-custom-features)
+  :group 'mifi-config-features)
 
-(defcustom custom-project-handler 'custom-project-project
+(defcustom custom-project-handler 'custom-project-project-el
   "Select which project handler to use."
   :type '(radio (const :tag "Projectile" custom-project-projectile)
-           (const :tag "Built-in project" custom-project-project))
-  :group 'mifi-custom-features)
+           (const :tag "Built-in project.el" custom-project-project-el))
+  :group 'mifi-config-features)
+
+(defcustom custom-note-system 'custom-note-system-denote
+  "Select which note-taking/knowledge system will be used.
+
+The simpler, more efficient and lightweight for just simple note is `denote'.
+`Denote' is a simple note-taking tool for Emacs. It is based on the idea that
+notes should follow a predictable and descriptive file-naming scheme. The file
+name must offer a clear indication of what the note is about, without reference
+to any other metadata. Denote basically streamlines the creation of such files
+while providing facilities to link between them.
+
+A more full-featured note and other productivity tools like agenda, and todo is
+`org-roam'. Org-roam allows for effortless non-hierarchical note-taking: with
+Org-roam, notes flow naturally, making note-taking fun and easy. Org-roam
+augments the Org-mode syntax, and will work for anyone already using Org-mode
+for their personal wiki."
+  :type '(radio
+           (const :tag "Denote" custom-note-system-denote)
+           (const :tag "Org-roam" custom-note-system-org-roam)
+           (const :tag "None" custom-note-system-none))
+  :group 'mifi-config-features)
 
 ;;; ##########################################################################
 ;;; Theming related
@@ -281,81 +308,81 @@ configurable but has a host of great feaures that just work."
 
   "My personal list of themes to cycle through indexed by `theme-selector'.
 If additional themes are added, they must be previously installed."
-  :group 'mifi-custom-theming
+  :group 'mifi-config-theming
   :type '(repeat string))
 
 (defcustom default-terminal-theme "sanityinc-tomorrow-bright"
   "The default theme used for a terminal invocation of Emacs."
-  :group 'mifi-custom-theming
+  :group 'mifi-config-theming
   :type 'string)
 
 (defcustom theme-selector 0
   "The index into the list of custom themes."
-  :group 'mifi-custom-theming
+  :group 'mifi-config-theming
   :type 'natnum)
 
 ;;; Font related
-(defcustom default-font-family "Andale Mono"
+(defcustom default-font-family "Courier New"
   "The font family used as the default font."
   :type 'string
-  :group 'mifi-custom-fonts)
+  :group 'mifi-config-fonts)
 
-(defcustom mono-spaced-font-family "Andale Mono"
+(defcustom mono-spaced-font-family "Monaco"
   "The font family used as the mono-spaced font."
   :type 'string
-  :group 'mifi-custom-fonts)
+  :group 'mifi-config-fonts)
 
 (defcustom variable-pitch-font-family "Helvetica"
   "The font family used as the default proportional font."
   :type 'string
-  :group 'mifi-custom-fonts)
+  :group 'mifi-config-fonts)
 
 (defcustom small-mono-font-size 150
   "The small font size in pixels."
   :type 'natnum
-  :group 'mifi-custom-fonts)
+  :group 'mifi-config-fonts)
 
 (defcustom medium-mono-font-size 170
   "The medium font size in pixels."
   :type 'natnum
-  :group 'mifi-custom-fonts)
+  :group 'mifi-config-fonts)
 
 (defcustom large-mono-font-size 190
   "The large font size in pixels."
   :type 'natnum
-  :group 'mifi-custom-fonts)
+  :group 'mifi-config-fonts)
 
 (defcustom x-large-mono-font-size 220
   "The extra-large font size in pixels."
   :type 'natnum
-  :group 'mifi-custom-fonts)
+  :group 'mifi-config-fonts)
 
 (defcustom small-variable-font-size 170
   "The small font size in pixels."
   :type 'natnum
-  :group 'mifi-custom-fonts)
+  :group 'mifi-config-fonts)
 
 (defcustom medium-variable-font-size 190
   "The small font size in pixels."
   :type 'natnum
-  :group 'mifi-custom-fonts)
+  :group 'mifi-config-fonts)
 
 (defcustom large-variable-font-size 210
   "The small font size in pixels."
   :type 'natnum
-  :group 'mifi-custom-fonts)
+  :group 'mifi-config-fonts)
 
 (defcustom x-large-variable-font-size 240
   "The small font size in pixels."
   :type 'natnum
-  :group 'mifi-custom-fonts)
+  :group 'mifi-config-fonts)
 
 (defcustom custom-default-font-size 170
   "A place to store the most current (face-attribute 'default :height).  This
 is specifically for the mono-spaced and default font. The variable type-face
 font size is computed + 20 of this value."
   :type 'natnum
-  :group 'mifi-custom-fonts)
+  :group 'mifi-config-fonts)
 
 (defvar custom-default-mono-font-size 170
   "Storage for the current mono-spaced font height.")
@@ -366,46 +393,47 @@ font size is computed + 20 of this value."
 ;;; ##########################################################################
 
 (defun mifi/validate-variable-pitch-font ()
-  (let* ((variable-pitch-font
-           (cond
-             ((x-list-fonts variable-pitch-font-family) variable-pitch-font-family)
-             ((x-list-fonts "SF Pro")           "SF Pro")
-             ((x-list-fonts "DejaVu Sans")      "DejaVu Sans")
-             ((x-list-fonts "Ubuntu")           "Ubuntu")
-             ((x-list-fonts "Helvetica")        "Helvetica")
-             ((x-list-fonts "Source Sans Pro")  "Source Sans Pro")
-             ((x-list-fonts "Lucida Grande")    "Lucida Grande")
-             ((x-list-fonts "Verdana")          "Verdana")
-             ((x-family-fonts "Sans Serif")     "Sans Serif")
-             (nil (warn "Cannot find a Sans Serif Font.  Install Source Sans Pro.")))))
-    (if variable-pitch-font
-      (when (not (equal variable-pitch-font variable-pitch-font-family))
-        (setq variable-pitch-font-family variable-pitch-font))
-      (message "---- Can't find a variable-pitch font to use.")))
-
-  (message (format ">>> variable-pitch font is %s" variable-pitch-font-family)))
+  (when (display-graphic-p)
+    (let* ((variable-pitch-font
+             (cond
+               ((x-list-fonts variable-pitch-font-family) variable-pitch-font-family)
+               ((x-list-fonts "SF Pro")           "SF Pro")
+               ((x-list-fonts "DejaVu Sans")      "DejaVu Sans")
+               ((x-list-fonts "Ubuntu")           "Ubuntu")
+               ((x-list-fonts "Helvetica")        "Helvetica")
+               ((x-list-fonts "Source Sans Pro")  "Source Sans Pro")
+               ((x-list-fonts "Lucida Grande")    "Lucida Grande")
+               ((x-list-fonts "Verdana")          "Verdana")
+               ((x-family-fonts "Sans Serif")     "Sans Serif")
+               (nil (warn "Cannot find a Sans Serif Font.  Install Source Sans Pro.")))))
+      (if variable-pitch-font
+	(when (not (equal variable-pitch-font variable-pitch-font-family))
+          (setq variable-pitch-font-family variable-pitch-font))
+	(message "---- Can't find a variable-pitch font to use.")))
+    (message (format ">>> variable-pitch font is %s" variable-pitch-font-family))))
 
 ;;; ##########################################################################
 
 (defun mifi/validate-monospace-font ()
-  (let* ((monospace-font
-           (cond
-             ((x-list-fonts mono-spaced-font-family) mono-spaced-font-family)
-             ((x-list-fonts "Fira Code Retina")  "Fira Code Retina")
-             ((x-list-fonts "Fira Code")         "Fira Code")
-             ((x-list-fonts "Source Code Pro")   "Source Code Pro")
-             ((x-list-fonts "Ubuntu Monospaced") "Ubuntu Monospaced")
-             ((x-family-fonts "Monospaced")      "Monospaced")
-             (nil (warn "Cannot find a monospaced Font.  Install Source Code Pro.")))))
-    (if monospace-font
-      (when (not (equal monospace-font variable-pitch-font-family))
-        (setq mono-spaced-font-family monospace-font)
-        (setq default-font-family monospace-font))
-      (message "---- Can't find a monospace font to use.")))
-
-  (message (format ">>> monospace font is %s" mono-spaced-font-family)))
+  (when (display-graphic-p)
+    (let* ((monospace-font
+             (cond
+               ((x-list-fonts mono-spaced-font-family) mono-spaced-font-family)
+               ((x-list-fonts "Fira Code Retina")  "Fira Code Retina")
+               ((x-list-fonts "Fira Code")         "Fira Code")
+               ((x-list-fonts "Source Code Pro")   "Source Code Pro")
+               ((x-list-fonts "Ubuntu Monospaced") "Ubuntu Monospaced")
+               ((x-family-fonts "Monospaced")      "Monospaced")
+               (nil (warn "Cannot find a monospaced Font.  Install Source Code Pro.")))))
+      (if monospace-font
+	(when (not (equal monospace-font variable-pitch-font-family))
+          (setq mono-spaced-font-family monospace-font)
+          (setq default-font-family monospace-font))
+	(message "---- Can't find a monospace font to use.")))
+    (message (format ">>> monospace font is %s" mono-spaced-font-family))))
 
 ;;; ##########################################################################
+
 ;;; Set a variable that represents the actual emacs configuration directory.
 ;;; This is being done so that the user-emacs-directory which normally points
 ;;; to the .emacs.d directory can be re-assigned so that customized files don't
@@ -441,7 +469,16 @@ font size is computed + 20 of this value."
 
 ;;; ##########################################################################
 
+(use-package f :ensure t :demand t
+  :config
+  (let ((epath (f-dirname
+		 (expand-file-name invocation-name invocation-directory))))
+    (add-to-list 'exec-path (format "%s:%s/bin" epath epath))
+    (mifi/setup-path-from-exec-path)))
+
 (add-to-list 'load-path (expand-file-name "lisp" emacs-config-directory))
+;; mostly for OCaml
+(add-to-list 'load-path (expand-file-name "" emacs-config-directory))
 (add-to-list 'custom-theme-load-path (expand-file-name "Themes" custom-docs-dir))
 
 ;;; ##########################################################################
@@ -514,6 +551,17 @@ font size is computed + 20 of this value."
 (repeat-mode 0)                      ;; Also in MmM
 ;; (add-hook 'prog-mode-hook 'display-line-numbers-mode)
 
+;; Key binding to use "hippie expand" for text autocompletion
+;; http://www.emacswiki.org/emacs/HippieExpand
+(global-set-key (kbd "C-c C-/") 'hippie-expand)
+;; Lisp-friendly hippie expand
+(setq hippie-expand-try-functions-list
+  '( try-expand-dabbrev
+     try-expand-dabbrev-all-buffers
+     try-expand-dabbrev-from-kill
+     try-complete-lisp-symbol-partially
+     try-complete-lisp-symbol))
+
 ;;; ##########################################################################
 
 ;; Used to highlight matching delimiters '( { [ ] } )
@@ -527,6 +575,15 @@ font size is computed + 20 of this value."
   show-paren-context-when-offscreen t
   :config
   (show-paren-mode 1))
+
+(use-package paredit
+  :ensure t
+  :hook
+  (emacs-lisp-mode . paredit-mode)
+  (ielm-mode . paredit-mode)
+  (lisp-mode . paredit-mode)
+  (lisp-interaction-mode . paredit-mode)
+  (scheme-mode . paredit-mode))
 
 ;;; ##########################################################################
 
@@ -574,6 +631,13 @@ font size is computed + 20 of this value."
 (when (fboundp 'pixel-scroll-precision-mode)
   (pixel-scroll-precision-mode))
 
+(use-package system-packages :ensure t)
+
+;; All kept in local /lisp directory.
+;; (use-package web-server-status-codes :ensure nil)
+;; (use-package simple-httpd :ensure nil)
+;; (use-package web-server :ensure nil)
+
 ;;; ##########################################################################
 
 (use-package helpful
@@ -587,16 +651,16 @@ font size is computed + 20 of this value."
 (defun mifi/set-delight ()
   (interactive)
   (delight '( (abbrev-mode " Abv" abbrev)
-	      (anaconda-mode)
-	      (buffer-face-mode "Buff")
-	      (company-box-mode)
-	      (company-mode)
-	      (counsel-mode)
-	      (golden-ratio-mode " 𝜑")
-	      (lisp-interaction-mode " iLisp")
-	      (mmm-keys-minor-mode " m3")
-	      (projectile-mode " ->")
-	      (tree-sitter-mode " ts")
+              (anaconda-mode)
+              (buffer-face-mode "Buff")
+              (company-box-mode "CBox")
+              (company-mode "Com")
+              (counsel-mode)
+              (golden-ratio-mode " 𝜑")
+              (lisp-interaction-mode " iLisp")
+              (mmm-keys-minor-mode " m3")
+              (projectile-mode " ->")
+              (tree-sitter-mode " ts")
               ;;(eldoc-mode nil " eldoc")
               (overwrite-mode " Ov" t)
               (python-mode " Py" :major)
@@ -632,34 +696,6 @@ font size is computed + 20 of this value."
   :ensure t
   :delight DocBox
   :hook (elpaca-after-init . mifi/setup-hooks-for-eldoc))
-
-;;; ##########################################################################
-
-(defun mifi/after-which-key ()
-  (interactive)
-  (which-key-mode 1)
-  (which-key-setup-minibuffer)
-  (mifi/define-mmm-minor-mode-map)
-  (mmm-keys-minor-mode 1)
-  (when (featurep 'prog-mode)
-    (which-key-add-key-based-replacements "C-c g r" "find-symbol-reference")
-    (which-key-add-key-based-replacements "C-c g o" "find-defitions-other-window")
-    (which-key-add-key-based-replacements "C-c g g" "find-defitions")
-    (which-key-add-key-based-replacements "C-c g ?" "eldoc-definition"))
-  (mifi/set-recenter-keys))
-
-(use-package which-key
-  :init
-  (add-hook 'emacs-startup-hook #'mifi/after-which-key)
-  :ensure (:wait t) :demand t
-  :commands which-key-mode
-  :delight which-key-mode
-  :custom
-  (which-key-idle-delay 1,0)
-  (which-key-prefix-prefix "✪ ")
-  (which-key-sort-order 'which-key-key-order-alpha)
-  (which-key-min-display-lines 3)
-  (which-key-max-display-columns nil))
 
 ;;; ##########################################################################
 
@@ -720,7 +756,7 @@ font size is computed + 20 of this value."
     (setq mac-command-modifier   'meta
       mac-option-modifier        'super
       mac-control-modifier       'control
-      mac-right-command-modifier 'super
+      mac-right-command-modifier 'meta
       mac-right-control-modifier 'hyper)))
 
 (add-hook 'elpaca-after-init-hook #'mifi/set-mac-modifier-keys)
@@ -730,11 +766,8 @@ font size is computed + 20 of this value."
 (defun mifi/setup-global-keybindings ()
   (interactive)
   (bind-key "C-c ]" 'indent-region prog-mode-map)
-  (bind-key "C-c }" 'indent-region prog-mode-map)
+  (bind-key "C-c }" 'indent-region prog-mode-map) 
   (bind-key "C-x C-j" 'dired-jump)
-
-  (use-package evil-nerd-commenter
-    :bind ("M-/" . evilnc-comment-or-uncomment-lines))
 
   ;;
   ;; A little better than just the typical "C-x o"
@@ -755,7 +788,10 @@ font size is computed + 20 of this value."
   (global-unset-key (kbd "C-<wheel-down>"))
   (global-unset-key (kbd "C-<wheel-up>")))
 
-(add-hook 'elpaca-after-init-hook #'mifi/setup-global-keybindings)
+(use-package evil-nerd-commenter
+  :bind ("M-/" . evilnc-comment-or-uncomment-lines))
+
+(add-hook 'emacs-startup-hook #'mifi/setup-global-keybindings)
 
 ;;; ##########################################################################
 ;;; Automatic Package Updates
@@ -798,8 +834,7 @@ font size is computed + 20 of this value."
 ;;; ##########################################################################
 
 (use-package all-the-icons
-  :ensure t
-  :when (display-graphic-p))
+  :ensure t)
 
 ;;; ##########################################################################
 
@@ -824,7 +859,7 @@ font size is computed + 20 of this value."
                       (agenda    . 5)))
   (dashboard-center-content t)
   (dashboard-set-heading-icons t)
-  (dashboard-set-file-icons t)
+  (dashboard-set-file-icons t)  
   (dashboard-footer-messages '("Greetings Program!"))
   (dashboard-banner-logo-title "Welcome to Emacs!")
   :commands dashboard-open
@@ -833,7 +868,8 @@ font size is computed + 20 of this value."
   ;; (setq initial-buffer-choice (lambda () (get-buffer-create dashboard-buffer-name)))
   (add-hook 'elpaca-after-init-hook #'dashboard-insert-startupify-lists)
   (add-hook 'elpaca-after-init-hook #'dashboard-initialize)
-  ;;-or- (expand-file-name "Emacs-modern-is-sexy-v1.png" user-emacs-directory)
+  (when (equal custom-project-handler 'custom-project-projectile)
+    (setq dashboard-projects-backend 'projectile))
   (setq dashboard-startup-banner (expand-file-name "Emacs-modern-is-sexy-v1.png" user-emacs-directory))
   (dashboard-setup-startup-hook))
 
@@ -846,6 +882,34 @@ font size is computed + 20 of this value."
   :config
   (dolist (hook '(text-mode-hook prog-mode-hook org-mode-hook))
     (add-hook hook #'jinx-mode)))
+
+;;; ##########################################################################
+
+(defun mifi/after-which-key ()
+  (interactive)
+  (which-key-mode 1)
+  (which-key-add-key-based-replacements "M-RET |" "display-fill-column")
+  (which-key-add-key-based-replacements "M-RET ?" "help-at-point")
+  (mmm-keys-minor-mode 1)
+  (when (featurep 'prog-mode)
+    (which-key-add-key-based-replacements "C-c g r" "find-symbol-reference")
+    (which-key-add-key-based-replacements "C-c g o" "find-defitions-other-window")
+    (which-key-add-key-based-replacements "C-c g g" "find-defitions")
+    (which-key-add-key-based-replacements "C-c g ?" "eldoc-definition"))
+  (mifi/set-recenter-keys))
+
+(use-package which-key
+  :ensure (:wait t)
+  :commands which-key-mode
+  :delight which-key-mode
+  :custom
+  (add-hook 'elpaca-after-init-hook #'mifi/after-which-key)
+  (which-key-popup-type 'side-window)
+  (which-key-preserve-window-configuration t)
+  (which-key-idle-delay 1,0)
+  (which-key-prefix-prefix "✪ ")
+  ;; (which-key-sort-order 'which-key-key-order-alpha)
+  (which-key-min-display-lines 3))
 
 ;;; ##########################################################################
 ;; These are packages located in the site-lisp or lisp directories in the
@@ -1022,11 +1086,13 @@ font size is computed + 20 of this value."
           ("<tab>" . company-complete-selection))
   :custom
   (company-minimum-prefix-length 2)
-  (company-idle-delay 0.5)
+  (company-idle-delay 0.5)  
   :config
-  (when (featurep 'prescient)
-    (company-prescient-mode 1))
-  (global-company-mode +1))
+  (add-hook 'elpaca-after-init-hook
+    (lambda ()
+      (when (featurep 'prescient)
+      (company-prescient-mode 1))
+      (global-company-mode +1))))
 
 ;; IMPORTANT:
 ;; Don't use company at all if lsp-bridge is active.
@@ -1039,7 +1105,7 @@ font size is computed + 20 of this value."
 
 (use-package company-box
   :after company
-  :delight cb
+  :delight 'cb
   :hook (company-mode . company-box-mode))
 
 (use-package company-jedi
@@ -1361,7 +1427,7 @@ font size is computed + 20 of this value."
   :after eshell)
 
 (use-package eshell
-  :ensure
+  :ensure nil
   :defer t
   :hook (eshell-first-time-mode . mifi/configure-eshell)
   :config
@@ -1415,12 +1481,71 @@ font size is computed + 20 of this value."
   (mifi/dired-single-keymap-init))
 
 ;;; ##########################################################################
+
+(defun mifi/dired-ediff-marked-files ()
+  "Compare two marked files in Dired with ediff."
+  (interactive)
+  (let ((marked-files (dired-get-marked-files)))
+    (unless (= (length marked-files) 2)
+      (error "You need to mark exactly two files to compare."))
+    (ediff-files (car marked-files) (cadr marked-files))))
+
+(defun mifi/ediff-bsh ()
+  "Function to be called before any buffers or window setup for
+      ediff."
+  (setq mifi/ediff-bwin-config (current-window-configuration))
+  (when (characterp mifi/ediff-bwin-reg)
+    (set-register mifi/ediff-bwin-reg
+      (list mifi/ediff-bwin-config (point-marker)))))
+
+(defun mifi/ediff-ash ()
+  "Function to be called after buffers and window setup for ediff."
+  (setq mifi/ediff-awin-config (current-window-configuration))
+  (when (characterp mifi/ediff-awin-reg)
+    (set-register mifi/ediff-awin-reg
+      (list mifi/ediff-awin-config (point-marker)))))
+
+(defun mifi/ediff-qh ()
+  "Function to be called when ediff quits."
+  (when mifi/ediff-bwin-config
+    (set-window-configuration mifi/ediff-bwin-config)))
+
+;; Restore window configuration after ediff exits
+;;   URL: https://www.emacswiki.org/emacs/EdiffMode
+
+(defvar mifi/ediff-bwin-config nil "Window configuration before ediff.")
+(defcustom mifi/ediff-bwin-reg ?b
+  "*Register to be set up to hold `mifi/ediff-bwin-config' configuration.")
+
+(defvar mifi/ediff-awin-config nil "Window configuration after ediff.")
+(defcustom mifi/ediff-awin-reg ?e
+  "*Register to be used to hold `mifi/ediff-awin-config' window configuration.")
+
+(use-package dired
+  :ensure nil  ;; local package hint for elpaca
+  :no-require t
+  :bind (:map dired-mode-map
+        ("=" . mifi/dired-ediff-marked-files)))
+
+(use-package ediff
+  :ensure nil ;; local package hint for elpaca
+  :no-require t
+  :custom
+  (ediff-diff-options "-w")
+  ;; Split windows so that they are compared horizontally
+  (ediff-split-window-function 'split-window-horizontally)
+  :hook
+  (ediff-before-setup . mifi/ediff-bsh)
+  (ediff-after-setup-window . (lambda () (mifi/ediff-ash 'append)))
+  (ediff-quit . mifi/ediff-qh))
+
+;;; ##########################################################################
 ;;; Treemacs
 
 (use-package treemacs
   :after (:all winum ace-window)
   :bind (:map global-map
-          ("M-0"         . treemacs-select-window)
+          ("M-0"       . treemacs-select-window)
           ("C-x t 1"   . treemacs-delete-other-windows)
           ("C-x t t"   . treemacs)
           ("C-x t d"   . treemacs-select-directory)
@@ -1537,7 +1662,7 @@ font size is computed + 20 of this value."
 
 (use-package treemacs-all-the-icons
   :after treemacs
-  :if (display-graphic-p))
+  :when (display-graphic-p))
 
 ;;; ##########################################################################
 
@@ -1708,7 +1833,7 @@ font size is computed + 20 of this value."
 (defun mifi/load-terminal-theme ()
   (load-theme (intern default-terminal-theme) t))
 
-(if (not (display-graphic-p))
+(unless (display-graphic-p)
   (add-hook 'elpaca-after-init-hook 'mifi/load-terminal-theme)
   ;;else
   (progn
@@ -1871,26 +1996,22 @@ font size is computed + 20 of this value."
     ((equal mifi/font-size-slot 3)
       (setq custom-default-font-size mifi/x-large-font-size
         custom-default-mono-font-size mifi/x-large-mono-font-size
-        mifi/default-variable-font-size (+ custom-default-font-size 20)
-        mifi/font-size-slot 2)
+        mifi/default-variable-font-size (+ custom-default-font-size 20))
       (mifi/update-face-attribute))
     ((equal mifi/font-size-slot 2)
       (setq custom-default-font-size mifi/large-font-size
         custom-default-mono-font-size mifi/large-mono-font-size
-        mifi/default-variable-font-size (+ custom-default-font-size 20)
-        mifi/font-size-slot 1)
+        mifi/default-variable-font-size (+ custom-default-font-size 20))
       (mifi/update-face-attribute))
     ((equal mifi/font-size-slot 1)
       (setq custom-default-font-size mifi/medium-font-size
         custom-default-mono-font-size mifi/medium-mono-font-size
-        mifi/default-variable-font-size (+ custom-default-font-size 20)
-        mifi/font-size-slot 0)
+        mifi/default-variable-font-size (+ custom-default-font-size 20))
       (mifi/update-face-attribute))
     ((equal mifi/font-size-slot 0)
       (setq custom-default-font-size mifi/small-font-size
         custom-default-mono-font-size mifi/small-mono-font-size
-        mifi/default-variable-font-size (+ custom-default-font-size 20)
-        mifi/font-size-slot 3)
+        mifi/default-variable-font-size (+ custom-default-font-size 20))
       (mifi/update-face-attribute))))
 
 ;;; ##########################################################################
@@ -1930,12 +2051,18 @@ font size is computed + 20 of this value."
     ;;else
     (unless enable-frameset-restore (mifi/frame-recenter))))
 
+(defun mifi/update-other-modes-font ()
+  "This updates/calls functions to update mode font sizes."
+  (when (featurep 'org)
+    (mifi/org-font-setup)))
+
 ;;; ##########################################################################
 
 (defun use-small-display-font (&optional force-recenter)
   (interactive)
   (mifi/set-frame-font 0)
   (mifi/reset-if-spacious-padding-mode)
+  (mifi/update-other-modes-font)
   (mifi/should-recenter force-recenter))
 
 
@@ -1943,6 +2070,7 @@ font size is computed + 20 of this value."
   (interactive)
   (mifi/set-frame-font 1)
   (mifi/reset-if-spacious-padding-mode)
+  (mifi/update-other-modes-font)
   (mifi/should-recenter force-recenter))
 
 
@@ -1950,6 +2078,7 @@ font size is computed + 20 of this value."
   (interactive)
   (mifi/set-frame-font 2)
   (mifi/reset-if-spacious-padding-mode)
+  (mifi/update-other-modes-font)
   (mifi/should-recenter force-recenter))
 
 
@@ -1957,6 +2086,7 @@ font size is computed + 20 of this value."
   (interactive)
   (mifi/set-frame-font 3)
   (mifi/reset-if-spacious-padding-mode)
+  (mifi/update-other-modes-font)
   (mifi/should-recenter force-recenter))
 
 ;;; ##########################################################################
@@ -2018,6 +2148,12 @@ font size is computed + 20 of this value."
     :font mono-spaced-font-family
     :height custom-default-mono-font-size
     :inherit '(shadow fixed-pitch))
+
+  (set-face-attribute 'org-verbatim nil
+    :foreground 'unspecified
+    :font mono-spaced-font-family
+    :height custom-default-mono-font-size
+    :inherit 'fixed-pitch)
 
   (set-face-attribute 'org-table nil
     :foreground 'unspecified
@@ -2353,6 +2489,144 @@ directory is relative to the working-files-directory
   (mifi/reset-if-spacious-padding-mode)
   (global-org-modern-mode))
 
+;;; --------------------------------------------------------------------------
+;; (use-package emacsql)
+;; (use-package emacsql-sqlite)
+
+(use-package org-roam
+  ;; :demand t  ;; Ensure org-roam is loaded by default
+  :when (equal custom-note-system 'custom-note-system-org-roam)    
+  :init
+  (setq org-roam-v2-ack t)
+  :defer t
+  :custom
+  (org-roam-directory (expand-file-name "RoamNotes" custom-docs-dir))
+  (org-roam-completion-everywhere t)
+  :bind (("C-c n l" . org-roam-buffer-toggle)
+          ("C-c n f" . org-roam-node-find)
+          ("C-c n i" . org-roam-node-insert)
+          ("C-c n I" . org-roam-node-insert-immediate)
+          ("C-c n p" . my/org-roam-find-project)
+          ("C-c n t" . my/org-roam-capture-task)
+          ("C-c n b" . my/org-roam-capture-inbox)
+          :map org-mode-map
+          ("C-M-i" . completion-at-point)
+          :map org-roam-dailies-map
+          ("Y" . org-roam-dailies-capture-yesterday)
+          ("T" . org-roam-dailies-capture-tomorrow))
+  :bind-keymap
+  ("C-c n d" . org-roam-dailies-map)
+  :config
+  (require 'org-roam-dailies) ;; Ensure the keymap is available
+  (my/org-roam-refresh-agenda-list)
+  (add-to-list 'org-after-todo-state-change-hook
+    (lambda ()
+      (when (equal org-state "DONE")
+        (my/org-roam-copy-todo-to-today))))
+  (org-roam-db-autosync-mode))
+
+(defun org-roam-node-insert-immediate (arg &rest args)
+  (interactive "P")
+  (let ((args (push arg args))
+         (org-roam-capture-templates
+           (list (append (car org-roam-capture-templates)
+                   '(:immediate-finish t)))))
+    (apply #'org-roam-node-insert args)))
+
+;;; --------------------------------------------------------------------------
+;; The buffer you put this code in must have lexical-binding set to t!
+;; See the final configuration at the end for more details.
+
+(defun my/org-roam-filter-by-tag (tag-name)
+    (lambda (node)
+        (member tag-name (org-roam-node-tags node))))
+
+(defun my/org-roam-list-notes-by-tag (tag-name)
+    (mapcar #'org-roam-node-file
+        (seq-filter
+            (my/org-roam-filter-by-tag tag-name)
+            (org-roam-node-list))))
+
+(defun my/org-roam-refresh-agenda-list ()
+    (interactive)
+    (setq org-agenda-files (my/org-roam-list-notes-by-tag "Project")))
+
+;; Build the agenda list the first time for the session
+
+;;; --------------------------------------------------------------------------
+
+(defun my/org-roam-project-finalize-hook ()
+    "Adds the captured project file to `org-agenda-files' if the
+capture was not aborted."
+    ;; Remove the hook since it was added temporarily
+    (remove-hook 'org-capture-after-finalize-hook #'my/org-roam-project-finalize-hook)
+
+    ;; Add project file to the agenda list if the capture was confirmed
+    (unless org-note-abort
+        (with-current-buffer (org-capture-get :buffer)
+            (add-to-list 'org-agenda-files (buffer-file-name)))))
+
+(defun my/org-roam-find-project ()
+    (interactive)
+    ;; Add the project file to the agenda after capture is finished
+    (add-hook 'org-capture-after-finalize-hook #'my/org-roam-project-finalize-hook)
+
+    ;; Select a project file to open, creating it if necessary
+    (org-roam-node-find
+        nil
+        nil
+        (my/org-roam-filter-by-tag "Project")
+        :templates
+        '(("p" "project" plain "* Goals\n\n%?\n\n* Tasks\n\n** TODO Add initial tasks\n\n* Dates\n\n"
+              :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n#+category: ${title}\n#+filetags: Project")
+              :unnarrowed t))))
+
+(global-set-key (kbd "C-c n p") #'my/org-roam-find-project)
+
+;;; --------------------------------------------------------------------------
+
+(defun my/org-roam-capture-inbox ()
+    (interactive)
+    (org-roam-capture- :node (org-roam-node-create)
+        :templates '(("i" "inbox" plain "* %?"
+                         :if-new (file+head "Inbox.org" "#+title: Inbox\n")))))
+
+;;; --------------------------------------------------------------------------
+
+(defun my/org-roam-capture-task ()
+    (interactive)
+    ;; Add the project file to the agenda after capture is finished
+    (add-hook 'org-capture-after-finalize-hook #'my/org-roam-project-finalize-hook)
+
+    ;; Capture the new task, creating the project file if necessary
+    (org-roam-capture- :node (org-roam-node-read nil
+                                 (my/org-roam-filter-by-tag "Project"))
+        :templates '(("p" "project" plain "** TODO %?"
+                         :if-new
+                         (file+head+olp "%<%Y%m%d%H%M%S>-${slug}.org"
+                             "#+title: ${title}\n#+category: ${title}\n#+filetags: Project"
+                             ("Tasks"))))))
+
+;;; --------------------------------------------------------------------------
+
+(defun my/org-roam-copy-todo-to-today ()
+    (interactive)
+    (let ((org-refile-keep t) ;; Set this to nil to delete the original!
+             (org-roam-dailies-capture-templates
+                 '(("t" "tasks" entry "%?"
+                       :if-new (file+head+olp "%<%Y-%m-%d>.org" "#+title: %<%Y-%m-%d>\n" ("Tasks")))))
+             (org-after-refile-insert-hook #'save-buffer)
+             today-file pos)
+        (save-window-excursion
+            (org-roam-dailies--capture (current-time) t)
+            (setq today-file (buffer-file-name))
+            (setq pos (point)))
+
+        ;; Only refile if the target file is different than the current file
+        (unless (equal (file-truename today-file)
+                    (file-truename (buffer-file-name)))
+            (org-refile nil nil (list "Tasks" today-file nil pos)))))
+
 ;;; ##########################################################################
 
 (defun mifi/define-denote-keymap ()
@@ -2400,8 +2674,10 @@ directory is relative to the working-files-directory
 ;;; ##########################################################################
 
 (use-package denote
-  :defer t
-  :after which-key
+  :when (equal custom-note-system 'custom-note-system-denote)
+  :ensure ( :host github :repo "protesilaos/denote"
+            :files (:defaults "*.el"))
+  ;; :after which-key dired
   :custom
   (denote-directory (expand-file-name "notes" user-emacs-directory))
   (denote-save-buffers nil)
@@ -2421,12 +2697,10 @@ directory is relative to the working-files-directory
       (thread-last denote-directory (expand-file-name "attachments"))
       (expand-file-name "books" user-emacs-directory)))
   :config
-  (add-hook 'find-file-hook #'denote-link-buttonize-buffer)
+  ;; (add-hook 'find-file-hook #'denote-link-buttonize-buffer)
   (add-hook 'dired-mode-hook #'denote-dired-mode-in-directories)
   (denote-rename-buffer-mode 1)
-
   (mifi/define-denote-keymap) ;; Define the keymap for Denote.
-
   (with-eval-after-load 'org-capture
     (setq denote-org-capture-specifiers "%l\n%i\n%?")
     (add-to-list 'org-capture-templates
@@ -2469,13 +2743,14 @@ directory is relative to the working-files-directory
     (cons 'go-module root)))
 
 (use-package project
-  :when (equal custom-project-handler 'custom-project-project)
+  :when (equal custom-project-handler 'custom-project-project-el)
   :ensure nil
-  :defer t
   :config
-  (cl-defmethod project-root ((project (head go-module)))
-    (cdr project))
-  (add-hook 'project-find-functions #'project-find-go-module))
+  (setq project-vc-extra-root-markers '(".project.el" ".projectile" )))
+  ;; (when (featurep 'go-mode
+  ;; (cl-defmethod project-root ((project (head go-module)))
+  ;;   (cdr project))
+  ;; (add-hook 'project-find-functions #'project-find-go-module))
 
 ;;; ##########################################################################
 ;;; Emacs Polyglot is the Emacs LSP client that stays out of your way:
@@ -2509,6 +2784,7 @@ directory is relative to the working-files-directory
   (python-mode . eglot-ensure)
   (go-mode . eglot-ensure)
   (rustic-mode . eglot-ensure)
+  (tuareg-mode . eglot-ensure)
   ;; (c-mode . eglot-ensure)
   ;; (c++-mode . eglot-ensure)
   ;; (prog-mode . eglot-ensure)
@@ -2679,7 +2955,7 @@ directory is relative to the working-files-directory
 
 (use-package flycheck
   ;;:unless (equal custom-ide 'custom-ide-elpy)
-  :delight fc
+  :delight 'fc
   :defer t
   ;;:ensure (:host github :repo "flycheck/flycheck")
   :config
@@ -2703,7 +2979,7 @@ directory is relative to the working-files-directory
 
 (use-package tree-sitter
   :defer t
-  :after (:any python python-mode lisp-mode)
+  :after (:any python python-mode lisp-mode merlin-mode)
   :config
   ;; Activate tree-sitter globally (minor mode registered on every buffer)
   (global-tree-sitter-mode)
@@ -2721,6 +2997,7 @@ directory is relative to the working-files-directory
   (js2-mode . lsp-deferred))
 
 (use-package tree-sitter-langs
+  :ensure t
   :after tree-sitter)
 
 ;;; ##########################################################################
@@ -2932,6 +3209,8 @@ directory is relative to the working-files-directory
 ;;; ##########################################################################
 
 (use-package js2-mode
+  ;;:after simple-httpd
+  :ensure nil
   :hook (js-mode . js2-minor-mode)
   :bind (:map js2-mode-map
           ("{" . paredit-open-curly)
@@ -2939,9 +3218,13 @@ directory is relative to the working-files-directory
   :mode ("\\.js\\'" "\\.mjs\\'" "\\.json$")
   :custom (js2-highlight-level 3))
 
-(use-package ac-js2
-  :after js2-mode
-  :hook (js2-mode . ac-js2-mode))
+;; (use-package skewer-mode
+;;   :ensure nil
+;;   :after js2-mode)
+
+;; (use-package ac-js2
+;;   :after js2-mode skewer-mode
+;;   :hook (js2-mode . ac-js2-mode))
 
 ;;; ##########################################################################
 
@@ -3034,7 +3317,7 @@ directory is relative to the working-files-directory
 ;;; ##########################################################################
 ;; for Cargo.toml and other config files
 
-(use-package toml-mode :ensure t)
+(use-package toml-mode :ensure t :defer t :after rust-mode)
 
 ;;; ##########################################################################
 
@@ -3088,13 +3371,96 @@ directory is relative to the working-files-directory
   :after go-mode
   :hook (go-mode . go-guru-hl-identifier-mode))
 
-;;; ##########################################################################
+(let
+  ((installer "bash -c \"sh <(curl -fsSL https://raw.githubusercontent.com/ocaml/opam/master/shell/install.sh) --version 2.2.0\""))
+  (use-package opam-installer
+    :when enable-ocaml
+    :ensure nil
+    :ensure-system-package (opam . installer)))
 
-(use-package slime
-  :defer t
-  :mode ("\\.lisp\\'" . slime-mode)
+(defun mifi/opam-user-setup ()
+  (interactive)
+  (use-package opam-user-setup
+    :unless (featurep 'opam-user-setup) ;; Don't allow to be run twice!
+    :when enable-ocaml
+    :ensure nil
+    :config
+    (add-to-list 'exec-path "~/.opam/default/bin")
+    (mifi/setup-path-from-exec-path)))
+
+(let
+  ((file (expand-file-name "opam-user-setup.el" emacs-config-directory)))
+  (when (file-exists-p file)
+    (add-hook 'elpaca-after-init-hook 'mifi/opam-user-setup)))
+
+(let ((opam-share (ignore-errors (car (process-lines "opam" "var" "share")))))
+  (when (and (and opam-share (file-directory-p opam-share)) enable-ocaml)
+    (add-to-list 'load-path (expand-file-name "emacs/site-lisp" opam-share))))
+    ;;(autoload 'merlin-mode "merlin" nil t nil)
+    ;;(add-hook 'tuareg-mode-hook 'merlin-mode t)
+    ;;(add-hook 'caml-mode-hook 'merlin-mode t)))
+
+(use-package merlin
+  :when enable-ocaml :ensure nil :defer t
+  :delight " 🪄" 
+  :after opam-user-setup)
+
+(use-package merlin-eldoc
+  :when enable-ocaml :ensure nil :defer t :after merlin)
+
+(use-package merlin-company
+  :when (and enable-ocaml (not (equal custom-ide 'custom-ide-lsp-bridge)))
+  :ensure nil :defer t :after merlin company
   :config
-  (setq inferior-lisp-program "/opt/homebrew/bin/sbcl"))
+  (add-hook 'merlin-mode-hook 'company-mode)
+  (with-eval-after-load 'company
+    (add-to-list 'company-backends 'merlin-company-backend)))
+
+(defun mifi/tuareg-mode-hook ()
+  (merlin-mode t)
+  (setq tuareg-mode-name "🐫")
+  (eglot-ensure)
+  (when (functionp 'prettify-symbols-mode)
+    (prettify-symbols-mode)))
+
+(use-package tuareg
+  :when enable-ocaml :after opam-user-setup :defer t :ensure t
+  :hook (tuareg-mode . mifi/tuareg-mode-hook)
+  :mode
+  ("\\.ml\\'" . tuareg-mode)
+  ("\\.mli\\'" . tuareg-mode)
+  :custom
+  (tuareg-indent-align-with-first-arg t))
+
+(use-package ocp-indent
+  :when enable-ocaml
+  :after opam-user-setup
+  :ensure-system-package
+  ("~/.opam/default/lib/ocp-indent" . "opam install ocp-indent -y")
+  :ensure (:inherit t :depth 1
+           :fetcher github :repo "OCamlPro/ocp-indent"
+           :files ("tools/ocp-indent.el")))
+
+(use-package dune
+  :ensure t)
+
+(use-package ocamlformat
+  :when enable-ocaml :ensure t
+  :after (:any merlin tuareg)
+  :bind ("<f6>" . ocamlformat)
+  :ensure-system-package
+  ("~/.opam/default/lib/ocamlformat" . "opam install ocamlformat -y")
+  :custom (ocamlformat-enable 'enable-outside-detected-project))
+
+;; (use-package flycheck-ocaml
+;;   :ensure t
+;;   :config
+;;   (add-hook 'tuareg-mode-hook
+;;     (lambda ()
+;;       ;; disable Merlin's own error checking
+;;       (setq-local merlin-error-after-save nil)
+;;       ;; enable Flycheck checker
+;;       (flycheck-ocaml-setup))))
 
 ;;; ##########################################################################
 
@@ -3119,6 +3485,14 @@ directory is relative to the working-files-directory
   (autoload 'swift-playground-global-mode "swift-playground-mode" nil t)
   (add-hook 'swift-mode-hook #'swift-playground-global-mode))
 
+;;; ##########################################################################
+
+(use-package slime
+  :defer t
+  :mode ("\\.lisp\\'" . slime-mode)
+  :config
+  (setq inferior-lisp-program "/opt/homebrew/bin/sbcl"))
+
 ;;; ------------------------------------------------------------------------
 
 (use-package dape
@@ -3130,8 +3504,8 @@ directory is relative to the working-files-directory
   (define-dape-hydra)
   (message "prepare-dape end")
   (bind-keys :map prog-mode-map
-    ("C-c ." . dape-hydra/body))
-  (mifi/additional-dape-configs))
+    ("C-c ." . dape-hydra/body)))
+  ;;(mifi/additional-dape-configs))
 
 ;;; ##########################################################################
 
@@ -3264,8 +3638,8 @@ directory is relative to the working-files-directory
   :defer t
   :after dap-mode
   :ensure ( :package "dap-lldb" :source nil :protocol https
-	    :inherit t :depth 1 :type git
-	    :host github :repo "emacs-lsp/dap-mode")
+            :inherit t :depth 1 :type git
+            :host github :repo "emacs-lsp/dap-mode")
   :custom
   (dap-lldb-debug-program "~/Developer/command-line-unix/llvm/lldb-build/bin/lldb-dap")
   :config
@@ -3281,8 +3655,8 @@ directory is relative to the working-files-directory
 (use-package dap-gdb-lldb
   :when (equal debug-adapter 'debug-adapter-dap-mode)
   :ensure ( :package "dap-gdb-lldb" :source nil :protocol https
-	    :inherit t :depth 1 :type git :host github
-	    :repo "emacs-lsp/dap-mode")
+            :inherit t :depth 1 :type git :host github
+            :repo "emacs-lsp/dap-mode")
   :defer t
   :after dap-lldb
   :config
@@ -3293,8 +3667,8 @@ directory is relative to the working-files-directory
   :defer t
   :after dap-mode
   :ensure ( :package "dap-cpptools" :source nil :protocol https
-	    :inherit t :depth 1 :type git :host github
-	    :repo "emacs-lsp/dap-mode"))
+            :inherit t :depth 1 :type git :host github
+            :repo "emacs-lsp/dap-mode"))
 ;; :config
 ;; (dap-cpptools-setup))
 
@@ -3504,6 +3878,7 @@ directory is relative to the working-files-directory
 ;;; ##########################################################################
 
 (use-package diff-hl
+  :after track-changes
   :config
   (global-diff-hl-mode))
 
@@ -3559,10 +3934,24 @@ directory is relative to the working-files-directory
 
 ;;; ##########################################################################
 
+;; (defun mifi/load-web-support ()
+;;   (use-package web-server-status-codes :ensure nil)
+;;   (use-package simple-httpd
+;;     :preface (setq warning-minimum-level :emergency)
+;;     :ensure nil
+;;     :config (setq warning-minimum-level :warning))
+;;   (use-package websocket :ensure nil)
+;;   (use-package web-server :ensure nil))
+  
+
 (use-package markdown-mode
   :ensure t
-  :mode ("README\\.md\\'" . gfm-mode)
-  :init (setq markdown-command "pandoc"))
+  ;;:defer t
+  :mode (("README\\.md\\'" . gfm-mode)
+         ("\\.md\\'" . markdown-mode)
+         ("\\.markdown\\'" . markdown-mode))
+  :init (setq markdown-command "multimarkdown"))
+  ;;:hook (elpaca-after-init . mifi/load-web-support))
 
 ;;; ##########################################################################
 
@@ -3602,6 +3991,8 @@ directory is relative to the working-files-directory
       (bind-keys :map map
         ("M-RET $" . jinx-correct)
         ("M-RET ?" . eldoc-box-help-at-point)
+      ("M-RET M s" . markdown-preview-mode)
+      ("M-RET M e" . markdown-preview-cleanup)
         ("M-RET S e" . eshell)
         ("M-RET S i" . ielm)
         ("M-RET S v" . vterm-other-window)
@@ -3619,15 +4010,12 @@ directory is relative to the working-files-directory
       map)
     "mmm-keys-minor-mode keymap.")
 
-  (which-key-add-key-based-replacements "M-RET |" "display-fill-column")
-  (which-key-add-key-based-replacements "M-RET ?" "help-at-point")
-
   (define-minor-mode mmm-keys-minor-mode
     "A minor mode so that my key settings override annoying major modes."
     :init-value t
-    :lighter " m3"))
+    :lighter " MmM"))
 
-;; (mifi/define-mmm-minor-mode-map)
+(mifi/define-mmm-minor-mode-map)
 
 ;;; ##########################################################################
 
@@ -3637,7 +4025,7 @@ directory is relative to the working-files-directory
     (let ((map mmm-keys-minor-mode-map))
       (when enable-thesaurus
         (bind-keys :map map
-          ("M-RET m t" . mw-thesaurus-lookup-dwim)))
+          ("M-RET t t" . mw-thesaurus-lookup-dwim)))
       (cond
         ((equal major-mode 'org-mode)
           (bind-keys :map map
@@ -3654,7 +4042,7 @@ directory is relative to the working-files-directory
           (unbind-key "M-RET M-RET" map)))))
 
   ;; Override default menu text with better things
-  (which-key-add-key-based-replacements "M-RET m t" "thesaurus-at-point")
+  (which-key-add-key-based-replacements "M-RET t t" "thesaurus-at-point")
   (which-key-add-key-based-replacements "M-RET o" "org-menu")
   (which-key-add-key-based-replacements "M-RET o f" "set-org-fill-column"))
 
@@ -3663,11 +4051,12 @@ directory is relative to the working-files-directory
 (defun mifi/mmm-update-menu (&optional winframe)
   (interactive)
   (mifi/mmm-handle-context-keys nil)
+  (which-key-add-key-based-replacements "M-RET M" "markdown-preview")
   (which-key-add-key-based-replacements "M-RET S" "shells")
   (which-key-add-key-based-replacements "M-RET T" "theme-keys")
   (which-key-add-key-based-replacements "M-RET P" "python-menu")
   (which-key-add-key-based-replacements "M-RET e" "treemacs-toggle")
-  (which-key-add-key-based-replacements "M-RET m" "Thesaurus")
+  (which-key-add-key-based-replacements "M-RET t" "Thesaurus")
   (which-key-add-key-based-replacements "M-RET f" "set-fill-column")
   (which-key-add-key-based-replacements "M-RET j" "jump-to-register")
   (which-key-add-key-based-replacements "M-RET C-g" "Exit menu")
@@ -3677,40 +4066,42 @@ directory is relative to the working-files-directory
 
 ;; Check the keys when:
 ;; - the whick-key menu is displayed
-(add-hook 'which-key-inhibit-display-hook 'mifi/mmm-update-menu)
-;; - the user updates/changes the buffer - like loading a file
-;;   (but not switching to a new buffer)
-(add-hook 'window-buffer-change-functions 'mifi/mmm-handle-context-keys)
-;; - the user switches windows
-(add-hook 'window-selection-change-functions 'mifi/mmm-handle-context-keys)
-
-;; (add-hook 'which-key-mode-hook #'mifi/after-which-key)
-
-;; (add-hook 'elpaca-after-init-hook #'mifi/after-which-key)
-  ;; (lambda ()
-  ;;   (mifi/after-which-key)
-  ;;   (mifi/define-mmm-minor-mode-map)
-  ;;   (mifi/set-recenter-keys)))
+(add-hook 'elpaca-after-init-hook
+  (lambda ()
+    (add-hook 'which-key-inhibit-display-hook 'mifi/mmm-update-menu)
+    ;; - the user updates/changes the buffer - like loading a file
+    ;;   (but not switching to a new buffer)
+    (add-hook 'window-buffer-change-functions 'mifi/mmm-handle-context-keys)
+    ;; - the user switches windows
+    (add-hook 'window-selection-change-functions 'mifi/mmm-handle-context-keys)
+    ;; (add-hook 'which-key-mode-hook #'mifi/after-which-key)
+    (mifi/after-which-key)
+    (mifi/define-mmm-minor-mode-map)
+    (mifi/set-recenter-keys)))
 
 ;;; ##########################################################################
 
 (defun mifi/config-landing ()
-  (setq-default initial-scratch-message
-    (format
-      ";; Hello, World and Happy hacking %s!\n%s\n\n" user-login-name
-      ";; Press M-RET (Meta-RET) to open Mitch's Context Aware Menu"))
+  ;; (setq-default initial-scratch-message
+  ;;   (format
+  ;;     ";; Hello, World and Happy hacking %s!\n%s\n\n" user-login-name
+  ;;     ";; Press M-RET (Meta-RET) to open Mitch's Context Aware Menu"))
   (cond
     ((equal default-landing-mode 'landing-mode-dashboard)
       (dashboard-open))
     ((equal default-landing-mode 'landing-mode-scratch)
       (switch-to-buffer "*scratch*")
+      (erase-buffer)
+      (beginning-of-buffer)
+      (insert (format
+              ";; Well Met and Happy hacking %s!\n%s\n\n" user-login-name
+              ";; Press M-RET (Meta-RET) to open Mitch's Context Aware Menu"))
       (end-of-buffer))
+
     ((equal default-landing-mode 'landing-mode-ielm)
       (ielm))
     ((equal default-landing-mode 'landing-mode-eshell)
-      (eshell)))  )
-  ;; (add-hook 'lisp-interaction-mode-hook
-  ;;   (lambda ())))
+      (eshell))))
 
 (add-hook 'elpaca-after-init-hook
   (lambda ()
@@ -3719,16 +4110,29 @@ directory is relative to the working-files-directory
 
 ;;; ##########################################################################
 
-(defun mifi/cleanup-when-exiting ()
+(defun mifi/backup-file (file)
+  "Backup the file from the configuration directory into the
+backup directory. If a file already exists in the backup directory, the old
+file is renamed with a ~ at the end before the new file is copied."
   (let ((backdir (format "%s/config-backup" working-files-directory)))
     (make-directory backdir t)
-    ;; Backup init.el
-    (copy-file
-      (expand-file-name "init.el" emacs-config-directory)
-      (expand-file-name "init.el" backdir) t)))
-;; (copy-file
-;;   (expand-file-name "emacs-config.org" emacs-config-directory)
-;;   (expand-file-name "emacs-config.org" backdir) t)))
+    ;; --------------------------------------------------
+    (when (file-exists-p (format "%s/%s" backdir file))
+      (copy-file
+      (expand-file-name file backdir)
+      (expand-file-name (format "%s~" file) backdir) t))
+    (when (file-exists-p (format "%s/%s" emacs-config-directory file))
+      (copy-file
+      (expand-file-name file emacs-config-directory)
+      (expand-file-name file backdir) t))))
+
+(defun mifi/cleanup-when-exiting ()
+  "Backup Emacs initialization files for recovery. If old files exist, they are
+backed up as tilde (~) files."
+  (progn
+    (mifi/backup-file "early-init.el")
+    (mifi/backup-file "init.el")
+    (mifi/backup-file "emacs-config.org")))
 
 (add-hook 'kill-emacs-hook #'mifi/cleanup-when-exiting)
 
@@ -3762,3 +4166,8 @@ directory is relative to the working-files-directory
 ;;; ##########################################################################
 
 ;;; init.el ends here.
+
+;; ## added by OPAM user-setup for emacs / base ## 56ab50dc8996d2bb95e7856a6eddb17b ## you can edit, but keep this line
+;;-- This is already handled in the OCaml language config above...
+;; (require 'opam-user-setup "~/.emacs.d/opam-user-setup.el")
+;; ## end of OPAM user-setup addition for emacs / base ## keep this line
