@@ -11,12 +11,12 @@
 
 ;;; ##########################################################################
 
-(setq gc-cons-threshold (* 100 1024 1024))
+(setq gc-cons-threshold 80000000) ;; original value * 100
 (setq package-enable-at-startup nil)
 
 ;; Process performance tuning
 
-(setq read-process-output-max (* 16 1024 1024))
+(setq read-process-output-max (* 64 1024))
 (setq process-adaptive-read-buffering nil)
 
 (setq package-vc-register-as-project nil) ; Emacs 30
@@ -77,6 +77,7 @@
     (message startup-time-message)))
 
 ;;; ##########################################################################
+
 (defconst *is-a-mac* (eq system-type 'darwin))
 
 (defun mifi/setup-path-from-exec-path ()

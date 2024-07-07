@@ -10,7 +10,7 @@
 
 This ORG file will configure the  ~init.el~  file based upon all of the =emacs-lisp= source blocks. The =emacs-lisp= source blocks are defined in an organized order. While these blocks can generally be moved around, there are some order dependencies. So it's generally best that this order be preserved to prevent any compile-time issues.
 
-The goal of this Emacs configuration is to make an Emacs configuration that has a good collection of popular options. I actually use these different sets of packages based upon my work. Sometimes, Vertico, Consult, Corfu don't provide the right experience so I switch to Ivy. The same is true with debuggers. I prefer DAPE but sometimes it doesn't work as well as DAP/LSP, and so on.
+- The goal of this Emacs configuration is to make an Emacs configuration that has a good collection of popular options. I actually use these different sets of packages based upon my work. Sometimes, Vertico, Consult, Corfu don't provide the right experience so I switch to Ivy. The same is true with debuggers. I prefer DAPE but sometimes it doesn't work as well as DAP/LSP, and so on.
 
 While I'm trying to make a config that appeals to other people, most of what you see in here is for my personal dev projects in Python and other language and it also includes a sizeable amount of elisp to continuously fiddle with.
 
@@ -118,12 +118,12 @@ Standard fare and good practice.
 #+begin_src emacs-lisp :tangle "early-init.el" 
   ;;; ##########################################################################
 
-  (setq gc-cons-threshold (* 100 1024 1024))
+  (setq gc-cons-threshold 80000000) ;; original value * 100
   (setq package-enable-at-startup nil)
 
   ;; Process performance tuning
 
-  (setq read-process-output-max (* 16 1024 1024))
+  (setq read-process-output-max (* 64 1024))
   (setq process-adaptive-read-buffering nil)
 
   (setq package-vc-register-as-project nil) ; Emacs 30
@@ -174,7 +174,7 @@ Standard fare and good practice.
 ** use-package-ensure-system-packages
 This package enables the =:ensure-system-package= within a =use-package= statement that allows the enforcement that system binaries (or files) exist alongside the actual =use-package= declaration. So, if there is need to ensure that, for example, =ruby-lint= was installed the inclusion of the value:
 
-    ~(ruby-lint . "gem install ruby-lint")~
+~(ruby-lint . "gem install ruby-lint")~
 
 This will check for the binary =ruby-lint= exists in the path and if not, ="gem install ruby-lint"= would be called to install =ruby-lint=
 
@@ -222,6 +222,7 @@ Because in macOS, Emacs could be started outside of a shell (like an application
 
 #+begin_src emacs-lisp :tangle "early-init.el"
   ;;; ##########################################################################
+
   (defconst *is-a-mac* (eq system-type 'darwin))
 
   (defun mifi/setup-path-from-exec-path ()
@@ -512,7 +513,7 @@ These are features that basically have multiple-choice options instead of being 
              (const :tag "Dashboard" landing-mode-dashboard)
              (const :tag "*scratch*" landing-mode-scratch)
              (const :tag "IELM" landing-mode-ielm)
-           (const :tag "eshell" landing-mode-eshell))
+             (const :tag "eshell" landing-mode-eshell))
     :group 'mifi-config-features)
 
   (defcustom undo-handler 'undo-handler-vundo
@@ -735,23 +736,24 @@ Look for a proportional font that is available on the OS. If the actual default 
   ;;; ##########################################################################
 
   (defun mifi/validate-variable-pitch-font ()
-    (let* ((variable-pitch-font
-             (cond
-               ((x-list-fonts variable-pitch-font-family) variable-pitch-font-family)
-               ((x-list-fonts "SF Pro")           "SF Pro")
-               ((x-list-fonts "DejaVu Sans")      "DejaVu Sans")
-               ((x-list-fonts "Ubuntu")           "Ubuntu")
-               ((x-list-fonts "Helvetica")        "Helvetica")
-               ((x-list-fonts "Source Sans Pro")  "Source Sans Pro")
-               ((x-list-fonts "Lucida Grande")    "Lucida Grande")
-               ((x-list-fonts "Verdana")          "Verdana")
-               ((x-family-fonts "Sans Serif")     "Sans Serif")
-               (nil (warn "Cannot find a Sans Serif Font.  Install Source Sans Pro.")))))
-      (if variable-pitch-font
-        (when (not (equal variable-pitch-font variable-pitch-font-family))
-          (setq variable-pitch-font-family variable-pitch-font))
-        (message "---- Can't find a variable-pitch font to use.")))
-    (message (format ">>> variable-pitch font is %s" variable-pitch-font-family)))
+    (when (display-graphic-p)
+      (let* ((variable-pitch-font
+               (cond
+                 ((x-list-fonts variable-pitch-font-family) variable-pitch-font-family)
+                 ((x-list-fonts "SF Pro")           "SF Pro")
+                 ((x-list-fonts "DejaVu Sans")      "DejaVu Sans")
+                 ((x-list-fonts "Ubuntu")           "Ubuntu")
+                 ((x-list-fonts "Helvetica")        "Helvetica")
+                 ((x-list-fonts "Source Sans Pro")  "Source Sans Pro")
+                 ((x-list-fonts "Lucida Grande")    "Lucida Grande")
+                 ((x-list-fonts "Verdana")          "Verdana")
+                 ((x-family-fonts "Sans Serif")     "Sans Serif")
+                 (nil (warn "Cannot find a Sans Serif Font.  Install Source Sans Pro.")))))
+        (if variable-pitch-font
+  	(when (not (equal variable-pitch-font variable-pitch-font-family))
+            (setq variable-pitch-font-family variable-pitch-font))
+  	(message "---- Can't find a variable-pitch font to use.")))
+      (message (format ">>> variable-pitch font is %s" variable-pitch-font-family))))
 
 #+end_src
 
@@ -763,21 +765,22 @@ Look for a proportional font that is available on the OS. If the actual default 
   ;;; ##########################################################################
 
   (defun mifi/validate-monospace-font ()
-    (let* ((monospace-font
-             (cond
-               ((x-list-fonts mono-spaced-font-family) mono-spaced-font-family)
-               ((x-list-fonts "Fira Code Retina")  "Fira Code Retina")
-               ((x-list-fonts "Fira Code")         "Fira Code")
-               ((x-list-fonts "Source Code Pro")   "Source Code Pro")
-               ((x-list-fonts "Ubuntu Monospaced") "Ubuntu Monospaced")
-               ((x-family-fonts "Monospaced")      "Monospaced")
-               (nil (warn "Cannot find a monospaced Font.  Install Source Code Pro.")))))
-      (if monospace-font
-        (when (not (equal monospace-font variable-pitch-font-family))
-          (setq mono-spaced-font-family monospace-font)
-          (setq default-font-family monospace-font))
-        (message "---- Can't find a monospace font to use.")))
-    (message (format ">>> monospace font is %s" mono-spaced-font-family)))
+    (when (display-graphic-p)
+      (let* ((monospace-font
+               (cond
+                 ((x-list-fonts mono-spaced-font-family) mono-spaced-font-family)
+                 ((x-list-fonts "Fira Code Retina")  "Fira Code Retina")
+                 ((x-list-fonts "Fira Code")         "Fira Code")
+                 ((x-list-fonts "Source Code Pro")   "Source Code Pro")
+                 ((x-list-fonts "Ubuntu Monospaced") "Ubuntu Monospaced")
+                 ((x-family-fonts "Monospaced")      "Monospaced")
+                 (nil (warn "Cannot find a monospaced Font.  Install Source Code Pro.")))))
+        (if monospace-font
+  	(when (not (equal monospace-font variable-pitch-font-family))
+            (setq mono-spaced-font-family monospace-font)
+            (setq default-font-family monospace-font))
+  	(message "---- Can't find a monospace font to use.")))
+      (message (format ">>> monospace font is %s" mono-spaced-font-family))))
 
 #+end_src
 
@@ -792,6 +795,7 @@ By default, the =user-emacs-directory= points to the .emacs.d* directory from wh
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
+
   ;;; Set a variable that represents the actual emacs configuration directory.
   ;;; This is being done so that the user-emacs-directory which normally points
   ;;; to the .emacs.d directory can be re-assigned so that customized files don't
@@ -833,6 +837,13 @@ This directory is expected to be in the ~emacs-config-direcory~ dir. This can be
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
+
+  (use-package f :ensure t :demand t
+    :config
+    (let ((epath (f-dirname
+  		 (expand-file-name invocation-name invocation-directory))))
+      (add-to-list 'exec-path (format "%s:%s/bin" epath epath))
+      (mifi/setup-path-from-exec-path)))
 
   (add-to-list 'load-path (expand-file-name "lisp" emacs-config-directory))
   ;; mostly for OCaml
@@ -938,6 +949,17 @@ Calls to mode functions that effect various Emacs behavior.
   (repeat-mode 0)                      ;; Also in MmM
   ;; (add-hook 'prog-mode-hook 'display-line-numbers-mode)
 
+  ;; Key binding to use "hippie expand" for text autocompletion
+  ;; http://www.emacswiki.org/emacs/HippieExpand
+  (global-set-key (kbd "C-c C-/") 'hippie-expand)
+  ;; Lisp-friendly hippie expand
+  (setq hippie-expand-try-functions-list
+    '( try-expand-dabbrev
+       try-expand-dabbrev-all-buffers
+       try-expand-dabbrev-from-kill
+       try-complete-lisp-symbol-partially
+       try-complete-lisp-symbol))
+
 #+end_src
 
 *** Configure 'paren' mode
@@ -956,6 +978,15 @@ Calls to mode functions that effect various Emacs behavior.
     show-paren-context-when-offscreen t
     :config
     (show-paren-mode 1))
+
+  (use-package paredit
+    :ensure t
+    :hook
+    (emacs-lisp-mode . paredit-mode)
+    (ielm-mode . paredit-mode)
+    (lisp-mode . paredit-mode)
+    (lisp-interaction-mode . paredit-mode)
+    (scheme-mode . paredit-mode))
 
 #+end_src
 
@@ -1083,16 +1114,16 @@ Delight enables you to customise the mode names displayed in the mode line. It's
   (defun mifi/set-delight ()
     (interactive)
     (delight '( (abbrev-mode " Abv" abbrev)
-              (anaconda-mode)
-              (buffer-face-mode "Buff")
-              (company-box-mode "CBox")
-              (company-mode "Com")
-              (counsel-mode)
-              (golden-ratio-mode " 𝜑")
-              (lisp-interaction-mode " iLisp")
-              (mmm-keys-minor-mode " m3")
-              (projectile-mode " ->")
-              (tree-sitter-mode " ts")
+                (anaconda-mode)
+                (buffer-face-mode "Buff")
+                (company-box-mode "CBox")
+                (company-mode "Com")
+                (counsel-mode)
+                (golden-ratio-mode " 𝜑")
+                (lisp-interaction-mode " iLisp")
+                (mmm-keys-minor-mode " m3")
+                (projectile-mode " ->")
+                (tree-sitter-mode " ts")
                 ;;(eldoc-mode nil " eldoc")
                 (overwrite-mode " Ov" t)
                 (python-mode " Py" :major)
@@ -1143,7 +1174,7 @@ This package displays ElDoc documentations in a childframe. The childframe is se
     :ensure t
     :delight DocBox
     :hook (elpaca-after-init . mifi/setup-hooks-for-eldoc))
-    
+
 #+end_src
 
 ** Hydra
@@ -1268,7 +1299,7 @@ These are key-bindings that are done at a global level.
   (defun mifi/setup-global-keybindings ()
     (interactive)
     (bind-key "C-c ]" 'indent-region prog-mode-map)
-    (bind-key "C-c }" 'indent-region prog-mode-map)
+    (bind-key "C-c }" 'indent-region prog-mode-map) 
     (bind-key "C-x C-j" 'dired-jump)
 
     ;;
@@ -1366,8 +1397,7 @@ This package is a utility for using and formatting various Icon fonts within Ema
   ;;; ##########################################################################
 
   (use-package all-the-icons
-    :ensure t
-    :when (display-graphic-p))
+    :ensure t)
 
 #+end_src
 
@@ -2608,7 +2638,7 @@ Virtical Split comparison of two files selected from the dired window.
 
   (use-package treemacs-all-the-icons
     :after treemacs
-    :if (display-graphic-p))
+    :when (display-graphic-p))
 
 #+end_src
 
@@ -2848,7 +2878,7 @@ This includes the theme to use in both graphical and non-graphical.
   (defun mifi/load-terminal-theme ()
     (load-theme (intern default-terminal-theme) t))
 
-  (if (not (display-graphic-p))
+  (unless (display-graphic-p)
     (add-hook 'elpaca-after-init-hook 'mifi/load-terminal-theme)
     ;;else
     (progn
@@ -4076,7 +4106,7 @@ The following are configured for Python development and provide an <<<IDE>>> typ
 
   ;; Consider doing an "M-x eglot-upgrade-eglot" to ensure that you have the most
   ;; current eglot (yes, even though it's a built in package).
-  
+
   (use-package eglot
     :when (equal custom-ide 'custom-ide-eglot)
     :ensure nil
@@ -4086,6 +4116,7 @@ The following are configured for Python development and provide an <<<IDE>>> typ
     (python-mode . eglot-ensure)
     (go-mode . eglot-ensure)
     (rustic-mode . eglot-ensure)
+    (tuareg-mode . eglot-ensure)
     ;; (c-mode . eglot-ensure)
     ;; (c++-mode . eglot-ensure)
     ;; (prog-mode . eglot-ensure)
@@ -5151,6 +5182,7 @@ This archive contains files to help editing OCaml code, to highlight important p
   (defun mifi/tuareg-mode-hook ()
     (merlin-mode t)
     (setq tuareg-mode-name "🐫")
+    (eglot-ensure)
     (when (functionp 'prettify-symbols-mode)
       (prettify-symbols-mode)))
 

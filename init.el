@@ -184,7 +184,7 @@ interpreter."
            (const :tag "Dashboard" landing-mode-dashboard)
            (const :tag "*scratch*" landing-mode-scratch)
            (const :tag "IELM" landing-mode-ielm)
-         (const :tag "eshell" landing-mode-eshell))
+           (const :tag "eshell" landing-mode-eshell))
   :group 'mifi-config-features)
 
 (defcustom undo-handler 'undo-handler-vundo
@@ -393,44 +393,47 @@ font size is computed + 20 of this value."
 ;;; ##########################################################################
 
 (defun mifi/validate-variable-pitch-font ()
-  (let* ((variable-pitch-font
-           (cond
-             ((x-list-fonts variable-pitch-font-family) variable-pitch-font-family)
-             ((x-list-fonts "SF Pro")           "SF Pro")
-             ((x-list-fonts "DejaVu Sans")      "DejaVu Sans")
-             ((x-list-fonts "Ubuntu")           "Ubuntu")
-             ((x-list-fonts "Helvetica")        "Helvetica")
-             ((x-list-fonts "Source Sans Pro")  "Source Sans Pro")
-             ((x-list-fonts "Lucida Grande")    "Lucida Grande")
-             ((x-list-fonts "Verdana")          "Verdana")
-             ((x-family-fonts "Sans Serif")     "Sans Serif")
-             (nil (warn "Cannot find a Sans Serif Font.  Install Source Sans Pro.")))))
-    (if variable-pitch-font
-      (when (not (equal variable-pitch-font variable-pitch-font-family))
-        (setq variable-pitch-font-family variable-pitch-font))
-      (message "---- Can't find a variable-pitch font to use.")))
-  (message (format ">>> variable-pitch font is %s" variable-pitch-font-family)))
+  (when (display-graphic-p)
+    (let* ((variable-pitch-font
+             (cond
+               ((x-list-fonts variable-pitch-font-family) variable-pitch-font-family)
+               ((x-list-fonts "SF Pro")           "SF Pro")
+               ((x-list-fonts "DejaVu Sans")      "DejaVu Sans")
+               ((x-list-fonts "Ubuntu")           "Ubuntu")
+               ((x-list-fonts "Helvetica")        "Helvetica")
+               ((x-list-fonts "Source Sans Pro")  "Source Sans Pro")
+               ((x-list-fonts "Lucida Grande")    "Lucida Grande")
+               ((x-list-fonts "Verdana")          "Verdana")
+               ((x-family-fonts "Sans Serif")     "Sans Serif")
+               (nil (warn "Cannot find a Sans Serif Font.  Install Source Sans Pro.")))))
+      (if variable-pitch-font
+	(when (not (equal variable-pitch-font variable-pitch-font-family))
+          (setq variable-pitch-font-family variable-pitch-font))
+	(message "---- Can't find a variable-pitch font to use.")))
+    (message (format ">>> variable-pitch font is %s" variable-pitch-font-family))))
 
 ;;; ##########################################################################
 
 (defun mifi/validate-monospace-font ()
-  (let* ((monospace-font
-           (cond
-             ((x-list-fonts mono-spaced-font-family) mono-spaced-font-family)
-             ((x-list-fonts "Fira Code Retina")  "Fira Code Retina")
-             ((x-list-fonts "Fira Code")         "Fira Code")
-             ((x-list-fonts "Source Code Pro")   "Source Code Pro")
-             ((x-list-fonts "Ubuntu Monospaced") "Ubuntu Monospaced")
-             ((x-family-fonts "Monospaced")      "Monospaced")
-             (nil (warn "Cannot find a monospaced Font.  Install Source Code Pro.")))))
-    (if monospace-font
-      (when (not (equal monospace-font variable-pitch-font-family))
-        (setq mono-spaced-font-family monospace-font)
-        (setq default-font-family monospace-font))
-      (message "---- Can't find a monospace font to use.")))
-  (message (format ">>> monospace font is %s" mono-spaced-font-family)))
+  (when (display-graphic-p)
+    (let* ((monospace-font
+             (cond
+               ((x-list-fonts mono-spaced-font-family) mono-spaced-font-family)
+               ((x-list-fonts "Fira Code Retina")  "Fira Code Retina")
+               ((x-list-fonts "Fira Code")         "Fira Code")
+               ((x-list-fonts "Source Code Pro")   "Source Code Pro")
+               ((x-list-fonts "Ubuntu Monospaced") "Ubuntu Monospaced")
+               ((x-family-fonts "Monospaced")      "Monospaced")
+               (nil (warn "Cannot find a monospaced Font.  Install Source Code Pro.")))))
+      (if monospace-font
+	(when (not (equal monospace-font variable-pitch-font-family))
+          (setq mono-spaced-font-family monospace-font)
+          (setq default-font-family monospace-font))
+	(message "---- Can't find a monospace font to use.")))
+    (message (format ">>> monospace font is %s" mono-spaced-font-family))))
 
 ;;; ##########################################################################
+
 ;;; Set a variable that represents the actual emacs configuration directory.
 ;;; This is being done so that the user-emacs-directory which normally points
 ;;; to the .emacs.d directory can be re-assigned so that customized files don't
@@ -465,6 +468,13 @@ font size is computed + 20 of this value."
 (mifi/validate-monospace-font)
 
 ;;; ##########################################################################
+
+(use-package f :ensure t :demand t
+  :config
+  (let ((epath (f-dirname
+		 (expand-file-name invocation-name invocation-directory))))
+    (add-to-list 'exec-path (format "%s:%s/bin" epath epath))
+    (mifi/setup-path-from-exec-path)))
 
 (add-to-list 'load-path (expand-file-name "lisp" emacs-config-directory))
 ;; mostly for OCaml
@@ -541,6 +551,17 @@ font size is computed + 20 of this value."
 (repeat-mode 0)                      ;; Also in MmM
 ;; (add-hook 'prog-mode-hook 'display-line-numbers-mode)
 
+;; Key binding to use "hippie expand" for text autocompletion
+;; http://www.emacswiki.org/emacs/HippieExpand
+(global-set-key (kbd "C-c C-/") 'hippie-expand)
+;; Lisp-friendly hippie expand
+(setq hippie-expand-try-functions-list
+  '( try-expand-dabbrev
+     try-expand-dabbrev-all-buffers
+     try-expand-dabbrev-from-kill
+     try-complete-lisp-symbol-partially
+     try-complete-lisp-symbol))
+
 ;;; ##########################################################################
 
 ;; Used to highlight matching delimiters '( { [ ] } )
@@ -554,6 +575,15 @@ font size is computed + 20 of this value."
   show-paren-context-when-offscreen t
   :config
   (show-paren-mode 1))
+
+(use-package paredit
+  :ensure t
+  :hook
+  (emacs-lisp-mode . paredit-mode)
+  (ielm-mode . paredit-mode)
+  (lisp-mode . paredit-mode)
+  (lisp-interaction-mode . paredit-mode)
+  (scheme-mode . paredit-mode))
 
 ;;; ##########################################################################
 
@@ -621,16 +651,16 @@ font size is computed + 20 of this value."
 (defun mifi/set-delight ()
   (interactive)
   (delight '( (abbrev-mode " Abv" abbrev)
-            (anaconda-mode)
-            (buffer-face-mode "Buff")
-            (company-box-mode "CBox")
-            (company-mode "Com")
-            (counsel-mode)
-            (golden-ratio-mode " 𝜑")
-            (lisp-interaction-mode " iLisp")
-            (mmm-keys-minor-mode " m3")
-            (projectile-mode " ->")
-            (tree-sitter-mode " ts")
+              (anaconda-mode)
+              (buffer-face-mode "Buff")
+              (company-box-mode "CBox")
+              (company-mode "Com")
+              (counsel-mode)
+              (golden-ratio-mode " 𝜑")
+              (lisp-interaction-mode " iLisp")
+              (mmm-keys-minor-mode " m3")
+              (projectile-mode " ->")
+              (tree-sitter-mode " ts")
               ;;(eldoc-mode nil " eldoc")
               (overwrite-mode " Ov" t)
               (python-mode " Py" :major)
@@ -736,7 +766,7 @@ font size is computed + 20 of this value."
 (defun mifi/setup-global-keybindings ()
   (interactive)
   (bind-key "C-c ]" 'indent-region prog-mode-map)
-  (bind-key "C-c }" 'indent-region prog-mode-map)
+  (bind-key "C-c }" 'indent-region prog-mode-map) 
   (bind-key "C-x C-j" 'dired-jump)
 
   ;;
@@ -804,8 +834,7 @@ font size is computed + 20 of this value."
 ;;; ##########################################################################
 
 (use-package all-the-icons
-  :ensure t
-  :when (display-graphic-p))
+  :ensure t)
 
 ;;; ##########################################################################
 
@@ -1633,7 +1662,7 @@ font size is computed + 20 of this value."
 
 (use-package treemacs-all-the-icons
   :after treemacs
-  :if (display-graphic-p))
+  :when (display-graphic-p))
 
 ;;; ##########################################################################
 
@@ -1804,7 +1833,7 @@ font size is computed + 20 of this value."
 (defun mifi/load-terminal-theme ()
   (load-theme (intern default-terminal-theme) t))
 
-(if (not (display-graphic-p))
+(unless (display-graphic-p)
   (add-hook 'elpaca-after-init-hook 'mifi/load-terminal-theme)
   ;;else
   (progn
@@ -2755,6 +2784,7 @@ capture was not aborted."
   (python-mode . eglot-ensure)
   (go-mode . eglot-ensure)
   (rustic-mode . eglot-ensure)
+  (tuareg-mode . eglot-ensure)
   ;; (c-mode . eglot-ensure)
   ;; (c++-mode . eglot-ensure)
   ;; (prog-mode . eglot-ensure)
@@ -3389,6 +3419,7 @@ capture was not aborted."
 (defun mifi/tuareg-mode-hook ()
   (merlin-mode t)
   (setq tuareg-mode-name "🐫")
+  (eglot-ensure)
   (when (functionp 'prettify-symbols-mode)
     (prettify-symbols-mode)))
 
