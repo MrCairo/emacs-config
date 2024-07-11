@@ -418,6 +418,12 @@ These are the groups used by this Emacs config for customization.
     :type 'natnum
     :group 'mifi-config)
 
+  (defcustom custom-developer-root "~/Developer/src"
+    "The root of all development projects. Used when initializing project.el or
+    projectile."
+    :type 'string
+    :group 'mifi-config)
+
 #+end_src
 
 ** Custom Package Toggles
@@ -441,6 +447,11 @@ Thes values toggle the availability of specific packages. These options are not 
 
   (defcustom enable-ocaml nil
     "Set to t to enable inclusion of OCaml support: Merlin, Tuareg."
+    :type 'boolean
+    :group 'mifi-config-toggles)
+
+  (defcustom enable-clojure nil
+    "Set to t to enable inclusion of Clojure and Cider"
     :type 'boolean
     :group 'mifi-config-toggles)
 
@@ -617,7 +628,7 @@ These are features that basically have multiple-choice options instead of being 
              (const :tag "Org-roam" custom-note-system-org-roam)
              (const :tag "None" custom-note-system-none))
     :group 'mifi-config-features)
-
+  
 #+end_src
 
 ** Theme Specific Values
@@ -4023,8 +4034,8 @@ Denote’s file-naming scheme is not limited to “notes”. It can be used for 
     ("C-c p" . projectile-command-map)
     :init
     ;; NOTE: Set this to the folder where you keep your Git repos!
-    (when (file-directory-p "~/Developer")
-      (setq projectile-project-search-path '("~/Developer")))
+    (when (file-directory-p custom-developer-root)
+      (setq projectile-project-search-path '(custom-developer-root)))
     (setq projectile-switch-project-action #'projectile-dired))
 
   (when (equal completion-handler 'comphand-ivy-counsel)
@@ -4151,11 +4162,11 @@ Client for Language Server Protocol (v3.14). lsp-mode aims to provide IDE-like e
   ;;; ##########################################################################
   ;;; Language Server Protocol
 
-  ;; (when (equal custom-ide 'custom-ide-lsp)
+  ;; (when (or (equal custom-ide 'custom-ide-lsp) (equal custom-ide 'custom-ide-eglot))
   ;;   (eval-when-compile (defvar lsp-enable-which-key-integration)))
 
   (use-package lsp-mode
-    :when (equal custom-ide 'custom-ide-lsp)
+    :when (or (equal custom-ide 'custom-ide-lsp) (equal custom-ide 'custom-ide-eglot))
     :commands (lsp lsp-deferred)
     :hook (lsp-mode . mifi/lsp-mode-setup)
     :init
@@ -4177,7 +4188,7 @@ This package contains all the higher level UI modules of lsp-mode, like flycheck
   ;;; ##########################################################################
 
   (use-package lsp-ui
-    :when (equal custom-ide 'custom-ide-lsp)
+    :when (or (equal custom-ide 'custom-ide-lsp) (equal custom-ide 'custom-ide-eglot))
     :after lsp
     :custom
     (lsp-ui-sideline-enable t)
@@ -4210,7 +4221,7 @@ Integration between lsp-mode and treemacs and implementation of treeview control
   ;;; treemacs projects set lsp-treemacs-sync-mode to 1.
 
   (use-package lsp-treemacs
-    :when (equal custom-ide 'custom-ide-lsp)
+    :when (or (equal custom-ide 'custom-ide-lsp) (equal custom-ide 'custom-ide-eglot))
     :after lsp treemacs
     :bind (:map prog-mode-map
             ("C-c t" . treemacs))
@@ -4218,9 +4229,10 @@ Integration between lsp-mode and treemacs and implementation of treeview control
     (lsp-treemacs-sync-mode 1))
 
   (use-package lsp-ivy
-    :when (and (equal custom-ide 'custom-ide-lsp)
+    :when (and (or (equal custom-ide 'custom-ide-lsp) (equal custom-ide 'custom-ide-eglot))
             (equal completion-handler 'comphand-ivy-counsel))
     :after lsp ivy)
+  
 #+end_src
 
 **** LSP mode hook function
@@ -4234,7 +4246,7 @@ This function is called from the lsp-mode-hook when enering or leaving LSP mode.
   (defun mifi/lsp-mode-setup ()
     "Custom LSP setup function."
     (add-hook 'lsp-after-open-hook 'lsp-enable-imenu)
-    (when (equal custom-ide 'custom-ide-lsp)
+    (when (or (equal custom-ide 'custom-ide-lsp) (equal custom-ide 'custom-ide-eglot))
       (setq lsp-headerline-breadcrumb-segments '(path-up-to-project file symbols))
       (setq lsp-clangd-binary-path "/usr/bin/clangd")'
       (lsp-headerline-breadcrumb-mode)))
@@ -5021,7 +5033,7 @@ Integration of the Go 'guru' analysis tool into Emacs.
 
 #+end_src
 
-*** OCaml ([[https://ocaml.org][ocaml.org]])
+*** <<<OCaml>>> ([[https://ocaml.org][ocaml.org]])
 
 An industrial-strength functional programming language with an emphasis on expressiveness and safety
 
@@ -5060,13 +5072,12 @@ This is an easy way to install =opam= using ~brew~ but it may not be the most cu
 
 **** The .ocamlinit file
 
-This should be added/appended to anything in the existing file.
+This should be added/appended to anything in the existing ~.ocamlinit~ file.
 
 #+begin_src shell
 
   sig=" ## Added by Emacs config for Ocaml "
   count=$(grep -l "${sig}" ~/.ocamlinit)
-
   if [ -z $count ]; then
       printf "
   (*${sig}*)
@@ -5094,7 +5105,7 @@ Merlin is an editor service that provides advanced IDE features for OCaml.
 
 #+end_src
 
-**** Install Ocaml LSP Server
+**** HOWTO Install Ocaml LSP Server
 
 This is not 100% necessary since Ocaml can use =merlin= directly instead of fronting with an LSP server. But, we install it for any flexibility it may provide.
 
@@ -5104,7 +5115,6 @@ This is not 100% necessary since Ocaml can use =merlin= directly instead of fron
 
 #+end_src
 
-
 **** Code Formatter and Builder
 
 #+begin_src bash
@@ -5113,24 +5123,38 @@ This is not 100% necessary since Ocaml can use =merlin= directly instead of fron
 
 #+end_src
 
+**** Opam Emacs Configuration
+
+This puts a most of the installs mentioned above into a nice ~use-package~ form. This makes use of the ~opam-emacs-setup~ package in the ~lisp~ directory. It's just a stub but allows us to configure enacs using the =:ensure-system-package= option.
+
+#+begin_src emacs-lisp
+
+  (use-package opam-emacs-setup
+    :when enable-ocaml
+    :ensure nil
+    :ensure-system-package
+    ( ("~/.opam/default/share/emacs/site-lisp/merlin.el" . "opam install merlin tuareg -y")
+      (dune . "opam install dune -y")))
+      
+#+end_src
+
 **** Load the user-setup.el
 
 #+begin_src emacs-lisp
 
-  (defun mifi/opam-user-setup ()
-    (interactive)
-    (use-package opam-user-setup
-      :unless (featurep 'opam-user-setup) ;; Don't allow to be run twice!
-      :when enable-ocaml
-      :ensure nil
-      :config
-      (add-to-list 'exec-path "~/.opam/default/bin")
-      (mifi/setup-path-from-exec-path)))
-
   (let
     ((file (expand-file-name "opam-user-setup.el" emacs-config-directory)))
     (when (file-exists-p file)
-      (add-hook 'elpaca-after-init-hook 'mifi/opam-user-setup)))
+      (add-hook 'elpaca-after-init-hook
+        (lambda ()
+  	(use-package opam-user-setup
+  	  :unless (featurep 'opam-user-setup) ;; Don't allow to be run twice!
+  	  :when enable-ocaml
+  	  :after opam-emacs-setup
+  	  :ensure nil
+  	  :config
+  	  (add-to-list 'exec-path "~/.opam/default/bin")
+  	  (mifi/setup-path-from-exec-path))))))
 
 #+end_src
 
@@ -5193,7 +5217,10 @@ This archive contains files to help editing OCaml code, to highlight important p
     ("\\.ml\\'" . tuareg-mode)
     ("\\.mli\\'" . tuareg-mode)
     :custom
-    (tuareg-indent-align-with-first-arg t))
+    (tuareg-indent-align-with-first-arg t)
+    :config
+    (bind-keys :map tuareg-mode-map
+      ("C-c ," . dap-hydra/body)))
 
 #+end_src
 
@@ -5223,17 +5250,62 @@ Here are some other packages that are useful when using OCaml.
     ("~/.opam/default/lib/ocamlformat" . "opam install ocamlformat -y")
     :custom (ocamlformat-enable 'enable-outside-detected-project))
 
-  ;; (use-package flycheck-ocaml
-  ;;   :ensure t
-  ;;   :config
-  ;;   (add-hook 'tuareg-mode-hook
-  ;;     (lambda ()
-  ;;       ;; disable Merlin's own error checking
-  ;;       (setq-local merlin-error-after-save nil)
-  ;;       ;; enable Flycheck checker
-  ;;       (flycheck-ocaml-setup))))
+#+end_src
+
+*** Clojure
+
+Clojure is a dynamic, general-purpose programming language, combining the
+approachability and interactive development of a scripting language with an
+efficient and robust infrastructure for multithreaded programming. Clojure is a
+compiled language, yet remains completely dynamic – every feature supported by
+Clojure is supported at runtime. Clojure provides easy access to the Java
+frameworks, with optional type hints and type inference, to ensure that calls to
+Java can avoid reflection.
+
+Clojure is a dialect of Lisp, and shares with Lisp the code-as-data philosophy
+and a powerful macro system. Clojure is predominantly a functional programming
+language, and features a rich set of immutable, persistent data structures. When
+mutable state is needed, Clojure offers a software transactional memory system
+and reactive Agent system that ensure clean, correct, multithreaded designs.
+
+#+begin_src emacs-lisp
+
+  (use-package clojure-mode
+    :when enable-clojure
+    :ensure-system-package
+    ((brew . "/bin/bash -c \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\"")
+     (java . "brew install --cask temurin@21")
+     (clojure . "brew install clojure/tools/clojure"))
+    :ensure t)
+
+  (use-package clojure-ts-mode
+    :after clojure-mode
+    :ensure t)
 
 #+end_src
+
+**** Cider
+CIDER extends Emacs with support for interactive programming in Clojure. The features are centered around cider-mode, an Emacs minor-mode that complements clojure-mode. While clojure-mode supports editing Clojure source files, cider-mode adds support for interacting with a running Clojure process for compilation, debugging, definition and documentation lookup, running tests and so on.
+
+CIDER aims to provide an interactive development experience similar to the one you’d get when programming in Emacs Lisp, Common Lisp (with SLIME or Sly), Scheme (with Geiser) and Smalltalk.
+
+Programmers are expected to program in a very dynamic and incremental manner, constantly re-evaluating existing Clojure definitions and adding new ones to their running applications. You never stop/start a Clojure application while using CIDER - you’re constantly interacting with it and changing it.
+
+#+begin_src emacs-lisp
+
+  (use-package cider
+    :when enable-clojure
+    :after clojure-mode
+    :ensure t
+    :custom
+    (cider-show-error-buffer t)
+    (cider-auto-select-error-buffer t)
+    (cider-repl-history-file "~/.emacs.d/cider-history")
+    (cider-repl-pop-to-buffer-on-connect t)
+    (cider-repl-wrap-history t))
+
+#+end_src
+
 
 *** Other Languages
 
@@ -5500,7 +5572,7 @@ The Debug Adapter Protocol makes it possible to implement a generic debugger for
   ;;; ##########################################################################
   ;;; Debug Adapter Protocol
   (use-package dap-mode
-    :when (equal debug-adapter 'debug-adapter-dap-mode)
+    :when (or (equal debug-adapter 'debug-adapter-dap-mode) enable-ocaml)
     :after hydra
     ;; Uncomment the config below if you want all UI panes to be hidden by default!
     ;; :custom
@@ -5509,13 +5581,27 @@ The Debug Adapter Protocol makes it possible to implement a generic debugger for
     :custom
     (dap-auto-configure-features '(sessions locals breakpoints expressions repl controls tooltip))
     :config
-    (require 'dap-lldb)
-    (require 'dap-gdb-lldb)
+    ;; (require 'dap-lldb)
+    ;; (require 'dap-gdb-lldb)
     (define-dap-hydra)
     (bind-keys :map prog-mode-map
       ("C-c ." . dap-hydra/body))
     (dap-ui-controls-mode)
     (dap-ui-mode 1))
+
+#+end_src
+
+**** DAP Package for OCaml
+#+begin_src emacs-lisp
+
+  (use-package dap-ocaml
+    :when enable-ocaml
+    ;; :after tuareg-mode dap-mode
+    :ensure (:package "dap-ocaml" :type git :host github :repo "emacs-lsp/dap-mode"))
+
+  (use-package dap-codelldb
+    :when enable-ocaml
+    :ensure (:package "dap-codelldb" :type git :host github :repo "emacs-lsp/dap-mode"))
 
 #+end_src
 
@@ -5550,16 +5636,16 @@ Something that is needed for Rust and Go debugging.
               :inherit t :depth 1 :type git
               :host github :repo "emacs-lsp/dap-mode")
     :custom
-    (dap-lldb-debug-program "~/Developer/command-line-unix/llvm/lldb-build/bin/lldb-dap")
-    :config
-    (dap-register-debug-template
-      "Rust::LLDB Run Configuration"
-      (list :type "lldb"
-        :request "launch"
-        :name "LLDB::Run"
-        :gdbpath "rust-lldb"
-        :target nil
-        :cwd nil)))
+    (dap-lldb-debug-program "~/Developer/command-line-unix/llvm/lldb-build/bin/lldb-dap"))
+    ;; :config
+    ;; (dap-register-debug-template
+    ;;   "Rust::LLDB Run Configuration"
+    ;;   (list :type "lldb"
+    ;;     :request "launch"
+    ;;     :name "LLDB::Run"
+    ;;     :gdbpath "rust-lldb"
+    ;;     :target nil
+    ;;     :cwd nil)))
 
   (use-package dap-gdb-lldb
     :when (equal debug-adapter 'debug-adapter-dap-mode)
@@ -5585,18 +5671,18 @@ Something that is needed for Rust and Go debugging.
 
 **** DAP Templates For Various Languages :Python:Rust:
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   ;;; ##########################################################################
 
-  (with-eval-after-load 'dap-lldb
-    (dap-register-debug-template
-      "Rust::LLDB Run Configuration"
-      (list :type "lldb"
-        :request "launch"
-        :name "LLDB::Run"
-        :gdbpath "rust-lldb"
-        :target nil
-        :cwd nil)))
+  ;; (with-eval-after-load 'dap-lldb
+  ;;   (dap-register-debug-template
+  ;;     "Rust::LLDB Run Configuration"
+  ;;     (list :type "lldb"
+  ;;       :request "launch"
+  ;;       :name "LLDB::Run"
+  ;;       :gdbpath "rust-lldb"
+  ;;       :target nil
+  ;;       :cwd nil)))
 
   (with-eval-after-load 'dap-python
     (dap-register-debug-template "Python :: Run file from project directory"
@@ -5606,6 +5692,7 @@ Something that is needed for Rust and Go debugging.
         :module nil
         :program nil
         :request "launch"))
+    
     (dap-register-debug-template "Python :: Run file (buffer)"
       (list :type "python"
         :args ""
@@ -6210,7 +6297,7 @@ These are the hools that update the context-aware menu triggered by various stat
 
 #+end_src
 
-** Exiting and Cleanup
+** Exiting, Cleanup, and opam-user-setup Compiled (OCaml)
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
@@ -6231,15 +6318,20 @@ These are the hools that update the context-aware menu triggered by various stat
         (expand-file-name file emacs-config-directory)
         (expand-file-name file backdir) t))))
 
-  (defun mifi/cleanup-when-exiting ()
+  (defun mifi/when-exiting-emacs ()
     "Backup Emacs initialization files for recovery. If old files exist, they are
-  backed up as tilde (~) files."
+  backed up as tilde (~) files. Also, if ocaml is enabled, byte (re)compile the
+  opam-user-setup.el so that upon next startup, it can be loaded quickly."
     (progn
+      (when enable-ocaml
+        (let ((src (expand-file-name "opam-user-setup.el" emacs-config-directory)))
+  	(unless (file-exists-p src)
+  	  (byte-compile-file src))))
       (mifi/backup-file "early-init.el")
       (mifi/backup-file "init.el")
       (mifi/backup-file "emacs-config.org")))
 
-  (add-hook 'kill-emacs-hook #'mifi/cleanup-when-exiting)
+  (add-hook 'kill-emacs-hook #'mifi/when-exiting-emacs)
 
 #+end_src
 
