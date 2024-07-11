@@ -103,6 +103,12 @@
   :type 'natnum
   :group 'mifi-config)
 
+(defcustom custom-developer-root "~/Developer/src"
+  "The root of all development projects. Used when initializing project.el or
+  projectile."
+  :type 'string
+  :group 'mifi-config)
+
 ;;; ##########################################################################
 ;;; Feature Toggles
 
@@ -119,6 +125,11 @@
 
 (defcustom enable-ocaml nil
   "Set to t to enable inclusion of OCaml support: Merlin, Tuareg."
+  :type 'boolean
+  :group 'mifi-config-toggles)
+
+(defcustom enable-clojure nil
+  "Set to t to enable inclusion of Clojure and Cider"
   :type 'boolean
   :group 'mifi-config-toggles)
 
@@ -2724,8 +2735,8 @@ capture was not aborted."
   ("C-c p" . projectile-command-map)
   :init
   ;; NOTE: Set this to the folder where you keep your Git repos!
-  (when (file-directory-p "~/Developer")
-    (setq projectile-project-search-path '("~/Developer")))
+  (when (file-directory-p custom-developer-root)
+    (setq projectile-project-search-path '(custom-developer-root)))
   (setq projectile-switch-project-action #'projectile-dired))
 
 (when (equal completion-handler 'comphand-ivy-counsel)
@@ -2805,11 +2816,11 @@ capture was not aborted."
 ;;; ##########################################################################
 ;;; Language Server Protocol
 
-;; (when (equal custom-ide 'custom-ide-lsp)
+;; (when (or (equal custom-ide 'custom-ide-lsp) (equal custom-ide 'custom-ide-eglot))
 ;;   (eval-when-compile (defvar lsp-enable-which-key-integration)))
 
 (use-package lsp-mode
-  :when (equal custom-ide 'custom-ide-lsp)
+  :when (or (equal custom-ide 'custom-ide-lsp) (equal custom-ide 'custom-ide-eglot))
   :commands (lsp lsp-deferred)
   :hook (lsp-mode . mifi/lsp-mode-setup)
   :init
@@ -2824,7 +2835,7 @@ capture was not aborted."
 ;;; ##########################################################################
 
 (use-package lsp-ui
-  :when (equal custom-ide 'custom-ide-lsp)
+  :when (or (equal custom-ide 'custom-ide-lsp) (equal custom-ide 'custom-ide-eglot))
   :after lsp
   :custom
   (lsp-ui-sideline-enable t)
@@ -2850,7 +2861,7 @@ capture was not aborted."
 ;;; treemacs projects set lsp-treemacs-sync-mode to 1.
 
 (use-package lsp-treemacs
-  :when (equal custom-ide 'custom-ide-lsp)
+  :when (or (equal custom-ide 'custom-ide-lsp) (equal custom-ide 'custom-ide-eglot))
   :after lsp treemacs
   :bind (:map prog-mode-map
           ("C-c t" . treemacs))
@@ -2858,7 +2869,7 @@ capture was not aborted."
   (lsp-treemacs-sync-mode 1))
 
 (use-package lsp-ivy
-  :when (and (equal custom-ide 'custom-ide-lsp)
+  :when (and (or (equal custom-ide 'custom-ide-lsp) (equal custom-ide 'custom-ide-eglot))
           (equal completion-handler 'comphand-ivy-counsel))
   :after lsp ivy)
 
@@ -2868,7 +2879,7 @@ capture was not aborted."
 (defun mifi/lsp-mode-setup ()
   "Custom LSP setup function."
   (add-hook 'lsp-after-open-hook 'lsp-enable-imenu)
-  (when (equal custom-ide 'custom-ide-lsp)
+  (when (or (equal custom-ide 'custom-ide-lsp) (equal custom-ide 'custom-ide-eglot))
     (setq lsp-headerline-breadcrumb-segments '(path-up-to-project file symbols))
     (setq lsp-clangd-binary-path "/usr/bin/clangd")'
     (lsp-headerline-breadcrumb-mode)))
@@ -3378,20 +3389,26 @@ capture was not aborted."
     :ensure nil
     :ensure-system-package (opam . installer)))
 
-(defun mifi/opam-user-setup ()
-  (interactive)
-  (use-package opam-user-setup
-    :unless (featurep 'opam-user-setup) ;; Don't allow to be run twice!
-    :when enable-ocaml
-    :ensure nil
-    :config
-    (add-to-list 'exec-path "~/.opam/default/bin")
-    (mifi/setup-path-from-exec-path)))
+(use-package opam-emacs-setup
+  :when enable-ocaml
+  :ensure nil
+  :ensure-system-package
+  ( ("~/.opam/default/share/emacs/site-lisp/merlin.el" . "opam install merlin tuareg -y")
+    (dune . "opam install dune -y")))
 
 (let
   ((file (expand-file-name "opam-user-setup.el" emacs-config-directory)))
   (when (file-exists-p file)
-    (add-hook 'elpaca-after-init-hook 'mifi/opam-user-setup)))
+    (add-hook 'elpaca-after-init-hook
+      (lambda ()
+	(use-package opam-user-setup
+	  :unless (featurep 'opam-user-setup) ;; Don't allow to be run twice!
+	  :when enable-ocaml
+	  :after opam-emacs-setup
+	  :ensure nil
+	  :config
+	  (add-to-list 'exec-path "~/.opam/default/bin")
+	  (mifi/setup-path-from-exec-path))))))
 
 (let ((opam-share (ignore-errors (car (process-lines "opam" "var" "share")))))
   (when (and (and opam-share (file-directory-p opam-share)) enable-ocaml)
@@ -3430,7 +3447,10 @@ capture was not aborted."
   ("\\.ml\\'" . tuareg-mode)
   ("\\.mli\\'" . tuareg-mode)
   :custom
-  (tuareg-indent-align-with-first-arg t))
+  (tuareg-indent-align-with-first-arg t)
+  :config
+  (bind-keys :map tuareg-mode-map
+    ("C-c ," . dap-hydra/body)))
 
 (use-package ocp-indent
   :when enable-ocaml
@@ -3452,15 +3472,28 @@ capture was not aborted."
   ("~/.opam/default/lib/ocamlformat" . "opam install ocamlformat -y")
   :custom (ocamlformat-enable 'enable-outside-detected-project))
 
-;; (use-package flycheck-ocaml
-;;   :ensure t
-;;   :config
-;;   (add-hook 'tuareg-mode-hook
-;;     (lambda ()
-;;       ;; disable Merlin's own error checking
-;;       (setq-local merlin-error-after-save nil)
-;;       ;; enable Flycheck checker
-;;       (flycheck-ocaml-setup))))
+(use-package clojure-mode
+  :when enable-clojure
+  :ensure-system-package
+  ((brew . "/bin/bash -c \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\"")
+   (java . "brew install --cask temurin@21")
+   (clojure . "brew install clojure/tools/clojure"))
+  :ensure t)
+
+(use-package clojure-ts-mode
+  :after clojure-mode
+  :ensure t)
+
+(use-package cider
+  :when enable-clojure
+  :after clojure-mode
+  :ensure t
+  :custom
+  (cider-show-error-buffer t)
+  (cider-auto-select-error-buffer t)
+  (cider-repl-history-file "~/.emacs.d/cider-history")
+  (cider-repl-pop-to-buffer-on-connect t)
+  (cider-repl-wrap-history t))
 
 ;;; ##########################################################################
 
@@ -3603,7 +3636,7 @@ capture was not aborted."
 ;;; ##########################################################################
 ;;; Debug Adapter Protocol
 (use-package dap-mode
-  :when (equal debug-adapter 'debug-adapter-dap-mode)
+  :when (or (equal debug-adapter 'debug-adapter-dap-mode) enable-ocaml)
   :after hydra
   ;; Uncomment the config below if you want all UI panes to be hidden by default!
   ;; :custom
@@ -3612,13 +3645,22 @@ capture was not aborted."
   :custom
   (dap-auto-configure-features '(sessions locals breakpoints expressions repl controls tooltip))
   :config
-  (require 'dap-lldb)
-  (require 'dap-gdb-lldb)
+  ;; (require 'dap-lldb)
+  ;; (require 'dap-gdb-lldb)
   (define-dap-hydra)
   (bind-keys :map prog-mode-map
     ("C-c ." . dap-hydra/body))
   (dap-ui-controls-mode)
   (dap-ui-mode 1))
+
+(use-package dap-ocaml
+  :when enable-ocaml
+  ;; :after tuareg-mode dap-mode
+  :ensure (:package "dap-ocaml" :type git :host github :repo "emacs-lsp/dap-mode"))
+
+(use-package dap-codelldb
+  :when enable-ocaml
+  :ensure (:package "dap-codelldb" :type git :host github :repo "emacs-lsp/dap-mode"))
 
 ;;; ##########################################################################
 ;;; DAP for Python
@@ -3641,16 +3683,16 @@ capture was not aborted."
             :inherit t :depth 1 :type git
             :host github :repo "emacs-lsp/dap-mode")
   :custom
-  (dap-lldb-debug-program "~/Developer/command-line-unix/llvm/lldb-build/bin/lldb-dap")
-  :config
-  (dap-register-debug-template
-    "Rust::LLDB Run Configuration"
-    (list :type "lldb"
-      :request "launch"
-      :name "LLDB::Run"
-      :gdbpath "rust-lldb"
-      :target nil
-      :cwd nil)))
+  (dap-lldb-debug-program "~/Developer/command-line-unix/llvm/lldb-build/bin/lldb-dap"))
+  ;; :config
+  ;; (dap-register-debug-template
+  ;;   "Rust::LLDB Run Configuration"
+  ;;   (list :type "lldb"
+  ;;     :request "launch"
+  ;;     :name "LLDB::Run"
+  ;;     :gdbpath "rust-lldb"
+  ;;     :target nil
+  ;;     :cwd nil)))
 
 (use-package dap-gdb-lldb
   :when (equal debug-adapter 'debug-adapter-dap-mode)
@@ -3671,35 +3713,6 @@ capture was not aborted."
             :repo "emacs-lsp/dap-mode"))
 ;; :config
 ;; (dap-cpptools-setup))
-
-;;; ##########################################################################
-
-(with-eval-after-load 'dap-lldb
-  (dap-register-debug-template
-    "Rust::LLDB Run Configuration"
-    (list :type "lldb"
-      :request "launch"
-      :name "LLDB::Run"
-      :gdbpath "rust-lldb"
-      :target nil
-      :cwd nil)))
-
-(with-eval-after-load 'dap-python
-  (dap-register-debug-template "Python :: Run file from project directory"
-    (list :type "python"
-      :args ""
-      :cwd nil
-      :module nil
-      :program nil
-      :request "launch"))
-  (dap-register-debug-template "Python :: Run file (buffer)"
-    (list :type "python"
-      :args ""
-      :cwd nil
-      :module nil
-      :program nil
-      :request "launch"
-      :name "Python :: Run file (buffer)")))
 
 ;;; ##########################################################################
 
@@ -4126,15 +4139,20 @@ file is renamed with a ~ at the end before the new file is copied."
       (expand-file-name file emacs-config-directory)
       (expand-file-name file backdir) t))))
 
-(defun mifi/cleanup-when-exiting ()
+(defun mifi/when-exiting-emacs ()
   "Backup Emacs initialization files for recovery. If old files exist, they are
-backed up as tilde (~) files."
+backed up as tilde (~) files. Also, if ocaml is enabled, byte (re)compile the
+opam-user-setup.el so that upon next startup, it can be loaded quickly."
   (progn
+    (when enable-ocaml
+      (let ((src (expand-file-name "opam-user-setup.el" emacs-config-directory)))
+	(unless (file-exists-p src)
+	  (byte-compile-file src))))
     (mifi/backup-file "early-init.el")
     (mifi/backup-file "init.el")
     (mifi/backup-file "emacs-config.org")))
 
-(add-hook 'kill-emacs-hook #'mifi/cleanup-when-exiting)
+(add-hook 'kill-emacs-hook #'mifi/when-exiting-emacs)
 
 ;;; ##########################################################################
 ;; Ignore Line Numbers for the following modes:
