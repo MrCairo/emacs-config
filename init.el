@@ -234,19 +234,18 @@ alternative to isearch that uses Ivy to show an overview of all matches."
            (const :tag "Built-in Ido" comphand-built-in))
   :group 'mifi-config-features)
 
-(defcustom debug-adapter 'debug-adapter-dape
+;; The debug-adapter used to also support DAPE. For now, that option has been
+;; removed since DAP has more language coverage - especially for OCaml.
+;; However, the variable will remain as an option so that not all code has to
+;; be changed plus it allows for future debug-adapter support if a new one
+;; becomes supported in this configuration.
+(defcustom debug-adapter 'debug-adapter-dap-mode
   "Select the debug adapter to use for debugging applications.  dap-mode is an
 Emacs client/library for Debug Adapter Protocol is a wire protocol for
 communication between client and Debug Server. It’s similar to the LSP but
-provides integration with debug server.
-
-dape (Debug Adapter Protocol for Emacs) is similar to dap-mode but is
-implemented entirely in Emacs Lisp. There are no other external dependencies
-with DAPE. DAPE supports most popular languages, however, not as many as
-dap-mode."
+provides integration with debug server."
   :type '(radio
-           (const :tag "Debug Adapter Protocol (DAP)" debug-adapter-dap-mode)
-           (const :tag "Debug Adapter Protocol for Emacs (DAPE)" debug-adapter-dape))
+           (const :tag "Debug Adapter Protocol (DAP)" debug-adapter-dap-mode))
   :group 'mifi-config-features)
 
 (defcustom custom-ide 'custom-ide-eglot
@@ -539,8 +538,13 @@ font size is computed + 20 of this value."
 (unbind-key "C-z")
 (bind-key "C-." 'repeat)
 (bind-key "C-z" 'repeat-complex-command)
+;; Since there used to be a supported dape mode, we force the
+;; existing configuration to the only option, dap-mode since
+;; dape used to be supported. This resets any previous value.
+(setq-default debug-adapter 'debug-adapter-dap-mode)
 
 ;;; ##########################################################################
+
 (setq savehist-file (expand-file-name "savehist" user-emacs-directory))
 (savehist-mode t)
 (setq history-length t)
@@ -587,15 +591,6 @@ font size is computed + 20 of this value."
   :config
   (show-paren-mode 1))
 
-(use-package paredit
-  :ensure t
-  :hook
-  (emacs-lisp-mode . paredit-mode)
-  (ielm-mode . paredit-mode)
-  (lisp-mode . paredit-mode)
-  (lisp-interaction-mode . paredit-mode)
-  (scheme-mode . paredit-mode))
-
 ;;; ##########################################################################
 
 (defun mifi/save-desktop-frameset ()
@@ -625,6 +620,8 @@ font size is computed + 20 of this value."
               (spacious-padding-mode 0)
               (spacious-padding-mode 1))))
         (use-medium-display-font t)))))
+
+;;; ##########################################################################
 
 (setq register-preview-delay 0) ;; Show registers ASAP
 (set-register ?O (cons 'file (concat emacs-config-directory "emacs-config.org")))
@@ -659,6 +656,8 @@ font size is computed + 20 of this value."
     ([remap describe-command] . helpful-command)
     ([remap describe-key] . helpful-key)))
 
+;;; ##########################################################################
+
 (defun mifi/set-delight ()
   (interactive)
   (delight '( (abbrev-mode " Abv" abbrev)
@@ -682,6 +681,8 @@ font size is computed + 20 of this value."
   :ensure t
   :config
   :hook (elpaca-after-init . mifi/set-delight))
+
+;;; ##########################################################################
 
 (use-package xref :ensure nil)
 (use-package dumb-jump
@@ -885,6 +886,7 @@ font size is computed + 20 of this value."
   (dashboard-setup-startup-hook))
 
 ;;; ##########################################################################
+
 (use-package jinx
   :ensure (:host github :repo "minad/jinx")
   ;;:hook (emacs-startup . global-jinx-mode)
@@ -1521,6 +1523,8 @@ font size is computed + 20 of this value."
   (when mifi/ediff-bwin-config
     (set-window-configuration mifi/ediff-bwin-config)))
 
+;;; ##########################################################################
+
 ;; Restore window configuration after ediff exits
 ;;   URL: https://www.emacswiki.org/emacs/EdiffMode
 
@@ -1531,6 +1535,8 @@ font size is computed + 20 of this value."
 (defvar mifi/ediff-awin-config nil "Window configuration after ediff.")
 (defcustom mifi/ediff-awin-reg ?e
   "*Register to be used to hold `mifi/ediff-awin-config' window configuration.")
+
+;;; ##########################################################################
 
 (use-package dired
   :ensure nil  ;; local package hint for elpaca
@@ -2062,6 +2068,8 @@ font size is computed + 20 of this value."
     ;;else
     (unless enable-frameset-restore (mifi/frame-recenter))))
 
+;;; ##########################################################################
+
 (defun mifi/update-other-modes-font ()
   "This updates/calls functions to update mode font sizes."
   (when (featurep 'org)
@@ -2343,6 +2351,8 @@ directory is relative to the working-files-directory
                                    "Weight")
          "| %U | %^{Weight} | %^{Notes} |" :kill-buffer t))))
 
+;;; ##########################################################################
+
 (defun mifi/org-setup-todos ()
   "Setup the org TODO keywords and colors."
   (setq org-todo-keywords
@@ -2361,6 +2371,8 @@ directory is relative to the working-files-directory
        ("CONTACT" :inherit (org-todo region) :foreground "orange1" :weight bold)
        ("DONE" :inherit (region org-todo) :foreground "green1"   :weight bold)
        ("CANCELLED" :inherit (region org-todo) :foreground "green4"   :weight bold))))
+
+;;; ##########################################################################
 
 (custom-theme-set-faces
   'user
@@ -2457,6 +2469,8 @@ directory is relative to the working-files-directory
   (add-to-list 'org-structure-template-alist '("el" . "src emacs-lisp"))
   (add-to-list 'org-structure-template-alist '("py" . "src python")))
 
+;;; ##########################################################################
+
 (use-package org-modern
   :when (display-graphic-p)
   :after org
@@ -2500,7 +2514,8 @@ directory is relative to the working-files-directory
   (mifi/reset-if-spacious-padding-mode)
   (global-org-modern-mode))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
+
 ;; (use-package emacsql)
 ;; (use-package emacsql-sqlite)
 
@@ -2544,13 +2559,13 @@ directory is relative to the working-files-directory
                    '(:immediate-finish t)))))
     (apply #'org-roam-node-insert args)))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 ;; The buffer you put this code in must have lexical-binding set to t!
 ;; See the final configuration at the end for more details.
 
 (defun my/org-roam-filter-by-tag (tag-name)
-    (lambda (node)
-        (member tag-name (org-roam-node-tags node))))
+  (lambda (node)
+    (member tag-name (org-roam-node-tags node))))
 
 (defun my/org-roam-list-notes-by-tag (tag-name)
     (mapcar #'org-roam-node-file
@@ -2564,7 +2579,7 @@ directory is relative to the working-files-directory
 
 ;; Build the agenda list the first time for the session
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (defun my/org-roam-project-finalize-hook ()
     "Adds the captured project file to `org-agenda-files' if the
@@ -2594,7 +2609,7 @@ capture was not aborted."
 
 (global-set-key (kbd "C-c n p") #'my/org-roam-find-project)
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (defun my/org-roam-capture-inbox ()
     (interactive)
@@ -2602,7 +2617,7 @@ capture was not aborted."
         :templates '(("i" "inbox" plain "* %?"
                          :if-new (file+head "Inbox.org" "#+title: Inbox\n")))))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (defun my/org-roam-capture-task ()
     (interactive)
@@ -2618,7 +2633,7 @@ capture was not aborted."
                              "#+title: ${title}\n#+category: ${title}\n#+filetags: Project"
                              ("Tasks"))))))
 
-;;; --------------------------------------------------------------------------
+;;; ##########################################################################
 
 (defun my/org-roam-copy-todo-to-today ()
     (interactive)
@@ -2963,677 +2978,6 @@ capture was not aborted."
   (elpy-enable))
 
 ;;; ##########################################################################
-
-(use-package flycheck
-  ;;:unless (equal custom-ide 'custom-ide-elpy)
-  :delight 'fc
-  :defer t
-  ;;:ensure (:host github :repo "flycheck/flycheck")
-  :config
-  (eval-after-load 'flycheck
-    '(flycheck-package-setup))
-  (global-flycheck-mode))
-
-(use-package flycheck-package
-  :after flycheck)
-
-;;; ##########################################################################
-
-(defun mifi/tree-sitter-setup ()
-  (tree-sitter-hl-mode t))
-
-(defun lsp-go-install-save-hooks ()
-  (add-hook 'before-save-hook #'lsp-format-buffer t t)
-  (add-hook 'before-save-hook #'lsp-organize-imports t t))
-
-;;; ##########################################################################
-
-(use-package tree-sitter
-  :defer t
-  :after (:any python python-mode lisp-mode merlin-mode)
-  :config
-  ;; Activate tree-sitter globally (minor mode registered on every buffer)
-  (global-tree-sitter-mode)
-  (cond
-    ((equal custom-ide 'custom-ide-eglot)
-      (add-hook 'go-mode-hook 'eglot-ensure))
-    ((equal custom-ide 'custom-ide-lsp)
-      (add-hook 'go-mode-hook 'lsp-deferred)))
-  :hook
-  (tree-sitter-after-on . mifi/tree-sitter-setup)
-  (typescript-mode . lsp-deferred)
-  ;; (c-mode . lsp-deferred)
-  ;; (c++-mode . lsp-deferred)
-  (before-save . lsp-go-install-save-hooks)
-  (js2-mode . lsp-deferred))
-
-(use-package tree-sitter-langs
-  :ensure t
-  :after tree-sitter)
-
-;;; ##########################################################################
-
-(use-package treesit-auto
-  :demand t :ensure t
-  :config
-  (global-treesit-auto-mode))
-
-;;; ##########################################################################
-
-(use-package transient :defer t)
-(use-package git-commit :after transient :defer t)
-(use-package magit :after git-commit :defer t)
-
-;; NOTE: Make sure to configure a GitHub token before using this package!
-;; - https://magit.vc/manual/forge/Token-Creation.html#Token-Creation
-;; - https://magit.vc/manual/ghub/Getting-Started.html#Getting-Started
-
-(use-package forge :after magit :defer t)
-(use-package treemacs-magit :defer t :after treemacs magit)
-
-;;; ##########################################################################
-
-(defun mifi/set-custom-ide-python-keymaps ()
-  (cond
-    ((equal custom-ide 'custom-ide-lsp)
-      (bind-keys :map python-mode-map
-        ("C-c g r" . lsp-find-references)
-        ("C-c g g" . xref-find-definitions)
-        ("C-c g G" . xref-find-definitions-other-window)
-        ("C-c g ?" . eldoc-doc-buffer)))
-    ((equal custom-ide 'custom-ide-eglot)
-      (bind-keys :map python-mode-map
-        ("C-c g i" . eglot-find-implementation)
-        ("C-c g r" . xref-find-references)
-        ("C-c g D" . xref-find-definitions-other-window)
-        ("C-c g g" . xref-find-definitions)
-        ("C-c g n" . xref-find-references-and-replace)
-        ("C-c g ?" . eldoc-doc-buffer)))
-    ((equal custom-ide 'custom-ide-elpy)
-      (elpy-enable)
-      (bind-keys :map python-mode-map
-        ("C-c g a" . elpy-goto-assignment)
-        ("C-c g A" . elpy-goto-definition-other-window)
-        ("C-c g g" . elpy-goto-definition)
-        ("C-c g ?" . elpy-doc)))
-    ((equal custom-ide 'custom-ide-lsp-bridge)
-      (bind-keys :map python-mode-map
-        ("C-c g a" . lsp-bridge-find-reference)
-        ("C-c g A" . lsp-bridge-find-def-other-window)
-        ("C-c g g" . lsp-bridge-find-def)
-        ("C-c g i" . lsp-bridge-find-impl)
-        ("C-c g n" . lsp-bridge-rename)
-        ("C-c g ?" . lsp-bridge-popup-documentation)))
-    ((equal custom-ide 'custom-ide-anaconda)
-      (bind-keys :map python-mode-map
-        ("C-c g a" . anaconda-mode-find-assignments)
-        ("C-c g A" . anaconda-mode-find-assignments-other-window)
-        ("C-c g r" . anaconda-mode-find-references)
-        ("C-c g R" . anaconda-mode-find-references-other-window)
-        ("C-c g g" . anaconda-mode-find-definitions)
-        ("C-c g G" . anaconda-mode-find-definitions-other-window)
-        ("C-c g ?" . anaconda-mode-show-doc)))
-    ))
-
-;;; ##########################################################################
-
-(defun mifi/load-python-file-hook ()
-  (python-mode)
-  (flymake-mode 0)
-  (when (equal custom-ide 'custom-ide-anaconda)
-    (anaconda-mode 1))
-  (message ">>> mifi/load-python-file-hook")
-  (setq highlight-indentation-mode -1)
-  (setq display-fill-column-indicator-mode t))
-
-(defun mifi/before-save ()
-  "Force the check of the current python file being saved."
-  (when (eq major-mode 'python-mode) ;; Python Only
-    (flycheck-mode 0)
-    (flycheck-mode t)
-    (delete-trailing-whitespace)))
-
-;; Enable DAP or DAPE, Eglot or LSP modes
-;; This function should only be called ONCE during python-mode startup.
-(defun mifi/enable-python-features ()
-  (message ">>> mifi/enable-python-features")
-  ;; _____________________________
-  ;; check for which debug adapter
-  (cond
-    ((equal debug-adapter 'debug-adapter-dap-mode)
-      (unless (featurep 'dap-mode) (dap-mode)) ;; Load if not loaded.
-      (define-dap-hydra))
-    ((equal debug-adapter 'debug-adapter-dape)
-      ;; dape should load as part of (use-package .... :after python)
-      (message "dape should be auto-loading for Python.")))
-  ;;___________________________
-  ;; check for which custom-ide
-  (cond
-    ((equal custom-ide 'custom-ide-eglot)
-      (eglot-ensure))
-    ((equal custom-ide 'custom-ide-lsp)
-      (lsp-deferred))))
-
-(defun mifi/python-mode-triggered ()
-  ;; (eldoc-box-hover-at-point-mode t) ;; Using Mitch Key for this
-  (mifi/enable-python-features)
-  (mifi/set-custom-ide-python-keymaps)
-  (unless (featurep 'yasnippet)
-    (yas-global-mode t))
-  (add-hook 'before-save-hook 'mifi/before-save)
-  (set-fill-column 80))
-
-;;; ##########################################################################
-
-(add-to-list 'auto-mode-alist '("\\.py\\'" . mifi/load-python-file-hook))
-
-(use-package python-mode
-  :hook (python-mode . mifi/python-mode-triggered))
-
-(use-package blacken :after python) ;Format Python file upon save.
-
-(if (boundp 'python-shell-completion-native-disabled-interpreters)
-  (add-to-list 'python-shell-completion-native-disabled-interpreters "python3")
-  (setq python-shell-completion-native-disabled-interpreters '("python3")))
-
-;;; ##########################################################################
-
-(use-package py-autopep8
-  :after python
-  :hook (python-mode . py-autopep8-mode))
-
-;;; ##########################################################################
-
-;; This is a helpful macro that is used to put double quotes around a word.
-(defalias 'quote-word
-  (kmacro "\" M-d \" <left> C-y"))
-
-(defalias 'quote-region
-  (kmacro "C-w \" \" <left> C-y <right>"))
-
-(defalias 'reformat-src-block
-  (kmacro "C-s b e g i n _ s r c SPC e m a c s - l i s p <return> <down> C-c ' C-x h C-c ] C-x h M-x u n t a b <return> C-c ' C-s e n d _ s r c <return> <down>"))
-
-(eval-after-load "python"
-  #'(bind-keys :map python-mode-map
-      ("C-c C-q" . quote-region)
-      ("C-c q"   . quote-word)
-      ("C-c |"   . display-fill-column-indicator-mode)))
-
-;;; ##########################################################################
-
-(use-package pyvenv-auto
-  :after python
-  :hook (python-mode . pyvenv-auto-run))
-
-;;; ##########################################################################
-
-(use-package pydoc
-  ;;:ensure (:host github :repo "statmobile/pydoc")
-  :after python
-  :custom
-  (pydoc-python-command "python3")
-  (pydoc-pip-version-command "pip3 --version"))
-
-;;; ##########################################################################
-
-(use-package typescript-mode
-  :defer t
-  :mode "\\.ts\\'"
-  :hook
-  (typescript-mode . lsp-deferred)
-  (js2-mode . lsp-deferred)
-  :config
-  (setq typescript-indent-level 4)
-  (cond
-    ((equal debug-adapter 'debug-adapter-dap-mode)
-      (bind-keys :map typescript-mode-map
-        ("C-c ." . dap-hydra/body))
-      (dap-node-setup))
-    ((equal debug-adapter 'debug-adapter-dape)
-      (bind-keys :map typescript-mode-map
-        ("C-c ." . dape-hydra/body)))))
-
-;;; ##########################################################################
-
-(defun mifi/load-js-file-hook ()
-  (js2-mode)
-
-  (when (equal debug-adapter 'debug-adapter-dap-mode)
-    (dap-mode)
-    (dap-firefox-setup))
-
-  (when (equal debug-adapter 'debug-adapter-dape)
-    (dape))
-
-  (highlight-indentation-mode nil)
-  (dap-firefox-setup))
-
-(use-package nodejs-repl :defer t)
-
-(defun mifi/nvm-which ()
-  (let ((output (shell-command-to-string "source ~/.nvm/nvm.sh; nvm which")))
-    (cadr (split-string output "[\n]+" t))))
-
-(setq nodejs-repl-command #'mifi/nvm-which)
-
-;;; ##########################################################################
-
-(use-package js2-mode
-  ;;:after simple-httpd
-  :ensure nil
-  :hook (js-mode . js2-minor-mode)
-  :bind (:map js2-mode-map
-          ("{" . paredit-open-curly)
-          ("}" . paredit-close-curly-and-newline))
-  :mode ("\\.js\\'" "\\.mjs\\'" "\\.json$")
-  :custom (js2-highlight-level 3))
-
-;; (use-package skewer-mode
-;;   :ensure nil
-;;   :after js2-mode)
-
-;; (use-package ac-js2
-;;   :after js2-mode skewer-mode
-;;   :hook (js2-mode . ac-js2-mode))
-
-;;; ##########################################################################
-
-(defun mifi/load-c-file-hook ()
-  (c-mode)
-  (unless (featurep 'realgud))
-  (use-package realgud)
-  (highlight-indentation-mode nil)
-  (display-fill-column-indicator-mode t))
-
-(defun code-compile ()
-  "Look for a Makefile and compiles the code with gcc/cpp."
-  (interactive)
-  (unless (file-exists-p "Makefile")
-    (set (make-local-variable 'compile-command)
-      (let ((file (file-name-nondirectory buffer-file-name)))
-        (format "%s -o %s %s"
-          (if  (equal (file-name-extension file) "cpp") "g++" "gcc" )
-          (file-name-sans-extension file)
-          file)))
-    (compile compile-command)))
-
-(global-set-key [f9] 'code-compile)
-(add-to-list 'auto-mode-alist '("\\.c\\'" . mifi/load-c-file-hook))
-
-;;; ##########################################################################
-
-(use-package z80-mode
-  :when enable-gb-dev
-  :ensure (:host github :repo "SuperDisk/z80-mode"))
-
-(use-package mwim
-  :when enable-gb-dev
-  :ensure (:host github :repo "alezost/mwim.el"))
-
-(use-package rgbds-mode
-  :when enable-gb-dev
-  :after mwim
-  :ensure (:host github :repo "japanoise/rgbds-mode"))
-
-;;; ##########################################################################
-
-(use-package rustic
-  :ensure t
-  :bind (:map rustic-mode-map
-          ("M-j" . lsp-ui-imenu)
-          ("M-?" . lsp-find-references)
-          ("C-c C-c l" . flycheck-list-errors)
-          ("C-c C-c a" . lsp-execute-code-action)
-          ("C-c C-c r" . lsp-rename)
-          ("C-c C-c q" . lsp-workspace-restart)
-          ("C-c C-c Q" . lsp-workspace-shutdown)
-          ("C-c C-c s" . lsp-rust-analyzer-status))
-  :hook (rustic-mode . rk/rustic-mode-hook)
-  :config
-  ;; uncomment for less flashiness
-  ;; (setq lsp-eldoc-hook nil)
-  ;; (setq lsp-enable-symbol-highlighting nil)
-  ;; (setq lsp-signature-auto-activate nil)
-
-  ;; comment to disable rustfmt on save
-  (setq rustic-format-on-save t))
-
-
-(defun rk/rustic-mode-hook ()
-  ;; so that run C-c C-c C-r works without having to confirm, but don't try to
-  ;; save rust buffers that are not file visiting. Once
-  ;; https://github.com/brotzeit/rustic/issues/253 has been resolved this should
-  ;; no longer be necessary.
-  (when buffer-file-name
-    (setq-local buffer-save-without-query t))
-  (add-hook 'before-save-hook 'lsp-format-buffer nil t))
-
-;;; ##########################################################################
-
-;; (use-package graphql-mode)
-(use-package rust-mode
-  :disabled ;;; Older than rustic so don't use but 
-  :defer t
-  :init (setq rust-mode-treesitter-derive t)
-  :hook
-  (rust-mode . lsp-deferred)
-  (rust-mode . (lambda () (setq indent-tabs-mode nil)
-                 (prettify-symbols-mode)))
-  :config
-  (setq rust-format-on-save t))
-
-(use-package rust-playground :ensure t :after rust-mode)
-
-;;; ##########################################################################
-;; for Cargo.toml and other config files
-
-(use-package toml-mode :ensure t :defer t :after rust-mode)
-
-;;; ##########################################################################
-
-(use-package cargo-mode
-  :defer t
-  :after rust-mode
-  :ensure (:fetcher github :repo "ayrat555/cargo-mode"
-            :files ("*.el" "*.el.in" "dir" "*.info" "*.texi"
-                     "*.texinfo" "doc/dir" "doc/*.info" "doc/*.texi"
-                     "doc/*.texinfo" "lisp/*.el"
-                     (:exclude ".dir-locals.el" "test.el" "tests.el"
-                       "*-test.el" "*-tests.el" "LICENSE" "README*"
-                       "*-pkg.el"))))
-
-;;; ##########################################################################
-
-(defun eglot-format-buffer-on-save ()
-  (add-hook 'before-save-hook #'eglot-format-buffer -10 t))
-
-(use-package go-mode
-  :defer t
-  :mode ("\\.go\\'" . go-mode)
-  :custom
-  (compile-command "go build -v && go test -v && go vet")
-  :bind (:map go-mode-map
-          ("C-c C-c" . 'compile))
-  :config
-  (eglot-format-buffer-on-save)
-  (define-key (current-local-map) "\C-c\C-c" 'compile)
-  (cond
-    ((equal custom-ide 'custom-ide-eglot)
-      (add-hook 'go-mode-hook 'eglot-ensure)
-      (add-hook 'go-mode-hook #'elot-format-buffer-on-save))
-    ((equal custom-ide 'custom-ide-lsp)
-      (add-hook 'go-mode-hook 'lsp-deferred))))
-
-;;; ##########################################################################
-
-(use-package go-eldoc
-  :after go-mode
-  :hook (go-mode . go-eldoc-setup)
-  :config
-  (eglot-format-buffer-on-save)
-  (set-face-attribute 'eldoc-highlight-function-argument nil
-    :underline t :foreground "green"
-    :weight 'bold))
-
-;;; ##########################################################################
-
-(use-package go-guru
-  :after go-mode
-  :hook (go-mode . go-guru-hl-identifier-mode))
-
-(let
-  ((installer "bash -c \"sh <(curl -fsSL https://raw.githubusercontent.com/ocaml/opam/master/shell/install.sh) --version 2.2.0\""))
-  (use-package opam-installer
-    :when enable-ocaml
-    :ensure nil
-    :ensure-system-package (opam . installer)))
-
-(use-package opam-emacs-setup
-  :when enable-ocaml
-  :ensure nil
-  :ensure-system-package
-  ( ("~/.opam/default/share/emacs/site-lisp/merlin.el" . "opam install merlin tuareg -y")
-    (dune . "opam install dune -y")))
-
-(let
-  ((file (expand-file-name "opam-user-setup.el" emacs-config-directory)))
-  (when (file-exists-p file)
-    (add-hook 'elpaca-after-init-hook
-      (lambda ()
-	(use-package opam-user-setup
-	  :unless (featurep 'opam-user-setup) ;; Don't allow to be run twice!
-	  :when enable-ocaml
-	  :after opam-emacs-setup
-	  :ensure nil
-	  :config
-	  (add-to-list 'exec-path "~/.opam/default/bin")
-	  (mifi/setup-path-from-exec-path))))))
-
-(let ((opam-share (ignore-errors (car (process-lines "opam" "var" "share")))))
-  (when (and (and opam-share (file-directory-p opam-share)) enable-ocaml)
-    (add-to-list 'load-path (expand-file-name "emacs/site-lisp" opam-share))))
-    ;;(autoload 'merlin-mode "merlin" nil t nil)
-    ;;(add-hook 'tuareg-mode-hook 'merlin-mode t)
-    ;;(add-hook 'caml-mode-hook 'merlin-mode t)))
-
-(use-package merlin
-  :when enable-ocaml :ensure nil :defer t
-  :delight " 🪄" 
-  :after opam-user-setup)
-
-(use-package merlin-eldoc
-  :when enable-ocaml :ensure nil :defer t :after merlin)
-
-(use-package merlin-company
-  :when (and enable-ocaml (not (equal custom-ide 'custom-ide-lsp-bridge)))
-  :ensure nil :defer t :after merlin company
-  :config
-  (add-hook 'merlin-mode-hook 'company-mode)
-  (with-eval-after-load 'company
-    (add-to-list 'company-backends 'merlin-company-backend)))
-
-(defun mifi/tuareg-mode-hook ()
-  (merlin-mode t)
-  (setq tuareg-mode-name "🐫")
-  (eglot-ensure)
-  (when (functionp 'prettify-symbols-mode)
-    (prettify-symbols-mode)))
-
-(use-package tuareg
-  :when enable-ocaml :after opam-user-setup :defer t :ensure t
-  :hook (tuareg-mode . mifi/tuareg-mode-hook)
-  :mode
-  ("\\.ml\\'" . tuareg-mode)
-  ("\\.mli\\'" . tuareg-mode)
-  :custom
-  (tuareg-indent-align-with-first-arg t)
-  :config
-  (bind-keys :map tuareg-mode-map
-    ("C-c ," . dap-hydra/body)))
-
-(use-package ocp-indent
-  :when enable-ocaml
-  :after opam-user-setup
-  :ensure-system-package
-  ("~/.opam/default/lib/ocp-indent" . "opam install ocp-indent -y")
-  :ensure (:inherit t :depth 1
-           :fetcher github :repo "OCamlPro/ocp-indent"
-           :files ("tools/ocp-indent.el")))
-
-(use-package dune
-  :ensure t)
-
-(use-package ocamlformat
-  :when enable-ocaml :ensure t
-  :after (:any merlin tuareg)
-  :bind ("<f6>" . ocamlformat)
-  :ensure-system-package
-  ("~/.opam/default/lib/ocamlformat" . "opam install ocamlformat -y")
-  :custom (ocamlformat-enable 'enable-outside-detected-project))
-
-(use-package clojure-mode
-  :when enable-clojure
-  :ensure-system-package
-  ((brew . "/bin/bash -c \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\"")
-   (java . "brew install --cask temurin@21")
-   (clojure . "brew install clojure/tools/clojure"))
-  :ensure t)
-
-(use-package clojure-ts-mode
-  :after clojure-mode
-  :ensure t)
-
-(use-package cider
-  :when enable-clojure
-  :after clojure-mode
-  :ensure t
-  :custom
-  (cider-show-error-buffer t)
-  (cider-auto-select-error-buffer t)
-  (cider-repl-history-file "~/.emacs.d/cider-history")
-  (cider-repl-pop-to-buffer-on-connect t)
-  (cider-repl-wrap-history t))
-
-;;; ##########################################################################
-
-(use-package swift-mode
-  :defer t
-  :mode ("\\.swift\\'" . swift-mode))
-
-(use-package swift-helpful
-  :defer t
-  :after swift-mode
-  :ensure (:files ("*.el" "swift-info/*.info"
-                    ("images" "swift-info/images/*.png") "swift-helpful-pkg.el")
-            :host github
-            :repo "danielmartin/swift-helpful"))
-
-(use-package swift-playground-mode
-  :defer t
-  :after swift-mode
-  :ensure ( :package "swift-playground-mode"
-          :repo "https://gitlab.com/michael.sanders/swift-playground-mode.git")
-  :init
-  (autoload 'swift-playground-global-mode "swift-playground-mode" nil t)
-  (add-hook 'swift-mode-hook #'swift-playground-global-mode))
-
-;;; ##########################################################################
-
-(use-package slime
-  :defer t
-  :mode ("\\.lisp\\'" . slime-mode)
-  :config
-  (setq inferior-lisp-program "/opt/homebrew/bin/sbcl"))
-
-;;; ------------------------------------------------------------------------
-
-(use-package dape
-  :when (equal debug-adapter 'debug-adapter-dape)
-  :after (:any python go)
-  :custom
-  (dape-buffer-window-arrangement 'right)  ;; Info buffers to the right
-  :config
-  (define-dape-hydra)
-  (message "prepare-dape end")
-  (bind-keys :map prog-mode-map
-    ("C-c ." . dape-hydra/body)))
-  ;;(mifi/additional-dape-configs))
-
-;;; ##########################################################################
-
-(setq mifi/vscode-js-debug-dir (file-name-concat user-emacs-directory "dape/vscode-js-debug"))
-
-(defun mifi/install-vscode-js-debug ()
-  "Run installation procedure to install JS debugging support"
-  (interactive)
-  (mkdir mifi/vscode-js-debug-dir t)
-  (let ((default-directory (expand-file-name mifi/vscode-js-debug-dir)))
-
-    (vc-git-clone "https://github.com/microsoft/vscode-js-debug.git" "." nil)
-    (call-process "npm" nil "*snam-install*" t "install")
-    (call-process "npx" nil "*snam-install*" t "gulp" "dapDebugServer")))
-
-;;; ##########################################################################
-
-;; (mifi/install-vscode-js-debug)
-
-;;; ------------------------------------------------------------------------
-(defun mifi/additional-dape-configs ()
-  "Additional DAPE configruations for various languages."
-
-  (with-eval-after-load
-    (add-to-list 'dape-configs
-      `(delve
-         modes (go-mode go-ts-mode)
-         command "dlv"
-         command-args ("dap" "--listen" "127.0.0.1:55878")
-         command-cwd dape-cwd-fn
-         host "127.0.0.1"
-         port 55878
-         :type "debug"  ;; needed to set the adapterID correctly as a string type
-         :request "launch"
-         :cwd dape-cwd-fn
-         :program dape-cwd-fn))))
-
-;;; ##########################################################################
-
-(defun mifi/dape-end-debug-session ()
-  "End the debug session."
-  (interactive)
-  (dape-quit))
-
-(defun mifi/dape-delete-all-debug-sessions ()
-  "End the debug session and delete all breakpoints."
-  (interactive)
-  (dape-breakpoint-remove-all)
-  (mifi/dape-end-debug-session))
-
-;;; ##########################################################################
-
-(defun define-dape-hydra ()
-  (defhydra dape-hydra (:color pink :hint nil :foreign-keys run)
-    "
-  ^Stepping^          ^Switch^                 ^Breakpoints^          ^Debug^                     ^Eval
-  ^^^^^^^^----------------------------------------------------------------------------------------------------------------
-  _._: Next           _st_: Thread             _bb_: Toggle           _dd_: Debug                 _ee_: Eval Expression
-  _/_: Step in        _si_: Info               _bd_: Delete           _dw_: Watch dwim
-  _,_: Step out       _sf_: Stack Frame        _ba_: Add              _dx_: end session
-  _c_: Continue       _su_: Up stack frame     _bc_: Set condition    _dX_: end all sessions
-  _r_: Restart frame  _sd_: Down stack frame   _bl_: Set log message  _dp_: Initialize DAPE
-  _Q_: Disconnect     _sR_: Session Repl
-                    _sU_: Info Update"
-    ("n" dape-next)
-    ("i" dape-step-in)
-    ("o" dape-step-out)
-    ("." dape-next)
-    ("/" dape-step-in)
-    ("," dape-step-out)
-    ("c" dape-continue)
-    ("r" dape-restart)
-    ("si" dape-info)
-    ("st" dape-select-thread)
-    ("sf" dape-select-stack)
-    ("su" dape-stack-select-up)
-    ("sU" dape-info-update)
-    ("sd" dape-stack-select-down)
-    ("sR" dape-repl)
-    ("bb" dape-breakpoint-toggle)
-    ("ba" dape--breakpoint-place)
-    ("bd" dape-breakpoint-remove-at-point)
-    ("bc" dape-breakpoint-expression)
-    ("bl" dape-breakpoint-log)
-    ("dd" dape)
-    ("dw" dape-watch-dwim)
-    ("ee" dape-evaluate-expression)
-    ("dx" mifi/dape-end-debug-session)
-    ("dX" mifi/dape-delete-all-debug-sessions)
-    ("dp" dape-prepare)
-    ("x" nil "exit Hydra" :color yellow)
-    ("q" mifi/dape-end-debug-session "quit" :color blue)
-    ("Q" mifi/dape-delete-all-debug-sessions :color red)))
-
-;;; ##########################################################################
 ;;; Debug Adapter Protocol
 (use-package dap-mode
   :when (or (equal debug-adapter 'debug-adapter-dap-mode) enable-ocaml)
@@ -3652,6 +2996,8 @@ capture was not aborted."
     ("C-c ." . dap-hydra/body))
   (dap-ui-controls-mode)
   (dap-ui-mode 1))
+
+;;; ##########################################################################
 
 (use-package dap-ocaml
   :when enable-ocaml
@@ -3791,7 +3137,570 @@ capture was not aborted."
     ("q" mifi/dap-end-debug-session "quit" :color blue)
     ("Q" mifi/dap-delete-all-debug-sessions :color red)))
 
-;;; ------------------------------------------------------------------------
+;;; ##########################################################################
+
+(use-package flycheck
+  ;;:unless (equal custom-ide 'custom-ide-elpy)
+  :delight 'fc
+  :defer t
+  ;;:ensure (:host github :repo "flycheck/flycheck")
+  :config
+  (eval-after-load 'flycheck
+    '(flycheck-package-setup))
+  (global-flycheck-mode))
+
+(use-package flycheck-package
+  :after flycheck)
+
+;;; ##########################################################################
+
+(defun mifi/tree-sitter-setup ()
+  (tree-sitter-hl-mode t))
+
+(defun lsp-go-install-save-hooks ()
+  (add-hook 'before-save-hook #'lsp-format-buffer t t)
+  (add-hook 'before-save-hook #'lsp-organize-imports t t))
+
+;;; ##########################################################################
+
+(use-package tree-sitter
+  :defer t
+  :after (:any python python-mode lisp-mode merlin-mode)
+  :config
+  ;; Activate tree-sitter globally (minor mode registered on every buffer)
+  (global-tree-sitter-mode)
+  (cond
+    ((equal custom-ide 'custom-ide-eglot)
+      (add-hook 'go-mode-hook 'eglot-ensure))
+    ((equal custom-ide 'custom-ide-lsp)
+      (add-hook 'go-mode-hook 'lsp-deferred)))
+  :hook
+  (tree-sitter-after-on . mifi/tree-sitter-setup)
+  (typescript-mode . lsp-deferred)
+  ;; (c-mode . lsp-deferred)
+  ;; (c++-mode . lsp-deferred)
+  (before-save . lsp-go-install-save-hooks)
+  (js2-mode . lsp-deferred))
+
+(use-package tree-sitter-langs
+  :ensure t
+  :after tree-sitter)
+
+;;; ##########################################################################
+
+(use-package treesit-auto
+  :demand t :ensure t
+  :config
+  (global-treesit-auto-mode))
+
+;;; ##########################################################################
+
+(use-package transient :defer t)
+(use-package git-commit :after transient :defer t)
+(use-package magit :after git-commit :defer t)
+
+;; NOTE: Make sure to configure a GitHub token before using this package!
+;; - https://magit.vc/manual/forge/Token-Creation.html#Token-Creation
+;; - https://magit.vc/manual/ghub/Getting-Started.html#Getting-Started
+
+(use-package forge :after magit :defer t)
+(use-package treemacs-magit :defer t :after treemacs magit)
+
+;;; ##########################################################################
+
+(defun mifi/set-custom-ide-python-keymaps ()
+  (cond
+    ((equal custom-ide 'custom-ide-lsp)
+      (bind-keys :map python-mode-map
+        ("C-c g r" . lsp-find-references)
+        ("C-c g g" . xref-find-definitions)
+        ("C-c g G" . xref-find-definitions-other-window)
+        ("C-c g ?" . eldoc-doc-buffer)))
+    ((equal custom-ide 'custom-ide-eglot)
+      (bind-keys :map python-mode-map
+        ("C-c g i" . eglot-find-implementation)
+        ("C-c g r" . xref-find-references)
+        ("C-c g D" . xref-find-definitions-other-window)
+        ("C-c g g" . xref-find-definitions)
+        ("C-c g n" . xref-find-references-and-replace)
+        ("C-c g ?" . eldoc-doc-buffer)))
+    ((equal custom-ide 'custom-ide-elpy)
+      (elpy-enable)
+      (bind-keys :map python-mode-map
+        ("C-c g a" . elpy-goto-assignment)
+        ("C-c g A" . elpy-goto-definition-other-window)
+        ("C-c g g" . elpy-goto-definition)
+        ("C-c g ?" . elpy-doc)))
+    ((equal custom-ide 'custom-ide-lsp-bridge)
+      (bind-keys :map python-mode-map
+        ("C-c g a" . lsp-bridge-find-reference)
+        ("C-c g A" . lsp-bridge-find-def-other-window)
+        ("C-c g g" . lsp-bridge-find-def)
+        ("C-c g i" . lsp-bridge-find-impl)
+        ("C-c g n" . lsp-bridge-rename)
+        ("C-c g ?" . lsp-bridge-popup-documentation)))
+    ((equal custom-ide 'custom-ide-anaconda)
+      (bind-keys :map python-mode-map
+        ("C-c g a" . anaconda-mode-find-assignments)
+        ("C-c g A" . anaconda-mode-find-assignments-other-window)
+        ("C-c g r" . anaconda-mode-find-references)
+        ("C-c g R" . anaconda-mode-find-references-other-window)
+        ("C-c g g" . anaconda-mode-find-definitions)
+        ("C-c g G" . anaconda-mode-find-definitions-other-window)
+        ("C-c g ?" . anaconda-mode-show-doc)))
+    ))
+
+;;; ##########################################################################
+
+(defun mifi/load-python-file-hook ()
+  (python-mode)
+  (flymake-mode 0)
+  (when (equal custom-ide 'custom-ide-anaconda)
+    (anaconda-mode 1))
+  (message ">>> mifi/load-python-file-hook")
+  (setq highlight-indentation-mode -1)
+  (setq display-fill-column-indicator-mode t))
+
+(defun mifi/before-save ()
+  "Force the check of the current python file being saved."
+  (when (eq major-mode 'python-mode) ;; Python Only
+    (flycheck-mode 0)
+    (flycheck-mode t)
+    (delete-trailing-whitespace)))
+
+;; This function should only be called ONCE during python-mode startup.
+(defun mifi/enable-python-features ()
+  (message ">>> mifi/enable-python-features")
+  ;; _____________________________
+  (cond
+    ((equal debug-adapter 'debug-adapter-dap-mode)
+      (unless (featurep 'dap-mode) (dap-mode)) ;; Load if not loaded.
+      (define-dap-hydra)))
+  ;;___________________________
+  ;; check for which custom-ide
+  (cond
+    ((equal custom-ide 'custom-ide-eglot)
+      (eglot-ensure))
+    ((equal custom-ide 'custom-ide-lsp)
+      (lsp-deferred))))
+
+(defun mifi/python-mode-triggered ()
+  ;; (eldoc-box-hover-at-point-mode t) ;; Using Mitch Key for this
+  (mifi/enable-python-features)
+  (mifi/set-custom-ide-python-keymaps)
+  (unless (featurep 'yasnippet)
+    (yas-global-mode t))
+  (add-hook 'before-save-hook 'mifi/before-save)
+  (set-fill-column 80))
+
+;;; ##########################################################################
+
+(add-to-list 'auto-mode-alist '("\\.py\\'" . mifi/load-python-file-hook))
+
+(use-package python-mode
+  :hook (python-mode . mifi/python-mode-triggered))
+
+(use-package blacken :after python) ;Format Python file upon save.
+
+(if (boundp 'python-shell-completion-native-disabled-interpreters)
+  (add-to-list 'python-shell-completion-native-disabled-interpreters "python3")
+  (setq python-shell-completion-native-disabled-interpreters '("python3")))
+
+;;; ##########################################################################
+
+(use-package py-autopep8
+  :after python
+  :hook (python-mode . py-autopep8-mode))
+
+;;; ##########################################################################
+
+;; This is a helpful macro that is used to put double quotes around a word.
+(defalias 'quote-word
+  (kmacro "\" M-d \" <left> C-y"))
+
+(defalias 'quote-region
+  (kmacro "C-w \" \" <left> C-y <right>"))
+
+(defalias 'reformat-src-block
+  (kmacro "C-s b e g i n _ s r c SPC e m a c s - l i s p <return> <down> C-c ' C-x h C-c ] C-x h M-x u n t a b <return> C-c ' C-s e n d _ s r c <return> <down>"))
+
+(eval-after-load "python"
+  #'(bind-keys :map python-mode-map
+      ("C-c C-q" . quote-region)
+      ("C-c q"   . quote-word)
+      ("C-c |"   . display-fill-column-indicator-mode)))
+
+;;; ##########################################################################
+
+(use-package pyvenv-auto
+  :after python
+  :hook (python-mode . pyvenv-auto-run))
+
+;;; ##########################################################################
+
+(use-package pydoc
+  ;;:ensure (:host github :repo "statmobile/pydoc")
+  :after python
+  :custom
+  (pydoc-python-command "python3")
+  (pydoc-pip-version-command "pip3 --version"))
+
+;;; ##########################################################################
+
+(use-package typescript-mode
+  :defer t
+  :mode "\\.ts\\'"
+  :hook
+  (typescript-mode . lsp-deferred)
+  (js2-mode . lsp-deferred)
+  :config
+  (setq typescript-indent-level 4)
+  (cond
+    ((equal debug-adapter 'debug-adapter-dap-mode)
+      (bind-keys :map typescript-mode-map
+        ("C-c ." . dap-hydra/body))
+      (dap-node-setup))))
+
+;;; ##########################################################################
+
+(defun mifi/load-js-file-hook ()
+  (js2-mode)
+
+  (when (equal debug-adapter 'debug-adapter-dap-mode)
+    (dap-mode)
+    (dap-firefox-setup))
+
+  (highlight-indentation-mode nil)
+  (dap-firefox-setup))
+
+(use-package nodejs-repl :defer t)
+
+(defun mifi/nvm-which ()
+  (let ((output (shell-command-to-string "source ~/.nvm/nvm.sh; nvm which")))
+    (cadr (split-string output "[\n]+" t))))
+
+(setq nodejs-repl-command #'mifi/nvm-which)
+
+;;; ##########################################################################
+
+(use-package js2-mode
+  ;;:after simple-httpd
+  :ensure nil
+  :hook (js-mode . js2-minor-mode)
+  ;; :bind (:map js2-mode-map
+  ;;         ("{" . paredit-open-curly)
+  ;;         ("}" . paredit-close-curly-and-newline))
+  :mode ("\\.js\\'" "\\.mjs\\'" "\\.json$")
+  :custom (js2-highlight-level 3))
+
+;; (use-package skewer-mode
+;;   :ensure nil
+;;   :after js2-mode)
+
+;; (use-package ac-js2
+;;   :after js2-mode skewer-mode
+;;   :hook (js2-mode . ac-js2-mode))
+
+;;; ##########################################################################
+
+(use-package z80-mode
+  :when enable-gb-dev
+  :ensure (:host github :repo "SuperDisk/z80-mode"))
+
+(use-package mwim
+  :when enable-gb-dev
+  :ensure (:host github :repo "alezost/mwim.el"))
+
+(use-package rgbds-mode
+  :when enable-gb-dev
+  :after mwim
+  :ensure (:host github :repo "japanoise/rgbds-mode"))
+
+;;; ##########################################################################
+
+(use-package rustic
+  :ensure t
+  :bind (:map rustic-mode-map
+          ("M-j" . lsp-ui-imenu)
+          ("M-?" . lsp-find-references)
+          ("C-c C-c l" . flycheck-list-errors)
+          ("C-c C-c a" . lsp-execute-code-action)
+          ("C-c C-c r" . lsp-rename)
+          ("C-c C-c q" . lsp-workspace-restart)
+          ("C-c C-c Q" . lsp-workspace-shutdown)
+          ("C-c C-c s" . lsp-rust-analyzer-status))
+  :hook (rustic-mode . rk/rustic-mode-hook)
+  :config
+  ;; uncomment for less flashiness
+  ;; (setq lsp-eldoc-hook nil)
+  ;; (setq lsp-enable-symbol-highlighting nil)
+  ;; (setq lsp-signature-auto-activate nil)
+
+  ;; comment to disable rustfmt on save
+  (setq rustic-format-on-save t))
+
+
+(defun rk/rustic-mode-hook ()
+  ;; so that run C-c C-c C-r works without having to confirm, but don't try to
+  ;; save rust buffers that are not file visiting. Once
+  ;; https://github.com/brotzeit/rustic/issues/253 has been resolved this should
+  ;; no longer be necessary.
+  (when buffer-file-name
+    (setq-local buffer-save-without-query t))
+  (add-hook 'before-save-hook 'lsp-format-buffer nil t))
+
+;;; ##########################################################################
+
+;; (use-package graphql-mode)
+(use-package rust-mode
+  :disabled ;;; Older than rustic so don't use but 
+  :defer t
+  :init (setq rust-mode-treesitter-derive t)
+  :hook
+  (rust-mode . lsp-deferred)
+  (rust-mode . (lambda () (setq indent-tabs-mode nil)
+                 (prettify-symbols-mode)))
+  :config
+  (setq rust-format-on-save t))
+
+(use-package rust-playground :ensure t :after rust-mode)
+
+;;; ##########################################################################
+;; for Cargo.toml and other config files
+
+(use-package toml-mode :ensure t :defer t :after rust-mode)
+
+;;; ##########################################################################
+
+(use-package cargo-mode
+  :defer t
+  :after rust-mode
+  :ensure (:fetcher github :repo "ayrat555/cargo-mode"
+            :files ("*.el" "*.el.in" "dir" "*.info" "*.texi"
+                     "*.texinfo" "doc/dir" "doc/*.info" "doc/*.texi"
+                     "doc/*.texinfo" "lisp/*.el"
+                     (:exclude ".dir-locals.el" "test.el" "tests.el"
+                       "*-test.el" "*-tests.el" "LICENSE" "README*"
+                       "*-pkg.el"))))
+
+;;; ##########################################################################
+
+(defun eglot-format-buffer-on-save ()
+  (add-hook 'before-save-hook #'eglot-format-buffer -10 t))
+
+(use-package go-mode
+  :defer t
+  :mode ("\\.go\\'" . go-mode)
+  :custom
+  (compile-command "go build -v && go test -v && go vet")
+  :bind (:map go-mode-map
+          ("C-c C-c" . 'compile))
+  :config
+  (eglot-format-buffer-on-save)
+  (define-key (current-local-map) "\C-c\C-c" 'compile)
+  (cond
+    ((equal custom-ide 'custom-ide-eglot)
+      (add-hook 'go-mode-hook 'eglot-ensure)
+      (add-hook 'go-mode-hook #'elot-format-buffer-on-save))
+    ((equal custom-ide 'custom-ide-lsp)
+      (add-hook 'go-mode-hook 'lsp-deferred))))
+
+;;; ##########################################################################
+
+(use-package go-eldoc
+  :after go-mode
+  :hook (go-mode . go-eldoc-setup)
+  :config
+  (eglot-format-buffer-on-save)
+  (set-face-attribute 'eldoc-highlight-function-argument nil
+    :underline t :foreground "green"
+    :weight 'bold))
+
+;;; ##########################################################################
+
+(use-package go-guru
+  :after go-mode
+  :hook (go-mode . go-guru-hl-identifier-mode))
+
+;;; ##########################################################################
+
+(let
+  ((installer "bash -c \"sh <(curl -fsSL https://raw.githubusercontent.com/ocaml/opam/master/shell/install.sh) --version 2.2.0\""))
+  (use-package opam-installer
+    :when enable-ocaml
+    :ensure nil
+    :ensure-system-package (opam . installer)))
+
+;;; ##########################################################################
+
+(use-package opam-std-libs
+  :ensure nil
+  :ensure-system-package
+  ( ("~/.opam" .                        "opam init")
+    ("~/.opam/default/lib/core" .       "opam install core")
+    ("~/.opam/default/lib/core_bench" . "opam install core_bench")
+    ("~/.opam/default/lib/utop" .       "opam install utop")))
+
+;;; ##########################################################################
+
+(use-package opam-emacs-setup
+  :when enable-ocaml
+  :ensure nil
+  :ensure-system-package
+  ( ("~/.opam/default/share/emacs/site-lisp/merlin.el" . "opam install merlin tuareg -y")
+    (dune . "opam install dune -y")))
+
+;;; ##########################################################################
+
+(let
+  ((file (expand-file-name "opam-user-setup.el" emacs-config-directory)))
+  (when (file-exists-p file)
+    (add-hook 'elpaca-after-init-hook
+      (lambda ()
+	(use-package opam-user-setup
+	  :unless (featurep 'opam-user-setup) ;; Don't allow to be run twice!
+	  :when enable-ocaml
+	  :after opam-emacs-setup
+	  :ensure nil
+	  :config
+	  (add-to-list 'exec-path "~/.opam/default/bin")
+	  (mifi/setup-path-from-exec-path))))))
+
+;;; ##########################################################################
+
+(let ((opam-share (ignore-errors (car (process-lines "opam" "var" "share")))))
+  (when (and (and opam-share (file-directory-p opam-share)) enable-ocaml)
+    (add-to-list 'load-path (expand-file-name "emacs/site-lisp" opam-share))))
+    ;;(autoload 'merlin-mode "merlin" nil t nil)
+    ;;(add-hook 'tuareg-mode-hook 'merlin-mode t)
+    ;;(add-hook 'caml-mode-hook 'merlin-mode t)))
+
+;;; ##########################################################################
+
+(use-package merlin
+  :when enable-ocaml :ensure nil :defer t
+  :delight " 🪄" 
+  :after opam-user-setup)
+
+(use-package merlin-eldoc
+  :when enable-ocaml :ensure nil :defer t :after merlin)
+
+(use-package merlin-company
+  :when (and enable-ocaml (not (equal custom-ide 'custom-ide-lsp-bridge)))
+  :ensure nil :defer t :after merlin company
+  :config
+  (add-hook 'merlin-mode-hook 'company-mode)
+  (with-eval-after-load 'company
+    (add-to-list 'company-backends 'merlin-company-backend)))
+
+;;; ##########################################################################
+
+(defun mifi/tuareg-mode-hook ()
+  (merlin-mode t)
+  (setq tuareg-mode-name "🐫")
+  (eglot-ensure)
+  (when (functionp 'prettify-symbols-mode)
+    (prettify-symbols-mode)))
+
+(use-package tuareg
+  :when enable-ocaml :after opam-user-setup :defer t :ensure t
+  :hook (tuareg-mode . mifi/tuareg-mode-hook)
+  :mode
+  ("\\.ml\\'" . tuareg-mode)
+  ("\\.mli\\'" . tuareg-mode)
+  :custom
+  (tuareg-indent-align-with-first-arg t)
+  :config
+  (bind-keys :map tuareg-mode-map
+    ("C-c ," . dap-hydra/body)))
+
+;;; ##########################################################################
+
+(use-package ocp-indent
+  :when enable-ocaml
+  :after opam-user-setup
+  :ensure-system-package
+  ("~/.opam/default/lib/ocp-indent" . "opam install ocp-indent -y")
+  :ensure (:inherit t :depth 1
+           :fetcher github :repo "OCamlPro/ocp-indent"
+           :files ("tools/ocp-indent.el")))
+
+(use-package dune
+  :ensure t)
+
+(use-package ocamlformat
+  :when enable-ocaml :ensure t
+  :after (:any merlin tuareg)
+  :bind ("<f6>" . ocamlformat)
+  :ensure-system-package
+  ("~/.opam/default/lib/ocamlformat" . "opam install ocamlformat -y")
+  :custom (ocamlformat-enable 'enable-outside-detected-project))
+
+;;; ##########################################################################
+
+(if *is-a-mac*
+  (use-package clojure-mode
+    :when enable-clojure
+    :ensure-system-package
+    ( (brew . "/bin/bash -c \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\"")
+      (java . "brew install --cask temurin@21")
+      (clojure . "brew install clojure/tools/clojure"))
+    :ensure t)
+  ;;else
+  (use-package clojure-mode
+    :when enable-clojure
+    :ensure t))
+
+(use-package clojure-ts-mode
+  :after clojure-mode
+  :ensure t)
+
+;;; ##########################################################################
+
+(use-package cider
+  :when enable-clojure
+  :after clojure-mode
+  :ensure t
+  :custom
+  (cider-show-error-buffer t)
+  (cider-auto-select-error-buffer t)
+  (cider-repl-history-file "~/.emacs.d/cider-history")
+  (cider-repl-pop-to-buffer-on-connect t)
+  (cider-repl-wrap-history t))
+
+;;; ##########################################################################
+
+(use-package swift-mode
+  :defer t
+  :mode ("\\.swift\\'" . swift-mode))
+
+(use-package swift-helpful
+  :defer t
+  :after swift-mode
+  :ensure (:files ("*.el" "swift-info/*.info"
+                    ("images" "swift-info/images/*.png") "swift-helpful-pkg.el")
+            :host github
+            :repo "danielmartin/swift-helpful"))
+
+(use-package swift-playground-mode
+  :defer t
+  :after swift-mode
+  :ensure ( :package "swift-playground-mode"
+          :repo "https://gitlab.com/michael.sanders/swift-playground-mode.git")
+  :init
+  (autoload 'swift-playground-global-mode "swift-playground-mode" nil t)
+  (add-hook 'swift-mode-hook #'swift-playground-global-mode))
+
+;;; ##########################################################################
+
+(use-package slime
+  :defer t
+  :mode ("\\.lisp\\'" . slime-mode)
+  :config
+  (setq inferior-lisp-program "/opt/homebrew/bin/sbcl"))
+
+;;; ##########################################################################
+
 (use-package jsonrpc
   :ensure t
   :config
@@ -3801,6 +3710,8 @@ capture was not aborted."
   ;; properly loaded.
   (unless theme-did-load
     (mifi/load-theme-from-selector)))
+
+;;; ##########################################################################
 
 (use-package mw-thesaurus
   :when enable-thesaurus
@@ -3852,7 +3763,6 @@ capture was not aborted."
                                  vundo-mode
                                  ))
   (golden-ratio-exclude-buffer-regexp '("dap*"
-                                         "*dape*"
                                          "*python*"))
   :config
   (golden-ratio-mode 1))
@@ -4146,7 +4056,7 @@ opam-user-setup.el so that upon next startup, it can be loaded quickly."
   (progn
     (when enable-ocaml
       (let ((src (expand-file-name "opam-user-setup.el" emacs-config-directory)))
-	(unless (file-exists-p src)
+	(when (file-exists-p src)
 	  (byte-compile-file src))))
     (mifi/backup-file "early-init.el")
     (mifi/backup-file "init.el")

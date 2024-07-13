@@ -1,5 +1,8 @@
 *.elc
+opam-user-setup.el
 elpa/**
+elpaca/**
+debug-adapters/**
 site-lisp/**/*
 eln-cache/
 straight/
@@ -15,4 +18,4 @@ recentf
 skeleton/
 transient/
 url/
-
+.DS_Store

@@ -34,7 +34,6 @@ So far, the following collections of options are included here:
   + Undo-tree
     
 - Debug Adapters
-  + DAPE
   + DAP
 
 - Integrated Development Environments (IDE)
@@ -68,7 +67,7 @@ So far, the following collections of options are included here:
 
 - The C/C++ debugger for these type of programs are done via LSP/LLDB and [[RealGUD][RealGUD]]. The chosen =debug-adapter= custom variable doesn't apply. The reason for this is that the DAP/LSP/LLDB interaction doesn't work properly on my =Apple Silicon= mac. Until GDB supports =ARM= instruction sets then this (=RealGUD=) will remain as the only best way to support a more integrated debugging experience.
 
-- Python can use either =dap= or =dape= which is the reasoning behind the =debug-adapter= custom variable.
+- Python is setup to use =dap=.
 
 - If auto-tangling doesn't work because of a problem in the generated ~init.el~ file, then tangling can be done manually by either using ~(C-c C-v t)~ or by calling the =org-babel-tangle= M-x command.
 
@@ -563,19 +562,18 @@ These are features that basically have multiple-choice options instead of being 
              (const :tag "Built-in Ido" comphand-built-in))
     :group 'mifi-config-features)
 
-  (defcustom debug-adapter 'debug-adapter-dape
+  ;; The debug-adapter used to also support DAPE. For now, that option has been
+  ;; removed since DAP has more language coverage - especially for OCaml.
+  ;; However, the variable will remain as an option so that not all code has to
+  ;; be changed plus it allows for future debug-adapter support if a new one
+  ;; becomes supported in this configuration.
+  (defcustom debug-adapter 'debug-adapter-dap-mode
     "Select the debug adapter to use for debugging applications.  dap-mode is an
   Emacs client/library for Debug Adapter Protocol is a wire protocol for
   communication between client and Debug Server. It’s similar to the LSP but
-  provides integration with debug server.
-
-  dape (Debug Adapter Protocol for Emacs) is similar to dap-mode but is
-  implemented entirely in Emacs Lisp. There are no other external dependencies
-  with DAPE. DAPE supports most popular languages, however, not as many as
-  dap-mode."
+  provides integration with debug server."
     :type '(radio
-             (const :tag "Debug Adapter Protocol (DAP)" debug-adapter-dap-mode)
-             (const :tag "Debug Adapter Protocol for Emacs (DAPE)" debug-adapter-dape))
+             (const :tag "Debug Adapter Protocol (DAP)" debug-adapter-dap-mode))
     :group 'mifi-config-features)
 
   (defcustom custom-ide 'custom-ide-eglot
@@ -628,7 +626,7 @@ These are features that basically have multiple-choice options instead of being 
              (const :tag "Org-roam" custom-note-system-org-roam)
              (const :tag "None" custom-note-system-none))
     :group 'mifi-config-features)
-  
+
 #+end_src
 
 ** Theme Specific Values
@@ -923,6 +921,10 @@ These are global variables that effect the behavior of Emacs in general. These v
   (unbind-key "C-z")
   (bind-key "C-." 'repeat)
   (bind-key "C-z" 'repeat-complex-command)
+  ;; Since there used to be a supported dape mode, we force the
+  ;; existing configuration to the only option, dap-mode since
+  ;; dape used to be supported. This resets any previous value.
+  (setq-default debug-adapter 'debug-adapter-dap-mode)
 
 #+end_src
 
@@ -932,6 +934,7 @@ Keeps a persistent history file across Emacs restarts. It's also saved into the 
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
+  
   (setq savehist-file (expand-file-name "savehist" user-emacs-directory))
   (savehist-mode t)
   (setq history-length t)
@@ -990,15 +993,6 @@ Calls to mode functions that effect various Emacs behavior.
     :config
     (show-paren-mode 1))
 
-  (use-package paredit
-    :ensure t
-    :hook
-    (emacs-lisp-mode . paredit-mode)
-    (ielm-mode . paredit-mode)
-    (lisp-mode . paredit-mode)
-    (lisp-interaction-mode . paredit-mode)
-    (scheme-mode . paredit-mode))
-
 #+end_src
 
 ** Save / Restore Frameset
@@ -1043,6 +1037,7 @@ These functions will save and restore Emacs framework. These are normally called
 These are just some common registers that I have just so I can bookmark files and locations and quckly jump to them.
 
 #+begin_src emacs-lisp
+  ;;; ##########################################################################
 
   (setq register-preview-delay 0) ;; Show registers ASAP
   (set-register ?O (cons 'file (concat emacs-config-directory "emacs-config.org")))
@@ -1085,6 +1080,33 @@ This is a collection of functions to make handling installed system packages mor
 
 #+end_src
 
+** Auto-complete
+#+begin_src emacs-lisp :tangle no
+  ;;; ##########################################################################
+
+  (use-package auto-complete
+    :ensure t
+    :config
+    (defvar ac-directory
+      (unless (file-exists-p "auto-complete")
+        (make-directory "auto-complete")))
+    (add-to-list 'load-path ac-directory)
+    (global-auto-complete-mode 1)
+    (ac-set-trigger-key "TAB")
+    (ac-set-trigger-key "<tab>")
+    ;; from http://blog.deadpansincerity.com/2011/05/setting-up-emacs-as-a-javascript-editing-environment-for-fun-and-profit/
+    ;; Start auto-completion after 2 characters of a word
+    (setq ac-auto-start 2)
+    ;; case sensitivity is important when finding matches
+    (setq ac-ignore-case nil)
+    (setq-default ac-sources '(ac-source-pycomplete
+                               ac-source-yasnippet
+                               ac-source-abbrev
+                               ac-source-dictionary
+                               ac-source-words-in-same-mode-buffers)))
+
+#+end_src
+
 ** Simple-httpd
 A simple Emacs web server.
 
@@ -1121,6 +1143,7 @@ This used to be httpd.el but there are already several of these out there alread
 Delight enables you to customise the mode names displayed in the mode line. It's different from =diminish= in that this can be configured to work with both major and minor modes.
 
 #+begin_src emacs-lisp
+  ;;; ##########################################################################
 
   (defun mifi/set-delight ()
     (interactive)
@@ -1153,6 +1176,7 @@ Delight enables you to customise the mode names displayed in the mode line. It's
 Dumb Jump is an Emacs "jump to definition" package with support for 50+ programming languages that favors "just working". This means minimal -- and ideally zero -- configuration with absolutely no stored indexes (TAGS) or persistent background processes.
 
 #+begin_src emacs-lisp
+  ;;; ##########################################################################
 
   (use-package xref :ensure nil)
   (use-package dumb-jump
@@ -1490,6 +1514,7 @@ Jinx is a fast just-in-time spell-checker for Emacs. Jinx highlights misspelled 
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
+  
   (use-package jinx
     :ensure (:host github :repo "minad/jinx")
     ;;:hook (emacs-startup . global-jinx-mode)
@@ -2460,6 +2485,8 @@ Virtical Split comparison of two files selected from the dired window.
 ***** Customized Variables
 
 #+begin_src emacs-lisp
+  ;;; ##########################################################################
+
   ;; Restore window configuration after ediff exits
   ;;   URL: https://www.emacswiki.org/emacs/EdiffMode
 
@@ -2476,6 +2503,7 @@ Virtical Split comparison of two files selected from the dired window.
 ***** Dired and ediff configuration
 
 #+begin_src emacs-lisp
+  ;;; ##########################################################################
 
   (use-package dired
     :ensure nil  ;; local package hint for elpaca
@@ -3169,6 +3197,7 @@ These functions are used to configure the main frame font size. Based upon a mon
 This is for things like Org mode
 
 #+begin_src emacs-lisp
+  ;;; ##########################################################################
 
   (defun mifi/update-other-modes-font ()
     "This updates/calls functions to update mode font sizes."
@@ -3514,6 +3543,7 @@ This section contains the basic configuration for =org-mode= plus the configurat
 ***** Todos
 
 #+begin_src emacs-lisp
+  ;;; ##########################################################################
 
   (defun mifi/org-setup-todos ()
     "Setup the org TODO keywords and colors."
@@ -3539,6 +3569,7 @@ This section contains the basic configuration for =org-mode= plus the configurat
 ***** User customized faces
 
 #+begin_src emacs-lisp
+  ;;; ##########################################################################
 
   (custom-theme-set-faces
     'user
@@ -3664,6 +3695,7 @@ This package implements a modern style for your Org buffers using font locking a
 Note that org-modern is a full replacement for both org-superstar and org-bullets. You can easily disable styling of certain elements, e.g., org-modern-timestamp, if you only want to use a subset of org-modern.
 
 #+begin_src emacs-lisp
+  ;;; ##########################################################################
 
   (use-package org-modern
     :when (display-graphic-p)
@@ -3738,7 +3770,8 @@ Org Roam is an extension to Org Mode which solves a couple of the biggest proble
 Org Roam solves these problems by making it easy to create topic-focused Org Files and link them together so that you can treat the information as nodes in a network rather than as hierarchical documents. You can think of it like a personal wiki!
 
 #+begin_src emacs-lisp
-  ;;; --------------------------------------------------------------------------
+  ;;; ##########################################################################
+
   ;; (use-package emacsql)
   ;; (use-package emacsql-sqlite)
 
@@ -3792,13 +3825,13 @@ Typically you won’t want to pull in all of your Org Roam notes, so we’ll onl
 Here is a snippet that will find all the notes with a specific tag and then set your org-agenda-list with the corresponding note files.
 
 #+begin_src emacs-lisp
-  ;;; --------------------------------------------------------------------------
+  ;;; ##########################################################################
   ;; The buffer you put this code in must have lexical-binding set to t!
   ;; See the final configuration at the end for more details.
 
   (defun my/org-roam-filter-by-tag (tag-name)
-      (lambda (node)
-          (member tag-name (org-roam-node-tags node))))
+    (lambda (node)
+      (member tag-name (org-roam-node-tags node))))
 
   (defun my/org-roam-list-notes-by-tag (tag-name)
       (mapcar #'org-roam-node-file
@@ -3811,7 +3844,7 @@ Here is a snippet that will find all the notes with a specific tag and then set 
       (setq org-agenda-files (my/org-roam-list-notes-by-tag "Project")))
 
   ;; Build the agenda list the first time for the session
-  
+
 #+end_src
 
 *** Selecting from a list of notes
@@ -3819,8 +3852,8 @@ Here is a snippet that will find all the notes with a specific tag and then set 
 The org-roam-node-find function gives us the ability to filter the list of notes that get displayed for selection. We can define our own function that shows a selection list for notes that have a specific tag like Project which we talked about before. This can be useful to set up a keybinding to quickly select from a specific set of notes! One added benefit is that we can override the set of capture templates that get used when a new note gets created. This means that we can automatically create a new note with our project capture template if the note doesn’t already exist!
 
 #+begin_src emacs-lisp
-  ;;; --------------------------------------------------------------------------
-
+  ;;; ##########################################################################
+  
   (defun my/org-roam-project-finalize-hook ()
       "Adds the captured project file to `org-agenda-files' if the
   capture was not aborted."
@@ -3855,14 +3888,14 @@ If you want to quickly capture new notes and tasks with a single keybinding into
 
 Even though this file won’t have the timestamped filename, it will still be treated as a node in your Org Roam notes.
 #+begin_src emacs-lisp
-  ;;; --------------------------------------------------------------------------
-
+  ;;; ##########################################################################
+  
   (defun my/org-roam-capture-inbox ()
       (interactive)
       (org-roam-capture- :node (org-roam-node-create)
           :templates '(("i" "inbox" plain "* %?"
                            :if-new (file+head "Inbox.org" "#+title: Inbox\n")))))
-  
+
 #+end_src
 
 *** Capture a task
@@ -3871,8 +3904,8 @@ If you’ve set up project note files like we mentioned earlier, you can set up 
 Much like the example before, we can either select a project that exists or automatically create a project note when it doesn’t exist yet.
 
 #+begin_src emacs-lisp
-  ;;; --------------------------------------------------------------------------
-
+  ;;; ##########################################################################
+  
   (defun my/org-roam-capture-task ()
       (interactive)
       ;; Add the project file to the agenda after capture is finished
@@ -3892,8 +3925,8 @@ Much like the example before, we can either select a project that exists or auto
 The following snippet sets up a hook for all Org task state changes and then copies the completed (DONE) entry to today’s note file
 
 #+begin_src emacs-lisp
-  ;;; --------------------------------------------------------------------------
-
+  ;;; ##########################################################################
+  
   (defun my/org-roam-copy-todo-to-today ()
       (interactive)
       (let ((org-refile-keep t) ;; Set this to nil to delete the original!
@@ -4384,7 +4417,243 @@ C-c C-c evaluates the current python script (or region if something is selected)
 
 
 -----
-** Languages
+** Debug Support
+*** Debug Adapter Protocol (<<<DAP>>>)
+
+DAP-Mode is an Emacs client/library for Debug Adapter Protocol is a wire protocol for communication between client and Debug Server. It's similar to the LSP but provides integration with debug server.
+
+The idea behind the Debug Adapter Protocol (DAP) is to abstract the way how the debugging support of development tools communicates with debuggers or runtimes into a protocol. Since it is unrealistic to assume that existing debuggers or runtimes adopt this protocol any time soon, we rather assume that an intermediary component - a so called Debug Adapter - adapts an existing debugger or runtime to the Debug Adapter Protocol.
+
+The Debug Adapter Protocol makes it possible to implement a generic debugger for a development tool that can communicate with different debuggers via Debug Adapters. And Debug Adapters can be re-used across multiple development tools which significantly reduces the effort to support a new debugger in different tools.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+  ;;; Debug Adapter Protocol
+  (use-package dap-mode
+    :when (or (equal debug-adapter 'debug-adapter-dap-mode) enable-ocaml)
+    :after hydra
+    ;; Uncomment the config below if you want all UI panes to be hidden by default!
+    ;; :custom
+    ;; (lsp-enable-dap-auto-configure nil)
+    :commands dap-debug
+    :custom
+    (dap-auto-configure-features '(sessions locals breakpoints expressions repl controls tooltip))
+    :config
+    ;; (require 'dap-lldb)
+    ;; (require 'dap-gdb-lldb)
+    (define-dap-hydra)
+    (bind-keys :map prog-mode-map
+      ("C-c ." . dap-hydra/body))
+    (dap-ui-controls-mode)
+    (dap-ui-mode 1))
+
+#+end_src
+
+**** DAP Package for OCaml
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+  
+  (use-package dap-ocaml
+    :when enable-ocaml
+    ;; :after tuareg-mode dap-mode
+    :ensure (:package "dap-ocaml" :type git :host github :repo "emacs-lsp/dap-mode"))
+
+  (use-package dap-codelldb
+    :when enable-ocaml
+    :ensure (:package "dap-codelldb" :type git :host github :repo "emacs-lsp/dap-mode"))
+
+#+end_src
+
+**** DAP Package for Python :Python:
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+  ;;; DAP for Python
+
+  (use-package dap-python
+    :ensure (:package "dap-python" :type git :host github :repo "emacs-lsp/dap-mode")
+    :when (equal debug-adapter 'debug-adapter-dap-mode)
+    :after dap-mode
+    :config
+    (setq dap-python-executable "python3") ;; Otherwise it looks for 'python' else error.
+    (setq dap-python-debugger 'debugpy))
+
+#+end_src
+
+**** DAP Setup for Rust and Go :Rust:Go:
+
+Something that is needed for Rust and Go debugging.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package dap-lldb
+    :when (equal debug-adapter 'debug-adapter-dap-mode)
+    :defer t
+    :after dap-mode
+    :ensure ( :package "dap-lldb" :source nil :protocol https
+              :inherit t :depth 1 :type git
+              :host github :repo "emacs-lsp/dap-mode")
+    :custom
+    (dap-lldb-debug-program "~/Developer/command-line-unix/llvm/lldb-build/bin/lldb-dap"))
+    ;; :config
+    ;; (dap-register-debug-template
+    ;;   "Rust::LLDB Run Configuration"
+    ;;   (list :type "lldb"
+    ;;     :request "launch"
+    ;;     :name "LLDB::Run"
+    ;;     :gdbpath "rust-lldb"
+    ;;     :target nil
+    ;;     :cwd nil)))
+
+  (use-package dap-gdb-lldb
+    :when (equal debug-adapter 'debug-adapter-dap-mode)
+    :ensure ( :package "dap-gdb-lldb" :source nil :protocol https
+              :inherit t :depth 1 :type git :host github
+              :repo "emacs-lsp/dap-mode")
+    :defer t
+    :after dap-lldb
+    :config
+    (dap-gdb-lldb-setup))
+
+  (use-package dap-cpptools
+    :when (equal debug-adapter 'debug-adapter-dap-mode)
+    :defer t
+    :after dap-mode
+    :ensure ( :package "dap-cpptools" :source nil :protocol https
+              :inherit t :depth 1 :type git :host github
+              :repo "emacs-lsp/dap-mode"))
+  ;; :config
+  ;; (dap-cpptools-setup))
+
+#+end_src
+
+**** DAP Templates For Various Languages :Python:Rust:
+
+#+begin_src emacs-lisp :tangle no
+  ;;; ##########################################################################
+
+  ;; (with-eval-after-load 'dap-lldb
+  ;;   (dap-register-debug-template
+  ;;     "Rust::LLDB Run Configuration"
+  ;;     (list :type "lldb"
+  ;;       :request "launch"
+  ;;       :name "LLDB::Run"
+  ;;       :gdbpath "rust-lldb"
+  ;;       :target nil
+  ;;       :cwd nil)))
+
+  (with-eval-after-load 'dap-python
+    (dap-register-debug-template "Python :: Run file from project directory"
+      (list :type "python"
+        :args ""
+        :cwd nil
+        :module nil
+        :program nil
+        :request "launch"))
+    
+    (dap-register-debug-template "Python :: Run file (buffer)"
+      (list :type "python"
+        :args ""
+        :cwd nil
+        :module nil
+        :program nil
+        :request "launch"
+        :name "Python :: Run file (buffer)")))
+
+#+end_src
+
+**** DAP Hydra
+
+Below are all the necessary functions and definitions for Hydra use under DAP.
+
+***** DAP Hydra Debug Functions :Python:
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (defun mifi/dap-end-debug-session ()
+    "End the debug session and delete project Python buffers."
+    (interactive)
+    (kill-matching-buffers "\*Python :: Run file [from|\(buffer]*" nil :NO-ASK)
+    (kill-matching-buffers "\*Python: Current File*" nil :NO-ASK)
+    (kill-matching-buffers "\*dap-ui-*" nil :NO-ASK)
+    (dap-disconnect (dap--cur-session)))
+
+  (defun mifi/dap-delete-all-debug-sessions ()
+    "End the debug session and delete project Python buffers and all breakpoints."
+    (interactive)
+    (dap-breakpoint-delete-all)
+    (mifi/dap-end-debug-session))
+
+  (defun mifi/dap-begin-debug-session ()
+    "Begin a debug session with several dap windows enabled."
+    (interactive)
+    (dap-ui-show-many-windows)
+    (dap-debug))
+
+#+end_src
+
+***** DAP Hydra Definition Function
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (defun define-dap-hydra ()
+    (defhydra dap-hydra (:color pink :hint nil :foreign-keys run)
+      "
+    ^Stepping^            ^Switch^                 ^Breakpoints^          ^Debug^                     ^Eval
+    ^^^^^^^^-----------------------------------------------------------------------------------------------------------------
+    _._: Next            _ss_: Session            _bb_: Toggle           _dd_: Debug                 _ee_: Eval
+    _/_: Step in         _st_: Thread             _bd_: Delete           _dr_: Debug recent          _er_: Eval region
+    _,_: Step out        _sf_: Stack frame        _ba_: Add              _dl_: Debug last            _es_: Eval thing at point
+    _c_: Continue        _su_: Up stack frame     _bc_: Set condition    _de_: Edit debug template   _ea_: Add expression.
+    _r_: Restart frame   _sd_: Down stack frame   _bh_: Set hit count    _ds_: Debug restart
+    _Q_: Disconnect      _sl_: List locals        _bl_: Set log message  _dx_: end session
+                         _sb_: List breakpoints                          _dX_: end all sessions
+                         _sS_: List sessions
+                         _sR_: Session Repl
+  "
+      ("n" dap-next)
+      ("i" dap-step-in)
+      ("o" dap-step-out)
+      ("." dap-next)
+      ("/" dap-step-in)
+      ("," dap-step-out)
+      ("c" dap-continue)
+      ("r" dap-restart-frame)
+      ("ss" dap-switch-session)
+      ("st" dap-switch-thread)
+      ("sf" dap-switch-stack-frame)
+      ("su" dap-up-stack-frame)
+      ("sd" dap-down-stack-frame)
+      ("sl" dap-ui-locals)
+      ("sb" dap-ui-breakpoints)
+      ("sR" dap-ui-repl)
+      ("sS" dap-ui-sessions)
+      ("bb" dap-breakpoint-toggle)
+      ("ba" dap-breakpoint-add)
+      ("bd" dap-breakpoint-delete)
+      ("bc" dap-breakpoint-condition)
+      ("bh" dap-breakpoint-hit-condition)
+      ("bl" dap-breakpoint-log-message)
+      ("dd" dap-debug)
+      ("dr" dap-debug-recent)
+      ("ds" dap-debug-restart)
+      ("dl" dap-debug-last)
+      ("de" dap-debug-edit-template)
+      ("ee" dap-eval)
+      ("ea" dap-ui-expressions-add)
+      ("er" dap-eval-region)
+      ("es" dap-eval-thing-at-point)
+      ("dx" mifi/dap-end-debug-session)
+      ("dX" mifi/dap-delete-all-debug-sessions)
+      ("x" nil "exit Hydra" :color yellow)
+      ("q" mifi/dap-end-debug-session "quit" :color blue)
+      ("Q" mifi/dap-delete-all-debug-sessions :color red)))
+
+#+end_src
+
+** Language Integration
 *** Language Support Packages
 **** Flycheck
 
@@ -4598,19 +4867,14 @@ These functions are used during python intialization or file loading. This is wh
       (flycheck-mode t)
       (delete-trailing-whitespace)))
 
-  ;; Enable DAP or DAPE, Eglot or LSP modes
   ;; This function should only be called ONCE during python-mode startup.
   (defun mifi/enable-python-features ()
     (message ">>> mifi/enable-python-features")
     ;; _____________________________
-    ;; check for which debug adapter
     (cond
       ((equal debug-adapter 'debug-adapter-dap-mode)
         (unless (featurep 'dap-mode) (dap-mode)) ;; Load if not loaded.
-        (define-dap-hydra))
-      ((equal debug-adapter 'debug-adapter-dape)
-        ;; dape should load as part of (use-package .... :after python)
-        (message "dape should be auto-loading for Python.")))
+        (define-dap-hydra)))
     ;;___________________________
     ;; check for which custom-ide
     (cond
@@ -4736,10 +5000,7 @@ This is a basic configuration for the TypeScript language so that =.ts= files ac
       ((equal debug-adapter 'debug-adapter-dap-mode)
         (bind-keys :map typescript-mode-map
           ("C-c ." . dap-hydra/body))
-        (dap-node-setup))
-      ((equal debug-adapter 'debug-adapter-dape)
-        (bind-keys :map typescript-mode-map
-          ("C-c ." . dape-hydra/body)))))
+        (dap-node-setup))))
 
 #+end_src
 
@@ -4754,9 +5015,6 @@ This is a basic configuration for the TypeScript language so that =.ts= files ac
     (when (equal debug-adapter 'debug-adapter-dap-mode)
       (dap-mode)
       (dap-firefox-setup))
-
-    (when (equal debug-adapter 'debug-adapter-dape)
-      (dape))
 
     (highlight-indentation-mode nil)
     (dap-firefox-setup))
@@ -4779,9 +5037,9 @@ This is a basic configuration for the TypeScript language so that =.ts= files ac
     ;;:after simple-httpd
     :ensure nil
     :hook (js-mode . js2-minor-mode)
-    :bind (:map js2-mode-map
-            ("{" . paredit-open-curly)
-            ("}" . paredit-close-curly-and-newline))
+    ;; :bind (:map js2-mode-map
+    ;;         ("{" . paredit-open-curly)
+    ;;         ("}" . paredit-close-curly-and-newline))
     :mode ("\\.js\\'" "\\.mjs\\'" "\\.json$")
     :custom (js2-highlight-level 3))
 
@@ -4795,35 +5053,7 @@ This is a basic configuration for the TypeScript language so that =.ts= files ac
 
 #+end_src
 
-*** C/C++
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (defun mifi/load-c-file-hook ()
-    (c-mode)
-    (unless (featurep 'realgud))
-    (use-package realgud)
-    (highlight-indentation-mode nil)
-    (display-fill-column-indicator-mode t))
-
-  (defun code-compile ()
-    "Look for a Makefile and compiles the code with gcc/cpp."
-    (interactive)
-    (unless (file-exists-p "Makefile")
-      (set (make-local-variable 'compile-command)
-        (let ((file (file-name-nondirectory buffer-file-name)))
-          (format "%s -o %s %s"
-            (if  (equal (file-name-extension file) "cpp") "g++" "gcc" )
-            (file-name-sans-extension file)
-            file)))
-      (compile compile-command)))
-
-  (global-set-key [f9] 'code-compile)
-  (add-to-list 'auto-mode-alist '("\\.c\\'" . mifi/load-c-file-hook))
-  
-#+end_src
-
-**** GameBoy Development
+*** GameBoy Development
 
 RGBDS is a compiler that has been around quite a long time (since 1997). It supports Z80 and the LR35902 assembler syntaxes that are used in the development of Game Boy and Game Boy color games.
 
@@ -5060,7 +5290,8 @@ The OCaml package manager manually. This will fetch the latest version.
 This is an easy way to install =opam= using ~brew~ but it may not be the most current. The shell script above is the best way to go.
 
 #+begin_src emacs-lisp 
-
+  ;;; ##########################################################################
+  
   (let
     ((installer "bash -c \"sh <(curl -fsSL https://raw.githubusercontent.com/ocaml/opam/master/shell/install.sh) --version 2.2.0\""))
     (use-package opam-installer
@@ -5105,6 +5336,24 @@ Merlin is an editor service that provides advanced IDE features for OCaml.
 
 #+end_src
 
+**** Install Standard Libraries
+
+These are (mostly) the Jane Street libraries that ship with OCaml. They're very
+good and have become more-or-less the defacto standard.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package opam-std-libs
+    :ensure nil
+    :ensure-system-package
+    ( ("~/.opam" .                        "opam init")
+      ("~/.opam/default/lib/core" .       "opam install core")
+      ("~/.opam/default/lib/core_bench" . "opam install core_bench")
+      ("~/.opam/default/lib/utop" .       "opam install utop")))
+
+#+end_src
+
 **** HOWTO Install Ocaml LSP Server
 
 This is not 100% necessary since Ocaml can use =merlin= directly instead of fronting with an LSP server. But, we install it for any flexibility it may provide.
@@ -5125,10 +5374,12 @@ This is not 100% necessary since Ocaml can use =merlin= directly instead of fron
 
 **** Opam Emacs Configuration
 
-This puts a most of the installs mentioned above into a nice ~use-package~ form. This makes use of the ~opam-emacs-setup~ package in the ~lisp~ directory. It's just a stub but allows us to configure enacs using the =:ensure-system-package= option.
+This puts a most of the installs mentioned above into a nice ~use-package~ form. This makes use of the ~opam-emacs-setup~ package in the ~lisp~ directory. It's just a stub but allows us to configure enacs using the =:ensure-system-package= option. This
+is specifc to a macOS or Linux OS.
 
 #+begin_src emacs-lisp
-
+  ;;; ##########################################################################
+  
   (use-package opam-emacs-setup
     :when enable-ocaml
     :ensure nil
@@ -5141,7 +5392,8 @@ This puts a most of the installs mentioned above into a nice ~use-package~ form.
 **** Load the user-setup.el
 
 #+begin_src emacs-lisp
-
+  ;;; ##########################################################################
+  
   (let
     ((file (expand-file-name "opam-user-setup.el" emacs-config-directory)))
     (when (file-exists-p file)
@@ -5161,6 +5413,7 @@ This puts a most of the installs mentioned above into a nice ~use-package~ form.
 **** Setup path to ~opam~ installed emacs lisp modules
 
 #+begin_src emacs-lisp
+  ;;; ##########################################################################
   
   (let ((opam-share (ignore-errors (car (process-lines "opam" "var" "share")))))
     (when (and (and opam-share (file-directory-p opam-share)) enable-ocaml)
@@ -5176,7 +5429,8 @@ This puts a most of the installs mentioned above into a nice ~use-package~ form.
 Merlin is an editor service that provides advanced IDE features for OCaml.
 
 #+begin_src emacs-lisp
-
+  ;;; ##########################################################################
+  
   (use-package merlin
     :when enable-ocaml :ensure nil :defer t
     :delight " 🪄" 
@@ -5202,7 +5456,8 @@ Merlin is an editor service that provides advanced IDE features for OCaml.
 This archive contains files to help editing OCaml code, to highlight important parts of the code, to run an OCaml REPL (also called toplevel), and to run the OCaml debugger within Emacs.
 
 #+begin_src emacs-lisp
-
+  ;;; ##########################################################################
+  
   (defun mifi/tuareg-mode-hook ()
     (merlin-mode t)
     (setq tuareg-mode-name "🐫")
@@ -5229,7 +5484,8 @@ This archive contains files to help editing OCaml code, to highlight important p
 Here are some other packages that are useful when using OCaml.
 
 #+begin_src emacs-lisp
-
+  ;;; ##########################################################################
+  
   (use-package ocp-indent
     :when enable-ocaml
     :after opam-user-setup
@@ -5269,14 +5525,20 @@ mutable state is needed, Clojure offers a software transactional memory system
 and reactive Agent system that ensure clean, correct, multithreaded designs.
 
 #+begin_src emacs-lisp
-
-  (use-package clojure-mode
-    :when enable-clojure
-    :ensure-system-package
-    ((brew . "/bin/bash -c \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\"")
-     (java . "brew install --cask temurin@21")
-     (clojure . "brew install clojure/tools/clojure"))
-    :ensure t)
+  ;;; ##########################################################################
+  
+  (if *is-a-mac*
+    (use-package clojure-mode
+      :when enable-clojure
+      :ensure-system-package
+      ( (brew . "/bin/bash -c \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\"")
+        (java . "brew install --cask temurin@21")
+        (clojure . "brew install clojure/tools/clojure"))
+      :ensure t)
+    ;;else
+    (use-package clojure-mode
+      :when enable-clojure
+      :ensure t))
 
   (use-package clojure-ts-mode
     :after clojure-mode
@@ -5292,7 +5554,8 @@ CIDER aims to provide an interactive development experience similar to the one y
 Programmers are expected to program in a very dynamic and incremental manner, constantly re-evaluating existing Clojure definitions and adding new ones to their running applications. You never stop/start a Clojure application while using CIDER - you’re constantly interacting with it and changing it.
 
 #+begin_src emacs-lisp
-
+  ;;; ##########################################################################
+  
   (use-package cider
     :when enable-clojure
     :after clojure-mode
@@ -5353,447 +5616,6 @@ Lisp support is handled by SLIME which is the “Superior Lisp Interaction Mode 
     (setq inferior-lisp-program "/opt/homebrew/bin/sbcl"))
 
 #+end_src
-** Debug Support
-*** Debug Adapter Protocol for Emacs (<<<DAPE>>>)
-
-Dape is a Debug Adapter Client written in pure Emacs. The debug adapter protocol, much like its more well-known counterpart, the language server protocol, aims to establish a common API for programming tools. However, instead of functionalities such as code completions, it provides a standardized interface for debuggers.
-
-To begin a debugging session, invoke the dape command. In the minibuffer prompt, enter a debug adapter configuration name from dape-configs.
-
-For complete functionality, make sure to enable eldoc-mode in your source buffers and repeat-mode for more pleasant key mappings.
-
-**Features**
-
-- Batteries included support (describe-variable dape-configs)
-- Log breakpoints
-- Conditional breakpoints
-- Variable explorer
-- Variable watch
-- Variable hover with eldoc
-- REPL
-- gdb-mi.el like interface
-- Memory editor with hexl
-- Integration with compile
-- Debug adapter configuration ergonomics
-- No external dependencies outside of core Emacs
-
-**** Example additional options
-
------
-*The following source blocks are meant as examples on what can be coded to enable certain features. They are normally NOT tangled.*
-
-***** To not display info and/or buffers on startup:
-#+begin_src emacs-lisp :tangle no
-  (remove-hook 'dape-on-start-hooks 'dape-info)
-  (remove-hook 'dape-on-start-hooks 'dape-repl)
-#+end_src
-
-***** To display info and/or repl buffers on stopped
-#+begin_src emacs-lisp :tangle no
-  (add-hook 'dape-on-stopped-hooks 'dape-info)
-  (add-hook 'dape-on-stopped-hooks 'dape-repl)
-#+end_src
-
-***** By default dape uses gdb keybinding prefix If you do not want to use any prefix, set it to nil.
-#+begin_src emacs-lisp :tangle no
-  (setq dape-key-prefix "\C-x\C-a")
-#+end_src
-
-***** Kill compile buffer on build success:
-#+begin_src emacs-lisp :tangle no
-  (add-hook 'dape-compile-compile-hooks 'kill-buffer)
-#+end_src
-
-***** Save buffers on startup, useful for interpreted languages
-#+begin_src emacs-lisp :tangle no
-  (add-hook 'dape-on-start-hooks
-    (defun dape--save-on-start ()
-      (save-some-buffers t t)))
-#+end_src
------
-
-**** DAPE Initialization
-
-Please note that DAPE is triggered after loading of various languages (for Emacs startup time). New languages that use DAPE should also be listed. Don't put just ~prog-mode~ since we want to delay loading until needed be specific languages only.
-
-#+begin_src emacs-lisp
-  ;;; ------------------------------------------------------------------------
-
-  (use-package dape
-    :when (equal debug-adapter 'debug-adapter-dape)
-    :after (:any python go)
-    :custom
-    (dape-buffer-window-arrangement 'right)  ;; Info buffers to the right
-    :config
-    (define-dape-hydra)
-    (message "prepare-dape end")
-    (bind-keys :map prog-mode-map
-      ("C-c ." . dape-hydra/body)))
-    ;;(mifi/additional-dape-configs))
-
-#+end_src
-
-**** DAPE for TypeScript
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (setq mifi/vscode-js-debug-dir (file-name-concat user-emacs-directory "dape/vscode-js-debug"))
-
-  (defun mifi/install-vscode-js-debug ()
-    "Run installation procedure to install JS debugging support"
-    (interactive)
-    (mkdir mifi/vscode-js-debug-dir t)
-    (let ((default-directory (expand-file-name mifi/vscode-js-debug-dir)))
-
-      (vc-git-clone "https://github.com/microsoft/vscode-js-debug.git" "." nil)
-      (call-process "npm" nil "*snam-install*" t "install")
-      (call-process "npx" nil "*snam-install*" t "gulp" "dapDebugServer")))
-
-#+end_src
-
-****** Run This Only Once!
-
-This is meant to be evaluated and run once. Calling this function will clone the vscode-js-debug framework. This is a DAP-based JavaScript debugger. It debugs Node.js, Chrome, Edge, WebView2, VS Code extensions, and more. It has been the default JavaScript debugger in Visual Studio Code since 1.46, and is gradually rolling out in Visual Studio proper.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  ;; (mifi/install-vscode-js-debug)
-
-#+end_src
-
-#+RESULTS:
-: vscode-js-debug installed
-
-**** Additional DAPE Configs
-:Golang:
-#+begin_src emacs-lisp
-  ;;; ------------------------------------------------------------------------
-  (defun mifi/additional-dape-configs ()
-    "Additional DAPE configruations for various languages."
-
-    (with-eval-after-load
-      (add-to-list 'dape-configs
-        `(delve
-           modes (go-mode go-ts-mode)
-           command "dlv"
-           command-args ("dap" "--listen" "127.0.0.1:55878")
-           command-cwd dape-cwd-fn
-           host "127.0.0.1"
-           port 55878
-           :type "debug"  ;; needed to set the adapterID correctly as a string type
-           :request "launch"
-           :cwd dape-cwd-fn
-           :program dape-cwd-fn))))
-
-#+end_src
-
-**** DAPE Hydra
-
-Below are all the necessary functions and definitions for Hydra use under DAPE.
-
-***** DAPE Hydra Debug Functions
-
-#+begin_src emacs-lisp :output silent
-  ;;; ##########################################################################
-
-  (defun mifi/dape-end-debug-session ()
-    "End the debug session."
-    (interactive)
-    (dape-quit))
-
-  (defun mifi/dape-delete-all-debug-sessions ()
-    "End the debug session and delete all breakpoints."
-    (interactive)
-    (dape-breakpoint-remove-all)
-    (mifi/dape-end-debug-session))
-
-#+end_src
-
-***** DAPE Hydra Definition
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (defun define-dape-hydra ()
-    (defhydra dape-hydra (:color pink :hint nil :foreign-keys run)
-      "
-    ^Stepping^          ^Switch^                 ^Breakpoints^          ^Debug^                     ^Eval
-    ^^^^^^^^----------------------------------------------------------------------------------------------------------------
-    _._: Next           _st_: Thread             _bb_: Toggle           _dd_: Debug                 _ee_: Eval Expression
-    _/_: Step in        _si_: Info               _bd_: Delete           _dw_: Watch dwim
-    _,_: Step out       _sf_: Stack Frame        _ba_: Add              _dx_: end session
-    _c_: Continue       _su_: Up stack frame     _bc_: Set condition    _dX_: end all sessions
-    _r_: Restart frame  _sd_: Down stack frame   _bl_: Set log message  _dp_: Initialize DAPE
-    _Q_: Disconnect     _sR_: Session Repl
-                      _sU_: Info Update"
-      ("n" dape-next)
-      ("i" dape-step-in)
-      ("o" dape-step-out)
-      ("." dape-next)
-      ("/" dape-step-in)
-      ("," dape-step-out)
-      ("c" dape-continue)
-      ("r" dape-restart)
-      ("si" dape-info)
-      ("st" dape-select-thread)
-      ("sf" dape-select-stack)
-      ("su" dape-stack-select-up)
-      ("sU" dape-info-update)
-      ("sd" dape-stack-select-down)
-      ("sR" dape-repl)
-      ("bb" dape-breakpoint-toggle)
-      ("ba" dape--breakpoint-place)
-      ("bd" dape-breakpoint-remove-at-point)
-      ("bc" dape-breakpoint-expression)
-      ("bl" dape-breakpoint-log)
-      ("dd" dape)
-      ("dw" dape-watch-dwim)
-      ("ee" dape-evaluate-expression)
-      ("dx" mifi/dape-end-debug-session)
-      ("dX" mifi/dape-delete-all-debug-sessions)
-      ("dp" dape-prepare)
-      ("x" nil "exit Hydra" :color yellow)
-      ("q" mifi/dape-end-debug-session "quit" :color blue)
-      ("Q" mifi/dape-delete-all-debug-sessions :color red)))
-
-#+end_src
-
-*** Debug Adapter Protocol (<<<DAP>>>)
-
-DAP-Mode is an Emacs client/library for Debug Adapter Protocol is a wire protocol for communication between client and Debug Server. It's similar to the LSP but provides integration with debug server.
-
-The idea behind the Debug Adapter Protocol (DAP) is to abstract the way how the debugging support of development tools communicates with debuggers or runtimes into a protocol. Since it is unrealistic to assume that existing debuggers or runtimes adopt this protocol any time soon, we rather assume that an intermediary component - a so called Debug Adapter - adapts an existing debugger or runtime to the Debug Adapter Protocol.
-
-The Debug Adapter Protocol makes it possible to implement a generic debugger for a development tool that can communicate with different debuggers via Debug Adapters. And Debug Adapters can be re-used across multiple development tools which significantly reduces the effort to support a new debugger in different tools.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-  ;;; Debug Adapter Protocol
-  (use-package dap-mode
-    :when (or (equal debug-adapter 'debug-adapter-dap-mode) enable-ocaml)
-    :after hydra
-    ;; Uncomment the config below if you want all UI panes to be hidden by default!
-    ;; :custom
-    ;; (lsp-enable-dap-auto-configure nil)
-    :commands dap-debug
-    :custom
-    (dap-auto-configure-features '(sessions locals breakpoints expressions repl controls tooltip))
-    :config
-    ;; (require 'dap-lldb)
-    ;; (require 'dap-gdb-lldb)
-    (define-dap-hydra)
-    (bind-keys :map prog-mode-map
-      ("C-c ." . dap-hydra/body))
-    (dap-ui-controls-mode)
-    (dap-ui-mode 1))
-
-#+end_src
-
-**** DAP Package for OCaml
-#+begin_src emacs-lisp
-
-  (use-package dap-ocaml
-    :when enable-ocaml
-    ;; :after tuareg-mode dap-mode
-    :ensure (:package "dap-ocaml" :type git :host github :repo "emacs-lsp/dap-mode"))
-
-  (use-package dap-codelldb
-    :when enable-ocaml
-    :ensure (:package "dap-codelldb" :type git :host github :repo "emacs-lsp/dap-mode"))
-
-#+end_src
-
-**** DAP Package for Python :Python:
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-  ;;; DAP for Python
-
-  (use-package dap-python
-    :ensure (:package "dap-python" :type git :host github :repo "emacs-lsp/dap-mode")
-    :when (equal debug-adapter 'debug-adapter-dap-mode)
-    :after dap-mode
-    :config
-    (setq dap-python-executable "python3") ;; Otherwise it looks for 'python' else error.
-    (setq dap-python-debugger 'debugpy))
-
-#+end_src
-
-**** DAP Setup for Rust and Go :Rust:Go:
-
-Something that is needed for Rust and Go debugging.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package dap-lldb
-    :when (equal debug-adapter 'debug-adapter-dap-mode)
-    :defer t
-    :after dap-mode
-    :ensure ( :package "dap-lldb" :source nil :protocol https
-              :inherit t :depth 1 :type git
-              :host github :repo "emacs-lsp/dap-mode")
-    :custom
-    (dap-lldb-debug-program "~/Developer/command-line-unix/llvm/lldb-build/bin/lldb-dap"))
-    ;; :config
-    ;; (dap-register-debug-template
-    ;;   "Rust::LLDB Run Configuration"
-    ;;   (list :type "lldb"
-    ;;     :request "launch"
-    ;;     :name "LLDB::Run"
-    ;;     :gdbpath "rust-lldb"
-    ;;     :target nil
-    ;;     :cwd nil)))
-
-  (use-package dap-gdb-lldb
-    :when (equal debug-adapter 'debug-adapter-dap-mode)
-    :ensure ( :package "dap-gdb-lldb" :source nil :protocol https
-              :inherit t :depth 1 :type git :host github
-              :repo "emacs-lsp/dap-mode")
-    :defer t
-    :after dap-lldb
-    :config
-    (dap-gdb-lldb-setup))
-
-  (use-package dap-cpptools
-    :when (equal debug-adapter 'debug-adapter-dap-mode)
-    :defer t
-    :after dap-mode
-    :ensure ( :package "dap-cpptools" :source nil :protocol https
-              :inherit t :depth 1 :type git :host github
-              :repo "emacs-lsp/dap-mode"))
-  ;; :config
-  ;; (dap-cpptools-setup))
-
-#+end_src
-
-**** DAP Templates For Various Languages :Python:Rust:
-
-#+begin_src emacs-lisp :tangle no
-  ;;; ##########################################################################
-
-  ;; (with-eval-after-load 'dap-lldb
-  ;;   (dap-register-debug-template
-  ;;     "Rust::LLDB Run Configuration"
-  ;;     (list :type "lldb"
-  ;;       :request "launch"
-  ;;       :name "LLDB::Run"
-  ;;       :gdbpath "rust-lldb"
-  ;;       :target nil
-  ;;       :cwd nil)))
-
-  (with-eval-after-load 'dap-python
-    (dap-register-debug-template "Python :: Run file from project directory"
-      (list :type "python"
-        :args ""
-        :cwd nil
-        :module nil
-        :program nil
-        :request "launch"))
-    
-    (dap-register-debug-template "Python :: Run file (buffer)"
-      (list :type "python"
-        :args ""
-        :cwd nil
-        :module nil
-        :program nil
-        :request "launch"
-        :name "Python :: Run file (buffer)")))
-
-#+end_src
-
-**** DAP Hydra
-
-Below are all the necessary functions and definitions for Hydra use under DAP.
-
-***** DAP Hydra Debug Functions :Python:
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (defun mifi/dap-end-debug-session ()
-    "End the debug session and delete project Python buffers."
-    (interactive)
-    (kill-matching-buffers "\*Python :: Run file [from|\(buffer]*" nil :NO-ASK)
-    (kill-matching-buffers "\*Python: Current File*" nil :NO-ASK)
-    (kill-matching-buffers "\*dap-ui-*" nil :NO-ASK)
-    (dap-disconnect (dap--cur-session)))
-
-  (defun mifi/dap-delete-all-debug-sessions ()
-    "End the debug session and delete project Python buffers and all breakpoints."
-    (interactive)
-    (dap-breakpoint-delete-all)
-    (mifi/dap-end-debug-session))
-
-  (defun mifi/dap-begin-debug-session ()
-    "Begin a debug session with several dap windows enabled."
-    (interactive)
-    (dap-ui-show-many-windows)
-    (dap-debug))
-
-#+end_src
-
-***** DAP Hydra Definition Function
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (defun define-dap-hydra ()
-    (defhydra dap-hydra (:color pink :hint nil :foreign-keys run)
-      "
-    ^Stepping^            ^Switch^                 ^Breakpoints^          ^Debug^                     ^Eval
-    ^^^^^^^^-----------------------------------------------------------------------------------------------------------------
-    _._: Next            _ss_: Session            _bb_: Toggle           _dd_: Debug                 _ee_: Eval
-    _/_: Step in         _st_: Thread             _bd_: Delete           _dr_: Debug recent          _er_: Eval region
-    _,_: Step out        _sf_: Stack frame        _ba_: Add              _dl_: Debug last            _es_: Eval thing at point
-    _c_: Continue        _su_: Up stack frame     _bc_: Set condition    _de_: Edit debug template   _ea_: Add expression.
-    _r_: Restart frame   _sd_: Down stack frame   _bh_: Set hit count    _ds_: Debug restart
-    _Q_: Disconnect      _sl_: List locals        _bl_: Set log message  _dx_: end session
-                         _sb_: List breakpoints                          _dX_: end all sessions
-                         _sS_: List sessions
-                         _sR_: Session Repl
-  "
-      ("n" dap-next)
-      ("i" dap-step-in)
-      ("o" dap-step-out)
-      ("." dap-next)
-      ("/" dap-step-in)
-      ("," dap-step-out)
-      ("c" dap-continue)
-      ("r" dap-restart-frame)
-      ("ss" dap-switch-session)
-      ("st" dap-switch-thread)
-      ("sf" dap-switch-stack-frame)
-      ("su" dap-up-stack-frame)
-      ("sd" dap-down-stack-frame)
-      ("sl" dap-ui-locals)
-      ("sb" dap-ui-breakpoints)
-      ("sR" dap-ui-repl)
-      ("sS" dap-ui-sessions)
-      ("bb" dap-breakpoint-toggle)
-      ("ba" dap-breakpoint-add)
-      ("bd" dap-breakpoint-delete)
-      ("bc" dap-breakpoint-condition)
-      ("bh" dap-breakpoint-hit-condition)
-      ("bl" dap-breakpoint-log-message)
-      ("dd" dap-debug)
-      ("dr" dap-debug-recent)
-      ("ds" dap-debug-restart)
-      ("dl" dap-debug-last)
-      ("de" dap-debug-edit-template)
-      ("ee" dap-eval)
-      ("ea" dap-ui-expressions-add)
-      ("er" dap-eval-region)
-      ("es" dap-eval-thing-at-point)
-      ("dx" mifi/dap-end-debug-session)
-      ("dX" mifi/dap-delete-all-debug-sessions)
-      ("x" nil "exit Hydra" :color yellow)
-      ("q" mifi/dap-end-debug-session "quit" :color blue)
-      ("Q" mifi/dap-delete-all-debug-sessions :color red)))
-
-#+end_src
-
 
 * Miscellaneous
 
@@ -5801,10 +5623,11 @@ The following packages are some additional quality of life features.
 
 ** JSON-RPC
 
-The JSON-RPC protocol is used to communicate with many different types of server. This is required for the DAPE and DAP Debug Adapters as well as Eglot.
+The JSON-RPC protocol is used to communicate with many different types of server. This is required for the DAP Debug Adapter as well as Eglot.
 
 #+begin_src emacs-lisp
-  ;;; ------------------------------------------------------------------------
+  ;;; ##########################################################################
+
   (use-package jsonrpc
     :ensure t
     :config
@@ -5822,6 +5645,7 @@ The JSON-RPC protocol is used to communicate with many different types of server
 The ubiquitous Merriam-Websters Thesaurus
 
 #+begin_src emacs-lisp
+  ;;; ##########################################################################
 
   (use-package mw-thesaurus
     :when enable-thesaurus
@@ -5881,7 +5705,6 @@ The ubiquitous Merriam-Websters Thesaurus
                                    vundo-mode
                                    ))
     (golden-ratio-exclude-buffer-regexp '("dap*"
-                                           "*dape*"
                                            "*python*"))
     :config
     (golden-ratio-mode 1))
@@ -6325,7 +6148,7 @@ These are the hools that update the context-aware menu triggered by various stat
     (progn
       (when enable-ocaml
         (let ((src (expand-file-name "opam-user-setup.el" emacs-config-directory)))
-  	(unless (file-exists-p src)
+  	(when (file-exists-p src)
   	  (byte-compile-file src))))
       (mifi/backup-file "early-init.el")
       (mifi/backup-file "init.el")
