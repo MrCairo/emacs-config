@@ -2164,7 +2164,7 @@ For more thoughts on Eshell, check out these articles by Pierre Neidhardt:
     :after eshell)
 
   (use-package eshell
-    :ensure
+    :ensure nil
     :defer t
     :hook (eshell-first-time-mode . mifi/configure-eshell)
     :config

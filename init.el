@@ -1361,7 +1361,7 @@ font size is computed + 20 of this value."
   :after eshell)
 
 (use-package eshell
-  :ensure
+  :ensure nil
   :defer t
   :hook (eshell-first-time-mode . mifi/configure-eshell)
   :config
