@@ -112,34 +112,25 @@
 ;;; ##########################################################################
 ;;; Feature Toggles
 
-(defcustom enable-gb-dev nil
-  "If set to t, the z80-mode and other GameBoy related packages
-    will be enabled."
-  :type 'boolean
-  :group 'mifi-config-toggles)
-
-(defcustom enable-ts nil
-  "Set to t to enable TypeScript handling."
-  :type 'boolean
-  :group 'mifi-config-toggles)
-
-(defcustom enable-ocaml nil
-  "Set to t to enable inclusion of OCaml support: Merlin, Tuareg."
-  :type 'boolean
-  :group 'mifi-config-toggles)
-
-(defcustom enable-clojure nil
-  "Set to t to enable inclusion of Clojure and Cider"
-  :type 'boolean
-  :group 'mifi-config-toggles)
-
 (defcustom enable-centaur-tabs nil
   "Set to t to enable `centaur-tabs' which uses tabs to represent open buffer."
   :type 'boolean
   :group 'mifi-config-toggles)
 
-(defcustom enable-neotree nil
-  "Set to t to enable the `neotree' package."
+(defcustom enable-embark nil
+  "Set to t to enable the Embark package."
+  :type 'boolean
+  :group 'mifi-config-toggles)
+
+(defcustom enable-frameset-restore t
+  "Set to t to enable restoring the last Emacs window size and position
+   upon startup."
+  :type 'boolean
+  :group 'mifi-config-toggles)
+
+(defcustom enable-gb-dev nil
+  "If set to t, the z80-mode and other GameBoy related packages
+    will be enabled."
   :type 'boolean
   :group 'mifi-config-toggles)
 
@@ -149,13 +140,23 @@
   :type 'boolean
   :group 'mifi-config-toggles)
 
+(defcustom enable-ocaml nil
+  "Set to t to enable inclusion of OCaml support: Merlin, Tuareg."
+  :type 'boolean
+  :group 'mifi-config-toggles)
+
 (defcustom enable-org-fill-column-centering nil
   "Set to t to center the visual-fill column of the Org display."
   :type 'boolean
   :group 'mifi-config-toggles)
 
-(defcustom enable-embark nil
-  "Set to t to enable the Embark package."
+(defcustom enable-python t
+  "Set to t to enable Python language support."
+  :type 'boolean
+  :group 'mifi-config-toggles)
+
+(defcustom enable-neotree nil
+  "Set to t to enable the `neotree' package."
   :type 'boolean
   :group 'mifi-config-toggles)
 
@@ -164,10 +165,8 @@
   :type 'boolean
   :group 'mifi-config-toggles)
 
-;; Keep as defvar until the frameset save/restore process works better.
-(defcustom enable-frameset-restore t
-  "Set to t to enable restoring the last Emacs window size and position
-   upon startup."
+(defcustom enable-ts nil
+  "Set to t to enable TypeScript handling."
   :type 'boolean
   :group 'mifi-config-toggles)
 
@@ -229,9 +228,10 @@ also includes Counsel. Counsel provides completion versions of common Emacs
 commands that are customised to make the best use of Ivy.  Swiper is an
 alternative to isearch that uses Ivy to show an overview of all matches."
   :type '(radio
-           (const :tag "Vertico, Corfu, Cape, Consult completion system." comphand-vertico)
-           (const :tag "Ivy, Counsel, Swiper completion systems" comphand-ivy-counsel)
-           (const :tag "Built-in Ido" comphand-built-in))
+           (const :tag "Vertico, Orderless, Consult, Embark completion system." comphand-vertico)
+           (const :tag "Ivy, Counsel, Swiper completion systems" comphand-ivy)
+	   (const :tag "Corfu, Orderless, Cape" comphand-corfu)
+           (const :tag "Built-in Ido" comp-hand-ido))
   :group 'mifi-config-features)
 
 ;; The debug-adapter used to also support DAPE. For now, that option has been
@@ -488,7 +488,7 @@ font size is computed + 20 of this value."
 
 (add-to-list 'load-path (expand-file-name "lisp" emacs-config-directory))
 ;; mostly for OCaml
-(add-to-list 'load-path (expand-file-name "" emacs-config-directory))
+(add-to-list 'load-path (expand-file-name "." emacs-config-directory))
 (add-to-list 'custom-theme-load-path (expand-file-name "Themes" custom-docs-dir))
 
 ;;; ##########################################################################
@@ -641,6 +641,18 @@ font size is computed + 20 of this value."
 
 (use-package system-packages :ensure t)
 
+;;; ##########################################################################
+
+(use-package jsonrpc
+  :ensure t)
+  ;; :config
+  ;; For some odd reason, it is possible that jsonrpc will try to load a
+  ;; theme. (jsonrpc/lisp/custom.el:1362). If our theme hasn't been loaded
+  ;; yet, go ahead and try. This could prevent a startup without the theme
+  ;; properly loaded.
+  ;; (unless theme-did-load
+  ;;   (mifi/load-theme-from-selector)))
+
 ;; All kept in local /lisp directory.
 ;; (use-package web-server-status-codes :ensure nil)
 ;; (use-package simple-httpd :ensure nil)
@@ -712,6 +724,7 @@ font size is computed + 20 of this value."
 ;;; ##########################################################################
 
 (use-package hydra
+  ;; :vc (:url "https://github.com/abo-abo/hydra" :ignored-files ("lv.el")))
   :ensure (:repo "abo-abo/hydra" :fetcher github
             :files (:defaults (:exclude "lv.el"))))
 
@@ -888,6 +901,7 @@ font size is computed + 20 of this value."
 ;;; ##########################################################################
 
 (use-package jinx
+  ;;:vc (:url "https://github.com/minad/jinx")
   :ensure (:host github :repo "minad/jinx")
   ;;:hook (emacs-startup . global-jinx-mode)
   :bind (("C-c C-$" . jinx-correct)
@@ -991,11 +1005,15 @@ font size is computed + 20 of this value."
 ;;; ##########################################################################
 
 (use-package orderless
-  :when (or (equal completion-handler 'comphand-vertico)
-          (equal completion-handler 'comphand-ivy-counsel))
-  :after (:any ivy swiper vertico counsel)
+  :when (or (or (equal completion-handler 'comphand-vertico)
+                (equal completion-handler 'comphand-ivy))
+            (equal completion-handler 'comphand-corfu))
+  :after (:any ivy swiper vertico counsel corfu)
   :ensure t
   :custom
+  (when (equal completion-handler 'comphand-ivy)
+    (setq ivy-re-builders-alist '((t . orderless-ivy-re-builder)))
+    (add-to-list 'ivy-highlight-functions-alist '(orderless-ivy-re-builder . orderless-ivy-highlight)))
   (completion-styles '(orderless basic))
   (completion-category-overrides '((file (styles basic partial-completion)))))
 
@@ -1003,7 +1021,7 @@ font size is computed + 20 of this value."
 ;;; Swiper and IVY mode
 
 (use-package ivy
-  :when (equal completion-handler 'comphand-ivy-counsel)
+  :when (equal completion-handler 'comphand-ivy)
   :ensure t
   :bind (("C-s" . swiper)
           :map ivy-minibuffer-map
@@ -1030,7 +1048,7 @@ font size is computed + 20 of this value."
 ;;; ##########################################################################
 
 (use-package ivy-rich
-  :when (equal completion-handler 'comphand-ivy-counsel)
+  :when (equal completion-handler 'comphand-ivy)
   :after ivy
   :init
   (ivy-rich-mode 1)
@@ -1038,21 +1056,21 @@ font size is computed + 20 of this value."
   (setcdr (assq t ivy-format-functions-alist) #'ivy-format-function-line))
 
 (use-package ivy-yasnippet
-  :when (equal completion-handler 'comphand-ivy-counsel)
+  :when (equal completion-handler 'comphand-ivy)
   :after (:any yasnippet ivy))
 ;; :ensure (:host github :repo "mkcms/ivy-yasnippet"))
 
 ;;; ##########################################################################
 
 (use-package swiper
-  :when (equal completion-handler 'comphand-ivy-counsel)
+  :when (equal completion-handler 'comphand-ivy)
   :after ivy
   :ensure t)
 
 ;;; ##########################################################################
 
 (use-package counsel
-  :when (equal completion-handler 'comphand-ivy-counsel)
+  :when (equal completion-handler 'comphand-ivy)
   :after ivy
   :defer t
   :bind ( ("C-M-j" . 'counsel-switch-buffer)
@@ -1076,7 +1094,7 @@ font size is computed + 20 of this value."
 ;;; ##########################################################################
 
 (use-package ivy-prescient
-  :when (equal completion-handler 'comphand-ivy-counsel)
+  :when (equal completion-handler 'comphand-ivy)
   :after (ivy prescient)
   :custom
   (prescient-persist-mode t)
@@ -1143,8 +1161,7 @@ font size is computed + 20 of this value."
 ;;;; Code Completion
 (use-package corfu
   :disabled
-  :when (equal completion-handler 'comphand-vertico)
-  :after vertico
+  :when (equal completion-handler 'comphand-corfu)
   ;; Optional customizations
   :custom
   (corfu-cycle t)                  ; Allows cycling through candidates
@@ -1178,7 +1195,7 @@ font size is computed + 20 of this value."
 ;;; ##########################################################################
 ;; Add extensions
 (use-package cape
-  :when (equal completion-handler 'comphand-vertico)
+  :when (equal completion-handler 'comphand-corfu)
   :after corfu
   ;; Bind dedicated completion commands
   ;; Alternative prefix keys: C-c p, M-p, M-+, ...
@@ -1222,7 +1239,7 @@ font size is computed + 20 of this value."
 
 (use-package corfu-prescient
   :ensure t
-  :when (equal completion-handler 'comphand-vertico)
+  :when (equal completion-handler 'comphand-corfu)
   :after corfu prescient)
 
 ;;; ##########################################################################
@@ -1248,6 +1265,8 @@ font size is computed + 20 of this value."
 ;;; ##########################################################################
 
 (use-package marginalia
+  :when (or (equal completion-handler 'comphand-vertico)
+	    (equal completion-handler 'comphand-corfu))
   :ensure t
   :custom
   (marginalia-max-relative-age 0)
@@ -1352,7 +1371,7 @@ font size is computed + 20 of this value."
 (add-hook 'elpaca-after-init-hook
   (lambda ()
     (use-package ido
-      :when (equal completion-handler 'comphand-built-in)
+      :when (equal completion-handler 'comp-hand-ido)
       :ensure nil
       :config
       (ido-everywhere t))))
@@ -1360,7 +1379,7 @@ font size is computed + 20 of this value."
 ;;; ##########################################################################
 
 (use-package embark
-  :when enable-embark
+  :when (equal completion-handler 'comphand-vertico)
   :bind
   (("C-." . embark-act)         ;; pick some comfortable binding
     ("C-;" . embark-dwim)        ;; good alternative: M-.
@@ -2229,6 +2248,12 @@ font size is computed + 20 of this value."
     visual-fill-column-center-text enable-org-fill-column-centering)
   (visual-fill-column-mode 1))
 
+(defun mifi/toggle-org-centering ()
+  (interactive)
+  (setq-default enable-org-fill-column-centering
+    (not enable-org-fill-column-centering))
+  (org-mode-restart))
+
 (defun mifi/org-mode-setup ()
   (interactive)
   (org-indent-mode)
@@ -2701,6 +2726,7 @@ capture was not aborted."
 
 (use-package denote
   :when (equal custom-note-system 'custom-note-system-denote)
+  ;;:vc (:url "https://github.com/protesilaos/denote")
   :ensure ( :host github :repo "protesilaos/denote"
             :files (:defaults "*.el"))
   ;; :after which-key dired
@@ -2754,7 +2780,7 @@ capture was not aborted."
     (setq projectile-project-search-path '(custom-developer-root)))
   (setq projectile-switch-project-action #'projectile-dired))
 
-(when (equal completion-handler 'comphand-ivy-counsel)
+(when (equal completion-handler 'comphand-ivy)
   (use-package counsel-projectile
     :when (equal custom-project-handler 'custom-project-projectile)
     :after projectile
@@ -2803,6 +2829,7 @@ capture was not aborted."
 
 (use-package eglot
   :when (equal custom-ide 'custom-ide-eglot)
+  :after lsp-mode
   :ensure nil
   :defer t
   :hook
@@ -2836,6 +2863,7 @@ capture was not aborted."
 
 (use-package lsp-mode
   :when (or (equal custom-ide 'custom-ide-lsp) (equal custom-ide 'custom-ide-eglot))
+  :ensure t
   :commands (lsp lsp-deferred)
   :hook (lsp-mode . mifi/lsp-mode-setup)
   :init
@@ -2885,7 +2913,7 @@ capture was not aborted."
 
 (use-package lsp-ivy
   :when (and (or (equal custom-ide 'custom-ide-lsp) (equal custom-ide 'custom-ide-eglot))
-          (equal completion-handler 'comphand-ivy-counsel))
+          (equal completion-handler 'comphand-ivy))
   :after lsp ivy)
 
 ;;; ##########################################################################
@@ -2960,7 +2988,6 @@ capture was not aborted."
           ("C-c g g" . elpy-goto-definition)
           ("C-c g ?" . elpy-doc))
   :config
-  (use-package jedi)
   ;; (use-package flycheck
   ;;   :when (equal custom-ide 'custom-ide-elpy)
   ;;   :after elpy
@@ -2977,10 +3004,14 @@ capture was not aborted."
       ("<tab>" . company-indent-or-complete-common)))
   (elpy-enable))
 
+(use-package jedi
+  :after python elpy)
+
 ;;; ##########################################################################
 ;;; Debug Adapter Protocol
 (use-package dap-mode
-  :when (or (equal debug-adapter 'debug-adapter-dap-mode) enable-ocaml)
+  :when (equal debug-adapter 'debug-adapter-dap-mode)
+  :defer t
   :after hydra
   ;; Uncomment the config below if you want all UI panes to be hidden by default!
   ;; :custom
@@ -2999,25 +3030,35 @@ capture was not aborted."
 
 ;;; ##########################################################################
 
+;; For Emacs >= 30.0 it is possible to use the VC command like this:
+;; :vc (:url "https://github.com/emacs-lsp/dap-mode"
+;;      :main-file "dap-ocaml.el")
+;;
 (use-package dap-ocaml
   :when enable-ocaml
-  ;; :after tuareg-mode dap-mode
-  :ensure (:package "dap-ocaml" :type git :host github :repo "emacs-lsp/dap-mode"))
+  :after (:all dap-mode opam-emacs-setup)
+  :ensure (:package "dap-ocaml" :type git :host github :repo "emacs-lsp/dap-mode")
+  :ensure-system-package
+  ((ocamllsp . "opam install ocaml-lsp-server.1.18.0~5.2preview earlybird --yes")))
 
 (use-package dap-codelldb
   :when enable-ocaml
+  :after dap-mode
+  :defer t
   :ensure (:package "dap-codelldb" :type git :host github :repo "emacs-lsp/dap-mode"))
 
 ;;; ##########################################################################
 ;;; DAP for Python
 
-(use-package dap-python
-  :ensure (:package "dap-python" :type git :host github :repo "emacs-lsp/dap-mode")
-  :when (equal debug-adapter 'debug-adapter-dap-mode)
-  :after dap-mode
-  :config
-  (setq dap-python-executable "python3") ;; Otherwise it looks for 'python' else error.
-  (setq dap-python-debugger 'debugpy))
+(when enable-python
+  (use-package dap-python
+    ;; :vc (:url "https://github.com/emacs-lsp/dap-mode" :main-file "dap-python.el")
+    :ensure (:package "dap-python" :type git :host github :repo "emacs-lsp/dap-mode")
+    :when (equal debug-adapter 'debug-adapter-dap-mode)
+    :after dap-mode
+    :config
+    (setq dap-python-executable "python3") ;; Otherwise it looks for 'python' else error.
+    (setq dap-python-debugger 'debugpy)))
 
 ;;; ##########################################################################
 
@@ -3025,6 +3066,7 @@ capture was not aborted."
   :when (equal debug-adapter 'debug-adapter-dap-mode)
   :defer t
   :after dap-mode
+  ;; :vc (:url "https://github.com/emacs-lsp/dap-mode" :main-file "dap-lldb.el")
   :ensure ( :package "dap-lldb" :source nil :protocol https
             :inherit t :depth 1 :type git
             :host github :repo "emacs-lsp/dap-mode")
@@ -3295,22 +3337,28 @@ capture was not aborted."
 
 ;;; ##########################################################################
 
-(add-to-list 'auto-mode-alist '("\\.py\\'" . mifi/load-python-file-hook))
-
+;; Use built-in python language mode.
 (use-package python-mode
-  :hook (python-mode . mifi/python-mode-triggered))
+  :when enable-python
+  :mode ("\\.py\\'" . mifi/load-python-file-hook)
+  :hook (python-mode . mifi/python-mode-triggered)
+  :config
+  (if (boundp 'python-shell-completion-native-disabled-interpreters)
+    (add-to-list 'python-shell-completion-native-disabled-interpreters "python3")
+    (setq python-shell-completion-native-disabled-interpreters '("python3"))))
 
-(use-package blacken :after python) ;Format Python file upon save.
-
-(if (boundp 'python-shell-completion-native-disabled-interpreters)
-  (add-to-list 'python-shell-completion-native-disabled-interpreters "python3")
-  (setq python-shell-completion-native-disabled-interpreters '("python3")))
+(when enable-python
+  (use-package blacken
+    :when enable-python
+    :after python)) ;Format Python file upon save.
 
 ;;; ##########################################################################
 
-(use-package py-autopep8
-  :after python
-  :hook (python-mode . py-autopep8-mode))
+;; Using when instead of :when so that the package doesn't get loaded.
+(when enable-python
+  (use-package py-autopep8
+    :after python
+    :hook (python-mode . py-autopep8-mode)))
 
 ;;; ##########################################################################
 
@@ -3324,42 +3372,47 @@ capture was not aborted."
 (defalias 'reformat-src-block
   (kmacro "C-s b e g i n _ s r c SPC e m a c s - l i s p <return> <down> C-c ' C-x h C-c ] C-x h M-x u n t a b <return> C-c ' C-s e n d _ s r c <return> <down>"))
 
-(eval-after-load "python"
-  #'(bind-keys :map python-mode-map
-      ("C-c C-q" . quote-region)
-      ("C-c q"   . quote-word)
-      ("C-c |"   . display-fill-column-indicator-mode)))
+(when enable-python
+  (eval-after-load "python"
+    #'(bind-keys :map python-mode-map
+	("C-c C-q" . quote-region)
+	("C-c q"   . quote-word)
+	("C-c |"   . display-fill-column-indicator-mode))))
 
 ;;; ##########################################################################
 
-(use-package pyvenv-auto
-  :after python
-  :hook (python-mode . pyvenv-auto-run))
+;; Using when instead of :when so that the package doesn't get loaded.
+(when enable-python
+  (use-package pyvenv-auto
+    :after python
+    :hook (python-mode . pyvenv-auto-run)))
+
+;;; ##########################################################################
+;; Using when instead of :when so that the package doesn't get loaded.
+(when enable-python
+  (use-package pydoc
+    ;;:ensure (:host github :repo "statmobile/pydoc")
+    :after python
+    :custom
+    (pydoc-python-command "python3")
+    (pydoc-pip-version-command "pip3 --version")))
 
 ;;; ##########################################################################
 
-(use-package pydoc
-  ;;:ensure (:host github :repo "statmobile/pydoc")
-  :after python
-  :custom
-  (pydoc-python-command "python3")
-  (pydoc-pip-version-command "pip3 --version"))
-
-;;; ##########################################################################
-
-(use-package typescript-mode
-  :defer t
-  :mode "\\.ts\\'"
-  :hook
-  (typescript-mode . lsp-deferred)
-  (js2-mode . lsp-deferred)
-  :config
-  (setq typescript-indent-level 4)
-  (cond
-    ((equal debug-adapter 'debug-adapter-dap-mode)
-      (bind-keys :map typescript-mode-map
-        ("C-c ." . dap-hydra/body))
-      (dap-node-setup))))
+(when enable-ts
+  (use-package typescript-mode
+    :defer t
+    :mode "\\.ts\\'"
+    :hook
+    (typescript-mode . lsp-deferred)
+    (js2-mode . lsp-deferred)
+    :config
+    (setq typescript-indent-level 4)
+    (cond
+      ((equal debug-adapter 'debug-adapter-dap-mode)
+	(bind-keys :map typescript-mode-map
+          ("C-c ." . dap-hydra/body))
+	(dap-node-setup)))))
 
 ;;; ##########################################################################
 
@@ -3373,19 +3426,20 @@ capture was not aborted."
   (highlight-indentation-mode nil)
   (dap-firefox-setup))
 
-(use-package nodejs-repl :defer t)
-
 (defun mifi/nvm-which ()
   (let ((output (shell-command-to-string "source ~/.nvm/nvm.sh; nvm which")))
     (cadr (split-string output "[\n]+" t))))
 
-(setq nodejs-repl-command #'mifi/nvm-which)
+(use-package nodejs-repl
+  :defer t
+  :config
+  (setq nodejs-repl-command #'mifi/nvm-which))
 
 ;;; ##########################################################################
 
 (use-package js2-mode
   ;;:after simple-httpd
-  :ensure nil
+  :ensure t
   :hook (js-mode . js2-minor-mode)
   ;; :bind (:map js2-mode-map
   ;;         ("{" . paredit-open-curly)
@@ -3393,28 +3447,32 @@ capture was not aborted."
   :mode ("\\.js\\'" "\\.mjs\\'" "\\.json$")
   :custom (js2-highlight-level 3))
 
-;; (use-package skewer-mode
-;;   :ensure nil
-;;   :after js2-mode)
+(use-package skewer-mode
+  :ensure t
+  :after js2-mode)
 
-;; (use-package ac-js2
-;;   :after js2-mode skewer-mode
-;;   :hook (js2-mode . ac-js2-mode))
+(use-package ac-js2
+  :after js2-mode skewer-mode
+  :hook (js2-mode . ac-js2-mode))
 
 ;;; ##########################################################################
 
-(use-package z80-mode
-  :when enable-gb-dev
-  :ensure (:host github :repo "SuperDisk/z80-mode"))
+(when enable-gb-dev
+  (use-package z80-mode
+    :when enable-gb-dev
+    ;;:vc (:url "https://github.com/SuperDisk/z80-mode"))
+    :ensure (:host github :repo "SuperDisk/z80-mode"))
 
-(use-package mwim
-  :when enable-gb-dev
-  :ensure (:host github :repo "alezost/mwim.el"))
+  (use-package mwim
+    :when enable-gb-dev
+    ;;:vc (:url "https://github.com/alezost/mwim"))
+    :ensure (:host github :repo "alezost/mwim.el"))
 
-(use-package rgbds-mode
-  :when enable-gb-dev
-  :after mwim
-  :ensure (:host github :repo "japanoise/rgbds-mode"))
+  (use-package rgbds-mode
+    :when enable-gb-dev
+    :after mwim
+    ;;:vc (:url "https://github.com/japanoise/rgbds-mode"))
+    :ensure (:host github :repo "japanoise/rgbds-mode")))
 
 ;;; ##########################################################################
 
@@ -3522,65 +3580,52 @@ capture was not aborted."
   :after go-mode
   :hook (go-mode . go-guru-hl-identifier-mode))
 
-;;; ##########################################################################
-
 (let
   ((installer "bash -c \"sh <(curl -fsSL https://raw.githubusercontent.com/ocaml/opam/master/shell/install.sh) --version 2.2.0\""))
-  (use-package opam-installer
+  (use-package opam
     :when enable-ocaml
-    :ensure nil
+    :ensure t
     :ensure-system-package (opam . installer)))
+
+(defun opam-switch-prefix+relative-path (relative-path)
+  (let ((base (getenv "OPAM_SWITCH_PREFIX")))
+    (concat (concat base "/") relative-path)))
 
 ;;; ##########################################################################
 
 (use-package opam-std-libs
+  :when enable-ocaml
   :ensure nil
   :ensure-system-package
-  ( ("~/.opam" .                        "opam init")
-    ("~/.opam/default/lib/core" .       "opam install core")
-    ("~/.opam/default/lib/core_bench" . "opam install core_bench")
-    ("~/.opam/default/lib/utop" .       "opam install utop")))
+  ( ("~/.opam"                  . "opam init && opam install core utop base stdio --yes")
+    ("~/.opam/default/lib/core" . "opam install core --yes")
+    ("~/.opam/default/lib/utop" . "opam install utop --yes")))
 
 ;;; ##########################################################################
 
 (use-package opam-emacs-setup
   :when enable-ocaml
-  :ensure nil
-  :ensure-system-package
-  ( ("~/.opam/default/share/emacs/site-lisp/merlin.el" . "opam install merlin tuareg -y")
-    (dune . "opam install dune -y")))
-
-;;; ##########################################################################
-
-(let
-  ((file (expand-file-name "opam-user-setup.el" emacs-config-directory)))
-  (when (file-exists-p file)
-    (add-hook 'elpaca-after-init-hook
-      (lambda ()
-	(use-package opam-user-setup
-	  :unless (featurep 'opam-user-setup) ;; Don't allow to be run twice!
-	  :when enable-ocaml
-	  :after opam-emacs-setup
-	  :ensure nil
-	  :config
-	  (add-to-list 'exec-path "~/.opam/default/bin")
-	  (mifi/setup-path-from-exec-path))))))
+  :after opam-std-libs
+  :ensure nil);
+  ;; :ensure-system-package
+  ;; ;; we're using the new lps-server preview for 5.2.0 compatibility.
+  ;; ( ((opam-switch-prefix+relative-path "share/emacs/site-lisp/tuareg.el") .
+  ;;     "opam install merlin tuareg ocaml-lsp-server.1.18.0~5.2preview --yes")))
 
 ;;; ##########################################################################
 
 (let ((opam-share (ignore-errors (car (process-lines "opam" "var" "share")))))
   (when (and (and opam-share (file-directory-p opam-share)) enable-ocaml)
-    (add-to-list 'load-path (expand-file-name "emacs/site-lisp" opam-share))))
-    ;;(autoload 'merlin-mode "merlin" nil t nil)
-    ;;(add-hook 'tuareg-mode-hook 'merlin-mode t)
-    ;;(add-hook 'caml-mode-hook 'merlin-mode t)))
+    (message "Updating load-path for OPAM to %s" (expand-file-name "emacs/site-lisp" opam-share))
+    (add-to-list 'load-path (expand-file-name "emacs/site-lisp" opam-share))
+    (autoload 'merlin-mode "merlin" nil t nil)))
 
 ;;; ##########################################################################
 
 (use-package merlin
-  :when enable-ocaml :ensure nil :defer t
-  :delight " 🪄" 
-  :after opam-user-setup)
+  :when enable-ocaml :ensure nil :defer t 
+  :delight " 🪄"
+  :after opam-emacs-setup)
 
 (use-package merlin-eldoc
   :when enable-ocaml :ensure nil :defer t :after merlin)
@@ -3593,80 +3638,110 @@ capture was not aborted."
   (with-eval-after-load 'company
     (add-to-list 'company-backends 'merlin-company-backend)))
 
+(use-package dune
+  :when enable-ocaml :ensure t
+  :hook (dune-mode . opam-init)
+  :ensure-system-package
+  (dune . "opam install dune --yes"))
+
 ;;; ##########################################################################
 
 (defun mifi/tuareg-mode-hook ()
+  (interactive)
   (merlin-mode t)
-  (setq tuareg-mode-name "🐫")
+  (opam-init)
   (eglot-ensure)
+  (dap-mode)
+  ;; (lsp-deferred)  ;; Needed for dap-ocaml debug templates
+  ;;(lsp-update-server)
+  ;; (opam-auto-tools-setup)
+  (setq tuareg-mode-name "🐫")
   (when (functionp 'prettify-symbols-mode)
     (prettify-symbols-mode)))
 
 (use-package tuareg
-  :when enable-ocaml :after opam-user-setup :defer t :ensure t
+  :when enable-ocaml :ensure nil :defer t
+  ;; :after opam-emacs-setup merlin jsonrpc
   :hook (tuareg-mode . mifi/tuareg-mode-hook)
-  :mode
-  ("\\.ml\\'" . tuareg-mode)
-  ("\\.mli\\'" . tuareg-mode)
+  ;; :mode
+  ;; ("\\.ml\\'" . mifi/tuareg-mode-hook)
+  ;; ("\\.mli\\'" . tuareg-mode)
   :custom
   (tuareg-indent-align-with-first-arg t)
+  (compile-command "dune build ")
   :config
   (bind-keys :map tuareg-mode-map
     ("C-c ," . dap-hydra/body)))
+
+(use-package tuareg-opam
+  :when enable-ocaml
+  :ensure nil
+  :after tuareg)
+
+;;; ##########################################################################
+
+(let
+  ((file (expand-file-name "opam-user-setup.el" emacs-config-directory)))
+  (when (file-exists-p file)
+    (use-package opam-user-setup
+      :unless (featurep 'opam-user-setup) ;; Don't allow to be run twice!
+      :when enable-ocaml
+      :ensure nil
+      :after tuareg
+      :config
+      (setq-default tuareg-indent-align-with-first-arg t)
+      (setq-default compile-command "dune build ")
+      (add-hook 'tuareg-mode-hook #'mifi/tuareg-mode-hook))))
+
+;; (use-package caml
+;;   ;;:vc (:url "https://ghithub.com/ocaml/caml-mode"))
+;;   :ensure (:fetcher github :repo "ocaml/caml-mode" :files (*.el)))
+
+;; (use-package caml-font
+;;   :ensure (:package "caml-font" :type git :host github :repo "ocaml/caml-mode"))
+
+;; (use-package ocaml-ts-mode
+;;   :ensure (:package "ocaml-ts-mode" :source nil :protocol https :inherit t
+;; 	    :depth 1 :fetcher github :repo "dmitrig/ocaml-ts-mode"
+;; 	    :files ("*.el" "*.el.in" "dir" "*.info" "*.texi" "*.texinfo" "doc/dir" "doc/*.info"
+;; 		     "doc/*.texi" "doc/*.texinfo" "lisp/*.el"
+;; 		     (:exclude ".dir-locals.el" "test.el"
+;; 		       "tests.el" "*-test.el" "*-tests.el" "LICENSE" "README*" "*-pkg.el"))))
 
 ;;; ##########################################################################
 
 (use-package ocp-indent
   :when enable-ocaml
-  :after opam-user-setup
+  :after opam-emacs-setup
   :ensure-system-package
-  ("~/.opam/default/lib/ocp-indent" . "opam install ocp-indent -y")
+  ("~/.opam/default/lib/ocp-indent" . "opam install ocp-indent --yes")
+  ;;:vc (:url "https://github.com/OCamlPro/ocp-indent" :main-file "tools/ocp-indent.el"))
   :ensure (:inherit t :depth 1
            :fetcher github :repo "OCamlPro/ocp-indent"
            :files ("tools/ocp-indent.el")))
 
-(use-package dune
-  :ensure t)
-
 (use-package ocamlformat
   :when enable-ocaml :ensure t
-  :after (:any merlin tuareg)
+  :after ocp-indent
   :bind ("<f6>" . ocamlformat)
   :ensure-system-package
-  ("~/.opam/default/lib/ocamlformat" . "opam install ocamlformat -y")
+  ("~/.opam/default/lib/ocamlformat-lib" . "opam install ocamlformat --yes")
   :custom (ocamlformat-enable 'enable-outside-detected-project))
 
-;;; ##########################################################################
-
-(if *is-a-mac*
-  (use-package clojure-mode
-    :when enable-clojure
-    :ensure-system-package
-    ( (brew . "/bin/bash -c \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\"")
-      (java . "brew install --cask temurin@21")
-      (clojure . "brew install clojure/tools/clojure"))
-    :ensure t)
-  ;;else
-  (use-package clojure-mode
-    :when enable-clojure
-    :ensure t))
-
-(use-package clojure-ts-mode
-  :after clojure-mode
-  :ensure t)
-
-;;; ##########################################################################
-
-(use-package cider
-  :when enable-clojure
-  :after clojure-mode
+(use-package utop
+  :when enable-ocaml
+  :after opam-user-setup
   :ensure t
+  :defer t
   :custom
-  (cider-show-error-buffer t)
-  (cider-auto-select-error-buffer t)
-  (cider-repl-history-file "~/.emacs.d/cider-history")
-  (cider-repl-pop-to-buffer-on-connect t)
-  (cider-repl-wrap-history t))
+  (utop-command "opam config exec utop -- -emacs"))
+
+(use-package opam-switch-mode
+  :when enable-ocaml
+  :ensure t
+  :after opam-user-setup
+  :hook
+  (tuareg-mode . opam-switch-mode))
 
 ;;; ##########################################################################
 
@@ -3701,18 +3776,6 @@ capture was not aborted."
 
 ;;; ##########################################################################
 
-(use-package jsonrpc
-  :ensure t
-  :config
-  ;; For some odd reason, it is possible that jsonrpc will try to load a
-  ;; theme. (jsonrpc/lisp/custom.el:1362). If our theme hasn't been loaded
-  ;; yet, go ahead and try. This could prevent a startup without the theme
-  ;; properly loaded.
-  (unless theme-did-load
-    (mifi/load-theme-from-selector)))
-
-;;; ##########################################################################
-
 (use-package mw-thesaurus
   :when enable-thesaurus
   :ensure t
@@ -3734,6 +3797,8 @@ capture was not aborted."
 
 (use-package solaire-mode
   :after treemacs
+  ;; :vc ( :url "https://github.com/hlissner/emacs-solaire-mode"
+  ;; 	:ignored-files ("solaire-mode-test.el") )
   :ensure (:package "solaire-mode" :source "MELPA"
             :repo "hlissner/emacs-solaire-mode" :fetcher github)
   :hook (elpaca-after-init . solaire-global-mode)
@@ -3954,6 +4019,7 @@ capture was not aborted."
           (bind-keys :map map
             ("M-RET M-RET" . org-insert-heading)
             ("M-RET o f" . mifi/set-org-fill-column-interactively)
+	    ("M-RET o c" . mifi/toggle-org-centering)
             ("M-RET o l" . org-toggle-link-display)))
         ((equal major-mode 'python-mode)
           (bind-keys :map map
@@ -3967,6 +4033,7 @@ capture was not aborted."
   ;; Override default menu text with better things
   (which-key-add-key-based-replacements "M-RET t t" "thesaurus-at-point")
   (which-key-add-key-based-replacements "M-RET o" "org-menu")
+  (which-key-add-key-based-replacements "M-RET o c" "toggle-org-centering")
   (which-key-add-key-based-replacements "M-RET o f" "set-org-fill-column"))
 
 ;;; ##########################################################################
@@ -4017,7 +4084,7 @@ capture was not aborted."
       (erase-buffer)
       (beginning-of-buffer)
       (insert (format
-              ";; Well Met and Happy hacking %s!\n%s\n\n" user-login-name
+              ";; Hail fellow well met! Here's to Happy hacking %s!\n%s\n\n" user-login-name
               ";; Press M-RET (Meta-RET) to open Mitch's Context Aware Menu"))
       (end-of-buffer))
 

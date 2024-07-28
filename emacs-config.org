@@ -4,6 +4,7 @@
 #+OPTIONS: toc:nil h:4
 #+STARTUP: showeverything
 #+PROPERTY: header-args:emacs-lisp :tangle ./init.el :results silent :exports code :mkdirp yes
+#+EXPORT_FILE_NAME: .emacs-temp
 #+modified-date: <2024-06-29 Sat>
 
 * Synopsis
@@ -23,9 +24,9 @@ So far, the following collections of options are included here:
   + Default *scratch* buffer
   
 - Completion Frameworks:
-  + Vertico, Consult
+  + Vertico, Consult, orderless, marginalia, embark
   + Ivy, Counsel, Swiper
-  + Corfu
+  + Corfu, oderless, cape eglot
 
 - Customized Org mode
   
@@ -296,7 +297,6 @@ This is the standard format of a =lisp= header that should appear for all =lisp=
 
 
 
-
 ** Elpaca Bootstrap
 
 Elpaca is an elisp package manager. It allows users to find, install, update, and remove third-party packages for Emacs. It is a replacement for the built-in Emacs package manager, package.el.
@@ -433,34 +433,25 @@ Thes values toggle the availability of specific packages. These options are not 
   ;;; ##########################################################################
   ;;; Feature Toggles
 
-  (defcustom enable-gb-dev nil
-    "If set to t, the z80-mode and other GameBoy related packages
-      will be enabled."
-    :type 'boolean
-    :group 'mifi-config-toggles)
-
-  (defcustom enable-ts nil
-    "Set to t to enable TypeScript handling."
-    :type 'boolean
-    :group 'mifi-config-toggles)
-
-  (defcustom enable-ocaml nil
-    "Set to t to enable inclusion of OCaml support: Merlin, Tuareg."
-    :type 'boolean
-    :group 'mifi-config-toggles)
-
-  (defcustom enable-clojure nil
-    "Set to t to enable inclusion of Clojure and Cider"
-    :type 'boolean
-    :group 'mifi-config-toggles)
-
   (defcustom enable-centaur-tabs nil
     "Set to t to enable `centaur-tabs' which uses tabs to represent open buffer."
     :type 'boolean
     :group 'mifi-config-toggles)
 
-  (defcustom enable-neotree nil
-    "Set to t to enable the `neotree' package."
+  (defcustom enable-embark nil
+    "Set to t to enable the Embark package."
+    :type 'boolean
+    :group 'mifi-config-toggles)
+
+  (defcustom enable-frameset-restore t
+    "Set to t to enable restoring the last Emacs window size and position
+     upon startup."
+    :type 'boolean
+    :group 'mifi-config-toggles)
+
+  (defcustom enable-gb-dev nil
+    "If set to t, the z80-mode and other GameBoy related packages
+      will be enabled."
     :type 'boolean
     :group 'mifi-config-toggles)
 
@@ -470,13 +461,23 @@ Thes values toggle the availability of specific packages. These options are not 
     :type 'boolean
     :group 'mifi-config-toggles)
 
+  (defcustom enable-ocaml nil
+    "Set to t to enable inclusion of OCaml support: Merlin, Tuareg."
+    :type 'boolean
+    :group 'mifi-config-toggles)
+
   (defcustom enable-org-fill-column-centering nil
     "Set to t to center the visual-fill column of the Org display."
     :type 'boolean
     :group 'mifi-config-toggles)
 
-  (defcustom enable-embark nil
-    "Set to t to enable the Embark package."
+  (defcustom enable-python t
+    "Set to t to enable Python language support."
+    :type 'boolean
+    :group 'mifi-config-toggles)
+
+  (defcustom enable-neotree nil
+    "Set to t to enable the `neotree' package."
     :type 'boolean
     :group 'mifi-config-toggles)
 
@@ -485,10 +486,8 @@ Thes values toggle the availability of specific packages. These options are not 
     :type 'boolean
     :group 'mifi-config-toggles)
 
-  ;; Keep as defvar until the frameset save/restore process works better.
-  (defcustom enable-frameset-restore t
-    "Set to t to enable restoring the last Emacs window size and position
-     upon startup."
+  (defcustom enable-ts nil
+    "Set to t to enable TypeScript handling."
     :type 'boolean
     :group 'mifi-config-toggles)
 
@@ -557,9 +556,10 @@ These are features that basically have multiple-choice options instead of being 
   commands that are customised to make the best use of Ivy.  Swiper is an
   alternative to isearch that uses Ivy to show an overview of all matches."
     :type '(radio
-             (const :tag "Vertico, Corfu, Cape, Consult completion system." comphand-vertico)
-             (const :tag "Ivy, Counsel, Swiper completion systems" comphand-ivy-counsel)
-             (const :tag "Built-in Ido" comphand-built-in))
+             (const :tag "Vertico, Orderless, Consult, Embark completion system." comphand-vertico)
+             (const :tag "Ivy, Counsel, Swiper completion systems" comphand-ivy)
+  	   (const :tag "Corfu, Orderless, Cape" comphand-corfu)
+             (const :tag "Built-in Ido" comp-hand-ido))
     :group 'mifi-config-features)
 
   ;; The debug-adapter used to also support DAPE. For now, that option has been
@@ -628,6 +628,8 @@ These are features that basically have multiple-choice options instead of being 
     :group 'mifi-config-features)
 
 #+end_src
+
+#+INLCLUDE: org-incl/project.el src org
 
 ** Theme Specific Values
 
@@ -856,7 +858,7 @@ This directory is expected to be in the ~emacs-config-direcory~ dir. This can be
 
   (add-to-list 'load-path (expand-file-name "lisp" emacs-config-directory))
   ;; mostly for OCaml
-  (add-to-list 'load-path (expand-file-name "" emacs-config-directory))
+  (add-to-list 'load-path (expand-file-name "." emacs-config-directory))
   (add-to-list 'custom-theme-load-path (expand-file-name "Themes" custom-docs-dir))
 
 #+end_src
@@ -1080,6 +1082,25 @@ This is a collection of functions to make handling installed system packages mor
 
 #+end_src
 
+** JSON-RPC
+
+The JSON-RPC protocol is used to communicate with many different types of server. This is required for the DAP Debug Adapter as well as Eglot.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package jsonrpc
+    :ensure t)
+    ;; :config
+    ;; For some odd reason, it is possible that jsonrpc will try to load a
+    ;; theme. (jsonrpc/lisp/custom.el:1362). If our theme hasn't been loaded
+    ;; yet, go ahead and try. This could prevent a startup without the theme
+    ;; properly loaded.
+    ;; (unless theme-did-load
+    ;;   (mifi/load-theme-from-selector)))
+
+#+end_src
+
 ** Auto-complete
 #+begin_src emacs-lisp :tangle no
   ;;; ##########################################################################
@@ -1222,6 +1243,7 @@ The Hydra is vanquished once Hercules, any binding that isn't the Hydra's head, 
   ;;; ##########################################################################
 
   (use-package hydra
+    ;; :vc (:url "https://github.com/abo-abo/hydra" :ignored-files ("lv.el")))
     :ensure (:repo "abo-abo/hydra" :fetcher github
               :files (:defaults (:exclude "lv.el"))))
 
@@ -1514,8 +1536,9 @@ Jinx is a fast just-in-time spell-checker for Emacs. Jinx highlights misspelled 
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
-  
+
   (use-package jinx
+    ;;:vc (:url "https://github.com/minad/jinx")
     :ensure (:host github :repo "minad/jinx")
     ;;:hook (emacs-startup . global-jinx-mode)
     :bind (("C-c C-$" . jinx-correct)
@@ -1679,11 +1702,15 @@ This package provides an orderless completion style that divides the pattern int
   ;;; ##########################################################################
 
   (use-package orderless
-    :when (or (equal completion-handler 'comphand-vertico)
-            (equal completion-handler 'comphand-ivy-counsel))
-    :after (:any ivy swiper vertico counsel)
+    :when (or (or (equal completion-handler 'comphand-vertico)
+                  (equal completion-handler 'comphand-ivy))
+              (equal completion-handler 'comphand-corfu))
+    :after (:any ivy swiper vertico counsel corfu)
     :ensure t
     :custom
+    (when (equal completion-handler 'comphand-ivy)
+      (setq ivy-re-builders-alist '((t . orderless-ivy-re-builder)))
+      (add-to-list 'ivy-highlight-functions-alist '(orderless-ivy-re-builder . orderless-ivy-highlight)))
     (completion-styles '(orderless basic))
     (completion-category-overrides '((file (styles basic partial-completion)))))
 
@@ -1698,7 +1725,7 @@ This package provides an orderless completion style that divides the pattern int
   ;;; Swiper and IVY mode
 
   (use-package ivy
-    :when (equal completion-handler 'comphand-ivy-counsel)
+    :when (equal completion-handler 'comphand-ivy)
     :ensure t
     :bind (("C-s" . swiper)
             :map ivy-minibuffer-map
@@ -1733,7 +1760,7 @@ Ivy-yasnippet lets you preview yasnippet snippets with ivy.
   ;;; ##########################################################################
 
   (use-package ivy-rich
-    :when (equal completion-handler 'comphand-ivy-counsel)
+    :when (equal completion-handler 'comphand-ivy)
     :after ivy
     :init
     (ivy-rich-mode 1)
@@ -1741,7 +1768,7 @@ Ivy-yasnippet lets you preview yasnippet snippets with ivy.
     (setcdr (assq t ivy-format-functions-alist) #'ivy-format-function-line))
 
   (use-package ivy-yasnippet
-    :when (equal completion-handler 'comphand-ivy-counsel)
+    :when (equal completion-handler 'comphand-ivy)
     :after (:any yasnippet ivy))
   ;; :ensure (:host github :repo "mkcms/ivy-yasnippet"))
 
@@ -1755,7 +1782,7 @@ Swiper is an alternative to isearch that uses Ivy to show an overview of all mat
   ;;; ##########################################################################
 
   (use-package swiper
-    :when (equal completion-handler 'comphand-ivy-counsel)
+    :when (equal completion-handler 'comphand-ivy)
     :after ivy
     :ensure t)
 
@@ -1769,7 +1796,7 @@ Swiper is an alternative to isearch that uses Ivy to show an overview of all mat
   ;;; ##########################################################################
 
   (use-package counsel
-    :when (equal completion-handler 'comphand-ivy-counsel)
+    :when (equal completion-handler 'comphand-ivy)
     :after ivy
     :defer t
     :bind ( ("C-M-j" . 'counsel-switch-buffer)
@@ -1800,7 +1827,7 @@ Swiper is an alternative to isearch that uses Ivy to show an overview of all mat
   ;;; ##########################################################################
 
   (use-package ivy-prescient
-    :when (equal completion-handler 'comphand-ivy-counsel)
+    :when (equal completion-handler 'comphand-ivy)
     :after (ivy prescient)
     :custom
     (prescient-persist-mode t)
@@ -1888,8 +1915,7 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
   ;;;; Code Completion
   (use-package corfu
     :disabled
-    :when (equal completion-handler 'comphand-vertico)
-    :after vertico
+    :when (equal completion-handler 'comphand-corfu)
     ;; Optional customizations
     :custom
     (corfu-cycle t)                  ; Allows cycling through candidates
@@ -1928,7 +1954,7 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
   ;;; ##########################################################################
   ;; Add extensions
   (use-package cape
-    :when (equal completion-handler 'comphand-vertico)
+    :when (equal completion-handler 'comphand-corfu)
     :after corfu
     ;; Bind dedicated completion commands
     ;; Alternative prefix keys: C-c p, M-p, M-+, ...
@@ -1977,7 +2003,7 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
 
   (use-package corfu-prescient
     :ensure t
-    :when (equal completion-handler 'comphand-vertico)
+    :when (equal completion-handler 'comphand-corfu)
     :after corfu prescient)
 
 #+end_src
@@ -2017,6 +2043,8 @@ Marginalia are marks or annotations placed at the margin of the page of a book o
   ;;; ##########################################################################
 
   (use-package marginalia
+    :when (or (equal completion-handler 'comphand-vertico)
+  	    (equal completion-handler 'comphand-corfu))
     :ensure t
     :custom
     (marginalia-max-relative-age 0)
@@ -2150,7 +2178,7 @@ Enable the IDO handler everywhere.
   (add-hook 'elpaca-after-init-hook
     (lambda ()
       (use-package ido
-        :when (equal completion-handler 'comphand-built-in)
+        :when (equal completion-handler 'comp-hand-ido)
         :ensure nil
         :config
         (ido-everywhere t))))
@@ -2165,7 +2193,7 @@ Embark makes it easy to choose a command to run based on what is near point, bot
   ;;; ##########################################################################
 
   (use-package embark
-    :when enable-embark
+    :when (equal completion-handler 'comphand-vertico)
     :bind
     (("C-." . embark-act)         ;; pick some comfortable binding
       ("C-;" . embark-dwim)        ;; good alternative: M-.
@@ -3401,6 +3429,12 @@ This section contains the basic configuration for =org-mode= plus the configurat
       visual-fill-column-center-text enable-org-fill-column-centering)
     (visual-fill-column-mode 1))
 
+  (defun mifi/toggle-org-centering ()
+    (interactive)
+    (setq-default enable-org-fill-column-centering
+      (not enable-org-fill-column-centering))
+    (org-mode-restart))
+
   (defun mifi/org-mode-setup ()
     (interactive)
     (org-indent-mode)
@@ -3744,15 +3778,14 @@ Note that org-modern is a full replacement for both org-superstar and org-bullet
 
 *** Org-transclusion
 
-Org-transclusion lets you insert a copy of text content via a file link or ID link within an Org file. It lets you have the same content present in different buffers at the same time without copy-and-pasting it. Edit the source of the content, and you can refresh the transcluded copies to the up-to-date state. Org-transclusion keeps your files clear of the transcluded copies, leaving only the links to the original content.
-
-*This is experimental for me and will only enable it when testing.*
+Org-transclusion lets you insert a copy of text content via a file link or ID link within an Org file. It lets you have the same content present in different buffers at the same time without copy-and-pasting it. Edit the source of the content, and you can refresh the transcluded copies to the up-to-date state. Org-transclusion keeps your files clear of the transcluded copies, leaving only the links to the original 
 
 #+begin_src emacs-lisp :tangle no
   ;;; ##########################################################################
 
   (use-package org-transclusion
     :after org
+    :ensure nil
     :config
     (define-key global-map (kbd "<f12>") #'org-transclusion-add)
     (define-key global-map (kbd "C-n t") #'org-transclusion-mode))
@@ -4011,6 +4044,7 @@ Denote’s file-naming scheme is not limited to “notes”. It can be used for 
 
   (use-package denote
     :when (equal custom-note-system 'custom-note-system-denote)
+    ;;:vc (:url "https://github.com/protesilaos/denote")
     :ensure ( :host github :repo "protesilaos/denote"
               :files (:defaults "*.el"))
     ;; :after which-key dired
@@ -4071,7 +4105,7 @@ Denote’s file-naming scheme is not limited to “notes”. It can be used for 
       (setq projectile-project-search-path '(custom-developer-root)))
     (setq projectile-switch-project-action #'projectile-dired))
 
-  (when (equal completion-handler 'comphand-ivy-counsel)
+  (when (equal completion-handler 'comphand-ivy)
     (use-package counsel-projectile
       :when (equal custom-project-handler 'custom-project-projectile)
       :after projectile
@@ -4083,7 +4117,10 @@ Denote’s file-naming scheme is not limited to “notes”. It can be used for 
 
 ** Project.el
 
-This is the default built-in project system. For those not needing the full-featured ~projectile~, this package is generally enough.
+This is the default built-in project system. For those not needing the full-featured ~projectile~, this package is g
+enerally enough.
+
+#+;;#+INCLUDE: "org-incl/project.el" src emacs-lisp
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
@@ -4153,6 +4190,7 @@ The following are configured for Python development and provide an <<<IDE>>> typ
 
   (use-package eglot
     :when (equal custom-ide 'custom-ide-eglot)
+    :after lsp-mode
     :ensure nil
     :defer t
     :hook
@@ -4200,6 +4238,7 @@ Client for Language Server Protocol (v3.14). lsp-mode aims to provide IDE-like e
 
   (use-package lsp-mode
     :when (or (equal custom-ide 'custom-ide-lsp) (equal custom-ide 'custom-ide-eglot))
+    :ensure t
     :commands (lsp lsp-deferred)
     :hook (lsp-mode . mifi/lsp-mode-setup)
     :init
@@ -4263,7 +4302,7 @@ Integration between lsp-mode and treemacs and implementation of treeview control
 
   (use-package lsp-ivy
     :when (and (or (equal custom-ide 'custom-ide-lsp) (equal custom-ide 'custom-ide-eglot))
-            (equal completion-handler 'comphand-ivy-counsel))
+            (equal completion-handler 'comphand-ivy))
     :after lsp ivy)
   
 #+end_src
@@ -4381,38 +4420,40 @@ Once installed, Elpy will automatically provide code completion, syntax error hi
 C-c C-c evaluates the current python script (or region if something is selected) in an interactive python shell. The python shell is automatically displayed aside of your script. C-RET evaluates the current statement (current line plus the following nested lines). C-c C-z switches between your script and the interactive shell. C-c C-d displays documentation for the thing under cursor. The documentation will pop in a different buffer, that can be closed with q.
 
 #+begin_src emacs-lisp
-    ;;; ##########################################################################
+  ;;; ##########################################################################
 
-    (use-package elpy
-      :when (equal custom-ide 'custom-ide-elpy)
-      :after python which-key
-      :custom
-      (elpy-rpc-python-command "python3")
-      (display-fill-column-indicator-mode 1)
-      (highlight-indentation-mode nil)
-      :bind (:map python-mode-map
-              ("C-c g a" . elpy-goto-assignment)
-              ("C-c g o" . elpy-goto-definition-other-window)
-              ("C-c g g" . elpy-goto-definition)
-              ("C-c g ?" . elpy-doc))
-      :config
-      (use-package jedi)
-      ;; (use-package flycheck
-      ;;   :when (equal custom-ide 'custom-ide-elpy)
-      ;;   :after elpy
-      ;;   :defer t
-      ;;   :delight "fc"
-      ;;   ;;:ensure (:host github :repo "flycheck/flycheck")
-      ;;   :hook (elpy-mode . flycheck-mode))
-      (which-key-add-key-based-replacements "C-c g a" "goto-assignment")
-      (which-key-add-key-based-replacements "C-c g o" "find-defitions-other-window")
-      (which-key-add-key-based-replacements "C-c g g" "find-defitions")
-      (which-key-add-key-based-replacements "C-c g ?" "eldoc-definition")
-      (if (featurep 'company)
-        (bind-keys :map elpy-mode-map
-          ("<tab>" . company-indent-or-complete-common)))
-      (elpy-enable))
+  (use-package elpy
+    :when (equal custom-ide 'custom-ide-elpy)
+    :after python which-key
+    :custom
+    (elpy-rpc-python-command "python3")
+    (display-fill-column-indicator-mode 1)
+    (highlight-indentation-mode nil)
+    :bind (:map python-mode-map
+            ("C-c g a" . elpy-goto-assignment)
+            ("C-c g o" . elpy-goto-definition-other-window)
+            ("C-c g g" . elpy-goto-definition)
+            ("C-c g ?" . elpy-doc))
+    :config
+    ;; (use-package flycheck
+    ;;   :when (equal custom-ide 'custom-ide-elpy)
+    ;;   :after elpy
+    ;;   :defer t
+    ;;   :delight "fc"
+    ;;   ;;:ensure (:host github :repo "flycheck/flycheck")
+    ;;   :hook (elpy-mode . flycheck-mode))
+    (which-key-add-key-based-replacements "C-c g a" "goto-assignment")
+    (which-key-add-key-based-replacements "C-c g o" "find-defitions-other-window")
+    (which-key-add-key-based-replacements "C-c g g" "find-defitions")
+    (which-key-add-key-based-replacements "C-c g ?" "eldoc-definition")
+    (if (featurep 'company)
+      (bind-keys :map elpy-mode-map
+        ("<tab>" . company-indent-or-complete-common)))
+    (elpy-enable))
 
+  (use-package jedi
+    :after python elpy)
+  
 #+end_src
 
 
@@ -4430,7 +4471,8 @@ The Debug Adapter Protocol makes it possible to implement a generic debugger for
   ;;; ##########################################################################
   ;;; Debug Adapter Protocol
   (use-package dap-mode
-    :when (or (equal debug-adapter 'debug-adapter-dap-mode) enable-ocaml)
+    :when (equal debug-adapter 'debug-adapter-dap-mode)
+    :defer t
     :after hydra
     ;; Uncomment the config below if you want all UI panes to be hidden by default!
     ;; :custom
@@ -4452,14 +4494,22 @@ The Debug Adapter Protocol makes it possible to implement a generic debugger for
 **** DAP Package for OCaml
 #+begin_src emacs-lisp
   ;;; ##########################################################################
-  
+
+  ;; For Emacs >= 30.0 it is possible to use the VC command like this:
+  ;; :vc (:url "https://github.com/emacs-lsp/dap-mode"
+  ;;      :main-file "dap-ocaml.el")
+  ;;
   (use-package dap-ocaml
     :when enable-ocaml
-    ;; :after tuareg-mode dap-mode
-    :ensure (:package "dap-ocaml" :type git :host github :repo "emacs-lsp/dap-mode"))
+    :after (:all dap-mode opam-emacs-setup)
+    :ensure (:package "dap-ocaml" :type git :host github :repo "emacs-lsp/dap-mode")
+    :ensure-system-package
+    ((ocamllsp . "opam install ocaml-lsp-server.1.18.0~5.2preview earlybird --yes")))
 
   (use-package dap-codelldb
     :when enable-ocaml
+    :after dap-mode
+    :defer t
     :ensure (:package "dap-codelldb" :type git :host github :repo "emacs-lsp/dap-mode"))
 
 #+end_src
@@ -4470,13 +4520,15 @@ The Debug Adapter Protocol makes it possible to implement a generic debugger for
   ;;; ##########################################################################
   ;;; DAP for Python
 
-  (use-package dap-python
-    :ensure (:package "dap-python" :type git :host github :repo "emacs-lsp/dap-mode")
-    :when (equal debug-adapter 'debug-adapter-dap-mode)
-    :after dap-mode
-    :config
-    (setq dap-python-executable "python3") ;; Otherwise it looks for 'python' else error.
-    (setq dap-python-debugger 'debugpy))
+  (when enable-python
+    (use-package dap-python
+      ;; :vc (:url "https://github.com/emacs-lsp/dap-mode" :main-file "dap-python.el")
+      :ensure (:package "dap-python" :type git :host github :repo "emacs-lsp/dap-mode")
+      :when (equal debug-adapter 'debug-adapter-dap-mode)
+      :after dap-mode
+      :config
+      (setq dap-python-executable "python3") ;; Otherwise it looks for 'python' else error.
+      (setq dap-python-debugger 'debugpy)))
 
 #+end_src
 
@@ -4491,6 +4543,7 @@ Something that is needed for Rust and Go debugging.
     :when (equal debug-adapter 'debug-adapter-dap-mode)
     :defer t
     :after dap-mode
+    ;; :vc (:url "https://github.com/emacs-lsp/dap-mode" :main-file "dap-lldb.el")
     :ensure ( :package "dap-lldb" :source nil :protocol https
               :inherit t :depth 1 :type git
               :host github :repo "emacs-lsp/dap-mode")
@@ -4533,33 +4586,34 @@ Something that is needed for Rust and Go debugging.
 #+begin_src emacs-lisp :tangle no
   ;;; ##########################################################################
 
-  ;; (with-eval-after-load 'dap-lldb
-  ;;   (dap-register-debug-template
-  ;;     "Rust::LLDB Run Configuration"
-  ;;     (list :type "lldb"
-  ;;       :request "launch"
-  ;;       :name "LLDB::Run"
-  ;;       :gdbpath "rust-lldb"
-  ;;       :target nil
-  ;;       :cwd nil)))
+  (when enable-python
+    ;; (with-eval-after-load 'dap-lldb
+    ;;   (dap-register-debug-template
+    ;;     "Rust::LLDB Run Configuration"
+    ;;     (list :type "lldb"
+    ;;       :request "launch"
+    ;;       :name "LLDB::Run"
+    ;;       :gdbpath "rust-lldb"
+    ;;       :target nil
+    ;;       :cwd nil)))
 
-  (with-eval-after-load 'dap-python
-    (dap-register-debug-template "Python :: Run file from project directory"
-      (list :type "python"
-        :args ""
-        :cwd nil
-        :module nil
-        :program nil
-        :request "launch"))
-    
-    (dap-register-debug-template "Python :: Run file (buffer)"
-      (list :type "python"
-        :args ""
-        :cwd nil
-        :module nil
-        :program nil
-        :request "launch"
-        :name "Python :: Run file (buffer)")))
+    (with-eval-after-load 'dap-python
+      (dap-register-debug-template "Python :: Run file from project directory"
+        (list :type "python"
+  	:args ""
+  	:cwd nil
+  	:module nil
+  	:program nil
+  	:request "launch"))
+      
+      (dap-register-debug-template "Python :: Run file (buffer)"
+        (list :type "python"
+  	:args ""
+  	:cwd nil
+  	:module nil
+  	:program nil
+  	:request "launch"
+  	:name "Python :: Run file (buffer)"))))
 
 #+end_src
 
@@ -4901,16 +4955,20 @@ This is the primary Python setup that is triggered by the first load of the Pyth
 #+begin_src emacs-lisp
   ;;; ##########################################################################
 
-  (add-to-list 'auto-mode-alist '("\\.py\\'" . mifi/load-python-file-hook))
-
+  ;; Use built-in python language mode.
   (use-package python-mode
-    :hook (python-mode . mifi/python-mode-triggered))
+    :when enable-python
+    :mode ("\\.py\\'" . mifi/load-python-file-hook)
+    :hook (python-mode . mifi/python-mode-triggered)
+    :config
+    (if (boundp 'python-shell-completion-native-disabled-interpreters)
+      (add-to-list 'python-shell-completion-native-disabled-interpreters "python3")
+      (setq python-shell-completion-native-disabled-interpreters '("python3"))))
 
-  (use-package blacken :after python) ;Format Python file upon save.
-
-  (if (boundp 'python-shell-completion-native-disabled-interpreters)
-    (add-to-list 'python-shell-completion-native-disabled-interpreters "python3")
-    (setq python-shell-completion-native-disabled-interpreters '("python3")))
+  (when enable-python
+    (use-package blacken
+      :when enable-python
+      :after python)) ;Format Python file upon save.
 
 #+end_src
 
@@ -4921,9 +4979,11 @@ autopep8 automatically formats Python code to conform to the `PEP 8` style guide
 #+begin_src emacs-lisp
   ;;; ##########################################################################
 
-  (use-package py-autopep8
-    :after python
-    :hook (python-mode . py-autopep8-mode))
+  ;; Using when instead of :when so that the package doesn't get loaded.
+  (when enable-python
+    (use-package py-autopep8
+      :after python
+      :hook (python-mode . py-autopep8-mode)))
 
 #+end_src
 
@@ -4943,11 +5003,12 @@ autopep8 automatically formats Python code to conform to the `PEP 8` style guide
   (defalias 'reformat-src-block
     (kmacro "C-s b e g i n _ s r c SPC e m a c s - l i s p <return> <down> C-c ' C-x h C-c ] C-x h M-x u n t a b <return> C-c ' C-s e n d _ s r c <return> <down>"))
 
-  (eval-after-load "python"
-    #'(bind-keys :map python-mode-map
-        ("C-c C-q" . quote-region)
-        ("C-c q"   . quote-word)
-        ("C-c |"   . display-fill-column-indicator-mode)))
+  (when enable-python
+    (eval-after-load "python"
+      #'(bind-keys :map python-mode-map
+  	("C-c C-q" . quote-region)
+  	("C-c q"   . quote-word)
+  	("C-c |"   . display-fill-column-indicator-mode))))
 
 #+end_src
 
@@ -4958,9 +5019,11 @@ We use Pyvenv-auto is a package that automatically changes to the Python virtual
 #+begin_src emacs-lisp
   ;;; ##########################################################################
 
-  (use-package pyvenv-auto
-    :after python
-    :hook (python-mode . pyvenv-auto-run))
+  ;; Using when instead of :when so that the package doesn't get loaded.
+  (when enable-python
+    (use-package pyvenv-auto
+      :after python
+      :hook (python-mode . pyvenv-auto-run)))
 
 #+end_src
 
@@ -4970,13 +5033,14 @@ We use Pyvenv-auto is a package that automatically changes to the Python virtual
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
-
-  (use-package pydoc
-    ;;:ensure (:host github :repo "statmobile/pydoc")
-    :after python
-    :custom
-    (pydoc-python-command "python3")
-    (pydoc-pip-version-command "pip3 --version"))
+  ;; Using when instead of :when so that the package doesn't get loaded.
+  (when enable-python
+    (use-package pydoc
+      ;;:ensure (:host github :repo "statmobile/pydoc")
+      :after python
+      :custom
+      (pydoc-python-command "python3")
+      (pydoc-pip-version-command "pip3 --version")))
 
 #+end_src
 
@@ -4988,19 +5052,20 @@ This is a basic configuration for the TypeScript language so that =.ts= files ac
 #+begin_src emacs-lisp
   ;;; ##########################################################################
 
-  (use-package typescript-mode
-    :defer t
-    :mode "\\.ts\\'"
-    :hook
-    (typescript-mode . lsp-deferred)
-    (js2-mode . lsp-deferred)
-    :config
-    (setq typescript-indent-level 4)
-    (cond
-      ((equal debug-adapter 'debug-adapter-dap-mode)
-        (bind-keys :map typescript-mode-map
-          ("C-c ." . dap-hydra/body))
-        (dap-node-setup))))
+  (when enable-ts
+    (use-package typescript-mode
+      :defer t
+      :mode "\\.ts\\'"
+      :hook
+      (typescript-mode . lsp-deferred)
+      (js2-mode . lsp-deferred)
+      :config
+      (setq typescript-indent-level 4)
+      (cond
+        ((equal debug-adapter 'debug-adapter-dap-mode)
+  	(bind-keys :map typescript-mode-map
+            ("C-c ." . dap-hydra/body))
+  	(dap-node-setup)))))
 
 #+end_src
 
@@ -5019,13 +5084,14 @@ This is a basic configuration for the TypeScript language so that =.ts= files ac
     (highlight-indentation-mode nil)
     (dap-firefox-setup))
 
-  (use-package nodejs-repl :defer t)
-
   (defun mifi/nvm-which ()
     (let ((output (shell-command-to-string "source ~/.nvm/nvm.sh; nvm which")))
       (cadr (split-string output "[\n]+" t))))
 
-  (setq nodejs-repl-command #'mifi/nvm-which)
+  (use-package nodejs-repl
+    :defer t
+    :config
+    (setq nodejs-repl-command #'mifi/nvm-which))
 
 #+end_src
 
@@ -5035,7 +5101,7 @@ This is a basic configuration for the TypeScript language so that =.ts= files ac
 
   (use-package js2-mode
     ;;:after simple-httpd
-    :ensure nil
+    :ensure t
     :hook (js-mode . js2-minor-mode)
     ;; :bind (:map js2-mode-map
     ;;         ("{" . paredit-open-curly)
@@ -5043,13 +5109,13 @@ This is a basic configuration for the TypeScript language so that =.ts= files ac
     :mode ("\\.js\\'" "\\.mjs\\'" "\\.json$")
     :custom (js2-highlight-level 3))
 
-  ;; (use-package skewer-mode
-  ;;   :ensure nil
-  ;;   :after js2-mode)
+  (use-package skewer-mode
+    :ensure t
+    :after js2-mode)
 
-  ;; (use-package ac-js2
-  ;;   :after js2-mode skewer-mode
-  ;;   :hook (js2-mode . ac-js2-mode))
+  (use-package ac-js2
+    :after js2-mode skewer-mode
+    :hook (js2-mode . ac-js2-mode))
 
 #+end_src
 
@@ -5060,18 +5126,22 @@ RGBDS is a compiler that has been around quite a long time (since 1997). It supp
 #+begin_src emacs-lisp
   ;;; ##########################################################################
 
-  (use-package z80-mode
-    :when enable-gb-dev
-    :ensure (:host github :repo "SuperDisk/z80-mode"))
+  (when enable-gb-dev
+    (use-package z80-mode
+      :when enable-gb-dev
+      ;;:vc (:url "https://github.com/SuperDisk/z80-mode"))
+      :ensure (:host github :repo "SuperDisk/z80-mode"))
 
-  (use-package mwim
-    :when enable-gb-dev
-    :ensure (:host github :repo "alezost/mwim.el"))
+    (use-package mwim
+      :when enable-gb-dev
+      ;;:vc (:url "https://github.com/alezost/mwim"))
+      :ensure (:host github :repo "alezost/mwim.el"))
 
-  (use-package rgbds-mode
-    :when enable-gb-dev
-    :after mwim
-    :ensure (:host github :repo "japanoise/rgbds-mode"))
+    (use-package rgbds-mode
+      :when enable-gb-dev
+      :after mwim
+      ;;:vc (:url "https://github.com/japanoise/rgbds-mode"))
+      :ensure (:host github :repo "japanoise/rgbds-mode")))
 
 #+end_src
 
@@ -5173,7 +5243,6 @@ Much of this configuration was taken from the [[https://robert.kra.hn/posts/rust
 
 #+end_src
 
-
 **** Cargo-mode configuration
 
 #+begin_src emacs-lisp
@@ -5263,7 +5332,7 @@ Integration of the Go 'guru' analysis tool into Emacs.
 
 #+end_src
 
-*** <<<OCaml>>> ([[https://ocaml.org][ocaml.org]])
+*** OCaml ([[https://ocaml.org][ocaml.org]])
 
 An industrial-strength functional programming language with an emphasis on expressiveness and safety
 
@@ -5289,15 +5358,22 @@ The OCaml package manager manually. This will fetch the latest version.
 
 This is an easy way to install =opam= using ~brew~ but it may not be the most current. The shell script above is the best way to go.
 
-#+begin_src emacs-lisp 
-  ;;; ##########################################################################
-  
+**** opam (environment)
+
+This package will automatically perform the equivalent of =eval $(opam env)= and set the current OPAM and PATH environment variables. The package determines the new environment based upon the presence of an =_opam= or =.opam= directory in the cwd. If there is no matching directory, the current OPAM environment is not changed.
+
+#+begin_src emacs-lisp
+
   (let
     ((installer "bash -c \"sh <(curl -fsSL https://raw.githubusercontent.com/ocaml/opam/master/shell/install.sh) --version 2.2.0\""))
-    (use-package opam-installer
+    (use-package opam
       :when enable-ocaml
-      :ensure nil
+      :ensure t
       :ensure-system-package (opam . installer)))
+
+  (defun opam-switch-prefix+relative-path (relative-path)
+    (let ((base (getenv "OPAM_SWITCH_PREFIX")))
+      (concat (concat base "/") relative-path)))
 
 #+end_src
 
@@ -5326,6 +5402,7 @@ This should be added/appended to anything in the existing ~.ocamlinit~ file.
 **** HOWTO Install Merlin / Taureg
 
 Merlin is an editor service that provides advanced IDE features for OCaml.
+**Note**: when running =opam user-setup install -y= the resulting ~opam-user-setup.el~ file is specific to the current =opam switch= that is in effect. 
 
 #+begin_src shell
 
@@ -5345,27 +5422,26 @@ good and have become more-or-less the defacto standard.
   ;;; ##########################################################################
 
   (use-package opam-std-libs
+    :when enable-ocaml
     :ensure nil
     :ensure-system-package
-    ( ("~/.opam" .                        "opam init")
-      ("~/.opam/default/lib/core" .       "opam install core")
-      ("~/.opam/default/lib/core_bench" . "opam install core_bench")
-      ("~/.opam/default/lib/utop" .       "opam install utop")))
+    ( ("~/.opam"                  . "opam init && opam install core utop base stdio --yes")
+      ("~/.opam/default/lib/core" . "opam install core --yes")
+      ("~/.opam/default/lib/utop" . "opam install utop --yes")))
 
 #+end_src
 
 **** HOWTO Install Ocaml LSP Server
 
-This is not 100% necessary since Ocaml can use =merlin= directly instead of fronting with an LSP server. But, we install it for any flexibility it may provide.
+This is not 100% necessary since Ocaml can use =merlin= directly instead of fronting with an LSP server. But, we install it since EGLOT makes use of it.
 
 #+begin_src shell
 
-  opam install ocaml-lsp-server -y
+  opam install ocaml-lsp-server.1.18.0~5.2preview -y # Preview for >= 5.2 version of ocaml
 
 #+end_src
 
 **** Code Formatter and Builder
-
 #+begin_src bash
 
   opam install ocamlformat dune -y
@@ -5379,48 +5455,28 @@ is specifc to a macOS or Linux OS.
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
-  
+
   (use-package opam-emacs-setup
     :when enable-ocaml
-    :ensure nil
-    :ensure-system-package
-    ( ("~/.opam/default/share/emacs/site-lisp/merlin.el" . "opam install merlin tuareg -y")
-      (dune . "opam install dune -y")))
-      
-#+end_src
-
-**** Load the user-setup.el
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
+    :after opam-std-libs
+    :ensure nil);
+    ;; :ensure-system-package
+    ;; ;; we're using the new lps-server preview for 5.2.0 compatibility.
+    ;; ( ((opam-switch-prefix+relative-path "share/emacs/site-lisp/tuareg.el") .
+    ;;     "opam install merlin tuareg ocaml-lsp-server.1.18.0~5.2preview --yes")))
   
-  (let
-    ((file (expand-file-name "opam-user-setup.el" emacs-config-directory)))
-    (when (file-exists-p file)
-      (add-hook 'elpaca-after-init-hook
-        (lambda ()
-  	(use-package opam-user-setup
-  	  :unless (featurep 'opam-user-setup) ;; Don't allow to be run twice!
-  	  :when enable-ocaml
-  	  :after opam-emacs-setup
-  	  :ensure nil
-  	  :config
-  	  (add-to-list 'exec-path "~/.opam/default/bin")
-  	  (mifi/setup-path-from-exec-path))))))
-
 #+end_src
 
 **** Setup path to ~opam~ installed emacs lisp modules
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
-  
+
   (let ((opam-share (ignore-errors (car (process-lines "opam" "var" "share")))))
     (when (and (and opam-share (file-directory-p opam-share)) enable-ocaml)
-      (add-to-list 'load-path (expand-file-name "emacs/site-lisp" opam-share))))
-      ;;(autoload 'merlin-mode "merlin" nil t nil)
-      ;;(add-hook 'tuareg-mode-hook 'merlin-mode t)
-      ;;(add-hook 'caml-mode-hook 'merlin-mode t)))
+      (message "Updating load-path for OPAM to %s" (expand-file-name "emacs/site-lisp" opam-share))
+      (add-to-list 'load-path (expand-file-name "emacs/site-lisp" opam-share))
+      (autoload 'merlin-mode "merlin" nil t nil)))
 
 #+end_src
 
@@ -5430,11 +5486,11 @@ Merlin is an editor service that provides advanced IDE features for OCaml.
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
-  
+
   (use-package merlin
-    :when enable-ocaml :ensure nil :defer t
-    :delight " 🪄" 
-    :after opam-user-setup)
+    :when enable-ocaml :ensure nil :defer t 
+    :delight " 🪄"
+    :after opam-emacs-setup)
 
   (use-package merlin-eldoc
     :when enable-ocaml :ensure nil :defer t :after merlin)
@@ -5449,7 +5505,21 @@ Merlin is an editor service that provides advanced IDE features for OCaml.
 
 #+end_src
 
-**** Configure caml and Tuareg
+**** Dune
+
+Dune is a build system for OCaml (with support for Reason and Coq). It is not intended as a completely generic build system that’s able to build any project in any language. On the contrary, it makes lots of choices in order to encourage a consistent development style.
+
+#+begin_src emacs-lisp
+
+  (use-package dune
+    :when enable-ocaml :ensure t
+    :hook (dune-mode . opam-init)
+    :ensure-system-package
+    (dune . "opam install dune --yes"))
+
+#+end_src
+
+**** Configure Tuareg
 
 *Tuareg: an Emacs OCaml mode*
 
@@ -5457,27 +5527,78 @@ This archive contains files to help editing OCaml code, to highlight important p
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
-  
+
   (defun mifi/tuareg-mode-hook ()
+    (interactive)
     (merlin-mode t)
-    (setq tuareg-mode-name "🐫")
+    (opam-init)
     (eglot-ensure)
+    (dap-mode)
+    ;; (lsp-deferred)  ;; Needed for dap-ocaml debug templates
+    ;;(lsp-update-server)
+    ;; (opam-auto-tools-setup)
+    (setq tuareg-mode-name "🐫")
     (when (functionp 'prettify-symbols-mode)
       (prettify-symbols-mode)))
 
   (use-package tuareg
-    :when enable-ocaml :after opam-user-setup :defer t :ensure t
+    :when enable-ocaml :ensure nil :defer t
+    ;; :after opam-emacs-setup merlin jsonrpc
     :hook (tuareg-mode . mifi/tuareg-mode-hook)
-    :mode
-    ("\\.ml\\'" . tuareg-mode)
-    ("\\.mli\\'" . tuareg-mode)
+    ;; :mode
+    ;; ("\\.ml\\'" . mifi/tuareg-mode-hook)
+    ;; ("\\.mli\\'" . tuareg-mode)
     :custom
     (tuareg-indent-align-with-first-arg t)
+    (compile-command "dune build ")
     :config
     (bind-keys :map tuareg-mode-map
       ("C-c ," . dap-hydra/body)))
 
+  (use-package tuareg-opam
+    :when enable-ocaml
+    :ensure nil
+    :after tuareg)
+
 #+end_src
+
+**** Load the opam-user-setup.el
+
+This file is created by the actual opam/ocaml installation and contains paths and other imports that are specific to the user login. It also includes hooks that will change the PATH to opam to the current projec t- similar to how the package 'pyvenv-auto' works.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (let
+    ((file (expand-file-name "opam-user-setup.el" emacs-config-directory)))
+    (when (file-exists-p file)
+      (use-package opam-user-setup
+        :unless (featurep 'opam-user-setup) ;; Don't allow to be run twice!
+        :when enable-ocaml
+        :ensure nil
+        :after tuareg
+        :config
+        (setq-default tuareg-indent-align-with-first-arg t)
+        (setq-default compile-command "dune build ")
+        (add-hook 'tuareg-mode-hook #'mifi/tuareg-mode-hook))))
+
+  ;; (use-package caml
+  ;;   ;;:vc (:url "https://ghithub.com/ocaml/caml-mode"))
+  ;;   :ensure (:fetcher github :repo "ocaml/caml-mode" :files (*.el)))
+
+  ;; (use-package caml-font
+  ;;   :ensure (:package "caml-font" :type git :host github :repo "ocaml/caml-mode"))
+
+  ;; (use-package ocaml-ts-mode
+  ;;   :ensure (:package "ocaml-ts-mode" :source nil :protocol https :inherit t
+  ;; 	    :depth 1 :fetcher github :repo "dmitrig/ocaml-ts-mode"
+  ;; 	    :files ("*.el" "*.el.in" "dir" "*.info" "*.texi" "*.texinfo" "doc/dir" "doc/*.info"
+  ;; 		     "doc/*.texi" "doc/*.texinfo" "lisp/*.el"
+  ;; 		     (:exclude ".dir-locals.el" "test.el"
+  ;; 		       "tests.el" "*-test.el" "*-tests.el" "LICENSE" "README*" "*-pkg.el"))))
+
+#+end_src
+
 
 **** Other OCaml Related Packages
 
@@ -5485,87 +5606,47 @@ Here are some other packages that are useful when using OCaml.
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
-  
+
   (use-package ocp-indent
     :when enable-ocaml
-    :after opam-user-setup
+    :after opam-emacs-setup
     :ensure-system-package
-    ("~/.opam/default/lib/ocp-indent" . "opam install ocp-indent -y")
+    ("~/.opam/default/lib/ocp-indent" . "opam install ocp-indent --yes")
+    ;;:vc (:url "https://github.com/OCamlPro/ocp-indent" :main-file "tools/ocp-indent.el"))
     :ensure (:inherit t :depth 1
              :fetcher github :repo "OCamlPro/ocp-indent"
              :files ("tools/ocp-indent.el")))
 
-  (use-package dune
-    :ensure t)
-
   (use-package ocamlformat
     :when enable-ocaml :ensure t
-    :after (:any merlin tuareg)
+    :after ocp-indent
     :bind ("<f6>" . ocamlformat)
     :ensure-system-package
-    ("~/.opam/default/lib/ocamlformat" . "opam install ocamlformat -y")
+    ("~/.opam/default/lib/ocamlformat-lib" . "opam install ocamlformat --yes")
     :custom (ocamlformat-enable 'enable-outside-detected-project))
 
-#+end_src
-
-*** Clojure
-
-Clojure is a dynamic, general-purpose programming language, combining the
-approachability and interactive development of a scripting language with an
-efficient and robust infrastructure for multithreaded programming. Clojure is a
-compiled language, yet remains completely dynamic – every feature supported by
-Clojure is supported at runtime. Clojure provides easy access to the Java
-frameworks, with optional type hints and type inference, to ensure that calls to
-Java can avoid reflection.
-
-Clojure is a dialect of Lisp, and shares with Lisp the code-as-data philosophy
-and a powerful macro system. Clojure is predominantly a functional programming
-language, and features a rich set of immutable, persistent data structures. When
-mutable state is needed, Clojure offers a software transactional memory system
-and reactive Agent system that ensure clean, correct, multithreaded designs.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-  
-  (if *is-a-mac*
-    (use-package clojure-mode
-      :when enable-clojure
-      :ensure-system-package
-      ( (brew . "/bin/bash -c \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\"")
-        (java . "brew install --cask temurin@21")
-        (clojure . "brew install clojure/tools/clojure"))
-      :ensure t)
-    ;;else
-    (use-package clojure-mode
-      :when enable-clojure
-      :ensure t))
-
-  (use-package clojure-ts-mode
-    :after clojure-mode
-    :ensure t)
-
-#+end_src
-
-**** Cider
-CIDER extends Emacs with support for interactive programming in Clojure. The features are centered around cider-mode, an Emacs minor-mode that complements clojure-mode. While clojure-mode supports editing Clojure source files, cider-mode adds support for interacting with a running Clojure process for compilation, debugging, definition and documentation lookup, running tests and so on.
-
-CIDER aims to provide an interactive development experience similar to the one you’d get when programming in Emacs Lisp, Common Lisp (with SLIME or Sly), Scheme (with Geiser) and Smalltalk.
-
-Programmers are expected to program in a very dynamic and incremental manner, constantly re-evaluating existing Clojure definitions and adding new ones to their running applications. You never stop/start a Clojure application while using CIDER - you’re constantly interacting with it and changing it.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-  
-  (use-package cider
-    :when enable-clojure
-    :after clojure-mode
+  (use-package utop
+    :when enable-ocaml
+    :after opam-user-setup
     :ensure t
+    :defer t
     :custom
-    (cider-show-error-buffer t)
-    (cider-auto-select-error-buffer t)
-    (cider-repl-history-file "~/.emacs.d/cider-history")
-    (cider-repl-pop-to-buffer-on-connect t)
-    (cider-repl-wrap-history t))
+    (utop-command "opam config exec utop -- -emacs"))
+
+  (use-package opam-switch-mode
+    :when enable-ocaml
+    :ensure t
+    :after opam-user-setup
+    :hook
+    (tuareg-mode . opam-switch-mode))
+
+#+end_src
+
+**** OCaml Tree-sitter Grammer
+#+begin_src emacs-lisp :tangle no
+  
+  (setq treesit-language-source-alist
+   '((ocaml "https://github.com/tree-sitter/tree-sitter-ocaml" "master" "ocaml/src")))
 
 #+end_src
 
@@ -5575,6 +5656,8 @@ Programmers are expected to program in a very dynamic and incremental manner, co
 Lesser used or lesser known languages.
 
 **** Swift / Swift Playground
+
+Swift is very popular for iOS and macOS development but server-side Swift, which is what this area focuses on, is not as commonly used which is why it appears here (under lesser used).
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
@@ -5617,28 +5700,10 @@ Lisp support is handled by SLIME which is the “Superior Lisp Interaction Mode 
 
 #+end_src
 
+
 * Miscellaneous
 
 The following packages are some additional quality of life features.
-
-** JSON-RPC
-
-The JSON-RPC protocol is used to communicate with many different types of server. This is required for the DAP Debug Adapter as well as Eglot.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package jsonrpc
-    :ensure t
-    :config
-    ;; For some odd reason, it is possible that jsonrpc will try to load a
-    ;; theme. (jsonrpc/lisp/custom.el:1362). If our theme hasn't been loaded
-    ;; yet, go ahead and try. This could prevent a startup without the theme
-    ;; properly loaded.
-    (unless theme-did-load
-      (mifi/load-theme-from-selector)))
-
-#+end_src
 
 ** Thesaurus
 
@@ -5672,6 +5737,8 @@ The ubiquitous Merriam-Websters Thesaurus
 
   (use-package solaire-mode
     :after treemacs
+    ;; :vc ( :url "https://github.com/hlissner/emacs-solaire-mode"
+    ;; 	:ignored-files ("solaire-mode-test.el") )
     :ensure (:package "solaire-mode" :source "MELPA"
               :repo "hlissner/emacs-solaire-mode" :fetcher github)
     :hook (elpaca-after-init . solaire-global-mode)
@@ -6020,6 +6087,7 @@ For those menus that would normally show up as either =prefix= or =lambda=, give
             (bind-keys :map map
               ("M-RET M-RET" . org-insert-heading)
               ("M-RET o f" . mifi/set-org-fill-column-interactively)
+  	    ("M-RET o c" . mifi/toggle-org-centering)
               ("M-RET o l" . org-toggle-link-display)))
           ((equal major-mode 'python-mode)
             (bind-keys :map map
@@ -6033,6 +6101,7 @@ For those menus that would normally show up as either =prefix= or =lambda=, give
     ;; Override default menu text with better things
     (which-key-add-key-based-replacements "M-RET t t" "thesaurus-at-point")
     (which-key-add-key-based-replacements "M-RET o" "org-menu")
+    (which-key-add-key-based-replacements "M-RET o c" "toggle-org-centering")
     (which-key-add-key-based-replacements "M-RET o f" "set-org-fill-column"))
 
 #+end_src
@@ -6104,7 +6173,7 @@ These are the hools that update the context-aware menu triggered by various stat
         (erase-buffer)
         (beginning-of-buffer)
         (insert (format
-                ";; Well Met and Happy hacking %s!\n%s\n\n" user-login-name
+                ";; Hail fellow well met! Here's to Happy hacking %s!\n%s\n\n" user-login-name
                 ";; Press M-RET (Meta-RET) to open Mitch's Context Aware Menu"))
         (end-of-buffer))
 
