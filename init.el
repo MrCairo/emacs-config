@@ -472,6 +472,11 @@ font size is computed + 20 of this value."
   (write-region "" nil custom-file))
 (load custom-file 'noerror 'nomessage)
 
+;;; Add an additional INFO dir for custom info docs
+(let ((infodir (expand-file-name "share/info" custom-docs-dir)))
+  (unless (file-exists-p infodir)
+    (make-directory infodir t)))
+
 ;; ensure that the loaded font values are supported by this OS. If not, try
 ;; to correct them.
 (mifi/validate-variable-pitch-font)
@@ -579,6 +584,31 @@ font size is computed + 20 of this value."
 
 ;;; ##########################################################################
 
+(defun mifi/delight-config ()
+  (interactive)
+  (delight '( (abbrev-mode " Abv" abbrev)
+              (anaconda-mode)
+              (buffer-face-mode "Buff")
+              (company-box-mode "CBox")
+              (counsel-mode)
+              (golden-ratio-mode " 𝜑")
+              (lisp-interaction-mode " ƛ")
+              (mmm-keys-minor-mode " m3")
+              (projectile-mode " ->")
+              (tree-sitter-mode " ts")
+              ;;(eldoc-mode nil " eldoc")
+              (overwrite-mode " Ov" t)
+              (python-mode " Py" :major)
+              (rainbow-mode " 🌈")
+              (emacs-lisp-mode "Elisp" :major))))
+
+(use-package delight
+  :ensure t
+  :demand t ;; Force early startup for all use-package calls after this
+  :config (mifi/delight-config))
+
+;;; ##########################################################################
+
 ;; Used to highlight matching delimiters '( { [ ] } )
 (use-package paren
   :ensure nil    ;; built-in
@@ -667,32 +697,6 @@ font size is computed + 20 of this value."
   (bind-keys
     ([remap describe-command] . helpful-command)
     ([remap describe-key] . helpful-key)))
-
-;;; ##########################################################################
-
-(defun mifi/set-delight ()
-  (interactive)
-  (delight '( (abbrev-mode " Abv" abbrev)
-              (anaconda-mode)
-              (buffer-face-mode "Buff")
-              (company-box-mode "CBox")
-              (company-mode "Com")
-              (counsel-mode)
-              (golden-ratio-mode " 𝜑")
-              (lisp-interaction-mode " iLisp")
-              (mmm-keys-minor-mode " m3")
-              (projectile-mode " ->")
-              (tree-sitter-mode " ts")
-              ;;(eldoc-mode nil " eldoc")
-              (overwrite-mode " Ov" t)
-              (python-mode " Py" :major)
-              (rainbow-mode " 🌈")
-              (emacs-lisp-mode "Elisp" :major))))
-
-(use-package delight
-  :ensure t
-  :config
-  :hook (elpaca-after-init . mifi/set-delight))
 
 ;;; ##########################################################################
 
@@ -926,7 +930,7 @@ font size is computed + 20 of this value."
   (mifi/set-recenter-keys))
 
 (use-package which-key
-  :ensure (:wait t)
+  ;; :ensure (:wait t)
   :commands which-key-mode
   :delight which-key-mode
   :custom
@@ -1000,7 +1004,12 @@ font size is computed + 20 of this value."
 ;;; ##########################################################################
 
 (use-package prescient
+  :after (:any ivy vertico corfu)
   :ensure t)
+
+(use-package company-prescient
+  :ensure t
+  :after prescient)
 
 ;;; ##########################################################################
 
@@ -1106,24 +1115,27 @@ font size is computed + 20 of this value."
 ;; Don't use lsp-bridge with company as lsp-bridge already provides the same
 ;; features. They actually collide.
 
+(defun mifi/company-config ()
+  (interactive)
+  (message ">>> mifi/company-config")
+  (bind-keys :map company-active-map
+    ("C-n". company-select-next)
+    ("C-p". company-select-previous)
+    ("M-<". company-select-first)
+    ("M->". company-select-last)
+    ("<tab>" . company-complete-selection))
+  (global-company-mode 1)
+  (when (featurep 'prescient)
+    (company-prescient-mode 1)))
+
 (use-package company
   :unless (equal custom-ide 'custom-ide-lsp-bridge)
-  :ensure (:wait t)
-  :bind (:map company-active-map
-          ("C-n". company-select-next)
-          ("C-p". company-select-previous)
-          ("M-<". company-select-first)
-          ("M->". company-select-last)
-          ("<tab>" . company-complete-selection))
+  :after prescient :ensure (:wait t)
+  :delight company-mode
+  :config (mifi/company-config)
   :custom
   (company-minimum-prefix-length 2)
-  (company-idle-delay 0.5)  
-  :config
-  (add-hook 'elpaca-after-init-hook
-    (lambda ()
-      (when (featurep 'prescient)
-      (company-prescient-mode 1))
-      (global-company-mode +1))))
+  (company-idle-delay 0.5))
 
 ;; IMPORTANT:
 ;; Don't use company at all if lsp-bridge is active.
@@ -4072,10 +4084,6 @@ capture was not aborted."
 ;;; ##########################################################################
 
 (defun mifi/config-landing ()
-  ;; (setq-default initial-scratch-message
-  ;;   (format
-  ;;     ";; Hello, World and Happy hacking %s!\n%s\n\n" user-login-name
-  ;;     ";; Press M-RET (Meta-RET) to open Mitch's Context Aware Menu"))
   (cond
     ((equal default-landing-mode 'landing-mode-dashboard)
       (dashboard-open))
@@ -4084,10 +4092,9 @@ capture was not aborted."
       (erase-buffer)
       (beginning-of-buffer)
       (insert (format
-              ";; Hail fellow well met! Here's to Happy hacking %s!\n%s\n\n" user-login-name
-              ";; Press M-RET (Meta-RET) to open Mitch's Context Aware Menu"))
+              ";; Hail fellow well met! Here's to some happy hacking %s!\n%s\n\n" user-login-name
+              ";; Press M-RET (Meta-RET) to open Mitch's (somewhat) Context Aware Menu"))
       (end-of-buffer))
-
     ((equal default-landing-mode 'landing-mode-ielm)
       (ielm))
     ((equal default-landing-mode 'landing-mode-eshell)
