@@ -659,6 +659,15 @@ font size is computed + 20 of this value."
 (set-register ?S (cons 'file (concat emacs-config-directory "org-files/important-scripts.org")))
 
 ;;; ##########################################################################
+;;
+;; This list is processed as a LIFO queue. This entry _should_ be made to be
+;; the first so it executes last.
+(add-hook 'elpaca-after-init-hook
+  (lambda ()
+    (mifi/config-landing)
+    (mifi/set-recenter-keys)))
+
+;;; ##########################################################################
 ;; Allow access from emacsclient
 (add-hook 'elpaca-after-init-hook
   (lambda ()
@@ -2738,14 +2747,11 @@ capture was not aborted."
 
 (use-package denote
   :when (equal custom-note-system 'custom-note-system-denote)
-  ;;:vc (:url "https://github.com/protesilaos/denote")
-  :ensure ( :host github :repo "protesilaos/denote"
-            :files (:defaults "*.el"))
   ;; :after which-key dired
   :custom
   (denote-directory (expand-file-name "notes" user-emacs-directory))
   (denote-save-buffers nil)
-  ;; (denote-known-keywords '("emacs" "philosophy" "politics" "economics"))
+  (denote-known-keywords '("Python" "OCaml" "Journal" "Wildlife" "Photography"))
   (denote-infer-keywords t)
   (denote-sort-keywords t)
   (denote-file-type nil) ; Org is the default, set others here
@@ -4091,19 +4097,15 @@ capture was not aborted."
       (switch-to-buffer "*scratch*")
       (erase-buffer)
       (beginning-of-buffer)
-      (insert (format
-              ";; Hail fellow well met! Here's to some happy hacking %s!\n%s\n\n" user-login-name
-              ";; Press M-RET (Meta-RET) to open Mitch's (somewhat) Context Aware Menu"))
+      (insert (concat 
+		";; 'Tis but a scratch! A scratch? Your arm's off! - No, it isn't!\n"
+		(format ";; Happy hacking, %s! %s" user-login-name
+		  "Press M-RET (Meta-RET) to open the MiFi Menu\n")))
       (end-of-buffer))
     ((equal default-landing-mode 'landing-mode-ielm)
       (ielm))
     ((equal default-landing-mode 'landing-mode-eshell)
       (eshell))))
-
-(add-hook 'elpaca-after-init-hook
-  (lambda ()
-    (mifi/config-landing)
-    (mifi/set-recenter-keys)))
 
 ;;; ##########################################################################
 

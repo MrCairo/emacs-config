@@ -5,7 +5,7 @@
 #+STARTUP: showeverything
 #+PROPERTY: header-args:emacs-lisp :tangle ./init.el :results silent :exports code :mkdirp yes
 #+EXPORT_FILE_NAME: .emacs-temp
-#+modified-date: <2024-06-29 Sat>
+#+modified-date: <2024-08-01 Thu>
 
 * Synopsis
 
@@ -1082,6 +1082,21 @@ These are just some common registers that I have just so I can bookmark files an
   (set-register ?O (cons 'file (concat emacs-config-directory "emacs-config.org")))
   (set-register ?G '(file . "~/Developer/game-dev/GB_asm"))
   (set-register ?S (cons 'file (concat emacs-config-directory "org-files/important-scripts.org")))
+
+#+end_src
+
+** Landing Page
+Since we are adding to the LIFO list of things to run _after_ elpaca is done initializing, the first entry in the list is the last thing run. Updating and switching to the landing page should be done after everything else is done initializing. This way, things like the *Messages* buffer won't be displayed instead of the landing page.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+  ;;
+  ;; This list is processed as a LIFO queue. This entry _should_ be made to be
+  ;; the first so it executes last.
+  (add-hook 'elpaca-after-init-hook
+    (lambda ()
+      (mifi/config-landing)
+      (mifi/set-recenter-keys)))
 
 #+end_src
 
@@ -4056,14 +4071,11 @@ Denote’s file-naming scheme is not limited to “notes”. It can be used for 
 
   (use-package denote
     :when (equal custom-note-system 'custom-note-system-denote)
-    ;;:vc (:url "https://github.com/protesilaos/denote")
-    :ensure ( :host github :repo "protesilaos/denote"
-              :files (:defaults "*.el"))
     ;; :after which-key dired
     :custom
     (denote-directory (expand-file-name "notes" user-emacs-directory))
     (denote-save-buffers nil)
-    ;; (denote-known-keywords '("emacs" "philosophy" "politics" "economics"))
+    (denote-known-keywords '("Python" "OCaml" "Journal" "Wildlife" "Photography"))
     (denote-infer-keywords t)
     (denote-sort-keywords t)
     (denote-file-type nil) ; Org is the default, set others here
@@ -6179,19 +6191,15 @@ These are the hools that update the context-aware menu triggered by various stat
         (switch-to-buffer "*scratch*")
         (erase-buffer)
         (beginning-of-buffer)
-        (insert (format
-                ";; Hail fellow well met! Here's to some happy hacking %s!\n%s\n\n" user-login-name
-                ";; Press M-RET (Meta-RET) to open Mitch's (somewhat) Context Aware Menu"))
+        (insert (concat 
+  		";; 'Tis but a scratch! A scratch? Your arm's off! - No, it isn't!\n"
+  		(format ";; Happy hacking, %s! %s" user-login-name
+  		  "Press M-RET (Meta-RET) to open the MiFi Menu\n")))
         (end-of-buffer))
       ((equal default-landing-mode 'landing-mode-ielm)
         (ielm))
       ((equal default-landing-mode 'landing-mode-eshell)
         (eshell))))
-
-  (add-hook 'elpaca-after-init-hook
-    (lambda ()
-      (mifi/config-landing)
-      (mifi/set-recenter-keys)))
 
 #+end_src
 
