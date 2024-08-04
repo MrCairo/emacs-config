@@ -230,7 +230,7 @@ alternative to isearch that uses Ivy to show an overview of all matches."
   :type '(radio
            (const :tag "Vertico, Orderless, Consult, Embark completion system." comphand-vertico)
            (const :tag "Ivy, Counsel, Swiper completion systems" comphand-ivy)
-	   (const :tag "Corfu, Orderless, Cape" comphand-corfu)
+         (const :tag "Corfu, Orderless, Cape" comphand-corfu)
            (const :tag "Built-in Ido" comp-hand-ido))
   :group 'mifi-config-features)
 
@@ -417,9 +417,9 @@ font size is computed + 20 of this value."
                ((x-family-fonts "Sans Serif")     "Sans Serif")
                (nil (warn "Cannot find a Sans Serif Font.  Install Source Sans Pro.")))))
       (if variable-pitch-font
-	(when (not (equal variable-pitch-font variable-pitch-font-family))
+      (when (not (equal variable-pitch-font variable-pitch-font-family))
           (setq variable-pitch-font-family variable-pitch-font))
-	(message "---- Can't find a variable-pitch font to use.")))
+      (message "---- Can't find a variable-pitch font to use.")))
     (message (format ">>> variable-pitch font is %s" variable-pitch-font-family))))
 
 ;;; ##########################################################################
@@ -436,10 +436,10 @@ font size is computed + 20 of this value."
                ((x-family-fonts "Monospaced")      "Monospaced")
                (nil (warn "Cannot find a monospaced Font.  Install Source Code Pro.")))))
       (if monospace-font
-	(when (not (equal monospace-font variable-pitch-font-family))
+      (when (not (equal monospace-font variable-pitch-font-family))
           (setq mono-spaced-font-family monospace-font)
           (setq default-font-family monospace-font))
-	(message "---- Can't find a monospace font to use.")))
+      (message "---- Can't find a monospace font to use.")))
     (message (format ">>> monospace font is %s" mono-spaced-font-family))))
 
 ;;; ##########################################################################
@@ -487,7 +487,7 @@ font size is computed + 20 of this value."
 (use-package f :ensure t :demand t
   :config
   (let ((epath (f-dirname
-		 (expand-file-name invocation-name invocation-directory))))
+               (expand-file-name invocation-name invocation-directory))))
     (add-to-list 'exec-path (format "%s:%s/bin" epath epath))
     (mifi/setup-path-from-exec-path)))
 
@@ -592,11 +592,11 @@ font size is computed + 20 of this value."
               (company-box-mode "CBox")
               (counsel-mode)
               (golden-ratio-mode " 𝜑")
-              (lisp-interaction-mode " ƛ")
+              (lisp-interaction-mode " 𝝺")
               (mmm-keys-minor-mode " m3")
               (projectile-mode " ->")
               (tree-sitter-mode " ts")
-              ;;(eldoc-mode nil " eldoc")
+            (eldoc-mode " 📖")
               (overwrite-mode " Ov" t)
               (python-mode " Py" :major)
               (rainbow-mode " 🌈")
@@ -624,7 +624,9 @@ font size is computed + 20 of this value."
 ;;; ##########################################################################
 
 (defun mifi/save-desktop-frameset ()
-  (unless (daemonp)
+  (unless (or (daemonp)
+            (not enable-frameset-restore)
+            (not (display-graphic-p)))
     (desktop-save-mode 0)
     (desktop-save-frameset)
     (with-temp-file (expand-file-name "saved-frameset.el" user-emacs-directory)
@@ -637,7 +639,9 @@ font size is computed + 20 of this value."
 ;;; ##########################################################################
 
 (defun mifi/restore-desktop-frameset ()
-  (unless (and (daemonp) (not enable-frameset-<restore))
+  (unless (or (daemonp)
+            (not enable-frameset-restore)
+            (not (display-graphic-p)))
     (let
       ((file (expand-file-name "saved-frameset.el" user-emacs-directory)))
       (desktop-save-mode 0)
@@ -728,6 +732,9 @@ font size is computed + 20 of this value."
   ;; loaded.
   (unless theme-did-load
     (mifi/load-theme-from-selector)))
+
+(use-package eldoc
+  :ensure nil)
 
 (use-package eldoc-box
   :ensure t
@@ -901,7 +908,7 @@ font size is computed + 20 of this value."
   (dashboard-footer-messages '("Greetings Program!"))
   (dashboard-banner-logo-title "Welcome to Emacs!")
   :commands dashboard-open
-  :bind ("C-c d" . dashboard-open)
+  :bind ("M-RET d" . dashboard-open)
   :config
   ;; (setq initial-buffer-choice (lambda () (get-buffer-create dashboard-buffer-name)))
   (add-hook 'elpaca-after-init-hook #'dashboard-insert-startupify-lists)
@@ -1013,7 +1020,9 @@ font size is computed + 20 of this value."
 ;;; ##########################################################################
 
 (use-package prescient
+  :disabled t
   :after (:any ivy vertico corfu)
+  :defer t
   :ensure t)
 
 (use-package company-prescient
@@ -1138,8 +1147,10 @@ font size is computed + 20 of this value."
     (company-prescient-mode 1)))
 
 (use-package company
+  :defer t
   :unless (equal custom-ide 'custom-ide-lsp-bridge)
-  :after prescient :ensure (:wait t)
+  ;; :after prescient
+  :ensure (:wait t)
   :delight company-mode
   :config (mifi/company-config)
   :custom
@@ -1287,7 +1298,7 @@ font size is computed + 20 of this value."
 
 (use-package marginalia
   :when (or (equal completion-handler 'comphand-vertico)
-	    (equal completion-handler 'comphand-corfu))
+          (equal completion-handler 'comphand-corfu))
   :ensure t
   :custom
   (marginalia-max-relative-age 0)
@@ -1356,6 +1367,7 @@ font size is computed + 20 of this value."
 ;;; ##########################################################################
 
 (use-package vertico-prescient
+  :disabled t
   :when (equal completion-handler 'comphand-vertico)
   :ensure t
   :after vertico prescient)
@@ -1815,12 +1827,13 @@ font size is computed + 20 of this value."
   (interactive)
   (mifi/print-custom-theme-name))
 
-;; Go to NEXT theme
-(global-set-key (kbd "C-c C-=") 'next-theme)
-;; Go to PREVIOUS theme
-(global-set-key (kbd "C-c C--") 'previous-theme)
-;; Print current theme
-(global-set-key (kbd "C-c C-?") 'which-theme)
+(bind-keys
+  ;; Go to NEXT theme
+  ("M-RET =" . next-theme)
+  ;; Go to PREVIOUS theme
+  ("M-RET -" . previous-theme)
+  ;; Message current theme
+  ("M-RET _" . which-theme))
 
 ;;; ##########################################################################
 
@@ -2073,11 +2086,6 @@ font size is computed + 20 of this value."
 
 ;;; ##########################################################################
 ;; Some alternate keys below....
-
-(bind-keys ("C-c 1". use-small-display-font)
-  ("C-c 2". use-medium-display-font)
-  ("C-c 3". use-large-display-font)
-  ("C-c 4". use-x-large-display-font))
 
 (defun mifi/set-recenter-keys ()
   (let ((map global-map))
@@ -2492,7 +2500,8 @@ directory is relative to the working-files-directory
          (dot . t)
          (emacs-lisp . t)
          (gnuplot . t)
-         (haskell . nil)
+         (haskell . t)
+       (ocaml . t)
          (latex . t)
          (ledger . t)
          (ocaml . nil)
@@ -2748,6 +2757,7 @@ capture was not aborted."
 (use-package denote
   :when (equal custom-note-system 'custom-note-system-denote)
   ;; :after which-key dired
+  :defer t
   :custom
   (denote-directory (expand-file-name "notes" user-emacs-directory))
   (denote-save-buffers nil)
@@ -3393,9 +3403,9 @@ capture was not aborted."
 (when enable-python
   (eval-after-load "python"
     #'(bind-keys :map python-mode-map
-	("C-c C-q" . quote-region)
-	("C-c q"   . quote-word)
-	("C-c |"   . display-fill-column-indicator-mode))))
+      ("C-c C-q" . quote-region)
+      ("C-c q"   . quote-word)
+      ("C-c |"   . display-fill-column-indicator-mode))))
 
 ;;; ##########################################################################
 
@@ -3428,9 +3438,9 @@ capture was not aborted."
     (setq typescript-indent-level 4)
     (cond
       ((equal debug-adapter 'debug-adapter-dap-mode)
-	(bind-keys :map typescript-mode-map
+      (bind-keys :map typescript-mode-map
           ("C-c ." . dap-hydra/body))
-	(dap-node-setup)))))
+      (dap-node-setup)))))
 
 ;;; ##########################################################################
 
@@ -3711,21 +3721,6 @@ capture was not aborted."
       (setq-default compile-command "dune build ")
       (add-hook 'tuareg-mode-hook #'mifi/tuareg-mode-hook))))
 
-;; (use-package caml
-;;   ;;:vc (:url "https://ghithub.com/ocaml/caml-mode"))
-;;   :ensure (:fetcher github :repo "ocaml/caml-mode" :files (*.el)))
-
-;; (use-package caml-font
-;;   :ensure (:package "caml-font" :type git :host github :repo "ocaml/caml-mode"))
-
-;; (use-package ocaml-ts-mode
-;;   :ensure (:package "ocaml-ts-mode" :source nil :protocol https :inherit t
-;; 	    :depth 1 :fetcher github :repo "dmitrig/ocaml-ts-mode"
-;; 	    :files ("*.el" "*.el.in" "dir" "*.info" "*.texi" "*.texinfo" "doc/dir" "doc/*.info"
-;; 		     "doc/*.texi" "doc/*.texinfo" "lisp/*.el"
-;; 		     (:exclude ".dir-locals.el" "test.el"
-;; 		       "tests.el" "*-test.el" "*-tests.el" "LICENSE" "README*" "*-pkg.el"))))
-
 ;;; ##########################################################################
 
 (use-package ocp-indent
@@ -3816,7 +3811,7 @@ capture was not aborted."
 (use-package solaire-mode
   :after treemacs
   ;; :vc ( :url "https://github.com/hlissner/emacs-solaire-mode"
-  ;; 	:ignored-files ("solaire-mode-test.el") )
+  ;;  :ignored-files ("solaire-mode-test.el") )
   :ensure (:package "solaire-mode" :source "MELPA"
             :repo "hlissner/emacs-solaire-mode" :fetcher github)
   :hook (elpaca-after-init . solaire-global-mode)
@@ -3997,14 +3992,22 @@ capture was not aborted."
       (bind-keys :map map
         ("M-RET $" . jinx-correct)
         ("M-RET ?" . eldoc-box-help-at-point)
-      ("M-RET M s" . markdown-preview-mode)
-      ("M-RET M e" . markdown-preview-cleanup)
+        ("M-RET M s" . markdown-preview-mode)
+        ("M-RET M e" . markdown-preview-cleanup)
         ("M-RET S e" . eshell)
         ("M-RET S i" . ielm)
         ("M-RET S v" . vterm-other-window)
-        ("M-RET T +" . next-theme)
-        ("M-RET T -" . previous-theme)
-        ("M-RET T ?" . which-theme)
+        ("M-RET v s" . use-small-display-font)
+        ("M-RET v m" . use-medium-display-font)
+        ("M-RET v l" . use-large-display-font)
+        ("M-RET v x" . use-x-large-display-font)
+        ("M-RET v 1" . recenter-with-small-font)
+        ("M-RET v 2" . recenter-with-medium-font)
+        ("M-RET v 3" . recenter-with-large-font)
+        ("M-RET v 4" . recenter-with-x-large-font)
+        ("M-RET =" . next-theme)
+        ("M-RET -" . previous-theme)
+        ("M-RET _" . which-theme)
         ("M-RET d" . dashboard-open)
         ("M-RET e" . treemacs) ;; e for Explore
         ("M-RET f" . mifi/set-fill-column-interactively)
@@ -4037,7 +4040,7 @@ capture was not aborted."
           (bind-keys :map map
             ("M-RET M-RET" . org-insert-heading)
             ("M-RET o f" . mifi/set-org-fill-column-interactively)
-	    ("M-RET o c" . mifi/toggle-org-centering)
+            ("M-RET o c" . mifi/toggle-org-centering)
             ("M-RET o l" . org-toggle-link-display)))
         ((equal major-mode 'python-mode)
           (bind-keys :map map
@@ -4061,12 +4064,12 @@ capture was not aborted."
   (mifi/mmm-handle-context-keys nil)
   (which-key-add-key-based-replacements "M-RET M" "markdown-preview")
   (which-key-add-key-based-replacements "M-RET S" "shells")
-  (which-key-add-key-based-replacements "M-RET T" "theme-keys")
   (which-key-add-key-based-replacements "M-RET P" "python-menu")
   (which-key-add-key-based-replacements "M-RET e" "treemacs-toggle")
   (which-key-add-key-based-replacements "M-RET t" "Thesaurus")
   (which-key-add-key-based-replacements "M-RET f" "set-fill-column")
   (which-key-add-key-based-replacements "M-RET j" "jump-to-register")
+  (which-key-add-key-based-replacements "M-RET v" "font-size")
   (which-key-add-key-based-replacements "M-RET C-g" "Exit menu")
   (which-key-add-key-based-replacements "M-RET" "Mitch's Menu"))
 
@@ -4098,9 +4101,9 @@ capture was not aborted."
       (erase-buffer)
       (beginning-of-buffer)
       (insert (concat 
-		";; 'Tis but a scratch! A scratch? Your arm's off! - No, it isn't!\n"
-		(format ";; Happy hacking, %s! %s" user-login-name
-		  "Press M-RET (Meta-RET) to open the MiFi Menu\n")))
+              ";; 'Tis but a scratch! A scratch? Your arm's off! - No, it isn't!\n"
+              (format ";; Happy hacking, %s! %s" user-login-name
+                "Press M-RET (Meta-RET) to open the MiFi Menu\n")))
       (end-of-buffer))
     ((equal default-landing-mode 'landing-mode-ielm)
       (ielm))
@@ -4112,18 +4115,21 @@ capture was not aborted."
 (defun mifi/backup-file (file)
   "Backup the file from the configuration directory into the
 backup directory. If a file already exists in the backup directory, the old
-file is renamed with a ~ at the end before the new file is copied."
-  (let ((backdir (format "%s/config-backup" working-files-directory)))
-    (make-directory backdir t)
-    ;; --------------------------------------------------
-    (when (file-exists-p (format "%s/%s" backdir file))
+file is renamed with a ~ at the end before the new file is copied. If Emacs
+is running in server mode, then don't backup the files when the emacsclient
+exits."
+  (unless (server-running-p)
+    (let ((backdir (format "%s/config-backup" working-files-directory)))
+      (make-directory backdir t)
+      ;; --------------------------------------------------
+      (when (file-exists-p (format "%s/%s" backdir file))
       (copy-file
-      (expand-file-name file backdir)
-      (expand-file-name (format "%s~" file) backdir) t))
-    (when (file-exists-p (format "%s/%s" emacs-config-directory file))
+        (expand-file-name file backdir)
+        (expand-file-name (format "%s~" file) backdir) t))
+      (when (file-exists-p (format "%s/%s" emacs-config-directory file))
       (copy-file
-      (expand-file-name file emacs-config-directory)
-      (expand-file-name file backdir) t))))
+        (expand-file-name file emacs-config-directory)
+        (expand-file-name file backdir) t)))))
 
 (defun mifi/when-exiting-emacs ()
   "Backup Emacs initialization files for recovery. If old files exist, they are
@@ -4132,8 +4138,8 @@ opam-user-setup.el so that upon next startup, it can be loaded quickly."
   (progn
     (when enable-ocaml
       (let ((src (expand-file-name "opam-user-setup.el" emacs-config-directory)))
-	(when (file-exists-p src)
-	  (byte-compile-file src))))
+      (when (file-exists-p src)
+        (byte-compile-file src))))
     (mifi/backup-file "early-init.el")
     (mifi/backup-file "init.el")
     (mifi/backup-file "emacs-config.org")))
