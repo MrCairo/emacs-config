@@ -5,7 +5,7 @@
 #+STARTUP: showeverything
 #+PROPERTY: header-args:emacs-lisp :tangle ./init.el :results silent :exports code :mkdirp yes
 #+EXPORT_FILE_NAME: .emacs-temp
-#+modified-date: <2024-08-01 Thu>
+#+modified-date: <2024-08-10 Sat>
 
 * Synopsis
 
@@ -4663,7 +4663,7 @@ In addition to that, it is important that =autopep8=, which is a script, can rea
 
      ~file-missing "Doing vfork" "No such file or directory"~
 
-*** Specialized python-mode Keymaps                                    :Python:
+*** Specialized python-mode Keymaps
 
 The following are keymaps that are used by by the custom-ide and for python-mode
 
@@ -4858,294 +4858,6 @@ We use Pyvenv-auto is a package that automatically changes to the Python virtual
       :custom
       (pydoc-python-command "python3")
       (pydoc-pip-version-command "pip3 --version")))
-
-#+end_src
-
-** JavaScript
-*** Typescript
-
-This is a basic configuration for the TypeScript language so that =.ts= files activate =typescript-ts-mode= when opened. We're also adding a hook to =typescript-mode-hook= to call =lsp-deferred= so that we activate =lsp-mode= to get LSP features every time we edit TypeScript code.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (when enable-ts
-    (use-package typescript-mode
-      :defer t
-      :mode "\\.ts\\'"
-      :hook
-      (typescript-mode . lsp-deferred)
-      (js2-mode . lsp-deferred)
-      :config
-      (setq typescript-indent-level 4)
-      (cond
-        ((equal debug-adapter 'debug-adapter-dap-mode)
-        (bind-keys :map typescript-mode-map
-            ("C-c ." . dap-hydra/body))
-        (dap-node-setup)))))
-
-#+end_src
-
-*** NodeJS
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (defun mifi/load-js-file-hook ()
-    (js2-mode)
-
-    (when (equal debug-adapter 'debug-adapter-dap-mode)
-      (dap-mode)
-      (dap-firefox-setup))
-
-    (highlight-indentation-mode nil)
-    (dap-firefox-setup))
-
-  (defun mifi/nvm-which ()
-    (let ((output (shell-command-to-string "source ~/.nvm/nvm.sh; nvm which")))
-      (cadr (split-string output "[\n]+" t))))
-
-  (use-package nodejs-repl
-    :defer t
-    :config
-    (setq nodejs-repl-command #'mifi/nvm-which))
-
-#+end_src
-
-*** JS2-Mode
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package js2-mode
-    ;;:after simple-httpd
-    :ensure t
-    :hook (js-mode . js2-minor-mode)
-    ;; :bind (:map js2-mode-map
-    ;;         ("{" . paredit-open-curly)
-    ;;         ("}" . paredit-close-curly-and-newline))
-    :mode ("\\.js\\'" "\\.mjs\\'" "\\.json$")
-    :custom (js2-highlight-level 3))
-
-  (use-package skewer-mode
-    :ensure t
-    :after js2-mode)
-
-  (use-package ac-js2
-    :after js2-mode skewer-mode
-    :hook (js2-mode . ac-js2-mode))
-
-#+end_src
-
-** GameBoy Development
-
-RGBDS is a compiler that has been around quite a long time (since 1997). It supports Z80 and the LR35902 assembler syntaxes that are used in the development of Game Boy and Game Boy color games.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (when enable-gb-dev
-    (use-package z80-mode
-      :when enable-gb-dev
-      ;;:vc (:url "https://github.com/SuperDisk/z80-mode"))
-      :ensure (:host github :repo "SuperDisk/z80-mode"))
-
-    (use-package mwim
-      :when enable-gb-dev
-      ;;:vc (:url "https://github.com/alezost/mwim"))
-      :ensure (:host github :repo "alezost/mwim.el"))
-
-    (use-package rgbds-mode
-      :when enable-gb-dev
-      :after mwim
-      ;;:vc (:url "https://github.com/japanoise/rgbds-mode"))
-      :ensure (:host github :repo "japanoise/rgbds-mode")))
-
-#+end_src
-
-** Rust
-
-Rust is blazingly fast and memory-efficient: with no runtime or garbage collector, it can power performance-critical services, run on embedded devices, and easily integrate with other languages.
-
-Much of this configuration was taken from the [[https://robert.kra.hn/posts/rust-emacs-setup/][Robert Krahn]] web site.
-
-*** Prerequisites
-
-1. Install Rust and Cargo
-   
-   #+begin_src shell
-               
-     curl https://sh.rustup.rs -sSf | sh
-
-   #+end_src
-
-
-2. Install the Rust analyzer 
-   
-#+begin_src shell
-  #!/bin/bash
-
-  git clone https://github.com/rust-analyzer/rust-analyzer.git -b release
-  cd rust-analyzer
-  cargo xtask install --server # will install rust-analyzer into $HOME/.cargo/bin
-
-#+end_src
-
-*** Rustic package configuration
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package rustic
-    :ensure t
-    :bind (:map rustic-mode-map
-            ("M-j" . lsp-ui-imenu)
-            ("M-?" . lsp-find-references)
-            ("C-c C-c l" . flycheck-list-errors)
-            ("C-c C-c a" . lsp-execute-code-action)
-            ("C-c C-c r" . lsp-rename)
-            ("C-c C-c q" . lsp-workspace-restart)
-            ("C-c C-c Q" . lsp-workspace-shutdown)
-            ("C-c C-c s" . lsp-rust-analyzer-status))
-    :hook (rustic-mode . rk/rustic-mode-hook)
-    :config
-    ;; uncomment for less flashiness
-    ;; (setq lsp-eldoc-hook nil)
-    ;; (setq lsp-enable-symbol-highlighting nil)
-    ;; (setq lsp-signature-auto-activate nil)
-
-    ;; comment to disable rustfmt on save
-    (setq rustic-format-on-save t))
-
-
-  (defun rk/rustic-mode-hook ()
-    ;; so that run C-c C-c C-r works without having to confirm, but don't try to
-    ;; save rust buffers that are not file visiting. Once
-    ;; https://github.com/brotzeit/rustic/issues/253 has been resolved this should
-    ;; no longer be necessary.
-    (when buffer-file-name
-      (setq-local buffer-save-without-query t))
-    (add-hook 'before-save-hook 'lsp-format-buffer nil t))
-
-#+end_src
-
-*** Rust-mode configuration
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  ;; (use-package graphql-mode)
-  (use-package rust-mode
-    :disabled ;;; Older than rustic so don't use but 
-    :defer t
-    :init (setq rust-mode-treesitter-derive t)
-    :hook
-    (rust-mode . lsp-deferred)
-    (rust-mode . (lambda () (setq indent-tabs-mode nil)
-                   (prettify-symbols-mode)))
-    :config
-    (setq rust-format-on-save t))
-
-  (use-package rust-playground :ensure t :after rust-mode)
-
-#+end_src
-
-*** Cargo and Cargo.toml packages
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-  ;; for Cargo.toml and other config files
-
-  (use-package toml-mode :ensure t :defer t :after rust-mode)
-
-
-#+end_src
-
-*** Cargo-mode configuration
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package cargo-mode
-    :defer t
-    :after rust-mode
-    :ensure (:fetcher github :repo "ayrat555/cargo-mode"
-              :files ("*.el" "*.el.in" "dir" "*.info" "*.texi"
-                       "*.texinfo" "doc/dir" "doc/*.info" "doc/*.texi"
-                       "doc/*.texinfo" "lisp/*.el"
-                       (:exclude ".dir-locals.el" "test.el" "tests.el"
-                         "*-test.el" "*-tests.el" "LICENSE" "README*"
-                         "*-pkg.el"))))
-
-#+end_src
-
-** Golang
-**** Important!
-
-Make sure that =gopls= and =dlv= are installed. gopls is the Go! (or golang) language server - like LSP. =dlv= is the =golang= debugger.
-
-#+begin_src shell
-
-  brew install gopls
-  go get golang.org/x/tools/cmd/guru
-  brew install dlv
-
-#+end_src
-
-*** Main go-mode config
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (defun eglot-format-buffer-on-save ()
-    (add-hook 'before-save-hook #'eglot-format-buffer -10 t))
-
-  (use-package go-mode
-    :defer t
-    :mode ("\\.go\\'" . go-mode)
-    :custom
-    (compile-command "go build -v && go test -v && go vet")
-    :bind (:map go-mode-map
-            ("C-c C-c" . 'compile))
-    :config
-    (eglot-format-buffer-on-save)
-    (define-key (current-local-map) "\C-c\C-c" 'compile)
-    (cond
-      ((equal custom-ide 'custom-ide-eglot)
-        (add-hook 'go-mode-hook 'eglot-ensure)
-        (add-hook 'go-mode-hook #'elot-format-buffer-on-save))
-      ((equal custom-ide 'custom-ide-lsp)
-        (add-hook 'go-mode-hook 'lsp-deferred))))
-
-#+end_src
-
-*** go-eldoc config
-
-=go-eldoc.el= provides eldoc for Go language. `go-eldoc.el' shows type information for variable, functions and current argument position of function.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package go-eldoc
-    :after go-mode
-    :hook (go-mode . go-eldoc-setup)
-    :config
-    (eglot-format-buffer-on-save)
-    (set-face-attribute 'eldoc-highlight-function-argument nil
-      :underline t :foreground "green"
-      :weight 'bold))
-
-#+end_src
-
-*** go-guru config
-
-Integration of the Go 'guru' analysis tool into Emacs.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package go-guru
-    :after go-mode
-    :hook (go-mode . go-guru-hl-identifier-mode))
 
 #+end_src
 
@@ -5510,6 +5222,293 @@ Here are some other packages that are useful when using OCaml.
 
 #+RESULTS:
 : ()
+** JavaScript
+*** Typescript
+
+This is a basic configuration for the TypeScript language so that =.ts= files activate =typescript-ts-mode= when opened. We're also adding a hook to =typescript-mode-hook= to call =lsp-deferred= so that we activate =lsp-mode= to get LSP features every time we edit TypeScript code.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (when enable-ts
+    (use-package typescript-mode
+      :defer t
+      :mode "\\.ts\\'"
+      :hook
+      (typescript-mode . lsp-deferred)
+      (js2-mode . lsp-deferred)
+      :config
+      (setq typescript-indent-level 4)
+      (cond
+        ((equal debug-adapter 'debug-adapter-dap-mode)
+        (bind-keys :map typescript-mode-map
+            ("C-c ." . dap-hydra/body))
+        (dap-node-setup)))))
+
+#+end_src
+
+*** NodeJS
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (defun mifi/load-js-file-hook ()
+    (js2-mode)
+
+    (when (equal debug-adapter 'debug-adapter-dap-mode)
+      (dap-mode)
+      (dap-firefox-setup))
+
+    (highlight-indentation-mode nil)
+    (dap-firefox-setup))
+
+  (defun mifi/nvm-which ()
+    (let ((output (shell-command-to-string "source ~/.nvm/nvm.sh; nvm which")))
+      (cadr (split-string output "[\n]+" t))))
+
+  (use-package nodejs-repl
+    :defer t
+    :config
+    (setq nodejs-repl-command #'mifi/nvm-which))
+
+#+end_src
+
+*** JS2-Mode
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package js2-mode
+    ;;:after simple-httpd
+    :ensure t
+    :hook (js-mode . js2-minor-mode)
+    ;; :bind (:map js2-mode-map
+    ;;         ("{" . paredit-open-curly)
+    ;;         ("}" . paredit-close-curly-and-newline))
+    :mode ("\\.js\\'" "\\.mjs\\'" "\\.json$")
+    :custom (js2-highlight-level 3))
+
+  (use-package skewer-mode
+    :ensure t
+    :after js2-mode)
+
+  (use-package ac-js2
+    :after js2-mode skewer-mode
+    :hook (js2-mode . ac-js2-mode))
+
+#+end_src
+
+** GameBoy Development
+
+RGBDS is a compiler that has been around quite a long time (since 1997). It supports Z80 and the LR35902 assembler syntaxes that are used in the development of Game Boy and Game Boy color games.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (when enable-gb-dev
+    (use-package z80-mode
+      :when enable-gb-dev
+      ;;:vc (:url "https://github.com/SuperDisk/z80-mode"))
+      :ensure (:host github :repo "SuperDisk/z80-mode"))
+
+    (use-package mwim
+      :when enable-gb-dev
+      ;;:vc (:url "https://github.com/alezost/mwim"))
+      :ensure (:host github :repo "alezost/mwim.el"))
+
+    (use-package rgbds-mode
+      :when enable-gb-dev
+      :after mwim
+      ;;:vc (:url "https://github.com/japanoise/rgbds-mode"))
+      :ensure (:host github :repo "japanoise/rgbds-mode")))
+
+#+end_src
+
+** Rust
+
+Rust is blazingly fast and memory-efficient: with no runtime or garbage collector, it can power performance-critical services, run on embedded devices, and easily integrate with other languages.
+
+Much of this configuration was taken from the [[https://robert.kra.hn/posts/rust-emacs-setup/][Robert Krahn]] web site.
+
+*** Prerequisites
+
+1. Install Rust and Cargo
+   
+   #+begin_src shell
+               
+     curl https://sh.rustup.rs -sSf | sh
+
+   #+end_src
+
+
+2. Install the Rust analyzer 
+   
+#+begin_src shell
+  #!/bin/bash
+
+  git clone https://github.com/rust-analyzer/rust-analyzer.git -b release
+  cd rust-analyzer
+  cargo xtask install --server # will install rust-analyzer into $HOME/.cargo/bin
+
+#+end_src
+
+*** Rustic package configuration
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package rustic
+    :ensure t
+    :bind (:map rustic-mode-map
+            ("M-j" . lsp-ui-imenu)
+            ("M-?" . lsp-find-references)
+            ("C-c C-c l" . flycheck-list-errors)
+            ("C-c C-c a" . lsp-execute-code-action)
+            ("C-c C-c r" . lsp-rename)
+            ("C-c C-c q" . lsp-workspace-restart)
+            ("C-c C-c Q" . lsp-workspace-shutdown)
+            ("C-c C-c s" . lsp-rust-analyzer-status))
+    :hook (rustic-mode . rk/rustic-mode-hook)
+    :config
+    ;; uncomment for less flashiness
+    ;; (setq lsp-eldoc-hook nil)
+    ;; (setq lsp-enable-symbol-highlighting nil)
+    ;; (setq lsp-signature-auto-activate nil)
+
+    ;; comment to disable rustfmt on save
+    (setq rustic-format-on-save t))
+
+
+  (defun rk/rustic-mode-hook ()
+    ;; so that run C-c C-c C-r works without having to confirm, but don't try to
+    ;; save rust buffers that are not file visiting. Once
+    ;; https://github.com/brotzeit/rustic/issues/253 has been resolved this should
+    ;; no longer be necessary.
+    (when buffer-file-name
+      (setq-local buffer-save-without-query t))
+    (add-hook 'before-save-hook 'lsp-format-buffer nil t))
+
+#+end_src
+
+*** Rust-mode configuration
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  ;; (use-package graphql-mode)
+  (use-package rust-mode
+    :disabled ;;; Older than rustic so don't use but 
+    :defer t
+    :init (setq rust-mode-treesitter-derive t)
+    :hook
+    (rust-mode . lsp-deferred)
+    (rust-mode . (lambda () (setq indent-tabs-mode nil)
+                   (prettify-symbols-mode)))
+    :config
+    (setq rust-format-on-save t))
+
+  (use-package rust-playground :ensure t :after rust-mode)
+
+#+end_src
+
+*** Cargo and Cargo.toml packages
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+  ;; for Cargo.toml and other config files
+
+  (use-package toml-mode :ensure t :defer t :after rust-mode)
+
+
+#+end_src
+
+*** Cargo-mode configuration
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package cargo-mode
+    :defer t
+    :after rust-mode
+    :ensure (:fetcher github :repo "ayrat555/cargo-mode"
+              :files ("*.el" "*.el.in" "dir" "*.info" "*.texi"
+                       "*.texinfo" "doc/dir" "doc/*.info" "doc/*.texi"
+                       "doc/*.texinfo" "lisp/*.el"
+                       (:exclude ".dir-locals.el" "test.el" "tests.el"
+                         "*-test.el" "*-tests.el" "LICENSE" "README*"
+                         "*-pkg.el"))))
+
+#+end_src
+
+** Golang
+**** Important!
+
+Make sure that =gopls= and =dlv= are installed. gopls is the Go! (or golang) language server - like LSP. =dlv= is the =golang= debugger.
+
+#+begin_src shell
+
+  brew install gopls
+  go get golang.org/x/tools/cmd/guru
+  brew install dlv
+
+#+end_src
+
+*** Main go-mode config
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (defun eglot-format-buffer-on-save ()
+    (add-hook 'before-save-hook #'eglot-format-buffer -10 t))
+
+  (use-package go-mode
+    :defer t
+    :mode ("\\.go\\'" . go-mode)
+    :custom
+    (compile-command "go build -v && go test -v && go vet")
+    :bind (:map go-mode-map
+            ("C-c C-c" . 'compile))
+    :config
+    (eglot-format-buffer-on-save)
+    (define-key (current-local-map) "\C-c\C-c" 'compile)
+    (cond
+      ((equal custom-ide 'custom-ide-eglot)
+        (add-hook 'go-mode-hook 'eglot-ensure)
+        (add-hook 'go-mode-hook #'elot-format-buffer-on-save))
+      ((equal custom-ide 'custom-ide-lsp)
+        (add-hook 'go-mode-hook 'lsp-deferred))))
+
+#+end_src
+
+*** go-eldoc config
+
+=go-eldoc.el= provides eldoc for Go language. `go-eldoc.el' shows type information for variable, functions and current argument position of function.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package go-eldoc
+    :after go-mode
+    :hook (go-mode . go-eldoc-setup)
+    :config
+    (eglot-format-buffer-on-save)
+    (set-face-attribute 'eldoc-highlight-function-argument nil
+      :underline t :foreground "green"
+      :weight 'bold))
+
+#+end_src
+
+*** go-guru config
+
+Integration of the Go 'guru' analysis tool into Emacs.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package go-guru
+    :after go-mode
+    :hook (go-mode . go-guru-hl-identifier-mode))
+
+#+end_src
 
 ** Other Languages
 
