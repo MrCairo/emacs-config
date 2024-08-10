@@ -106,13 +106,13 @@ defined path-separator."
     (t ;; default to something
       (setq exec-path '( "/usr/local/sbin" "/usr/local/bin"
                          "/usr/sbin" "/usr/bin"))))
-
   (mifi/setup-path-from-exec-path))
 
-(setq browse-url-firefox-program
-  "/Applications/Firefox.app/Contents/MacOS/firefox")
-(setq browse-url-chrome-program
-  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome")
+(when *is-a-mac*
+  (setq browse-url-firefox-program
+    "/Applications/Firefox.app/Contents/MacOS/firefox")
+  (setq browse-url-chrome-program
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"))
 
 (add-hook 'before-init-hook #'mifi/setup-exec-path)
 

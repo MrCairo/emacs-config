@@ -484,6 +484,37 @@ font size is computed + 20 of this value."
 
 ;;; ##########################################################################
 
+(defun mifi/after-which-key ()
+  (interactive)
+  (which-key-mode 1)
+  (which-key-add-key-based-replacements "M-RET |" "display-fill-column")
+  (which-key-add-key-based-replacements "M-RET ?" "help-at-point")
+  (mmm-keys-minor-mode 1)
+  (when (featurep 'prog-mode)
+    (which-key-add-key-based-replacements "C-c g r" "find-symbol-reference")
+    (which-key-add-key-based-replacements "C-c g o" "find-defitions-other-window")
+    (which-key-add-key-based-replacements "C-c g g" "find-defitions")
+    (which-key-add-key-based-replacements "C-c g ?" "eldoc-definition"))
+  (mifi/set-recenter-keys))
+
+(use-package which-key
+  ;; :ensure (:wait t)
+  :demand t
+  :commands which-key-mode
+  :delight which-key-mode
+  :custom
+  (which-key-popup-type 'side-window)
+  (which-key-preserve-window-configuration t)
+  (which-key-idle-delay 1,0)
+  (which-key-prefix-prefix "✪ ")
+  ;; (which-key-sort-order 'which-key-key-order-alpha)
+  (which-key-min-display-lines 3)
+  :config
+  (message ">>> which-key configure")
+  (add-hook 'elpaca-after-init-hook #'mifi/after-which-key))
+
+;;; ##########################################################################
+
 (use-package f :ensure t :demand t
   :config
   (let ((epath (f-dirname
@@ -705,19 +736,11 @@ font size is computed + 20 of this value."
 
 (use-package helpful
   :ensure t
-  ;; :commands (helpful-callable helpful-variable helpful-command helpful-key)
+  :commands (helpful-callable helpful-variable helpful-command helpful-key)
   :config
   (bind-keys
     ([remap describe-command] . helpful-command)
     ([remap describe-key] . helpful-key)))
-
-;;; ##########################################################################
-
-(use-package xref :ensure nil)
-(use-package dumb-jump
-  :after xref :ensure t
-  :config
-  (add-hook 'xref-backend-functions #'dumb-jump-xref-activate))
 
 ;;; ##########################################################################
 
@@ -755,25 +778,6 @@ font size is computed + 20 of this value."
           ("C->" . mc/mark-next-like-this)
           ("C-<" . mc/mark-previous-like-this)
           ("C-c C-<" . mc/mark-all-like-this)))
-
-;;; ##########################################################################
-
-(use-package anzu
-  :ensure t
-  :custom
-  (anzu-mode-lighter "")
-  (anzu-deactivate-region t)
-  (anzu-search-threshold 1000)
-  (anzu-replace-threshold 50)
-  (anzu-replace-to-string-separator " => ")
-  :config
-  (global-anzu-mode +1)
-  (set-face-attribute 'anzu-mode-line nil
-    :foreground "yellow" :weight 'bold)
-  (define-key isearch-mode-map
-    [remap isearch-query-replace]  #'anzu-isearch-query-replace)
-  (define-key isearch-mode-map
-    [remap isearch-query-replace-regexp] #'anzu-isearch-query-replace-regexp))
 
 ;;; ##########################################################################
 
@@ -931,34 +935,6 @@ font size is computed + 20 of this value."
     (add-hook hook #'jinx-mode)))
 
 ;;; ##########################################################################
-
-(defun mifi/after-which-key ()
-  (interactive)
-  (which-key-mode 1)
-  (which-key-add-key-based-replacements "M-RET |" "display-fill-column")
-  (which-key-add-key-based-replacements "M-RET ?" "help-at-point")
-  (mmm-keys-minor-mode 1)
-  (when (featurep 'prog-mode)
-    (which-key-add-key-based-replacements "C-c g r" "find-symbol-reference")
-    (which-key-add-key-based-replacements "C-c g o" "find-defitions-other-window")
-    (which-key-add-key-based-replacements "C-c g g" "find-defitions")
-    (which-key-add-key-based-replacements "C-c g ?" "eldoc-definition"))
-  (mifi/set-recenter-keys))
-
-(use-package which-key
-  ;; :ensure (:wait t)
-  :commands which-key-mode
-  :delight which-key-mode
-  :custom
-  (add-hook 'elpaca-after-init-hook #'mifi/after-which-key)
-  (which-key-popup-type 'side-window)
-  (which-key-preserve-window-configuration t)
-  (which-key-idle-delay 1,0)
-  (which-key-prefix-prefix "✪ ")
-  ;; (which-key-sort-order 'which-key-key-order-alpha)
-  (which-key-min-display-lines 3))
-
-;;; ##########################################################################
 ;; These are packages located in the site-lisp or lisp directories in the
 ;; 'emacs-config-directory'
 
@@ -1020,7 +996,6 @@ font size is computed + 20 of this value."
 ;;; ##########################################################################
 
 (use-package prescient
-  :disabled t
   :after (:any ivy vertico corfu)
   :defer t
   :ensure t)
@@ -1135,7 +1110,6 @@ font size is computed + 20 of this value."
 
 (defun mifi/company-config ()
   (interactive)
-  (message ">>> mifi/company-config")
   (bind-keys :map company-active-map
     ("C-n". company-select-next)
     ("C-p". company-select-previous)
@@ -1150,7 +1124,7 @@ font size is computed + 20 of this value."
   :defer t
   :unless (equal custom-ide 'custom-ide-lsp-bridge)
   ;; :after prescient
-  :ensure (:wait t)
+  ;; :ensure (:wait t)
   :delight company-mode
   :config (mifi/company-config)
   :custom
@@ -1286,8 +1260,8 @@ font size is computed + 20 of this value."
   (vertico-multiform-mode 1)
   :config
   (vertico-mode)
-  (when (featurep 'prescient)
-    (vertico-prescient-mode 0))
+  ;; (when (featurep 'prescient)
+  ;;   (vertico-prescient-mode 0))
   ;; :bind ("C-x C-f" . ido-find-file)
   ;; Clean up file path when typing
   :hook ((rfn-eshadow-update-overlay . vertico-directory-tidy)
@@ -1300,6 +1274,7 @@ font size is computed + 20 of this value."
   :when (or (equal completion-handler 'comphand-vertico)
           (equal completion-handler 'comphand-corfu))
   :ensure t
+  ;; :commands marginalia-mode
   :custom
   (marginalia-max-relative-age 0)
   (marginalia-align 'left)
@@ -1367,10 +1342,10 @@ font size is computed + 20 of this value."
 ;;; ##########################################################################
 
 (use-package vertico-prescient
-  :disabled t
   :when (equal completion-handler 'comphand-vertico)
   :ensure t
-  :after vertico prescient)
+  :after (vertico prescient)
+  :config (vertico-prescient-mode t))
 
 ;;; ##########################################################################
 
@@ -2501,10 +2476,9 @@ directory is relative to the working-files-directory
          (emacs-lisp . t)
          (gnuplot . t)
          (haskell . t)
-       (ocaml . t)
+         (tuareg . t)
          (latex . t)
          (ledger . t)
-         (ocaml . nil)
          (octave . t)
          (plantuml . t)
          (python . t)
@@ -2571,15 +2545,13 @@ directory is relative to the working-files-directory
 
 ;;; ##########################################################################
 
-;; (use-package emacsql)
-;; (use-package emacsql-sqlite)
-
 (use-package org-roam
-  ;; :demand t  ;; Ensure org-roam is loaded by default
-  :when (equal custom-note-system 'custom-note-system-org-roam)    
+  :ensure ( :package "org-roam" :source "MELPA" :protocol https :inherit t :depth 1
+	    :fetcher github :repo "org-roam/org-roam" :files (:defaults "extensions/*"))
+  :when (equal custom-note-system 'custom-note-system-org-roam)
   :init
   (setq org-roam-v2-ack t)
-  :defer t
+  (which-key-add-key-based-replacements "C-c n" "org-roam")
   :custom
   (org-roam-directory (expand-file-name "RoamNotes" custom-docs-dir))
   (org-roam-completion-everywhere t)
@@ -2587,24 +2559,29 @@ directory is relative to the working-files-directory
           ("C-c n f" . org-roam-node-find)
           ("C-c n i" . org-roam-node-insert)
           ("C-c n I" . org-roam-node-insert-immediate)
-          ("C-c n p" . my/org-roam-find-project)
-          ("C-c n t" . my/org-roam-capture-task)
-          ("C-c n b" . my/org-roam-capture-inbox)
+          ("C-c n p" . mifi/org-roam-find-project)
+          ("C-c n t" . mifi/org-roam-capture-task)
+          ("C-c n b" . mifi/org-roam-capture-inbox)
           :map org-mode-map
-          ("C-M-i" . completion-at-point)
-          :map org-roam-dailies-map
-          ("Y" . org-roam-dailies-capture-yesterday)
-          ("T" . org-roam-dailies-capture-tomorrow))
-  :bind-keymap
-  ("C-c n d" . org-roam-dailies-map)
+          ("C-M-i" . completion-at-point))
   :config
-  (require 'org-roam-dailies) ;; Ensure the keymap is available
-  (my/org-roam-refresh-agenda-list)
+  (mifi/org-roam-set-which-key-replacements)
+  (mifi/org-roam-refresh-agenda-list)
   (add-to-list 'org-after-todo-state-change-hook
     (lambda ()
       (when (equal org-state "DONE")
-        (my/org-roam-copy-todo-to-today))))
+        (mifi/org-roam-copy-todo-to-today))))
   (org-roam-db-autosync-mode))
+
+(defun mifi/org-roam-set-which-key-replacements ()
+  (interactive)
+  (which-key-add-key-based-replacements "C-c n l" "toggle-buffer")
+  (which-key-add-key-based-replacements "C-c n f" "find-node")
+  (which-key-add-key-based-replacements "C-c n i" "insert-node")
+  (which-key-add-key-based-replacements "C-c n I" "insert-node-immediate")
+  (which-key-add-key-based-replacements "C-c n p" "find-project")
+  (which-key-add-key-based-replacements "C-c n t" "capture-task")
+  (which-key-add-key-based-replacements "C-c n b" "capture-inbox"))
 
 (defun org-roam-node-insert-immediate (arg &rest args)
   (interactive "P")
@@ -2614,59 +2591,82 @@ directory is relative to the working-files-directory
                    '(:immediate-finish t)))))
     (apply #'org-roam-node-insert args)))
 
+(use-package org-roam-dailies
+  :when (equal custom-note-system 'custom-note-system-org-roam)
+  :init
+  (which-key-add-key-based-replacements "C-c n d" "org-roam-dailies")
+  :ensure ( :package "org-roam-dailies" :source "MELPA" :protocol https :inherit t :depth 1
+	    :fetcher github :repo "org-roam/org-roam" :files ("extensions/*"))
+  :after org-roam
+  :bind-keymap
+  ("C-c n d" . org-roam-dailies-map)
+  :bind (:map org-roam-dailies-map
+	  ("." . org-roam-dailies-goto-date)
+          ("Y" . org-roam-dailies-capture-yesterday)
+          ("T" . org-roam-dailies-capture-tomorrow))
+  :config
+  (which-key-add-key-based-replacements "C-c n d" "org-roam-dailies")
+  (which-key-add-key-based-replacements "C-c n d ." "goto-date")
+  (which-key-add-key-based-replacements "C-c n d Y" "capture-yesterday")
+  (which-key-add-key-based-replacements "C-c n d T" "capture-tomorrow")
+  (which-key-add-key-based-replacements "C-c n d n" "capture-today")
+  (which-key-add-key-based-replacements "C-c n d d" "goto-today")
+  (which-key-add-key-based-replacements "C-c n d t" "goto-tomorrow")
+  (which-key-add-key-based-replacements "C-c n d y" "goto-yesterday")  )
+
 ;;; ##########################################################################
 ;; The buffer you put this code in must have lexical-binding set to t!
 ;; See the final configuration at the end for more details.
 
-(defun my/org-roam-filter-by-tag (tag-name)
+(defun mifi/org-roam-filter-by-tag (tag-name)
   (lambda (node)
     (member tag-name (org-roam-node-tags node))))
 
-(defun my/org-roam-list-notes-by-tag (tag-name)
+(defun mifi/org-roam-list-notes-by-tag (tag-name)
     (mapcar #'org-roam-node-file
         (seq-filter
-            (my/org-roam-filter-by-tag tag-name)
+            (mifi/org-roam-filter-by-tag tag-name)
             (org-roam-node-list))))
 
-(defun my/org-roam-refresh-agenda-list ()
+(defun mifi/org-roam-refresh-agenda-list ()
     (interactive)
-    (setq org-agenda-files (my/org-roam-list-notes-by-tag "Project")))
+    (setq org-agenda-files (mifi/org-roam-list-notes-by-tag "Project")))
 
 ;; Build the agenda list the first time for the session
 
 ;;; ##########################################################################
 
-(defun my/org-roam-project-finalize-hook ()
+(defun mifi/org-roam-project-finalize-hook ()
     "Adds the captured project file to `org-agenda-files' if the
 capture was not aborted."
     ;; Remove the hook since it was added temporarily
-    (remove-hook 'org-capture-after-finalize-hook #'my/org-roam-project-finalize-hook)
+    (remove-hook 'org-capture-after-finalize-hook #'mifi/org-roam-project-finalize-hook)
 
     ;; Add project file to the agenda list if the capture was confirmed
     (unless org-note-abort
         (with-current-buffer (org-capture-get :buffer)
             (add-to-list 'org-agenda-files (buffer-file-name)))))
 
-(defun my/org-roam-find-project ()
+(defun mifi/org-roam-find-project ()
     (interactive)
     ;; Add the project file to the agenda after capture is finished
-    (add-hook 'org-capture-after-finalize-hook #'my/org-roam-project-finalize-hook)
+    (add-hook 'org-capture-after-finalize-hook #'mifi/org-roam-project-finalize-hook)
 
     ;; Select a project file to open, creating it if necessary
     (org-roam-node-find
         nil
         nil
-        (my/org-roam-filter-by-tag "Project")
+        (mifi/org-roam-filter-by-tag "Project")
         :templates
         '(("p" "project" plain "* Goals\n\n%?\n\n* Tasks\n\n** TODO Add initial tasks\n\n* Dates\n\n"
               :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n#+category: ${title}\n#+filetags: Project")
               :unnarrowed t))))
 
-(global-set-key (kbd "C-c n p") #'my/org-roam-find-project)
+(global-set-key (kbd "C-c n p") #'mifi/org-roam-find-project)
 
 ;;; ##########################################################################
 
-(defun my/org-roam-capture-inbox ()
+(defun mifi/org-roam-capture-inbox ()
     (interactive)
     (org-roam-capture- :node (org-roam-node-create)
         :templates '(("i" "inbox" plain "* %?"
@@ -2674,14 +2674,14 @@ capture was not aborted."
 
 ;;; ##########################################################################
 
-(defun my/org-roam-capture-task ()
+(defun mifi/org-roam-capture-task ()
     (interactive)
     ;; Add the project file to the agenda after capture is finished
-    (add-hook 'org-capture-after-finalize-hook #'my/org-roam-project-finalize-hook)
+    (add-hook 'org-capture-after-finalize-hook #'mifi/org-roam-project-finalize-hook)
 
     ;; Capture the new task, creating the project file if necessary
     (org-roam-capture- :node (org-roam-node-read nil
-                                 (my/org-roam-filter-by-tag "Project"))
+                                 (mifi/org-roam-filter-by-tag "Project"))
         :templates '(("p" "project" plain "** TODO %?"
                          :if-new
                          (file+head+olp "%<%Y%m%d%H%M%S>-${slug}.org"
@@ -2690,7 +2690,7 @@ capture was not aborted."
 
 ;;; ##########################################################################
 
-(defun my/org-roam-copy-todo-to-today ()
+(defun mifi/org-roam-copy-todo-to-today ()
     (interactive)
     (let ((org-refile-keep t) ;; Set this to nil to delete the original!
              (org-roam-dailies-capture-templates
@@ -2862,13 +2862,9 @@ capture was not aborted."
   :defer t
   :hook
   (lisp-mode . eglot-ensure)
-  (python-mode . eglot-ensure)
   (go-mode . eglot-ensure)
   (rustic-mode . eglot-ensure)
   (tuareg-mode . eglot-ensure)
-  ;; (c-mode . eglot-ensure)
-  ;; (c++-mode . eglot-ensure)
-  ;; (prog-mode . eglot-ensure)
   :config
   (flymake-mode 0)
   (add-to-list 'major-mode-remap-alist '(python-mode . python-ts-mode))
@@ -3034,178 +3030,6 @@ capture was not aborted."
 
 (use-package jedi
   :after python elpy)
-
-;;; ##########################################################################
-;;; Debug Adapter Protocol
-(use-package dap-mode
-  :when (equal debug-adapter 'debug-adapter-dap-mode)
-  :defer t
-  :after hydra
-  ;; Uncomment the config below if you want all UI panes to be hidden by default!
-  ;; :custom
-  ;; (lsp-enable-dap-auto-configure nil)
-  :commands dap-debug
-  :custom
-  (dap-auto-configure-features '(sessions locals breakpoints expressions repl controls tooltip))
-  :config
-  ;; (require 'dap-lldb)
-  ;; (require 'dap-gdb-lldb)
-  (define-dap-hydra)
-  (bind-keys :map prog-mode-map
-    ("C-c ." . dap-hydra/body))
-  (dap-ui-controls-mode)
-  (dap-ui-mode 1))
-
-;;; ##########################################################################
-
-;; For Emacs >= 30.0 it is possible to use the VC command like this:
-;; :vc (:url "https://github.com/emacs-lsp/dap-mode"
-;;      :main-file "dap-ocaml.el")
-;;
-(use-package dap-ocaml
-  :when enable-ocaml
-  :after (:all dap-mode opam-emacs-setup)
-  :ensure (:package "dap-ocaml" :type git :host github :repo "emacs-lsp/dap-mode")
-  :ensure-system-package
-  ((ocamllsp . "opam install ocaml-lsp-server.1.18.0~5.2preview earlybird --yes")))
-
-(use-package dap-codelldb
-  :when enable-ocaml
-  :after dap-mode
-  :defer t
-  :ensure (:package "dap-codelldb" :type git :host github :repo "emacs-lsp/dap-mode"))
-
-;;; ##########################################################################
-;;; DAP for Python
-
-(when enable-python
-  (use-package dap-python
-    ;; :vc (:url "https://github.com/emacs-lsp/dap-mode" :main-file "dap-python.el")
-    :ensure (:package "dap-python" :type git :host github :repo "emacs-lsp/dap-mode")
-    :when (equal debug-adapter 'debug-adapter-dap-mode)
-    :after dap-mode
-    :config
-    (setq dap-python-executable "python3") ;; Otherwise it looks for 'python' else error.
-    (setq dap-python-debugger 'debugpy)))
-
-;;; ##########################################################################
-
-(use-package dap-lldb
-  :when (equal debug-adapter 'debug-adapter-dap-mode)
-  :defer t
-  :after dap-mode
-  ;; :vc (:url "https://github.com/emacs-lsp/dap-mode" :main-file "dap-lldb.el")
-  :ensure ( :package "dap-lldb" :source nil :protocol https
-            :inherit t :depth 1 :type git
-            :host github :repo "emacs-lsp/dap-mode")
-  :custom
-  (dap-lldb-debug-program "~/Developer/command-line-unix/llvm/lldb-build/bin/lldb-dap"))
-  ;; :config
-  ;; (dap-register-debug-template
-  ;;   "Rust::LLDB Run Configuration"
-  ;;   (list :type "lldb"
-  ;;     :request "launch"
-  ;;     :name "LLDB::Run"
-  ;;     :gdbpath "rust-lldb"
-  ;;     :target nil
-  ;;     :cwd nil)))
-
-(use-package dap-gdb-lldb
-  :when (equal debug-adapter 'debug-adapter-dap-mode)
-  :ensure ( :package "dap-gdb-lldb" :source nil :protocol https
-            :inherit t :depth 1 :type git :host github
-            :repo "emacs-lsp/dap-mode")
-  :defer t
-  :after dap-lldb
-  :config
-  (dap-gdb-lldb-setup))
-
-(use-package dap-cpptools
-  :when (equal debug-adapter 'debug-adapter-dap-mode)
-  :defer t
-  :after dap-mode
-  :ensure ( :package "dap-cpptools" :source nil :protocol https
-            :inherit t :depth 1 :type git :host github
-            :repo "emacs-lsp/dap-mode"))
-;; :config
-;; (dap-cpptools-setup))
-
-;;; ##########################################################################
-
-(defun mifi/dap-end-debug-session ()
-  "End the debug session and delete project Python buffers."
-  (interactive)
-  (kill-matching-buffers "\*Python :: Run file [from|\(buffer]*" nil :NO-ASK)
-  (kill-matching-buffers "\*Python: Current File*" nil :NO-ASK)
-  (kill-matching-buffers "\*dap-ui-*" nil :NO-ASK)
-  (dap-disconnect (dap--cur-session)))
-
-(defun mifi/dap-delete-all-debug-sessions ()
-  "End the debug session and delete project Python buffers and all breakpoints."
-  (interactive)
-  (dap-breakpoint-delete-all)
-  (mifi/dap-end-debug-session))
-
-(defun mifi/dap-begin-debug-session ()
-  "Begin a debug session with several dap windows enabled."
-  (interactive)
-  (dap-ui-show-many-windows)
-  (dap-debug))
-
-;;; ##########################################################################
-
-(defun define-dap-hydra ()
-  (defhydra dap-hydra (:color pink :hint nil :foreign-keys run)
-    "
-  ^Stepping^            ^Switch^                 ^Breakpoints^          ^Debug^                     ^Eval
-  ^^^^^^^^-----------------------------------------------------------------------------------------------------------------
-  _._: Next            _ss_: Session            _bb_: Toggle           _dd_: Debug                 _ee_: Eval
-  _/_: Step in         _st_: Thread             _bd_: Delete           _dr_: Debug recent          _er_: Eval region
-  _,_: Step out        _sf_: Stack frame        _ba_: Add              _dl_: Debug last            _es_: Eval thing at point
-  _c_: Continue        _su_: Up stack frame     _bc_: Set condition    _de_: Edit debug template   _ea_: Add expression.
-  _r_: Restart frame   _sd_: Down stack frame   _bh_: Set hit count    _ds_: Debug restart
-  _Q_: Disconnect      _sl_: List locals        _bl_: Set log message  _dx_: end session
-                       _sb_: List breakpoints                          _dX_: end all sessions
-                       _sS_: List sessions
-                       _sR_: Session Repl
-"
-    ("n" dap-next)
-    ("i" dap-step-in)
-    ("o" dap-step-out)
-    ("." dap-next)
-    ("/" dap-step-in)
-    ("," dap-step-out)
-    ("c" dap-continue)
-    ("r" dap-restart-frame)
-    ("ss" dap-switch-session)
-    ("st" dap-switch-thread)
-    ("sf" dap-switch-stack-frame)
-    ("su" dap-up-stack-frame)
-    ("sd" dap-down-stack-frame)
-    ("sl" dap-ui-locals)
-    ("sb" dap-ui-breakpoints)
-    ("sR" dap-ui-repl)
-    ("sS" dap-ui-sessions)
-    ("bb" dap-breakpoint-toggle)
-    ("ba" dap-breakpoint-add)
-    ("bd" dap-breakpoint-delete)
-    ("bc" dap-breakpoint-condition)
-    ("bh" dap-breakpoint-hit-condition)
-    ("bl" dap-breakpoint-log-message)
-    ("dd" dap-debug)
-    ("dr" dap-debug-recent)
-    ("ds" dap-debug-restart)
-    ("dl" dap-debug-last)
-    ("de" dap-debug-edit-template)
-    ("ee" dap-eval)
-    ("ea" dap-ui-expressions-add)
-    ("er" dap-eval-region)
-    ("es" dap-eval-thing-at-point)
-    ("dx" mifi/dap-end-debug-session)
-    ("dX" mifi/dap-delete-all-debug-sessions)
-    ("x" nil "exit Hydra" :color yellow)
-    ("q" mifi/dap-end-debug-session "quit" :color blue)
-    ("Q" mifi/dap-delete-all-debug-sessions :color red)))
 
 ;;; ##########################################################################
 
@@ -3634,7 +3458,10 @@ capture was not aborted."
 (use-package opam-emacs-setup
   :when enable-ocaml
   :after opam-std-libs
-  :ensure nil);
+  :ensure nil
+  :config
+  (add-to-list 'exec-path "~/.opam/default/bin"))
+  ;;
   ;; :ensure-system-package
   ;; ;; we're using the new lps-server preview for 5.2.0 compatibility.
   ;; ( ((opam-switch-prefix+relative-path "share/emacs/site-lisp/tuareg.el") .
@@ -3680,9 +3507,6 @@ capture was not aborted."
   (opam-init)
   (eglot-ensure)
   (dap-mode)
-  ;; (lsp-deferred)  ;; Needed for dap-ocaml debug templates
-  ;;(lsp-update-server)
-  ;; (opam-auto-tools-setup)
   (setq tuareg-mode-name "🐫")
   (when (functionp 'prettify-symbols-mode)
     (prettify-symbols-mode)))
@@ -3691,7 +3515,6 @@ capture was not aborted."
   :when enable-ocaml :ensure nil :defer t
   ;; :after opam-emacs-setup merlin jsonrpc
   :hook (tuareg-mode . mifi/tuareg-mode-hook)
-  ;; :mode
   ;; ("\\.ml\\'" . mifi/tuareg-mode-hook)
   ;; ("\\.mli\\'" . tuareg-mode)
   :custom
@@ -3701,6 +3524,8 @@ capture was not aborted."
   (bind-keys :map tuareg-mode-map
     ("C-c ," . dap-hydra/body)))
 
+;; Does many things but also updates the exec-path to the local
+;; opam environment.
 (use-package tuareg-opam
   :when enable-ocaml
   :ensure nil
@@ -3779,13 +3604,192 @@ capture was not aborted."
   (autoload 'swift-playground-global-mode "swift-playground-mode" nil t)
   (add-hook 'swift-mode-hook #'swift-playground-global-mode))
 
+(use-package elisp-mode
+  :ensure nil
+  :defer t
+  :mode ("\\.el\\'" . emacs-lisp-mode))
+
 ;;; ##########################################################################
 
 (use-package slime
   :defer t
-  :mode ("\\.lisp\\'" . slime-mode)
+  :mode
+  ("\\.lisp\\'" . slime-mode)
   :config
   (setq inferior-lisp-program "/opt/homebrew/bin/sbcl"))
+
+;;; ##########################################################################
+;;; Debug Adapter Protocol
+(use-package dap-mode
+  :when (equal debug-adapter 'debug-adapter-dap-mode)
+  :defer t
+  :after hydra
+  ;; Uncomment the config below if you want all UI panes to be hidden by default!
+  ;; :custom
+  ;; (lsp-enable-dap-auto-configure nil)
+  :commands dap-debug
+  :custom
+  (dap-auto-configure-features '(sessions locals breakpoints expressions repl controls tooltip))
+  :config
+  ;; (require 'dap-lldb)
+  ;; (require 'dap-gdb-lldb)
+  (define-dap-hydra)
+  (bind-keys :map prog-mode-map
+    ("C-c ." . dap-hydra/body))
+  (dap-ui-controls-mode)
+  (dap-ui-mode 1))
+
+;;; ##########################################################################
+
+;; For Emacs >= 30.0 it is possible to use the VC command like this:
+;; :vc (:url "https://github.com/emacs-lsp/dap-mode"
+;;      :main-file "dap-ocaml.el")
+;;
+(use-package dap-ocaml
+  :when enable-ocaml
+  :after (:all dap-mode opam-emacs-setup)
+  :ensure (:package "dap-ocaml" :type git :host github :repo "emacs-lsp/dap-mode")
+  :ensure-system-package
+  ((ocamllsp . "opam install ocaml-lsp-server.1.18.0~5.2preview earlybird --yes")))
+
+(use-package dap-codelldb
+  :when enable-ocaml
+  :after dap-mode
+  :defer t
+  :ensure (:package "dap-codelldb" :type git :host github :repo "emacs-lsp/dap-mode"))
+
+;;; ##########################################################################
+;;; DAP for Python
+
+(when enable-python
+  (use-package dap-python
+    ;; :vc (:url "https://github.com/emacs-lsp/dap-mode" :main-file "dap-python.el")
+    :ensure (:package "dap-python" :type git :host github :repo "emacs-lsp/dap-mode")
+    :defer t
+    :when (equal debug-adapter 'debug-adapter-dap-mode)
+    :after dap-mode
+    :config
+    (setq dap-python-executable "python3") ;; Otherwise it looks for 'python' else error.
+    (setq dap-python-debugger 'debugpy)))
+
+;;; ##########################################################################
+
+(use-package dap-lldb
+  :when (equal debug-adapter 'debug-adapter-dap-mode)
+  :defer t
+  :after dap-mode
+  ;; :vc (:url "https://github.com/emacs-lsp/dap-mode" :main-file "dap-lldb.el")
+  :ensure ( :package "dap-lldb" :source nil :protocol https
+            :inherit t :depth 1 :type git
+            :host github :repo "emacs-lsp/dap-mode")
+  :custom
+  (dap-lldb-debug-program "~/Developer/command-line-unix/llvm/lldb-build/bin/lldb-dap"))
+  ;; :config
+  ;; (dap-register-debug-template
+  ;;   "Rust::LLDB Run Configuration"
+  ;;   (list :type "lldb"
+  ;;     :request "launch"
+  ;;     :name "LLDB::Run"
+  ;;     :gdbpath "rust-lldb"
+  ;;     :target nil
+  ;;     :cwd nil)))
+
+(use-package dap-gdb-lldb
+  :when (equal debug-adapter 'debug-adapter-dap-mode)
+  :ensure ( :package "dap-gdb-lldb" :source nil :protocol https
+            :inherit t :depth 1 :type git :host github
+            :repo "emacs-lsp/dap-mode")
+  :defer t
+  :after dap-lldb
+  :config
+  (dap-gdb-lldb-setup))
+
+(use-package dap-cpptools
+  :when (equal debug-adapter 'debug-adapter-dap-mode)
+  :defer t
+  :after dap-mode
+  :ensure ( :package "dap-cpptools" :source nil :protocol https
+            :inherit t :depth 1 :type git :host github
+            :repo "emacs-lsp/dap-mode"))
+;; :config
+;; (dap-cpptools-setup))
+
+;;; ##########################################################################
+
+(defun mifi/dap-end-debug-session ()
+  "End the debug session and delete project Python buffers."
+  (interactive)
+  (kill-matching-buffers "\*Python :: Run file [from|\(buffer]*" nil :NO-ASK)
+  (kill-matching-buffers "\*Python: Current File*" nil :NO-ASK)
+  (kill-matching-buffers "\*dap-ui-*" nil :NO-ASK)
+  (dap-disconnect (dap--cur-session)))
+
+(defun mifi/dap-delete-all-debug-sessions ()
+  "End the debug session and delete project Python buffers and all breakpoints."
+  (interactive)
+  (dap-breakpoint-delete-all)
+  (mifi/dap-end-debug-session))
+
+(defun mifi/dap-begin-debug-session ()
+  "Begin a debug session with several dap windows enabled."
+  (interactive)
+  (dap-ui-show-many-windows)
+  (dap-debug))
+
+;;; ##########################################################################
+
+(defun define-dap-hydra ()
+  (defhydra dap-hydra (:color pink :hint nil :foreign-keys run)
+    "
+  ^Stepping^            ^Switch^                 ^Breakpoints^          ^Debug^                     ^Eval
+  ^^^^^^^^-----------------------------------------------------------------------------------------------------------------
+  _._: Next            _ss_: Session            _bb_: Toggle           _dd_: Debug                 _ee_: Eval
+  _/_: Step in         _st_: Thread             _bd_: Delete           _dr_: Debug recent          _er_: Eval region
+  _,_: Step out        _sf_: Stack frame        _ba_: Add              _dl_: Debug last            _es_: Eval thing at point
+  _c_: Continue        _su_: Up stack frame     _bc_: Set condition    _de_: Edit debug template   _ea_: Add expression.
+  _r_: Restart frame   _sd_: Down stack frame   _bh_: Set hit count    _ds_: Debug restart
+  _Q_: Disconnect      _sl_: List locals        _bl_: Set log message  _dx_: end session
+                       _sb_: List breakpoints                          _dX_: end all sessions
+                       _sS_: List sessions
+                       _sR_: Session Repl
+"
+    ("n" dap-next)
+    ("i" dap-step-in)
+    ("o" dap-step-out)
+    ("." dap-next)
+    ("/" dap-step-in)
+    ("," dap-step-out)
+    ("c" dap-continue)
+    ("r" dap-restart-frame)
+    ("ss" dap-switch-session)
+    ("st" dap-switch-thread)
+    ("sf" dap-switch-stack-frame)
+    ("su" dap-up-stack-frame)
+    ("sd" dap-down-stack-frame)
+    ("sl" dap-ui-locals)
+    ("sb" dap-ui-breakpoints)
+    ("sR" dap-ui-repl)
+    ("sS" dap-ui-sessions)
+    ("bb" dap-breakpoint-toggle)
+    ("ba" dap-breakpoint-add)
+    ("bd" dap-breakpoint-delete)
+    ("bc" dap-breakpoint-condition)
+    ("bh" dap-breakpoint-hit-condition)
+    ("bl" dap-breakpoint-log-message)
+    ("dd" dap-debug)
+    ("dr" dap-debug-recent)
+    ("ds" dap-debug-restart)
+    ("dl" dap-debug-last)
+    ("de" dap-debug-edit-template)
+    ("ee" dap-eval)
+    ("ea" dap-ui-expressions-add)
+    ("er" dap-eval-region)
+    ("es" dap-eval-thing-at-point)
+    ("dx" mifi/dap-end-debug-session)
+    ("dX" mifi/dap-delete-all-debug-sessions)
+    ("x" nil "exit Hydra" :color yellow)
+    ("q" mifi/dap-end-debug-session "quit" :color blue)
+    ("Q" mifi/dap-delete-all-debug-sessions :color red)))
 
 ;;; ##########################################################################
 
@@ -3907,7 +3911,7 @@ capture was not aborted."
 (use-package highlight-defined
   :defer t
   :ensure t
-  :after prog-mode
+  :after emacs-lisp-mode
   :hook (emacs-lisp-mode . highlight-defined-mode))
 
 ;;; ##########################################################################
@@ -4045,15 +4049,21 @@ capture was not aborted."
         ((equal major-mode 'python-mode)
           (bind-keys :map map
             ("M-RET P" . 'pydoc-at-point)))
+	((equal major-mode 'tuareg-mode)
+	  (bind-keys :map map
+	    ("M-RET c m" . tuarg-browse-manual)))
         (t   ;; Default 
           (unbind-key "M-RET o f" map)
+          (unbind-key "M-RET o c" map)
           (unbind-key "M-RET o l" map)
           (unbind-key "M-RET P ?" map)
+          (unbind-key "M-RET c m" map)
           (unbind-key "M-RET M-RET" map)))))
 
   ;; Override default menu text with better things
   (which-key-add-key-based-replacements "M-RET t t" "thesaurus-at-point")
   (which-key-add-key-based-replacements "M-RET o" "org-menu")
+  (which-key-add-key-based-replacements "M-RET c" "ocaml-menu")
   (which-key-add-key-based-replacements "M-RET o c" "toggle-org-centering")
   (which-key-add-key-based-replacements "M-RET o f" "set-org-fill-column"))
 

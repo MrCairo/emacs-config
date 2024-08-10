@@ -251,13 +251,13 @@ Because in macOS, Emacs could be started outside of a shell (like an application
       (t ;; default to something
         (setq exec-path '( "/usr/local/sbin" "/usr/local/bin"
                            "/usr/sbin" "/usr/bin"))))
-
     (mifi/setup-path-from-exec-path))
 
-  (setq browse-url-firefox-program
-    "/Applications/Firefox.app/Contents/MacOS/firefox")
-  (setq browse-url-chrome-program
-    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome")
+  (when *is-a-mac*
+    (setq browse-url-firefox-program
+      "/Applications/Firefox.app/Contents/MacOS/firefox")
+    (setq browse-url-chrome-program
+      "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"))
 
   (add-hook 'before-init-hook #'mifi/setup-exec-path)
 
@@ -294,7 +294,6 @@ This is the standard format of a =lisp= header that should appear for all =lisp=
   ;;
 
 #+end_src
-
 
 
 ** Elpaca Bootstrap
@@ -847,6 +846,44 @@ By default, the =user-emacs-directory= points to the .emacs.d* directory from wh
 
 #+end_src
 
+** Which Key
+
+[[Https://github.com/justbur/emacs-which-key][which-key]] is a useful UI panel that appears when you start pressing any key binding in Emacs to offer you all possible completions for the prefix. For example, if you press =C-c= (hold control and press the letter =c=), a panel will appear at the bottom of the frame displaying all of the bindings under that prefix and which command they run. This is very useful for learning the possible key bindings in the mode of your current buffer.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (defun mifi/after-which-key ()
+    (interactive)
+    (which-key-mode 1)
+    (which-key-add-key-based-replacements "M-RET |" "display-fill-column")
+    (which-key-add-key-based-replacements "M-RET ?" "help-at-point")
+    (mmm-keys-minor-mode 1)
+    (when (featurep 'prog-mode)
+      (which-key-add-key-based-replacements "C-c g r" "find-symbol-reference")
+      (which-key-add-key-based-replacements "C-c g o" "find-defitions-other-window")
+      (which-key-add-key-based-replacements "C-c g g" "find-defitions")
+      (which-key-add-key-based-replacements "C-c g ?" "eldoc-definition"))
+    (mifi/set-recenter-keys))
+
+  (use-package which-key
+    ;; :ensure (:wait t)
+    :demand t
+    :commands which-key-mode
+    :delight which-key-mode
+    :custom
+    (which-key-popup-type 'side-window)
+    (which-key-preserve-window-configuration t)
+    (which-key-idle-delay 1,0)
+    (which-key-prefix-prefix "✪ ")
+    ;; (which-key-sort-order 'which-key-key-order-alpha)
+    (which-key-min-display-lines 3)
+    :config
+    (message ">>> which-key configure")
+    (add-hook 'elpaca-after-init-hook #'mifi/after-which-key))
+
+#+end_src
+
 ** Additional Search Paths
 
 This directory is expected to be in the ~emacs-config-direcory~ dir. This can be used to store custom lisp (or non-elpa/melpa) files that can'tbe found by =require.el= or =straight-use-package=.
@@ -1207,7 +1244,7 @@ This used to be httpd.el but there are already several of these out there alread
 
   (use-package helpful
     :ensure t
-    ;; :commands (helpful-callable helpful-variable helpful-command helpful-key)
+    :commands (helpful-callable helpful-variable helpful-command helpful-key)
     :config
     (bind-keys
       ([remap describe-command] . helpful-command)
@@ -1219,7 +1256,7 @@ This used to be httpd.el but there are already several of these out there alread
 
 Dumb Jump is an Emacs "jump to definition" package with support for 50+ programming languages that favors "just working". This means minimal -- and ideally zero -- configuration with absolutely no stored indexes (TAGS) or persistent background processes.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   ;;; ##########################################################################
 
   (use-package xref :ensure nil)
@@ -1295,7 +1332,7 @@ Multiple cursors for Emacs. This is some pretty crazy functionality, so yes, the
 
 anzu.el is an Emacs port of anzu.vim. anzu.el provides a minor mode which displays current match and total matches information in the mode-line in various search modes.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   ;;; ##########################################################################
 
   (use-package anzu
@@ -1576,41 +1613,6 @@ Jinx is a fast just-in-time spell-checker for Emacs. Jinx highlights misspelled 
 
 #+end_src
 
-** Which Key
-
-[[Https://github.com/justbur/emacs-which-key][which-key]] is a useful UI panel that appears when you start pressing any key binding in Emacs to offer you all possible completions for the prefix. For example, if you press =C-c= (hold control and press the letter =c=), a panel will appear at the bottom of the frame displaying all of the bindings under that prefix and which command they run. This is very useful for learning the possible key bindings in the mode of your current buffer.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (defun mifi/after-which-key ()
-    (interactive)
-    (which-key-mode 1)
-    (which-key-add-key-based-replacements "M-RET |" "display-fill-column")
-    (which-key-add-key-based-replacements "M-RET ?" "help-at-point")
-    (mmm-keys-minor-mode 1)
-    (when (featurep 'prog-mode)
-      (which-key-add-key-based-replacements "C-c g r" "find-symbol-reference")
-      (which-key-add-key-based-replacements "C-c g o" "find-defitions-other-window")
-      (which-key-add-key-based-replacements "C-c g g" "find-defitions")
-      (which-key-add-key-based-replacements "C-c g ?" "eldoc-definition"))
-    (mifi/set-recenter-keys))
-
-  (use-package which-key
-    ;; :ensure (:wait t)
-    :commands which-key-mode
-    :delight which-key-mode
-    :custom
-    (add-hook 'elpaca-after-init-hook #'mifi/after-which-key)
-    (which-key-popup-type 'side-window)
-    (which-key-preserve-window-configuration t)
-    (which-key-idle-delay 1,0)
-    (which-key-prefix-prefix "✪ ")
-    ;; (which-key-sort-order 'which-key-key-order-alpha)
-    (which-key-min-display-lines 3))
-
-#+end_src
-
 ** Local packages
 
 These are packages located in the ~"lisp"~ directory within the emacs-config-directory. This is a dedicated area to use in order to load/configure these packages if so desired. Not required, just a convenience.
@@ -1716,7 +1718,6 @@ TL;DR prescient.el: simple but effective sorting and filtering package for Emacs
   ;;; ##########################################################################
 
   (use-package prescient
-    :disabled t
     :after (:any ivy vertico corfu)
     :defer t
     :ensure t)
@@ -1883,7 +1884,6 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
 
   (defun mifi/company-config ()
     (interactive)
-    (message ">>> mifi/company-config")
     (bind-keys :map company-active-map
       ("C-n". company-select-next)
       ("C-p". company-select-previous)
@@ -1898,7 +1898,7 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
     :defer t
     :unless (equal custom-ide 'custom-ide-lsp-bridge)
     ;; :after prescient
-    :ensure (:wait t)
+    ;; :ensure (:wait t)
     :delight company-mode
     :config (mifi/company-config)
     :custom
@@ -2063,8 +2063,8 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
     (vertico-multiform-mode 1)
     :config
     (vertico-mode)
-    (when (featurep 'prescient)
-      (vertico-prescient-mode 0))
+    ;; (when (featurep 'prescient)
+    ;;   (vertico-prescient-mode 0))
     ;; :bind ("C-x C-f" . ido-find-file)
     ;; Clean up file path when typing
     :hook ((rfn-eshadow-update-overlay . vertico-directory-tidy)
@@ -2084,6 +2084,7 @@ Marginalia are marks or annotations placed at the margin of the page of a book o
     :when (or (equal completion-handler 'comphand-vertico)
             (equal completion-handler 'comphand-corfu))
     :ensure t
+    ;; :commands marginalia-mode
     :custom
     (marginalia-max-relative-age 0)
     (marginalia-align 'left)
@@ -2168,10 +2169,10 @@ Consult provides search and navigation commands based on the Emacs completion fu
   ;;; ##########################################################################
 
   (use-package vertico-prescient
-    :disabled t
     :when (equal completion-handler 'comphand-vertico)
     :ensure t
-    :after vertico prescient)
+    :after (vertico prescient)
+    :config (vertico-prescient-mode t))
 
 #+end_src
 
@@ -3725,10 +3726,9 @@ To execute or export code in =org-mode= code blocks, you'll need to set up =org-
            (emacs-lisp . t)
            (gnuplot . t)
            (haskell . t)
-         (ocaml . t)
+           (tuareg . t)
            (latex . t)
            (ledger . t)
-           (ocaml . nil)
            (octave . t)
            (plantuml . t)
            (python . t)
@@ -3839,53 +3839,86 @@ Org Roam is an extension to Org Mode which solves a couple of the biggest proble
 
 Org Roam solves these problems by making it easy to create topic-focused Org Files and link them together so that you can treat the information as nodes in a network rather than as hierarchical documents. You can think of it like a personal wiki!
 
+*** Main org-roam configuration
+
 #+begin_src emacs-lisp
-  ;;; ##########################################################################
+   ;;; ##########################################################################
 
-  ;; (use-package emacsql)
-  ;; (use-package emacsql-sqlite)
+   (use-package org-roam
+     :ensure ( :package "org-roam" :source "MELPA" :protocol https :inherit t :depth 1
+   	    :fetcher github :repo "org-roam/org-roam" :files (:defaults "extensions/*"))
+     :when (equal custom-note-system 'custom-note-system-org-roam)
+     :init
+     (setq org-roam-v2-ack t)
+     (which-key-add-key-based-replacements "C-c n" "org-roam")
+     :custom
+     (org-roam-directory (expand-file-name "RoamNotes" custom-docs-dir))
+     (org-roam-completion-everywhere t)
+     :bind (("C-c n l" . org-roam-buffer-toggle)
+             ("C-c n f" . org-roam-node-find)
+             ("C-c n i" . org-roam-node-insert)
+             ("C-c n I" . org-roam-node-insert-immediate)
+             ("C-c n p" . mifi/org-roam-find-project)
+             ("C-c n t" . mifi/org-roam-capture-task)
+             ("C-c n b" . mifi/org-roam-capture-inbox)
+             :map org-mode-map
+             ("C-M-i" . completion-at-point))
+     :config
+     (mifi/org-roam-set-which-key-replacements)
+     (mifi/org-roam-refresh-agenda-list)
+     (add-to-list 'org-after-todo-state-change-hook
+       (lambda ()
+         (when (equal org-state "DONE")
+           (mifi/org-roam-copy-todo-to-today))))
+     (org-roam-db-autosync-mode))
 
-  (use-package org-roam
-    ;; :demand t  ;; Ensure org-roam is loaded by default
-    :when (equal custom-note-system 'custom-note-system-org-roam)    
-    :init
-    (setq org-roam-v2-ack t)
-    :defer t
-    :custom
-    (org-roam-directory (expand-file-name "RoamNotes" custom-docs-dir))
-    (org-roam-completion-everywhere t)
-    :bind (("C-c n l" . org-roam-buffer-toggle)
-            ("C-c n f" . org-roam-node-find)
-            ("C-c n i" . org-roam-node-insert)
-            ("C-c n I" . org-roam-node-insert-immediate)
-            ("C-c n p" . my/org-roam-find-project)
-            ("C-c n t" . my/org-roam-capture-task)
-            ("C-c n b" . my/org-roam-capture-inbox)
-            :map org-mode-map
-            ("C-M-i" . completion-at-point)
-            :map org-roam-dailies-map
-            ("Y" . org-roam-dailies-capture-yesterday)
-            ("T" . org-roam-dailies-capture-tomorrow))
-    :bind-keymap
-    ("C-c n d" . org-roam-dailies-map)
-    :config
-    (require 'org-roam-dailies) ;; Ensure the keymap is available
-    (my/org-roam-refresh-agenda-list)
-    (add-to-list 'org-after-todo-state-change-hook
-      (lambda ()
-        (when (equal org-state "DONE")
-          (my/org-roam-copy-todo-to-today))))
-    (org-roam-db-autosync-mode))
+   (defun mifi/org-roam-set-which-key-replacements ()
+     (interactive)
+     (which-key-add-key-based-replacements "C-c n l" "toggle-buffer")
+     (which-key-add-key-based-replacements "C-c n f" "find-node")
+     (which-key-add-key-based-replacements "C-c n i" "insert-node")
+     (which-key-add-key-based-replacements "C-c n I" "insert-node-immediate")
+     (which-key-add-key-based-replacements "C-c n p" "find-project")
+     (which-key-add-key-based-replacements "C-c n t" "capture-task")
+     (which-key-add-key-based-replacements "C-c n b" "capture-inbox"))
 
-  (defun org-roam-node-insert-immediate (arg &rest args)
-    (interactive "P")
-    (let ((args (push arg args))
-           (org-roam-capture-templates
-             (list (append (car org-roam-capture-templates)
-                     '(:immediate-finish t)))))
-      (apply #'org-roam-node-insert args)))
+   (defun org-roam-node-insert-immediate (arg &rest args)
+     (interactive "P")
+     (let ((args (push arg args))
+            (org-roam-capture-templates
+              (list (append (car org-roam-capture-templates)
+                      '(:immediate-finish t)))))
+       (apply #'org-roam-node-insert args)))
 
   #+end_src
+
+*** Org-roam dailies
+#+begin_src emacs-lisp
+
+  (use-package org-roam-dailies
+    :when (equal custom-note-system 'custom-note-system-org-roam)
+    :init
+    (which-key-add-key-based-replacements "C-c n d" "org-roam-dailies")
+    :ensure ( :package "org-roam-dailies" :source "MELPA" :protocol https :inherit t :depth 1
+  	    :fetcher github :repo "org-roam/org-roam" :files ("extensions/*"))
+    :after org-roam
+    :bind-keymap
+    ("C-c n d" . org-roam-dailies-map)
+    :bind (:map org-roam-dailies-map
+  	  ("." . org-roam-dailies-goto-date)
+            ("Y" . org-roam-dailies-capture-yesterday)
+            ("T" . org-roam-dailies-capture-tomorrow))
+    :config
+    (which-key-add-key-based-replacements "C-c n d" "org-roam-dailies")
+    (which-key-add-key-based-replacements "C-c n d ." "goto-date")
+    (which-key-add-key-based-replacements "C-c n d Y" "capture-yesterday")
+    (which-key-add-key-based-replacements "C-c n d T" "capture-tomorrow")
+    (which-key-add-key-based-replacements "C-c n d n" "capture-today")
+    (which-key-add-key-based-replacements "C-c n d d" "goto-today")
+    (which-key-add-key-based-replacements "C-c n d t" "goto-tomorrow")
+    (which-key-add-key-based-replacements "C-c n d y" "goto-yesterday")  )
+
+#+end_src
 
 *** Org Agenda from Roam Notes
 One of the most useful features of Org Mode is the agenda view. You can actually use your Org Roam notes as the source for this view!
@@ -3899,19 +3932,19 @@ Here is a snippet that will find all the notes with a specific tag and then set 
   ;; The buffer you put this code in must have lexical-binding set to t!
   ;; See the final configuration at the end for more details.
 
-  (defun my/org-roam-filter-by-tag (tag-name)
+  (defun mifi/org-roam-filter-by-tag (tag-name)
     (lambda (node)
       (member tag-name (org-roam-node-tags node))))
 
-  (defun my/org-roam-list-notes-by-tag (tag-name)
+  (defun mifi/org-roam-list-notes-by-tag (tag-name)
       (mapcar #'org-roam-node-file
           (seq-filter
-              (my/org-roam-filter-by-tag tag-name)
+              (mifi/org-roam-filter-by-tag tag-name)
               (org-roam-node-list))))
 
-  (defun my/org-roam-refresh-agenda-list ()
+  (defun mifi/org-roam-refresh-agenda-list ()
       (interactive)
-      (setq org-agenda-files (my/org-roam-list-notes-by-tag "Project")))
+      (setq org-agenda-files (mifi/org-roam-list-notes-by-tag "Project")))
 
   ;; Build the agenda list the first time for the session
 
@@ -3924,33 +3957,33 @@ The org-roam-node-find function gives us the ability to filter the list of notes
 #+begin_src emacs-lisp
   ;;; ##########################################################################
   
-  (defun my/org-roam-project-finalize-hook ()
+  (defun mifi/org-roam-project-finalize-hook ()
       "Adds the captured project file to `org-agenda-files' if the
   capture was not aborted."
       ;; Remove the hook since it was added temporarily
-      (remove-hook 'org-capture-after-finalize-hook #'my/org-roam-project-finalize-hook)
+      (remove-hook 'org-capture-after-finalize-hook #'mifi/org-roam-project-finalize-hook)
 
       ;; Add project file to the agenda list if the capture was confirmed
       (unless org-note-abort
           (with-current-buffer (org-capture-get :buffer)
               (add-to-list 'org-agenda-files (buffer-file-name)))))
 
-  (defun my/org-roam-find-project ()
+  (defun mifi/org-roam-find-project ()
       (interactive)
       ;; Add the project file to the agenda after capture is finished
-      (add-hook 'org-capture-after-finalize-hook #'my/org-roam-project-finalize-hook)
+      (add-hook 'org-capture-after-finalize-hook #'mifi/org-roam-project-finalize-hook)
 
       ;; Select a project file to open, creating it if necessary
       (org-roam-node-find
           nil
           nil
-          (my/org-roam-filter-by-tag "Project")
+          (mifi/org-roam-filter-by-tag "Project")
           :templates
           '(("p" "project" plain "* Goals\n\n%?\n\n* Tasks\n\n** TODO Add initial tasks\n\n* Dates\n\n"
                 :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n#+category: ${title}\n#+filetags: Project")
                 :unnarrowed t))))
 
-  (global-set-key (kbd "C-c n p") #'my/org-roam-find-project)
+  (global-set-key (kbd "C-c n p") #'mifi/org-roam-find-project)
 #+end_src
 
 *** Keep and inbox of notes and tasks
@@ -3960,7 +3993,7 @@ Even though this file won’t have the timestamped filename, it will still be tr
 #+begin_src emacs-lisp
   ;;; ##########################################################################
   
-  (defun my/org-roam-capture-inbox ()
+  (defun mifi/org-roam-capture-inbox ()
       (interactive)
       (org-roam-capture- :node (org-roam-node-create)
           :templates '(("i" "inbox" plain "* %?"
@@ -3976,14 +4009,14 @@ Much like the example before, we can either select a project that exists or auto
 #+begin_src emacs-lisp
   ;;; ##########################################################################
   
-  (defun my/org-roam-capture-task ()
+  (defun mifi/org-roam-capture-task ()
       (interactive)
       ;; Add the project file to the agenda after capture is finished
-      (add-hook 'org-capture-after-finalize-hook #'my/org-roam-project-finalize-hook)
+      (add-hook 'org-capture-after-finalize-hook #'mifi/org-roam-project-finalize-hook)
 
       ;; Capture the new task, creating the project file if necessary
       (org-roam-capture- :node (org-roam-node-read nil
-                                   (my/org-roam-filter-by-tag "Project"))
+                                   (mifi/org-roam-filter-by-tag "Project"))
           :templates '(("p" "project" plain "** TODO %?"
                            :if-new
                            (file+head+olp "%<%Y%m%d%H%M%S>-${slug}.org"
@@ -3997,7 +4030,7 @@ The following snippet sets up a hook for all Org task state changes and then cop
 #+begin_src emacs-lisp
   ;;; ##########################################################################
   
-  (defun my/org-roam-copy-todo-to-today ()
+  (defun mifi/org-roam-copy-todo-to-today ()
       (interactive)
       (let ((org-refile-keep t) ;; Set this to nil to delete the original!
                (org-roam-dailies-capture-templates
@@ -4230,13 +4263,9 @@ The following are configured for Python development and provide an <<<IDE>>> typ
     :defer t
     :hook
     (lisp-mode . eglot-ensure)
-    (python-mode . eglot-ensure)
     (go-mode . eglot-ensure)
     (rustic-mode . eglot-ensure)
     (tuareg-mode . eglot-ensure)
-    ;; (c-mode . eglot-ensure)
-    ;; (c++-mode . eglot-ensure)
-    ;; (prog-mode . eglot-ensure)
     :config
     (flymake-mode 0)
     (add-to-list 'major-mode-remap-alist '(python-mode . python-ts-mode))
@@ -4493,6 +4522,1056 @@ C-c C-c evaluates the current python script (or region if something is selected)
 
 
 -----
+
+
+* Language Integration
+** Language Support Packages
+*** Flycheck
+
+This is more support for a language rather than a langage itself
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package flycheck
+    ;;:unless (equal custom-ide 'custom-ide-elpy)
+    :delight 'fc
+    :defer t
+    ;;:ensure (:host github :repo "flycheck/flycheck")
+    :config
+    (eval-after-load 'flycheck
+      '(flycheck-package-setup))
+    (global-flycheck-mode))
+
+  (use-package flycheck-package
+    :after flycheck)
+
+#+end_src
+
+*** Tree-sitter
+
+Tree-sitter is a parser generator tool and an incremental parsing library. It can build a concrete syntax tree for a source file and efficiently update the syntax tree as the source file is edited. Tree-sitter aims to be:
+
+- General enough to parse any programming language
+- Fast enough to parse on every keystroke in a text editor
+- Robust enough to provide useful results even in the presence of syntax errors
+- Dependency-free so that the runtime library (which is written in pure C) can be embedded in any application
+
+**** Treesit-support functions
+
+Some functions that are used during the initialization of tree-sitter.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (defun mifi/tree-sitter-setup ()
+    (tree-sitter-hl-mode t))
+
+  (defun lsp-go-install-save-hooks ()
+    (add-hook 'before-save-hook #'lsp-format-buffer t t)
+    (add-hook 'before-save-hook #'lsp-organize-imports t t))
+
+#+end_src
+
+**** The main Tree-sitter setup
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package tree-sitter
+    :defer t
+    :after (:any python python-mode lisp-mode merlin-mode)
+    :config
+    ;; Activate tree-sitter globally (minor mode registered on every buffer)
+    (global-tree-sitter-mode)
+    (cond
+      ((equal custom-ide 'custom-ide-eglot)
+        (add-hook 'go-mode-hook 'eglot-ensure))
+      ((equal custom-ide 'custom-ide-lsp)
+        (add-hook 'go-mode-hook 'lsp-deferred)))
+    :hook
+    (tree-sitter-after-on . mifi/tree-sitter-setup)
+    (typescript-mode . lsp-deferred)
+    ;; (c-mode . lsp-deferred)
+    ;; (c++-mode . lsp-deferred)
+    (before-save . lsp-go-install-save-hooks)
+    (js2-mode . lsp-deferred))
+
+  (use-package tree-sitter-langs
+    :ensure t
+    :after tree-sitter)
+
+#+end_src
+
+**** Treesit-auto
+
+If a tree-sitter grammer is available and installed, use it instead of the corresponding default mode. Conversely, when a tree-sitter grammar is not available and a fallback major mode is available/specified, use it instead.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package treesit-auto
+    :demand t :ensure t
+    :config
+    (global-treesit-auto-mode))
+
+#+end_src
+
+*** Magit
+
+[[https://magit.vc/][Magit]] is the one of the best Git interface implementations . Common Git operations are easy to execute quickly using Magit's command panel system.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package transient :defer t)
+  (use-package git-commit :after transient :defer t)
+  (use-package magit :after git-commit :defer t)
+
+  ;; NOTE: Make sure to configure a GitHub token before using this package!
+  ;; - https://magit.vc/manual/forge/Token-Creation.html#Token-Creation
+  ;; - https://magit.vc/manual/ghub/Getting-Started.html#Getting-Started
+
+  (use-package forge :after magit :defer t)
+  (use-package treemacs-magit :defer t :after treemacs magit)
+
+#+end_src
+
+** Python
+
+<<<Python>>> is an interpreted, interactive, object-oriented programming language. It incorporates modules, exceptions, dynamic typing, very high level dynamic data types, and classes. It supports multiple programming paradigms beyond object-oriented programming, such as procedural and functional programming. Python combines remarkable power with very clear syntax. It has interfaces to many system calls and libraries, as well as to various window systems, and is extensible in C or C++. It is also usable as an extension language for applications that need a programmable interface. Finally, Python is portable: it runs on many Unix variants including Linux and macOS, and on Windows.
+
+This is the Python setup for development under Emacs.
+
+*** Important
+
+Before any work can begin in python, make sure that the right packages are installed.
+
+#+begin_src shell :results output silent
+
+  pip3 install --upgrade pip
+  pip3 install "python-lsp-server[all]"
+  pip3 install debugpy
+
+#+end_src
+
+In addition to that, it is important that =autopep8=, which is a script, can reach python or python3. For my configuration, =autopep8= looks for python this like this:
+
+    ~#!/Library/Frameworks/Python.framework/Versions/Current/bin/python3~
+
+*Note:* If this python path doesn't exist, you will see the very annoying message:
+
+     ~file-missing "Doing vfork" "No such file or directory"~
+
+*** Specialized python-mode Keymaps                                    :Python:
+
+The following are keymaps that are used by by the custom-ide and for python-mode
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (defun mifi/set-custom-ide-python-keymaps ()
+    (cond
+      ((equal custom-ide 'custom-ide-lsp)
+        (bind-keys :map python-mode-map
+          ("C-c g r" . lsp-find-references)
+          ("C-c g g" . xref-find-definitions)
+          ("C-c g G" . xref-find-definitions-other-window)
+          ("C-c g ?" . eldoc-doc-buffer)))
+      ((equal custom-ide 'custom-ide-eglot)
+        (bind-keys :map python-mode-map
+          ("C-c g i" . eglot-find-implementation)
+          ("C-c g r" . xref-find-references)
+          ("C-c g D" . xref-find-definitions-other-window)
+          ("C-c g g" . xref-find-definitions)
+          ("C-c g n" . xref-find-references-and-replace)
+          ("C-c g ?" . eldoc-doc-buffer)))
+      ((equal custom-ide 'custom-ide-elpy)
+        (elpy-enable)
+        (bind-keys :map python-mode-map
+          ("C-c g a" . elpy-goto-assignment)
+          ("C-c g A" . elpy-goto-definition-other-window)
+          ("C-c g g" . elpy-goto-definition)
+          ("C-c g ?" . elpy-doc)))
+      ((equal custom-ide 'custom-ide-lsp-bridge)
+        (bind-keys :map python-mode-map
+          ("C-c g a" . lsp-bridge-find-reference)
+          ("C-c g A" . lsp-bridge-find-def-other-window)
+          ("C-c g g" . lsp-bridge-find-def)
+          ("C-c g i" . lsp-bridge-find-impl)
+          ("C-c g n" . lsp-bridge-rename)
+          ("C-c g ?" . lsp-bridge-popup-documentation)))
+      ((equal custom-ide 'custom-ide-anaconda)
+        (bind-keys :map python-mode-map
+          ("C-c g a" . anaconda-mode-find-assignments)
+          ("C-c g A" . anaconda-mode-find-assignments-other-window)
+          ("C-c g r" . anaconda-mode-find-references)
+          ("C-c g R" . anaconda-mode-find-references-other-window)
+          ("C-c g g" . anaconda-mode-find-definitions)
+          ("C-c g G" . anaconda-mode-find-definitions-other-window)
+          ("C-c g ?" . anaconda-mode-show-doc)))
+      ))
+
+#+end_src
+
+*** Standard setup
+***** Python mode support functions                                 :Python:
+
+These functions are used during python intialization or file loading. This is where Python IDE functionality, linting and debugging setup begins.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (defun mifi/load-python-file-hook ()
+    (python-mode)
+    (flymake-mode 0)
+    (when (equal custom-ide 'custom-ide-anaconda)
+      (anaconda-mode 1))
+    (message ">>> mifi/load-python-file-hook")
+    (setq highlight-indentation-mode -1)
+    (setq display-fill-column-indicator-mode t))
+
+  (defun mifi/before-save ()
+    "Force the check of the current python file being saved."
+    (when (eq major-mode 'python-mode) ;; Python Only
+      (flycheck-mode 0)
+      (flycheck-mode t)
+      (delete-trailing-whitespace)))
+
+  ;; This function should only be called ONCE during python-mode startup.
+  (defun mifi/enable-python-features ()
+    (message ">>> mifi/enable-python-features")
+    ;; _____________________________
+    (cond
+      ((equal debug-adapter 'debug-adapter-dap-mode)
+        (unless (featurep 'dap-mode) (dap-mode)) ;; Load if not loaded.
+        (define-dap-hydra)))
+    ;;___________________________
+    ;; check for which custom-ide
+    (cond
+      ((equal custom-ide 'custom-ide-eglot)
+        (eglot-ensure))
+      ((equal custom-ide 'custom-ide-lsp)
+        (lsp-deferred))))
+
+  (defun mifi/python-mode-triggered ()
+    ;; (eldoc-box-hover-at-point-mode t) ;; Using Mitch Key for this
+    (mifi/enable-python-features)
+    (mifi/set-custom-ide-python-keymaps)
+    (unless (featurep 'yasnippet)
+      (yas-global-mode t))
+    (add-hook 'before-save-hook 'mifi/before-save)
+    (set-fill-column 80))
+
+#+end_src
+
+***** Python mode initialization                                    :Python:
+
+This is the primary Python setup that is triggered by the first load of the Python mode and then any time a file is loaded.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  ;; Use built-in python language mode.
+  (use-package python-mode
+    :when enable-python
+    :mode ("\\.py\\'" . mifi/load-python-file-hook)
+    :hook (python-mode . mifi/python-mode-triggered)
+    :config
+    (if (boundp 'python-shell-completion-native-disabled-interpreters)
+      (add-to-list 'python-shell-completion-native-disabled-interpreters "python3")
+      (setq python-shell-completion-native-disabled-interpreters '("python3"))))
+
+  (when enable-python
+    (use-package blacken
+      :when enable-python
+      :after python)) ;Format Python file upon save.
+
+#+end_src
+
+*** Auto-pep 8
+
+autopep8 automatically formats Python code to conform to the `PEP 8` style guide. It uses the pycodestyle_ utility to determine what parts of the code needs to be formatted. autopep8 is capable of fixing most of the formatting issues_ that can be reported by pycodestyle. Refer to the [[IMPORTANT][IMPORTANT]] section above for possible issues when autopep8 is installed.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  ;; Using when instead of :when so that the package doesn't get loaded.
+  (when enable-python
+    (use-package py-autopep8
+      :after python
+      :hook (python-mode . py-autopep8-mode)))
+
+#+end_src
+
+*** Python Keybinding
+**** Helpful Macros
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  ;; This is a helpful macro that is used to put double quotes around a word.
+  (defalias 'quote-word
+    (kmacro "\" M-d \" <left> C-y"))
+
+  (defalias 'quote-region
+    (kmacro "C-w \" \" <left> C-y <right>"))
+
+  (defalias 'reformat-src-block
+    (kmacro "C-s b e g i n _ s r c SPC e m a c s - l i s p <return> <down> C-c ' C-x h C-c ] C-x h M-x u n t a b <return> C-c ' C-s e n d _ s r c <return> <down>"))
+
+  (when enable-python
+    (eval-after-load "python"
+      #'(bind-keys :map python-mode-map
+        ("C-c C-q" . quote-region)
+        ("C-c q"   . quote-word)
+        ("C-c |"   . display-fill-column-indicator-mode))))
+
+#+end_src
+
+*** Python Virtual Environment Support
+
+We use Pyvenv-auto is a package that automatically changes to the Python virtual environment based upon the project's directory. pyvenv-auto looks at the root director of the project for a =.venv= or =venv= (and a few others)
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  ;; Using when instead of :when so that the package doesn't get loaded.
+  (when enable-python
+    (use-package pyvenv-auto
+      :after python
+      :hook (python-mode . pyvenv-auto-run)))
+
+#+end_src
+
+*** Pydoc
+
+#Pydoc, the Python documentation navigation package
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+  ;; Using when instead of :when so that the package doesn't get loaded.
+  (when enable-python
+    (use-package pydoc
+      ;;:ensure (:host github :repo "statmobile/pydoc")
+      :after python
+      :custom
+      (pydoc-python-command "python3")
+      (pydoc-pip-version-command "pip3 --version")))
+
+#+end_src
+
+** JavaScript
+*** Typescript
+
+This is a basic configuration for the TypeScript language so that =.ts= files activate =typescript-ts-mode= when opened. We're also adding a hook to =typescript-mode-hook= to call =lsp-deferred= so that we activate =lsp-mode= to get LSP features every time we edit TypeScript code.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (when enable-ts
+    (use-package typescript-mode
+      :defer t
+      :mode "\\.ts\\'"
+      :hook
+      (typescript-mode . lsp-deferred)
+      (js2-mode . lsp-deferred)
+      :config
+      (setq typescript-indent-level 4)
+      (cond
+        ((equal debug-adapter 'debug-adapter-dap-mode)
+        (bind-keys :map typescript-mode-map
+            ("C-c ." . dap-hydra/body))
+        (dap-node-setup)))))
+
+#+end_src
+
+*** NodeJS
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (defun mifi/load-js-file-hook ()
+    (js2-mode)
+
+    (when (equal debug-adapter 'debug-adapter-dap-mode)
+      (dap-mode)
+      (dap-firefox-setup))
+
+    (highlight-indentation-mode nil)
+    (dap-firefox-setup))
+
+  (defun mifi/nvm-which ()
+    (let ((output (shell-command-to-string "source ~/.nvm/nvm.sh; nvm which")))
+      (cadr (split-string output "[\n]+" t))))
+
+  (use-package nodejs-repl
+    :defer t
+    :config
+    (setq nodejs-repl-command #'mifi/nvm-which))
+
+#+end_src
+
+*** JS2-Mode
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package js2-mode
+    ;;:after simple-httpd
+    :ensure t
+    :hook (js-mode . js2-minor-mode)
+    ;; :bind (:map js2-mode-map
+    ;;         ("{" . paredit-open-curly)
+    ;;         ("}" . paredit-close-curly-and-newline))
+    :mode ("\\.js\\'" "\\.mjs\\'" "\\.json$")
+    :custom (js2-highlight-level 3))
+
+  (use-package skewer-mode
+    :ensure t
+    :after js2-mode)
+
+  (use-package ac-js2
+    :after js2-mode skewer-mode
+    :hook (js2-mode . ac-js2-mode))
+
+#+end_src
+
+** GameBoy Development
+
+RGBDS is a compiler that has been around quite a long time (since 1997). It supports Z80 and the LR35902 assembler syntaxes that are used in the development of Game Boy and Game Boy color games.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (when enable-gb-dev
+    (use-package z80-mode
+      :when enable-gb-dev
+      ;;:vc (:url "https://github.com/SuperDisk/z80-mode"))
+      :ensure (:host github :repo "SuperDisk/z80-mode"))
+
+    (use-package mwim
+      :when enable-gb-dev
+      ;;:vc (:url "https://github.com/alezost/mwim"))
+      :ensure (:host github :repo "alezost/mwim.el"))
+
+    (use-package rgbds-mode
+      :when enable-gb-dev
+      :after mwim
+      ;;:vc (:url "https://github.com/japanoise/rgbds-mode"))
+      :ensure (:host github :repo "japanoise/rgbds-mode")))
+
+#+end_src
+
+** Rust
+
+Rust is blazingly fast and memory-efficient: with no runtime or garbage collector, it can power performance-critical services, run on embedded devices, and easily integrate with other languages.
+
+Much of this configuration was taken from the [[https://robert.kra.hn/posts/rust-emacs-setup/][Robert Krahn]] web site.
+
+*** Prerequisites
+
+1. Install Rust and Cargo
+   
+   #+begin_src shell
+               
+     curl https://sh.rustup.rs -sSf | sh
+
+   #+end_src
+
+
+2. Install the Rust analyzer 
+   
+#+begin_src shell
+  #!/bin/bash
+
+  git clone https://github.com/rust-analyzer/rust-analyzer.git -b release
+  cd rust-analyzer
+  cargo xtask install --server # will install rust-analyzer into $HOME/.cargo/bin
+
+#+end_src
+
+*** Rustic package configuration
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package rustic
+    :ensure t
+    :bind (:map rustic-mode-map
+            ("M-j" . lsp-ui-imenu)
+            ("M-?" . lsp-find-references)
+            ("C-c C-c l" . flycheck-list-errors)
+            ("C-c C-c a" . lsp-execute-code-action)
+            ("C-c C-c r" . lsp-rename)
+            ("C-c C-c q" . lsp-workspace-restart)
+            ("C-c C-c Q" . lsp-workspace-shutdown)
+            ("C-c C-c s" . lsp-rust-analyzer-status))
+    :hook (rustic-mode . rk/rustic-mode-hook)
+    :config
+    ;; uncomment for less flashiness
+    ;; (setq lsp-eldoc-hook nil)
+    ;; (setq lsp-enable-symbol-highlighting nil)
+    ;; (setq lsp-signature-auto-activate nil)
+
+    ;; comment to disable rustfmt on save
+    (setq rustic-format-on-save t))
+
+
+  (defun rk/rustic-mode-hook ()
+    ;; so that run C-c C-c C-r works without having to confirm, but don't try to
+    ;; save rust buffers that are not file visiting. Once
+    ;; https://github.com/brotzeit/rustic/issues/253 has been resolved this should
+    ;; no longer be necessary.
+    (when buffer-file-name
+      (setq-local buffer-save-without-query t))
+    (add-hook 'before-save-hook 'lsp-format-buffer nil t))
+
+#+end_src
+
+*** Rust-mode configuration
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  ;; (use-package graphql-mode)
+  (use-package rust-mode
+    :disabled ;;; Older than rustic so don't use but 
+    :defer t
+    :init (setq rust-mode-treesitter-derive t)
+    :hook
+    (rust-mode . lsp-deferred)
+    (rust-mode . (lambda () (setq indent-tabs-mode nil)
+                   (prettify-symbols-mode)))
+    :config
+    (setq rust-format-on-save t))
+
+  (use-package rust-playground :ensure t :after rust-mode)
+
+#+end_src
+
+*** Cargo and Cargo.toml packages
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+  ;; for Cargo.toml and other config files
+
+  (use-package toml-mode :ensure t :defer t :after rust-mode)
+
+
+#+end_src
+
+*** Cargo-mode configuration
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package cargo-mode
+    :defer t
+    :after rust-mode
+    :ensure (:fetcher github :repo "ayrat555/cargo-mode"
+              :files ("*.el" "*.el.in" "dir" "*.info" "*.texi"
+                       "*.texinfo" "doc/dir" "doc/*.info" "doc/*.texi"
+                       "doc/*.texinfo" "lisp/*.el"
+                       (:exclude ".dir-locals.el" "test.el" "tests.el"
+                         "*-test.el" "*-tests.el" "LICENSE" "README*"
+                         "*-pkg.el"))))
+
+#+end_src
+
+** Golang
+**** Important!
+
+Make sure that =gopls= and =dlv= are installed. gopls is the Go! (or golang) language server - like LSP. =dlv= is the =golang= debugger.
+
+#+begin_src shell
+
+  brew install gopls
+  go get golang.org/x/tools/cmd/guru
+  brew install dlv
+
+#+end_src
+
+*** Main go-mode config
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (defun eglot-format-buffer-on-save ()
+    (add-hook 'before-save-hook #'eglot-format-buffer -10 t))
+
+  (use-package go-mode
+    :defer t
+    :mode ("\\.go\\'" . go-mode)
+    :custom
+    (compile-command "go build -v && go test -v && go vet")
+    :bind (:map go-mode-map
+            ("C-c C-c" . 'compile))
+    :config
+    (eglot-format-buffer-on-save)
+    (define-key (current-local-map) "\C-c\C-c" 'compile)
+    (cond
+      ((equal custom-ide 'custom-ide-eglot)
+        (add-hook 'go-mode-hook 'eglot-ensure)
+        (add-hook 'go-mode-hook #'elot-format-buffer-on-save))
+      ((equal custom-ide 'custom-ide-lsp)
+        (add-hook 'go-mode-hook 'lsp-deferred))))
+
+#+end_src
+
+*** go-eldoc config
+
+=go-eldoc.el= provides eldoc for Go language. `go-eldoc.el' shows type information for variable, functions and current argument position of function.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package go-eldoc
+    :after go-mode
+    :hook (go-mode . go-eldoc-setup)
+    :config
+    (eglot-format-buffer-on-save)
+    (set-face-attribute 'eldoc-highlight-function-argument nil
+      :underline t :foreground "green"
+      :weight 'bold))
+
+#+end_src
+
+*** go-guru config
+
+Integration of the Go 'guru' analysis tool into Emacs.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package go-guru
+    :after go-mode
+    :hook (go-mode . go-guru-hl-identifier-mode))
+
+#+end_src
+
+** OCaml ([[https://ocaml.org][ocaml.org]])
+
+An industrial-strength functional programming language with an emphasis on expressiveness and safety
+
+OCaml mixes power and pragmatism in a way that makes it ideal for building complex software systems. What makes OCaml special is that it occupies a sweet spot in programming language design. It provides a combination of efficiency, expressiveness, and practicality that is matched by no other language. That is in large part because OCaml is an elegant combination of language features that have been developed over the last 40 years. These include:
+
++ Generational garbage collection for automatic memory management.
++ First-class functions that can be passed around like ordinary values, as seen in JavaScript, Common Lisp, and C#.
++ Static type-checking to increase performance and reduce the number of runtime errors, as found in Java and C#.
++ Parametric polymorphism, which enables the construction of abstractions that work across different data types, similar to generics in Java and C# and templates in C++.
++ Good support for immutable programming, i.e., programming without making destructive updates to data structures. This is present in traditional functional languages like Scheme, and it's also found in distributed, big-data frameworks like Hadoop.
++ Type inference, so you don’t need to annotate every function parameter, return type, and variable. Instead, types are inferred based on how a value is used. Available in a limited form in C# with implicitly-typed local variables and in C++11 with its auto keyword.
++ Algebraic data types and pattern matching to define and manipulate complex data structures, also available in Scala and F#.
+
+*** HOWTO Install OPAM if necessary
+
+The OCaml package manager manually. This will fetch the latest version.
+
+#+begin_src bash
+
+  bash -c "sh <(curl -fsSL https://raw.githubusercontent.com/ocaml/opam/master/shell/install.sh) --version 2.2.0"
+
+#+end_src
+
+This is an easy way to install =opam= using ~brew~ but it may not be the most current. The shell script above is the best way to on non-windows systems.
+
+*** opam (environment)
+
+This package will automatically perform the equivalent of =eval $(opam env)= and set the current OPAM and PATH environment variables. The package determines the new environment based upon the presence of an =_opam= or =.opam= directory in the cwd. If there is no matching directory, the current OPAM environment is not changed.
+
+#+begin_src emacs-lisp
+
+  (let
+    ((installer "bash -c \"sh <(curl -fsSL https://raw.githubusercontent.com/ocaml/opam/master/shell/install.sh) --version 2.2.0\""))
+    (use-package opam
+      :when enable-ocaml
+      :ensure t
+      :ensure-system-package (opam . installer)))
+
+  (defun opam-switch-prefix+relative-path (relative-path)
+    (let ((base (getenv "OPAM_SWITCH_PREFIX")))
+      (concat (concat base "/") relative-path)))
+
+#+end_src
+
+*** The .ocamlinit file
+
+This should be added/appended to anything in the existing ~.ocamlinit~ file.
+
+#+begin_src shell
+
+  sig=" ## Added by Emacs config for Ocaml "
+  count=$(grep -l "${sig}" ~/.ocamlinit)
+  if [ -z $count ]; then
+      printf "
+  (*${sig}*)
+  #require \"core.top\";;
+  #require \"ppx_jane\";;
+  open Base;;
+  (* ## End Emacs custom config *)
+  " >> ~/.ocamlinit
+  fi
+
+#+end_src
+
+#+RESULTS:
+
+*** HOWTO Install Merlin / Taureg
+
+Merlin is an editor service that provides advanced IDE features for OCaml.
+**Note**: when running =opam user-setup install -y= the resulting ~opam-user-setup.el~ file is specific to the current =opam switch= that is in effect. 
+
+#+begin_src shell
+
+  opam update -y             # (optional) check latests releases
+  opam install tuareg -y     # For Emacs only
+  opam install merlin -y     # Install merlin and it's dependencies
+  opam user-setup install -y # Emacs and VIM auto-configuration
+
+#+end_src
+
+*** Install Standard Libraries
+
+These are (mostly) the Jane Street libraries that ship with OCaml. They're very
+good and have become more-or-less the defacto standard.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package opam-std-libs
+    :when enable-ocaml
+    :ensure nil
+    :ensure-system-package
+    ( ("~/.opam"                  . "opam init && opam install core utop base stdio --yes")
+      ("~/.opam/default/lib/core" . "opam install core --yes")
+      ("~/.opam/default/lib/utop" . "opam install utop --yes")))
+
+#+end_src
+
+*** HOWTO Install OCaml LSP Server
+
+This is not 100% necessary since Ocaml can use =merlin= directly instead of fronting with an LSP server. But, we install it since EGLOT makes use of it.
+
+#+begin_src shell
+
+  opam install ocaml-lsp-server.1.18.0~5.2preview -y # Preview for >= 5.2 version of ocaml
+
+#+end_src
+
+*** Code Formatter and Builder
+#+begin_src bash
+
+  opam install ocamlformat dune -y
+
+#+end_src
+
+*** Opam Emacs Configuration
+
+This puts a most of the installs mentioned above into a nice ~use-package~ form. This makes use of the ~opam-emacs-setup~ package in the ~lisp~ directory. It's just a stub but allows us to configure enacs using the =:ensure-system-package= option. This
+is specifc to a macOS or Linux OS.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package opam-emacs-setup
+    :when enable-ocaml
+    :after opam-std-libs
+    :ensure nil
+    :config
+    (add-to-list 'exec-path "~/.opam/default/bin"))
+    ;;
+    ;; :ensure-system-package
+    ;; ;; we're using the new lps-server preview for 5.2.0 compatibility.
+    ;; ( ((opam-switch-prefix+relative-path "share/emacs/site-lisp/tuareg.el") .
+    ;;     "opam install merlin tuareg ocaml-lsp-server.1.18.0~5.2preview --yes")))
+
+#+end_src
+
+*** Setup path to ~opam~ installed emacs lisp modules
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (let ((opam-share (ignore-errors (car (process-lines "opam" "var" "share")))))
+    (when (and (and opam-share (file-directory-p opam-share)) enable-ocaml)
+      (message "Updating load-path for OPAM to %s" (expand-file-name "emacs/site-lisp" opam-share))
+      (add-to-list 'load-path (expand-file-name "emacs/site-lisp" opam-share))
+      (autoload 'merlin-mode "merlin" nil t nil)))
+
+#+end_src
+
+*** Configure Merlin / merlin-eldoc / merlin-company
+
+Merlin is an editor service that provides advanced IDE features for OCaml.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package merlin
+    :when enable-ocaml :ensure nil :defer t 
+    :delight " 🪄"
+    :after opam-emacs-setup)
+
+  (use-package merlin-eldoc
+    :when enable-ocaml :ensure nil :defer t :after merlin)
+
+  (use-package merlin-company
+    :when (and enable-ocaml (not (equal custom-ide 'custom-ide-lsp-bridge)))
+    :ensure nil :defer t :after merlin company
+    :config
+    (add-hook 'merlin-mode-hook 'company-mode)
+    (with-eval-after-load 'company
+      (add-to-list 'company-backends 'merlin-company-backend)))
+
+#+end_src
+
+*** Dune
+
+Dune is a build system for OCaml (with support for Reason and Coq). It is not intended as a completely generic build system that’s able to build any project in any language. On the contrary, it makes lots of choices in order to encourage a consistent development style.
+
+#+begin_src emacs-lisp
+
+  (use-package dune
+    :when enable-ocaml :ensure t
+    :hook (dune-mode . opam-init)
+    :ensure-system-package
+    (dune . "opam install dune --yes"))
+
+#+end_src
+
+*** Configure Tuareg
+
+*Tuareg: an Emacs OCaml mode*
+
+This archive contains files to help editing OCaml code, to highlight important parts of the code, to run an OCaml REPL (also called toplevel), and to run the OCaml debugger within Emacs.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (defun mifi/tuareg-mode-hook ()
+    (interactive)
+    (merlin-mode t)
+    (opam-init)
+    (eglot-ensure)
+    (dap-mode)
+    (setq tuareg-mode-name "🐫")
+    (when (functionp 'prettify-symbols-mode)
+      (prettify-symbols-mode)))
+
+  (use-package tuareg
+    :when enable-ocaml :ensure nil :defer t
+    ;; :after opam-emacs-setup merlin jsonrpc
+    :hook (tuareg-mode . mifi/tuareg-mode-hook)
+    ;; ("\\.ml\\'" . mifi/tuareg-mode-hook)
+    ;; ("\\.mli\\'" . tuareg-mode)
+    :custom
+    (tuareg-indent-align-with-first-arg t)
+    (compile-command "dune build ")
+    :config
+    (bind-keys :map tuareg-mode-map
+      ("C-c ," . dap-hydra/body)))
+  
+#+end_src
+
+**** tuareg-opam
+
+This module does many things but most important is that it updates the =exec-path= based upon the local opam environment. If the project contains an ~_opam~ directory, then this package will automatically update the exec-path. If the ~_opam~ directory is not present, the the default ("~/.opam/default") is used instead.
+
+#+begin_src emacs-lisp
+
+  ;; Does many things but also updates the exec-path to the local
+  ;; opam environment.
+  (use-package tuareg-opam
+    :when enable-ocaml
+    :ensure nil
+    :after tuareg)
+  
+#+end_src
+
+*** Load the opam-user-setup.el
+
+This file is created by the actual opam/ocaml installation and contains paths and other imports that are specific to the user login. It also includes hooks that will change the PATH to opam to the current projec t- similar to how the package 'pyvenv-auto' works.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (let
+    ((file (expand-file-name "opam-user-setup.el" emacs-config-directory)))
+    (when (file-exists-p file)
+      (use-package opam-user-setup
+        :unless (featurep 'opam-user-setup) ;; Don't allow to be run twice!
+        :when enable-ocaml
+        :ensure nil
+        :after tuareg
+        :config
+        (setq-default tuareg-indent-align-with-first-arg t)
+        (setq-default compile-command "dune build ")
+        (add-hook 'tuareg-mode-hook #'mifi/tuareg-mode-hook))))
+
+#+end_src
+
+
+*** Other OCaml Related Packages and functions
+
+Here are some other packages that are useful when using OCaml.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package ocp-indent
+    :when enable-ocaml
+    :after opam-emacs-setup
+    :ensure-system-package
+    ("~/.opam/default/lib/ocp-indent" . "opam install ocp-indent --yes")
+    ;;:vc (:url "https://github.com/OCamlPro/ocp-indent" :main-file "tools/ocp-indent.el"))
+    :ensure (:inherit t :depth 1
+             :fetcher github :repo "OCamlPro/ocp-indent"
+             :files ("tools/ocp-indent.el")))
+
+  (use-package ocamlformat
+    :when enable-ocaml :ensure t
+    :after ocp-indent
+    :bind ("<f6>" . ocamlformat)
+    :ensure-system-package
+    ("~/.opam/default/lib/ocamlformat-lib" . "opam install ocamlformat --yes")
+    :custom (ocamlformat-enable 'enable-outside-detected-project))
+
+  (use-package utop
+    :when enable-ocaml
+    :after opam-user-setup
+    :ensure t
+    :defer t
+    :custom
+    (utop-command "opam config exec utop -- -emacs"))
+
+  (use-package opam-switch-mode
+    :when enable-ocaml
+    :ensure t
+    :after opam-user-setup
+    :hook
+    (tuareg-mode . opam-switch-mode))
+
+#+end_src
+
+*** OCaml Tree-sitter Grammer
+#+begin_src emacs-lisp :tangle no
+  
+  (setq treesit-language-source-alist
+   '((ocaml "https://github.com/tree-sitter/tree-sitter-ocaml" "master" "ocaml/src")))
+
+#+end_src
+
+#+begin_src tuareg
+
+  open Printf;;
+
+  print_endline "Hello world!";;
+
+#+end_src
+
+#+RESULTS:
+: ()
+
+
+#+begin_src tuareg
+
+  open Stdio;;
+  open List;;
+
+  let rec even_index_elements l =
+    match l with
+      _::b::t -> b :: even_index_elements t
+    | _ -> [];;
+
+  even_index_elements [1;2;1;4;1;5];;
+
+  let rec print_list = function
+      [] -> ()
+    | e::l -> print_int e ; print_string " " ; print_list l;;
+
+  let plain_list = [1;100;50;12];;
+
+  let rec reverse_list l =
+    match l with
+    | [] -> []
+    | h::t -> reverse_list t @ [h]
+
+  let make_palendrome l =
+    match l with
+    | [] -> []
+    | h::t -> h::t @ reverse_list l;;
+
+  print_endline "Print a Palendrome\n";;
+  print_list(make_palendrome plain_list);;
+
+  print_list (even_index_elements [1;2;1;4;1;5]);;
+
+#+end_src
+
+#+RESULTS:
+: ()
+
+** Other Languages
+
+Lesser used or lesser known languages.
+
+*** Swift / Swift Playground
+
+Swift is very popular for iOS and macOS development but server-side Swift, which is what this area focuses on, is not as commonly used which is why it appears here (under lesser used).
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package swift-mode
+    :defer t
+    :mode ("\\.swift\\'" . swift-mode))
+
+  (use-package swift-helpful
+    :defer t
+    :after swift-mode
+    :ensure (:files ("*.el" "swift-info/*.info"
+                      ("images" "swift-info/images/*.png") "swift-helpful-pkg.el")
+              :host github
+              :repo "danielmartin/swift-helpful"))
+
+  (use-package swift-playground-mode
+    :defer t
+    :after swift-mode
+    :ensure ( :package "swift-playground-mode"
+            :repo "https://gitlab.com/michael.sanders/swift-playground-mode.git")
+    :init
+    (autoload 'swift-playground-global-mode "swift-playground-mode" nil t)
+    (add-hook 'swift-mode-hook #'swift-playground-global-mode))
+
+#+end_src
+
+*** Lisp
+
+Standard included emacs-lisp.
+
+#+begin_src emacs-lisp
+
+  (use-package elisp-mode
+    :ensure nil
+    :defer t
+    :mode ("\\.el\\'" . emacs-lisp-mode))
+
+#+end_src
+
+Lisp support is handled by SLIME which is the “Superior Lisp Interaction Mode for Emacs”. SLIME extends Emacs with support for interactive programming in Common Lisp. The features are centered around slime-mode, an Emacs minor-mode that complements the standard lisp-mode. While lisp-mode supports editing Lisp source files, slime-mode adds support for interacting with a running Common Lisp process for compilation, debugging, documentation lookup, and so on. Extensive documentation can be found [[https://slime.common-lisp.dev/doc/html/][at this link]].
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package slime
+    :defer t
+    :mode
+    ("\\.lisp\\'" . slime-mode)
+    :config
+    (setq inferior-lisp-program "/opt/homebrew/bin/sbcl"))
+
+#+end_src
+
 ** Debug Support
 *** Debug Adapter Protocol (<<<DAP>>>)
 
@@ -4559,6 +5638,7 @@ The Debug Adapter Protocol makes it possible to implement a generic debugger for
     (use-package dap-python
       ;; :vc (:url "https://github.com/emacs-lsp/dap-mode" :main-file "dap-python.el")
       :ensure (:package "dap-python" :type git :host github :repo "emacs-lsp/dap-mode")
+      :defer t
       :when (equal debug-adapter 'debug-adapter-dap-mode)
       :after dap-mode
       :config
@@ -4742,983 +5822,6 @@ Below are all the necessary functions and definitions for Hydra use under DAP.
 
 #+end_src
 
-** Language Integration
-*** Language Support Packages
-**** Flycheck
-
-This is more support for a language rather than a langage itself
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package flycheck
-    ;;:unless (equal custom-ide 'custom-ide-elpy)
-    :delight 'fc
-    :defer t
-    ;;:ensure (:host github :repo "flycheck/flycheck")
-    :config
-    (eval-after-load 'flycheck
-      '(flycheck-package-setup))
-    (global-flycheck-mode))
-
-  (use-package flycheck-package
-    :after flycheck)
-
-#+end_src
-
-**** Tree-sitter
-
-Tree-sitter is a parser generator tool and an incremental parsing library. It can build a concrete syntax tree for a source file and efficiently update the syntax tree as the source file is edited. Tree-sitter aims to be:
-
-- General enough to parse any programming language
-- Fast enough to parse on every keystroke in a text editor
-- Robust enough to provide useful results even in the presence of syntax errors
-- Dependency-free so that the runtime library (which is written in pure C) can be embedded in any application
-
-***** Treesit-support functions
-
-Some functions that are used during the initialization of tree-sitter.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (defun mifi/tree-sitter-setup ()
-    (tree-sitter-hl-mode t))
-
-  (defun lsp-go-install-save-hooks ()
-    (add-hook 'before-save-hook #'lsp-format-buffer t t)
-    (add-hook 'before-save-hook #'lsp-organize-imports t t))
-
-#+end_src
-
-***** The main Tree-sitter setup
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package tree-sitter
-    :defer t
-    :after (:any python python-mode lisp-mode merlin-mode)
-    :config
-    ;; Activate tree-sitter globally (minor mode registered on every buffer)
-    (global-tree-sitter-mode)
-    (cond
-      ((equal custom-ide 'custom-ide-eglot)
-        (add-hook 'go-mode-hook 'eglot-ensure))
-      ((equal custom-ide 'custom-ide-lsp)
-        (add-hook 'go-mode-hook 'lsp-deferred)))
-    :hook
-    (tree-sitter-after-on . mifi/tree-sitter-setup)
-    (typescript-mode . lsp-deferred)
-    ;; (c-mode . lsp-deferred)
-    ;; (c++-mode . lsp-deferred)
-    (before-save . lsp-go-install-save-hooks)
-    (js2-mode . lsp-deferred))
-
-  (use-package tree-sitter-langs
-    :ensure t
-    :after tree-sitter)
-
-#+end_src
-
-***** Treesit-auto
-
-If a tree-sitter grammer is available and installed, use it instead of the corresponding default mode. Conversely, when a tree-sitter grammar is not available and a fallback major mode is available/specified, use it instead.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package treesit-auto
-    :demand t :ensure t
-    :config
-    (global-treesit-auto-mode))
-
-#+end_src
-
-**** Magit
-
-[[https://magit.vc/][Magit]] is the one of the best Git interface implementations . Common Git operations are easy to execute quickly using Magit's command panel system.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package transient :defer t)
-  (use-package git-commit :after transient :defer t)
-  (use-package magit :after git-commit :defer t)
-
-  ;; NOTE: Make sure to configure a GitHub token before using this package!
-  ;; - https://magit.vc/manual/forge/Token-Creation.html#Token-Creation
-  ;; - https://magit.vc/manual/ghub/Getting-Started.html#Getting-Started
-
-  (use-package forge :after magit :defer t)
-  (use-package treemacs-magit :defer t :after treemacs magit)
-
-#+end_src
-
-*** Python
-
-<<<Python>>> is an interpreted, interactive, object-oriented programming language. It incorporates modules, exceptions, dynamic typing, very high level dynamic data types, and classes. It supports multiple programming paradigms beyond object-oriented programming, such as procedural and functional programming. Python combines remarkable power with very clear syntax. It has interfaces to many system calls and libraries, as well as to various window systems, and is extensible in C or C++. It is also usable as an extension language for applications that need a programmable interface. Finally, Python is portable: it runs on many Unix variants including Linux and macOS, and on Windows.
-
-This is the Python setup for development under Emacs.
-
-**** Important
-
-Before any work can begin in python, make sure that the right packages are installed.
-
-#+begin_src shell :results output silent
-
-  pip3 install --upgrade pip
-  pip3 install "python-lsp-server[all]"
-  pip3 install debugpy
-
-#+end_src
-
-In addition to that, it is important that =autopep8=, which is a script, can reach python or python3. For my configuration, =autopep8= looks for python this like this:
-
-    ~#!/Library/Frameworks/Python.framework/Versions/Current/bin/python3~
-
-*Note:* If this python path doesn't exist, you will see the very annoying message:
-
-     ~file-missing "Doing vfork" "No such file or directory"~
-
-**** Specialized python-mode Keymaps :Python:
-
-The following are keymaps that are used by by the custom-ide and for python-mode
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (defun mifi/set-custom-ide-python-keymaps ()
-    (cond
-      ((equal custom-ide 'custom-ide-lsp)
-        (bind-keys :map python-mode-map
-          ("C-c g r" . lsp-find-references)
-          ("C-c g g" . xref-find-definitions)
-          ("C-c g G" . xref-find-definitions-other-window)
-          ("C-c g ?" . eldoc-doc-buffer)))
-      ((equal custom-ide 'custom-ide-eglot)
-        (bind-keys :map python-mode-map
-          ("C-c g i" . eglot-find-implementation)
-          ("C-c g r" . xref-find-references)
-          ("C-c g D" . xref-find-definitions-other-window)
-          ("C-c g g" . xref-find-definitions)
-          ("C-c g n" . xref-find-references-and-replace)
-          ("C-c g ?" . eldoc-doc-buffer)))
-      ((equal custom-ide 'custom-ide-elpy)
-        (elpy-enable)
-        (bind-keys :map python-mode-map
-          ("C-c g a" . elpy-goto-assignment)
-          ("C-c g A" . elpy-goto-definition-other-window)
-          ("C-c g g" . elpy-goto-definition)
-          ("C-c g ?" . elpy-doc)))
-      ((equal custom-ide 'custom-ide-lsp-bridge)
-        (bind-keys :map python-mode-map
-          ("C-c g a" . lsp-bridge-find-reference)
-          ("C-c g A" . lsp-bridge-find-def-other-window)
-          ("C-c g g" . lsp-bridge-find-def)
-          ("C-c g i" . lsp-bridge-find-impl)
-          ("C-c g n" . lsp-bridge-rename)
-          ("C-c g ?" . lsp-bridge-popup-documentation)))
-      ((equal custom-ide 'custom-ide-anaconda)
-        (bind-keys :map python-mode-map
-          ("C-c g a" . anaconda-mode-find-assignments)
-          ("C-c g A" . anaconda-mode-find-assignments-other-window)
-          ("C-c g r" . anaconda-mode-find-references)
-          ("C-c g R" . anaconda-mode-find-references-other-window)
-          ("C-c g g" . anaconda-mode-find-definitions)
-          ("C-c g G" . anaconda-mode-find-definitions-other-window)
-          ("C-c g ?" . anaconda-mode-show-doc)))
-      ))
-
-#+end_src
-
-**** Standard setup
-****** Python mode support functions :Python:
-
-These functions are used during python intialization or file loading. This is where Python IDE functionality, linting and debugging setup begins.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (defun mifi/load-python-file-hook ()
-    (python-mode)
-    (flymake-mode 0)
-    (when (equal custom-ide 'custom-ide-anaconda)
-      (anaconda-mode 1))
-    (message ">>> mifi/load-python-file-hook")
-    (setq highlight-indentation-mode -1)
-    (setq display-fill-column-indicator-mode t))
-
-  (defun mifi/before-save ()
-    "Force the check of the current python file being saved."
-    (when (eq major-mode 'python-mode) ;; Python Only
-      (flycheck-mode 0)
-      (flycheck-mode t)
-      (delete-trailing-whitespace)))
-
-  ;; This function should only be called ONCE during python-mode startup.
-  (defun mifi/enable-python-features ()
-    (message ">>> mifi/enable-python-features")
-    ;; _____________________________
-    (cond
-      ((equal debug-adapter 'debug-adapter-dap-mode)
-        (unless (featurep 'dap-mode) (dap-mode)) ;; Load if not loaded.
-        (define-dap-hydra)))
-    ;;___________________________
-    ;; check for which custom-ide
-    (cond
-      ((equal custom-ide 'custom-ide-eglot)
-        (eglot-ensure))
-      ((equal custom-ide 'custom-ide-lsp)
-        (lsp-deferred))))
-
-  (defun mifi/python-mode-triggered ()
-    ;; (eldoc-box-hover-at-point-mode t) ;; Using Mitch Key for this
-    (mifi/enable-python-features)
-    (mifi/set-custom-ide-python-keymaps)
-    (unless (featurep 'yasnippet)
-      (yas-global-mode t))
-    (add-hook 'before-save-hook 'mifi/before-save)
-    (set-fill-column 80))
-
-#+end_src
-
-****** Python mode initialization :Python:
-
-This is the primary Python setup that is triggered by the first load of the Python mode and then any time a file is loaded.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  ;; Use built-in python language mode.
-  (use-package python-mode
-    :when enable-python
-    :mode ("\\.py\\'" . mifi/load-python-file-hook)
-    :hook (python-mode . mifi/python-mode-triggered)
-    :config
-    (if (boundp 'python-shell-completion-native-disabled-interpreters)
-      (add-to-list 'python-shell-completion-native-disabled-interpreters "python3")
-      (setq python-shell-completion-native-disabled-interpreters '("python3"))))
-
-  (when enable-python
-    (use-package blacken
-      :when enable-python
-      :after python)) ;Format Python file upon save.
-
-#+end_src
-
-**** Auto-pep 8
-
-autopep8 automatically formats Python code to conform to the `PEP 8` style guide. It uses the pycodestyle_ utility to determine what parts of the code needs to be formatted. autopep8 is capable of fixing most of the formatting issues_ that can be reported by pycodestyle. Refer to the [[IMPORTANT][IMPORTANT]] section above for possible issues when autopep8 is installed.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  ;; Using when instead of :when so that the package doesn't get loaded.
-  (when enable-python
-    (use-package py-autopep8
-      :after python
-      :hook (python-mode . py-autopep8-mode)))
-
-#+end_src
-
-**** Python Keybinding
-***** Helpful Macros
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  ;; This is a helpful macro that is used to put double quotes around a word.
-  (defalias 'quote-word
-    (kmacro "\" M-d \" <left> C-y"))
-
-  (defalias 'quote-region
-    (kmacro "C-w \" \" <left> C-y <right>"))
-
-  (defalias 'reformat-src-block
-    (kmacro "C-s b e g i n _ s r c SPC e m a c s - l i s p <return> <down> C-c ' C-x h C-c ] C-x h M-x u n t a b <return> C-c ' C-s e n d _ s r c <return> <down>"))
-
-  (when enable-python
-    (eval-after-load "python"
-      #'(bind-keys :map python-mode-map
-        ("C-c C-q" . quote-region)
-        ("C-c q"   . quote-word)
-        ("C-c |"   . display-fill-column-indicator-mode))))
-
-#+end_src
-
-**** Python Virtual Environment Support
-
-We use Pyvenv-auto is a package that automatically changes to the Python virtual environment based upon the project's directory. pyvenv-auto looks at the root director of the project for a =.venv= or =venv= (and a few others)
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  ;; Using when instead of :when so that the package doesn't get loaded.
-  (when enable-python
-    (use-package pyvenv-auto
-      :after python
-      :hook (python-mode . pyvenv-auto-run)))
-
-#+end_src
-
-**** Pydoc
-
-#Pydoc, the Python documentation navigation package
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-  ;; Using when instead of :when so that the package doesn't get loaded.
-  (when enable-python
-    (use-package pydoc
-      ;;:ensure (:host github :repo "statmobile/pydoc")
-      :after python
-      :custom
-      (pydoc-python-command "python3")
-      (pydoc-pip-version-command "pip3 --version")))
-
-#+end_src
-
-*** JavaScript
-**** Typescript
-
-This is a basic configuration for the TypeScript language so that =.ts= files activate =typescript-ts-mode= when opened. We're also adding a hook to =typescript-mode-hook= to call =lsp-deferred= so that we activate =lsp-mode= to get LSP features every time we edit TypeScript code.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (when enable-ts
-    (use-package typescript-mode
-      :defer t
-      :mode "\\.ts\\'"
-      :hook
-      (typescript-mode . lsp-deferred)
-      (js2-mode . lsp-deferred)
-      :config
-      (setq typescript-indent-level 4)
-      (cond
-        ((equal debug-adapter 'debug-adapter-dap-mode)
-        (bind-keys :map typescript-mode-map
-            ("C-c ." . dap-hydra/body))
-        (dap-node-setup)))))
-
-#+end_src
-
-**** NodeJS
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (defun mifi/load-js-file-hook ()
-    (js2-mode)
-
-    (when (equal debug-adapter 'debug-adapter-dap-mode)
-      (dap-mode)
-      (dap-firefox-setup))
-
-    (highlight-indentation-mode nil)
-    (dap-firefox-setup))
-
-  (defun mifi/nvm-which ()
-    (let ((output (shell-command-to-string "source ~/.nvm/nvm.sh; nvm which")))
-      (cadr (split-string output "[\n]+" t))))
-
-  (use-package nodejs-repl
-    :defer t
-    :config
-    (setq nodejs-repl-command #'mifi/nvm-which))
-
-#+end_src
-
-**** JS2-Mode
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package js2-mode
-    ;;:after simple-httpd
-    :ensure t
-    :hook (js-mode . js2-minor-mode)
-    ;; :bind (:map js2-mode-map
-    ;;         ("{" . paredit-open-curly)
-    ;;         ("}" . paredit-close-curly-and-newline))
-    :mode ("\\.js\\'" "\\.mjs\\'" "\\.json$")
-    :custom (js2-highlight-level 3))
-
-  (use-package skewer-mode
-    :ensure t
-    :after js2-mode)
-
-  (use-package ac-js2
-    :after js2-mode skewer-mode
-    :hook (js2-mode . ac-js2-mode))
-
-#+end_src
-
-*** GameBoy Development
-
-RGBDS is a compiler that has been around quite a long time (since 1997). It supports Z80 and the LR35902 assembler syntaxes that are used in the development of Game Boy and Game Boy color games.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (when enable-gb-dev
-    (use-package z80-mode
-      :when enable-gb-dev
-      ;;:vc (:url "https://github.com/SuperDisk/z80-mode"))
-      :ensure (:host github :repo "SuperDisk/z80-mode"))
-
-    (use-package mwim
-      :when enable-gb-dev
-      ;;:vc (:url "https://github.com/alezost/mwim"))
-      :ensure (:host github :repo "alezost/mwim.el"))
-
-    (use-package rgbds-mode
-      :when enable-gb-dev
-      :after mwim
-      ;;:vc (:url "https://github.com/japanoise/rgbds-mode"))
-      :ensure (:host github :repo "japanoise/rgbds-mode")))
-
-#+end_src
-
-*** Rust
-
-Rust is blazingly fast and memory-efficient: with no runtime or garbage collector, it can power performance-critical services, run on embedded devices, and easily integrate with other languages.
-
-Much of this configuration was taken from the [[https://robert.kra.hn/posts/rust-emacs-setup/][Robert Krahn]] web site.
-
-**** Prerequisites
-
-1. Install Rust and Cargo
-   
-   #+begin_src shell
-               
-     curl https://sh.rustup.rs -sSf | sh
-
-   #+end_src
-
-
-2. Install the Rust analyzer 
-   
-#+begin_src shell
-  #!/bin/bash
-
-  git clone https://github.com/rust-analyzer/rust-analyzer.git -b release
-  cd rust-analyzer
-  cargo xtask install --server # will install rust-analyzer into $HOME/.cargo/bin
-
-#+end_src
-
-**** Rustic package configuration
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package rustic
-    :ensure t
-    :bind (:map rustic-mode-map
-            ("M-j" . lsp-ui-imenu)
-            ("M-?" . lsp-find-references)
-            ("C-c C-c l" . flycheck-list-errors)
-            ("C-c C-c a" . lsp-execute-code-action)
-            ("C-c C-c r" . lsp-rename)
-            ("C-c C-c q" . lsp-workspace-restart)
-            ("C-c C-c Q" . lsp-workspace-shutdown)
-            ("C-c C-c s" . lsp-rust-analyzer-status))
-    :hook (rustic-mode . rk/rustic-mode-hook)
-    :config
-    ;; uncomment for less flashiness
-    ;; (setq lsp-eldoc-hook nil)
-    ;; (setq lsp-enable-symbol-highlighting nil)
-    ;; (setq lsp-signature-auto-activate nil)
-
-    ;; comment to disable rustfmt on save
-    (setq rustic-format-on-save t))
-
-
-  (defun rk/rustic-mode-hook ()
-    ;; so that run C-c C-c C-r works without having to confirm, but don't try to
-    ;; save rust buffers that are not file visiting. Once
-    ;; https://github.com/brotzeit/rustic/issues/253 has been resolved this should
-    ;; no longer be necessary.
-    (when buffer-file-name
-      (setq-local buffer-save-without-query t))
-    (add-hook 'before-save-hook 'lsp-format-buffer nil t))
-
-#+end_src
-
-**** Rust-mode configuration
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  ;; (use-package graphql-mode)
-  (use-package rust-mode
-    :disabled ;;; Older than rustic so don't use but 
-    :defer t
-    :init (setq rust-mode-treesitter-derive t)
-    :hook
-    (rust-mode . lsp-deferred)
-    (rust-mode . (lambda () (setq indent-tabs-mode nil)
-                   (prettify-symbols-mode)))
-    :config
-    (setq rust-format-on-save t))
-
-  (use-package rust-playground :ensure t :after rust-mode)
-
-#+end_src
-
-**** Cargo and Cargo.toml packages
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-  ;; for Cargo.toml and other config files
-
-  (use-package toml-mode :ensure t :defer t :after rust-mode)
-
-
-#+end_src
-
-**** Cargo-mode configuration
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package cargo-mode
-    :defer t
-    :after rust-mode
-    :ensure (:fetcher github :repo "ayrat555/cargo-mode"
-              :files ("*.el" "*.el.in" "dir" "*.info" "*.texi"
-                       "*.texinfo" "doc/dir" "doc/*.info" "doc/*.texi"
-                       "doc/*.texinfo" "lisp/*.el"
-                       (:exclude ".dir-locals.el" "test.el" "tests.el"
-                         "*-test.el" "*-tests.el" "LICENSE" "README*"
-                         "*-pkg.el"))))
-
-#+end_src
-
-*** Golang
-***** Important!
-
-Make sure that =gopls= and =dlv= are installed. gopls is the Go! (or golang) language server - like LSP. =dlv= is the =golang= debugger.
-
-#+begin_src shell
-
-  brew install gopls
-  go get golang.org/x/tools/cmd/guru
-  brew install dlv
-
-#+end_src
-
-**** Main go-mode config
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (defun eglot-format-buffer-on-save ()
-    (add-hook 'before-save-hook #'eglot-format-buffer -10 t))
-
-  (use-package go-mode
-    :defer t
-    :mode ("\\.go\\'" . go-mode)
-    :custom
-    (compile-command "go build -v && go test -v && go vet")
-    :bind (:map go-mode-map
-            ("C-c C-c" . 'compile))
-    :config
-    (eglot-format-buffer-on-save)
-    (define-key (current-local-map) "\C-c\C-c" 'compile)
-    (cond
-      ((equal custom-ide 'custom-ide-eglot)
-        (add-hook 'go-mode-hook 'eglot-ensure)
-        (add-hook 'go-mode-hook #'elot-format-buffer-on-save))
-      ((equal custom-ide 'custom-ide-lsp)
-        (add-hook 'go-mode-hook 'lsp-deferred))))
-
-#+end_src
-
-**** go-eldoc config
-
-=go-eldoc.el= provides eldoc for Go language. `go-eldoc.el' shows type information for variable, functions and current argument position of function.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package go-eldoc
-    :after go-mode
-    :hook (go-mode . go-eldoc-setup)
-    :config
-    (eglot-format-buffer-on-save)
-    (set-face-attribute 'eldoc-highlight-function-argument nil
-      :underline t :foreground "green"
-      :weight 'bold))
-
-#+end_src
-
-**** go-guru config
-
-Integration of the Go 'guru' analysis tool into Emacs.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package go-guru
-    :after go-mode
-    :hook (go-mode . go-guru-hl-identifier-mode))
-
-#+end_src
-
-*** OCaml ([[https://ocaml.org][ocaml.org]])
-
-An industrial-strength functional programming language with an emphasis on expressiveness and safety
-
-OCaml mixes power and pragmatism in a way that makes it ideal for building complex software systems. What makes OCaml special is that it occupies a sweet spot in programming language design. It provides a combination of efficiency, expressiveness, and practicality that is matched by no other language. That is in large part because OCaml is an elegant combination of language features that have been developed over the last 40 years. These include:
-
-+ Generational garbage collection for automatic memory management.
-+ First-class functions that can be passed around like ordinary values, as seen in JavaScript, Common Lisp, and C#.
-+ Static type-checking to increase performance and reduce the number of runtime errors, as found in Java and C#.
-+ Parametric polymorphism, which enables the construction of abstractions that work across different data types, similar to generics in Java and C# and templates in C++.
-+ Good support for immutable programming, i.e., programming without making destructive updates to data structures. This is present in traditional functional languages like Scheme, and it's also found in distributed, big-data frameworks like Hadoop.
-+ Type inference, so you don’t need to annotate every function parameter, return type, and variable. Instead, types are inferred based on how a value is used. Available in a limited form in C# with implicitly-typed local variables and in C++11 with its auto keyword.
-+ Algebraic data types and pattern matching to define and manipulate complex data structures, also available in Scala and F#.
-
-**** HOWTO Install OPAM if necessary
-
-The OCaml package manager manually. This will fetch the latest version.
-
-#+begin_src bash
-
-  bash -c "sh <(curl -fsSL https://raw.githubusercontent.com/ocaml/opam/master/shell/install.sh) --version 2.2.0"
-
-#+end_src
-
-This is an easy way to install =opam= using ~brew~ but it may not be the most current. The shell script above is the best way to go.
-
-**** opam (environment)
-
-This package will automatically perform the equivalent of =eval $(opam env)= and set the current OPAM and PATH environment variables. The package determines the new environment based upon the presence of an =_opam= or =.opam= directory in the cwd. If there is no matching directory, the current OPAM environment is not changed.
-
-#+begin_src emacs-lisp
-
-  (let
-    ((installer "bash -c \"sh <(curl -fsSL https://raw.githubusercontent.com/ocaml/opam/master/shell/install.sh) --version 2.2.0\""))
-    (use-package opam
-      :when enable-ocaml
-      :ensure t
-      :ensure-system-package (opam . installer)))
-
-  (defun opam-switch-prefix+relative-path (relative-path)
-    (let ((base (getenv "OPAM_SWITCH_PREFIX")))
-      (concat (concat base "/") relative-path)))
-
-#+end_src
-
-**** The .ocamlinit file
-
-This should be added/appended to anything in the existing ~.ocamlinit~ file.
-
-#+begin_src shell
-
-  sig=" ## Added by Emacs config for Ocaml "
-  count=$(grep -l "${sig}" ~/.ocamlinit)
-  if [ -z $count ]; then
-      printf "
-  (*${sig}*)
-  #require \"core.top\";;
-  #require \"ppx_jane\";;
-  open Base;;
-  (* ## End Emacs custom config *)
-  " >> ~/.ocamlinit
-  fi
-
-#+end_src
-
-#+RESULTS:
-
-**** HOWTO Install Merlin / Taureg
-
-Merlin is an editor service that provides advanced IDE features for OCaml.
-**Note**: when running =opam user-setup install -y= the resulting ~opam-user-setup.el~ file is specific to the current =opam switch= that is in effect. 
-
-#+begin_src shell
-
-  opam update -y             # (optional) check latests releases
-  opam install tuareg -y     # For Emacs only
-  opam install merlin -y     # Install merlin and it's dependencies
-  opam user-setup install -y # Emacs and VIM auto-configuration
-
-#+end_src
-
-**** Install Standard Libraries
-
-These are (mostly) the Jane Street libraries that ship with OCaml. They're very
-good and have become more-or-less the defacto standard.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package opam-std-libs
-    :when enable-ocaml
-    :ensure nil
-    :ensure-system-package
-    ( ("~/.opam"                  . "opam init && opam install core utop base stdio --yes")
-      ("~/.opam/default/lib/core" . "opam install core --yes")
-      ("~/.opam/default/lib/utop" . "opam install utop --yes")))
-
-#+end_src
-
-**** HOWTO Install Ocaml LSP Server
-
-This is not 100% necessary since Ocaml can use =merlin= directly instead of fronting with an LSP server. But, we install it since EGLOT makes use of it.
-
-#+begin_src shell
-
-  opam install ocaml-lsp-server.1.18.0~5.2preview -y # Preview for >= 5.2 version of ocaml
-
-#+end_src
-
-**** Code Formatter and Builder
-#+begin_src bash
-
-  opam install ocamlformat dune -y
-
-#+end_src
-
-**** Opam Emacs Configuration
-
-This puts a most of the installs mentioned above into a nice ~use-package~ form. This makes use of the ~opam-emacs-setup~ package in the ~lisp~ directory. It's just a stub but allows us to configure enacs using the =:ensure-system-package= option. This
-is specifc to a macOS or Linux OS.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package opam-emacs-setup
-    :when enable-ocaml
-    :after opam-std-libs
-    :ensure nil);
-    ;; :ensure-system-package
-    ;; ;; we're using the new lps-server preview for 5.2.0 compatibility.
-    ;; ( ((opam-switch-prefix+relative-path "share/emacs/site-lisp/tuareg.el") .
-    ;;     "opam install merlin tuareg ocaml-lsp-server.1.18.0~5.2preview --yes")))
-  
-#+end_src
-
-**** Setup path to ~opam~ installed emacs lisp modules
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (let ((opam-share (ignore-errors (car (process-lines "opam" "var" "share")))))
-    (when (and (and opam-share (file-directory-p opam-share)) enable-ocaml)
-      (message "Updating load-path for OPAM to %s" (expand-file-name "emacs/site-lisp" opam-share))
-      (add-to-list 'load-path (expand-file-name "emacs/site-lisp" opam-share))
-      (autoload 'merlin-mode "merlin" nil t nil)))
-
-#+end_src
-
-**** Configure Merlin / merlin-eldoc / merlin-company
-
-Merlin is an editor service that provides advanced IDE features for OCaml.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package merlin
-    :when enable-ocaml :ensure nil :defer t 
-    :delight " 🪄"
-    :after opam-emacs-setup)
-
-  (use-package merlin-eldoc
-    :when enable-ocaml :ensure nil :defer t :after merlin)
-
-  (use-package merlin-company
-    :when (and enable-ocaml (not (equal custom-ide 'custom-ide-lsp-bridge)))
-    :ensure nil :defer t :after merlin company
-    :config
-    (add-hook 'merlin-mode-hook 'company-mode)
-    (with-eval-after-load 'company
-      (add-to-list 'company-backends 'merlin-company-backend)))
-
-#+end_src
-
-**** Dune
-
-Dune is a build system for OCaml (with support for Reason and Coq). It is not intended as a completely generic build system that’s able to build any project in any language. On the contrary, it makes lots of choices in order to encourage a consistent development style.
-
-#+begin_src emacs-lisp
-
-  (use-package dune
-    :when enable-ocaml :ensure t
-    :hook (dune-mode . opam-init)
-    :ensure-system-package
-    (dune . "opam install dune --yes"))
-
-#+end_src
-
-**** Configure Tuareg
-
-*Tuareg: an Emacs OCaml mode*
-
-This archive contains files to help editing OCaml code, to highlight important parts of the code, to run an OCaml REPL (also called toplevel), and to run the OCaml debugger within Emacs.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (defun mifi/tuareg-mode-hook ()
-    (interactive)
-    (merlin-mode t)
-    (opam-init)
-    (eglot-ensure)
-    (dap-mode)
-    ;; (lsp-deferred)  ;; Needed for dap-ocaml debug templates
-    ;;(lsp-update-server)
-    ;; (opam-auto-tools-setup)
-    (setq tuareg-mode-name "🐫")
-    (when (functionp 'prettify-symbols-mode)
-      (prettify-symbols-mode)))
-
-  (use-package tuareg
-    :when enable-ocaml :ensure nil :defer t
-    ;; :after opam-emacs-setup merlin jsonrpc
-    :hook (tuareg-mode . mifi/tuareg-mode-hook)
-    ;; :mode
-    ;; ("\\.ml\\'" . mifi/tuareg-mode-hook)
-    ;; ("\\.mli\\'" . tuareg-mode)
-    :custom
-    (tuareg-indent-align-with-first-arg t)
-    (compile-command "dune build ")
-    :config
-    (bind-keys :map tuareg-mode-map
-      ("C-c ," . dap-hydra/body)))
-
-  (use-package tuareg-opam
-    :when enable-ocaml
-    :ensure nil
-    :after tuareg)
-
-#+end_src
-
-**** Load the opam-user-setup.el
-
-This file is created by the actual opam/ocaml installation and contains paths and other imports that are specific to the user login. It also includes hooks that will change the PATH to opam to the current projec t- similar to how the package 'pyvenv-auto' works.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (let
-    ((file (expand-file-name "opam-user-setup.el" emacs-config-directory)))
-    (when (file-exists-p file)
-      (use-package opam-user-setup
-        :unless (featurep 'opam-user-setup) ;; Don't allow to be run twice!
-        :when enable-ocaml
-        :ensure nil
-        :after tuareg
-        :config
-        (setq-default tuareg-indent-align-with-first-arg t)
-        (setq-default compile-command "dune build ")
-        (add-hook 'tuareg-mode-hook #'mifi/tuareg-mode-hook))))
-
-#+end_src
-
-
-**** Other OCaml Related Packages
-
-Here are some other packages that are useful when using OCaml.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package ocp-indent
-    :when enable-ocaml
-    :after opam-emacs-setup
-    :ensure-system-package
-    ("~/.opam/default/lib/ocp-indent" . "opam install ocp-indent --yes")
-    ;;:vc (:url "https://github.com/OCamlPro/ocp-indent" :main-file "tools/ocp-indent.el"))
-    :ensure (:inherit t :depth 1
-             :fetcher github :repo "OCamlPro/ocp-indent"
-             :files ("tools/ocp-indent.el")))
-
-  (use-package ocamlformat
-    :when enable-ocaml :ensure t
-    :after ocp-indent
-    :bind ("<f6>" . ocamlformat)
-    :ensure-system-package
-    ("~/.opam/default/lib/ocamlformat-lib" . "opam install ocamlformat --yes")
-    :custom (ocamlformat-enable 'enable-outside-detected-project))
-
-  (use-package utop
-    :when enable-ocaml
-    :after opam-user-setup
-    :ensure t
-    :defer t
-    :custom
-    (utop-command "opam config exec utop -- -emacs"))
-
-  (use-package opam-switch-mode
-    :when enable-ocaml
-    :ensure t
-    :after opam-user-setup
-    :hook
-    (tuareg-mode . opam-switch-mode))
-
-#+end_src
-
-**** OCaml Tree-sitter Grammer
-#+begin_src emacs-lisp :tangle no
-  
-  (setq treesit-language-source-alist
-   '((ocaml "https://github.com/tree-sitter/tree-sitter-ocaml" "master" "ocaml/src")))
-
-#+end_src
-
-*** Other Languages
-
-Lesser used or lesser known languages.
-
-**** Swift / Swift Playground
-
-Swift is very popular for iOS and macOS development but server-side Swift, which is what this area focuses on, is not as commonly used which is why it appears here (under lesser used).
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package swift-mode
-    :defer t
-    :mode ("\\.swift\\'" . swift-mode))
-
-  (use-package swift-helpful
-    :defer t
-    :after swift-mode
-    :ensure (:files ("*.el" "swift-info/*.info"
-                      ("images" "swift-info/images/*.png") "swift-helpful-pkg.el")
-              :host github
-              :repo "danielmartin/swift-helpful"))
-
-  (use-package swift-playground-mode
-    :defer t
-    :after swift-mode
-    :ensure ( :package "swift-playground-mode"
-            :repo "https://gitlab.com/michael.sanders/swift-playground-mode.git")
-    :init
-    (autoload 'swift-playground-global-mode "swift-playground-mode" nil t)
-    (add-hook 'swift-mode-hook #'swift-playground-global-mode))
-
-#+end_src
-
-**** Lisp
-
-Lisp support is handled by SLIME which is the “Superior Lisp Interaction Mode for Emacs”. SLIME extends Emacs with support for interactive programming in Common Lisp. The features are centered around slime-mode, an Emacs minor-mode that complements the standard lisp-mode. While lisp-mode supports editing Lisp source files, slime-mode adds support for interacting with a running Common Lisp process for compilation, debugging, documentation lookup, and so on. Extensive documentation can be found [[https://slime.common-lisp.dev/doc/html/][at this link]].
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package slime
-    :defer t
-    :mode ("\\.lisp\\'" . slime-mode)
-    :config
-    (setq inferior-lisp-program "/opt/homebrew/bin/sbcl"))
-
-#+end_src
-
 
 * Miscellaneous
 
@@ -5898,7 +6001,7 @@ highlight-defined is an Emacs minor mode that highlights defined Emacs Lisp symb
   (use-package highlight-defined
     :defer t
     :ensure t
-    :after prog-mode
+    :after emacs-lisp-mode
     :hook (emacs-lisp-mode . highlight-defined-mode))
 
 #+end_src
@@ -6119,15 +6222,21 @@ For those menus that would normally show up as either =prefix= or =lambda=, give
           ((equal major-mode 'python-mode)
             (bind-keys :map map
               ("M-RET P" . 'pydoc-at-point)))
+  	((equal major-mode 'tuareg-mode)
+  	  (bind-keys :map map
+  	    ("M-RET c m" . tuarg-browse-manual)))
           (t   ;; Default 
             (unbind-key "M-RET o f" map)
+            (unbind-key "M-RET o c" map)
             (unbind-key "M-RET o l" map)
             (unbind-key "M-RET P ?" map)
+            (unbind-key "M-RET c m" map)
             (unbind-key "M-RET M-RET" map)))))
 
     ;; Override default menu text with better things
     (which-key-add-key-based-replacements "M-RET t t" "thesaurus-at-point")
     (which-key-add-key-based-replacements "M-RET o" "org-menu")
+    (which-key-add-key-based-replacements "M-RET c" "ocaml-menu")
     (which-key-add-key-based-replacements "M-RET o c" "toggle-org-centering")
     (which-key-add-key-based-replacements "M-RET o f" "set-org-fill-column"))
 
