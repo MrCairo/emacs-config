@@ -202,8 +202,8 @@ This will check for the binary =ruby-lint= exists in the path and if not, ="gem 
 #+begin_src emacs-lisp :tangle "early-init.el"
 
   ;;; Set high for initial load.
-  ;; (setq gc-cons-threshold (* 128 1024 1024))
-  ;; (setq gc-cons-percentage 0.3)
+  (setq gc-cons-threshold (* 1024 1024 100))
+  (setq gc-cons-percentage 0.3)
 
   (add-hook 'emacs-startup-hook
     (lambda ()
@@ -1895,9 +1895,8 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
       (company-prescient-mode 1)))
 
   (use-package company
-    :defer t
     :unless (equal custom-ide 'custom-ide-lsp-bridge)
-    ;; :after prescient
+    ;; :after tree-sitter
     ;; :ensure (:wait t)
     :delight company-mode
     :config (mifi/company-config)
@@ -2086,7 +2085,7 @@ Marginalia are marks or annotations placed at the margin of the page of a book o
     :ensure t
     ;; :commands marginalia-mode
     :custom
-    (marginalia-max-relative-age 0)
+    (marginalia-max-relative-age 60)
     (marginalia-align 'left)
     (marginalia-annotators '(marginalia-annotators-heavy marginalia-annotators-light nil))
     :config
@@ -4580,7 +4579,7 @@ Some functions that are used during the initialization of tree-sitter.
 
   (use-package tree-sitter
     :defer t
-    :after (:any python python-mode lisp-mode merlin-mode)
+    :after (:any python python-mode lisp-mode merlin-mode tuareg)
     :config
     ;; Activate tree-sitter globally (minor mode registered on every buffer)
     (global-tree-sitter-mode)
@@ -5082,7 +5081,7 @@ This archive contains files to help editing OCaml code, to highlight important p
     :config
     (bind-keys :map tuareg-mode-map
       ("C-c ," . dap-hydra/body)))
-  
+
 #+end_src
 
 **** tuareg-opam

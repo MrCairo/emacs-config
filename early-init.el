@@ -64,8 +64,8 @@
 ;;   (gcmh-mode 1))
 
 ;;; Set high for initial load.
-;; (setq gc-cons-threshold (* 128 1024 1024))
-;; (setq gc-cons-percentage 0.3)
+(setq gc-cons-threshold (* 1024 1024 100))
+(setq gc-cons-percentage 0.3)
 
 (add-hook 'emacs-startup-hook
   (lambda ()

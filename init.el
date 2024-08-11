@@ -1121,9 +1121,8 @@ font size is computed + 20 of this value."
     (company-prescient-mode 1)))
 
 (use-package company
-  :defer t
   :unless (equal custom-ide 'custom-ide-lsp-bridge)
-  ;; :after prescient
+  ;; :after tree-sitter
   ;; :ensure (:wait t)
   :delight company-mode
   :config (mifi/company-config)
@@ -1276,7 +1275,7 @@ font size is computed + 20 of this value."
   :ensure t
   ;; :commands marginalia-mode
   :custom
-  (marginalia-max-relative-age 0)
+  (marginalia-max-relative-age 60)
   (marginalia-align 'left)
   (marginalia-annotators '(marginalia-annotators-heavy marginalia-annotators-light nil))
   :config
@@ -3059,7 +3058,7 @@ capture was not aborted."
 
 (use-package tree-sitter
   :defer t
-  :after (:any python python-mode lisp-mode merlin-mode)
+  :after (:any python python-mode lisp-mode merlin-mode tuareg)
   :config
   ;; Activate tree-sitter globally (minor mode registered on every buffer)
   (global-tree-sitter-mode)
