@@ -487,14 +487,17 @@ font size is computed + 20 of this value."
 (defun mifi/after-which-key ()
   (interactive)
   (which-key-mode 1)
-  (which-key-add-key-based-replacements "M-RET |" "display-fill-column")
-  (which-key-add-key-based-replacements "M-RET ?" "help-at-point")
+  (add-to-list 'savehist-additional-variables 'which-key-side-window-location)
+  (which-key-add-key-based-replacements
+    "M-RET |" "display-fill-column"
+    "M-RET ?" "help-at-point")
   (mmm-keys-minor-mode 1)
   (when (featurep 'prog-mode)
-    (which-key-add-key-based-replacements "C-c g r" "find-symbol-reference")
-    (which-key-add-key-based-replacements "C-c g o" "find-defitions-other-window")
-    (which-key-add-key-based-replacements "C-c g g" "find-defitions")
-    (which-key-add-key-based-replacements "C-c g ?" "eldoc-definition"))
+    (which-key-add-key-based-replacements
+      "C-c g r" "find-symbol-reference"
+      "C-c g o" "find-defitions-other-window"
+      "C-c g g" "find-defitions"
+      "C-c g ?" "eldoc-definition"))
   (mifi/set-recenter-keys))
 
 (use-package which-key
@@ -510,7 +513,6 @@ font size is computed + 20 of this value."
   ;; (which-key-sort-order 'which-key-key-order-alpha)
   (which-key-min-display-lines 3)
   :config
-  (message ">>> which-key configure")
   (add-hook 'elpaca-after-init-hook #'mifi/after-which-key))
 
 ;;; ##########################################################################
@@ -583,7 +585,7 @@ font size is computed + 20 of this value."
 
 (setq savehist-file (expand-file-name "savehist" user-emacs-directory))
 (savehist-mode t)
-(setq history-length t)
+(setq history-length 150)
 (setq history-delete-duplicates t)
 (setq savehist-save-minibuffer-history 1)
 (setq savehist-additional-variables
@@ -736,10 +738,12 @@ font size is computed + 20 of this value."
 
 (use-package helpful
   :ensure t
-  :commands (helpful-callable helpful-variable helpful-command helpful-key)
+  ;; :commands (helpful-callable helpful-variable helpful-command helpful-key helpful-function)
   :config
   (bind-keys
     ([remap describe-command] . helpful-command)
+    ([remap describe-function] . helpful-function)
+    ([remap describe-variable] . helpful-variable)
     ([remap describe-key] . helpful-key)))
 
 ;;; ##########################################################################
@@ -2071,10 +2075,11 @@ font size is computed + 20 of this value."
       (lambda () (interactive) (use-large-display-font t)))
     (define-key map (kbd "C-S-c 4")
       (lambda () (interactive) (use-x-large-display-font t)))
-    (which-key-add-key-based-replacements "C-S-c 1" "recenter-with-small-font")
-    (which-key-add-key-based-replacements "C-S-c 2" "recenter-with-medium-font")
-    (which-key-add-key-based-replacements "C-S-c 3" "recenter-with-large-font")
-    (which-key-add-key-based-replacements "C-S-c 4" "recenter-with-x-large-font")))
+    (which-key-add-key-based-replacements
+      "C-S-c 1" "recenter-with-small-font"
+      "C-S-c 2" "recenter-with-medium-font"
+      "C-S-c 3" "recenter-with-large-font"
+      "C-S-c 4" "recenter-with-x-large-font")))
 
 ;;; ##########################################################################
 ;; Frame support functions
@@ -2105,7 +2110,7 @@ font size is computed + 20 of this value."
   (mifi/reset-if-spacious-padding-mode)
   (mifi/update-other-modes-font)
   (mifi/should-recenter force-recenter))
-
+(defalias 'use-small-display-font-t (lambda () (use-small-display-font t)))
 
 (defun use-medium-display-font (&optional force-recenter)
   (interactive)
@@ -2113,7 +2118,7 @@ font size is computed + 20 of this value."
   (mifi/reset-if-spacious-padding-mode)
   (mifi/update-other-modes-font)
   (mifi/should-recenter force-recenter))
-
+(defalias 'use-medium-display-font-t (lambda () (use-medium-display-font t)))
 
 (defun use-large-display-font (&optional force-recenter)
   (interactive)
@@ -2121,7 +2126,7 @@ font size is computed + 20 of this value."
   (mifi/reset-if-spacious-padding-mode)
   (mifi/update-other-modes-font)
   (mifi/should-recenter force-recenter))
-
+(defalias 'use-large-display-font-t (lambda () (use-large-display-font t)))
 
 (defun use-x-large-display-font (&optional force-recenter)
   (interactive)
@@ -2129,6 +2134,7 @@ font size is computed + 20 of this value."
   (mifi/reset-if-spacious-padding-mode)
   (mifi/update-other-modes-font)
   (mifi/should-recenter force-recenter))
+(defalias 'use-x-large-display-font-t (lambda () (use-x-large-display-font t)))
 
 ;;; ##########################################################################
 ;; This is done so that the Emacs window is sized early in the init phase along with the default font size.
@@ -2574,13 +2580,14 @@ directory is relative to the working-files-directory
 
 (defun mifi/org-roam-set-which-key-replacements ()
   (interactive)
-  (which-key-add-key-based-replacements "C-c n l" "toggle-buffer")
-  (which-key-add-key-based-replacements "C-c n f" "find-node")
-  (which-key-add-key-based-replacements "C-c n i" "insert-node")
-  (which-key-add-key-based-replacements "C-c n I" "insert-node-immediate")
-  (which-key-add-key-based-replacements "C-c n p" "find-project")
-  (which-key-add-key-based-replacements "C-c n t" "capture-task")
-  (which-key-add-key-based-replacements "C-c n b" "capture-inbox"))
+  (which-key-add-key-based-replacements
+    "C-c n l" "toggle-buffer"
+    "C-c n f" "find-node"
+    "C-c n i" "insert-node"
+    "C-c n I" "insert-node-immediate"
+    "C-c n p" "find-project"
+    "C-c n t" "capture-task"
+    "C-c n b" "capture-inbox"))
 
 (defun org-roam-node-insert-immediate (arg &rest args)
   (interactive "P")
@@ -2604,14 +2611,15 @@ directory is relative to the working-files-directory
           ("Y" . org-roam-dailies-capture-yesterday)
           ("T" . org-roam-dailies-capture-tomorrow))
   :config
-  (which-key-add-key-based-replacements "C-c n d" "org-roam-dailies")
-  (which-key-add-key-based-replacements "C-c n d ." "goto-date")
-  (which-key-add-key-based-replacements "C-c n d Y" "capture-yesterday")
-  (which-key-add-key-based-replacements "C-c n d T" "capture-tomorrow")
-  (which-key-add-key-based-replacements "C-c n d n" "capture-today")
-  (which-key-add-key-based-replacements "C-c n d d" "goto-today")
-  (which-key-add-key-based-replacements "C-c n d t" "goto-tomorrow")
-  (which-key-add-key-based-replacements "C-c n d y" "goto-yesterday")  )
+  (which-key-add-key-based-replacements
+    "C-c n d" "org-roam-dailies"
+    "C-c n d ." "goto-date"
+    "C-c n d Y" "capture-yesterday"
+    "C-c n d T" "capture-tomorrow"
+    "C-c n d n" "capture-today"
+    "C-c n d d" "goto-today"
+    "C-c n d t" "goto-tomorrow"
+    "C-c n d y" "goto-yesterday"))
 
 ;;; ##########################################################################
 ;; The buffer you put this code in must have lexical-binding set to t!
@@ -3018,10 +3026,11 @@ capture was not aborted."
   ;;   :delight "fc"
   ;;   ;;:ensure (:host github :repo "flycheck/flycheck")
   ;;   :hook (elpy-mode . flycheck-mode))
-  (which-key-add-key-based-replacements "C-c g a" "goto-assignment")
-  (which-key-add-key-based-replacements "C-c g o" "find-defitions-other-window")
-  (which-key-add-key-based-replacements "C-c g g" "find-defitions")
-  (which-key-add-key-based-replacements "C-c g ?" "eldoc-definition")
+  (which-key-add-key-based-replacements
+    "C-c g a" "goto-assignment"
+    "C-c g o" "find-defitions-other-window"
+    "C-c g g" "find-defitions"
+    "C-c g ?" "eldoc-definition")
   (if (featurep 'company)
     (bind-keys :map elpy-mode-map
       ("<tab>" . company-indent-or-complete-common)))
@@ -4004,10 +4013,12 @@ capture was not aborted."
         ("M-RET v m" . use-medium-display-font)
         ("M-RET v l" . use-large-display-font)
         ("M-RET v x" . use-x-large-display-font)
-        ("M-RET v 1" . recenter-with-small-font)
-        ("M-RET v 2" . recenter-with-medium-font)
-        ("M-RET v 3" . recenter-with-large-font)
-        ("M-RET v 4" . recenter-with-x-large-font)
+        ("M-RET v 1" . use-small-display-font-t)
+        ("M-RET v 2" . use-medium-display-font-t)
+        ("M-RET v 3" . use-large-display-font-t)
+        ("M-RET v 4" . use-x-large-display-font-t)
+	("M-RET w <right>" . which-key-setup-side-window-right-bottom)
+	("M-RET w <down>" . which-key-setup-side-window-bottom)
         ("M-RET =" . next-theme)
         ("M-RET -" . previous-theme)
         ("M-RET _" . which-theme)
@@ -4060,27 +4071,32 @@ capture was not aborted."
           (unbind-key "M-RET M-RET" map)))))
 
   ;; Override default menu text with better things
-  (which-key-add-key-based-replacements "M-RET t t" "thesaurus-at-point")
-  (which-key-add-key-based-replacements "M-RET o" "org-menu")
-  (which-key-add-key-based-replacements "M-RET c" "ocaml-menu")
-  (which-key-add-key-based-replacements "M-RET o c" "toggle-org-centering")
-  (which-key-add-key-based-replacements "M-RET o f" "set-org-fill-column"))
+  (which-key-add-key-based-replacements
+    "M-RET t t" "thesaurus-at-point"
+    "M-RET o" "org-menu"
+    "M-RET c" "ocaml-menu"
+    "M-RET o c" "toggle-org-centering"
+    "M-RET o f" "set-org-fill-column"))
 
 ;;; ##########################################################################
 
 (defun mifi/mmm-update-menu (&optional winframe)
   (interactive)
   (mifi/mmm-handle-context-keys nil)
-  (which-key-add-key-based-replacements "M-RET M" "markdown-preview")
-  (which-key-add-key-based-replacements "M-RET S" "shells")
-  (which-key-add-key-based-replacements "M-RET P" "python-menu")
-  (which-key-add-key-based-replacements "M-RET e" "treemacs-toggle")
-  (which-key-add-key-based-replacements "M-RET t" "Thesaurus")
-  (which-key-add-key-based-replacements "M-RET f" "set-fill-column")
-  (which-key-add-key-based-replacements "M-RET j" "jump-to-register")
-  (which-key-add-key-based-replacements "M-RET v" "font-size")
-  (which-key-add-key-based-replacements "M-RET C-g" "Exit menu")
-  (which-key-add-key-based-replacements "M-RET" "Mitch's Menu"))
+  (which-key-add-key-based-replacements
+    "M-RET w" "which-key-position"
+    "M-RET w <right>" "which-key-on-right"
+    "M-RET w <down>" "which-key-on-bottom"
+    "M-RET M" "markdown-preview"
+    "M-RET S" "shells"
+    "M-RET P" "python-menu"
+    "M-RET e" "treemacs-toggle"
+    "M-RET t" "Thesaurus"
+    "M-RET f" "set-fill-column"
+    "M-RET j" "jump-to-register"
+    "M-RET v" "font-size"
+    "M-RET C-g" "Exit menu"
+    "M-RET" "Mitch's Menu"))
 
 ;;; ##########################################################################
 

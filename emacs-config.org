@@ -1,3 +1,4 @@
+
 #+title: Mitch's Emacs Configuration
 #+author: Mitch Fisher
 #+date: 2024-05-11
@@ -856,14 +857,17 @@ By default, the =user-emacs-directory= points to the .emacs.d* directory from wh
   (defun mifi/after-which-key ()
     (interactive)
     (which-key-mode 1)
-    (which-key-add-key-based-replacements "M-RET |" "display-fill-column")
-    (which-key-add-key-based-replacements "M-RET ?" "help-at-point")
+    (add-to-list 'savehist-additional-variables 'which-key-side-window-location)
+    (which-key-add-key-based-replacements
+      "M-RET |" "display-fill-column"
+      "M-RET ?" "help-at-point")
     (mmm-keys-minor-mode 1)
     (when (featurep 'prog-mode)
-      (which-key-add-key-based-replacements "C-c g r" "find-symbol-reference")
-      (which-key-add-key-based-replacements "C-c g o" "find-defitions-other-window")
-      (which-key-add-key-based-replacements "C-c g g" "find-defitions")
-      (which-key-add-key-based-replacements "C-c g ?" "eldoc-definition"))
+      (which-key-add-key-based-replacements
+        "C-c g r" "find-symbol-reference"
+        "C-c g o" "find-defitions-other-window"
+        "C-c g g" "find-defitions"
+        "C-c g ?" "eldoc-definition"))
     (mifi/set-recenter-keys))
 
   (use-package which-key
@@ -879,7 +883,6 @@ By default, the =user-emacs-directory= points to the .emacs.d* directory from wh
     ;; (which-key-sort-order 'which-key-key-order-alpha)
     (which-key-min-display-lines 3)
     :config
-    (message ">>> which-key configure")
     (add-hook 'elpaca-after-init-hook #'mifi/after-which-key))
 
 #+end_src
@@ -981,7 +984,7 @@ Keeps a persistent history file across Emacs restarts. It's also saved into the 
   
   (setq savehist-file (expand-file-name "savehist" user-emacs-directory))
   (savehist-mode t)
-  (setq history-length t)
+  (setq history-length 150)
   (setq history-delete-duplicates t)
   (setq savehist-save-minibuffer-history 1)
   (setq savehist-additional-variables
@@ -1244,10 +1247,12 @@ This used to be httpd.el but there are already several of these out there alread
 
   (use-package helpful
     :ensure t
-    :commands (helpful-callable helpful-variable helpful-command helpful-key)
+    ;; :commands (helpful-callable helpful-variable helpful-command helpful-key helpful-function)
     :config
     (bind-keys
       ([remap describe-command] . helpful-command)
+      ([remap describe-function] . helpful-function)
+      ([remap describe-variable] . helpful-variable)
       ([remap describe-key] . helpful-key)))
 
 #+end_src
@@ -3228,10 +3233,11 @@ Some key kindings to switch to different screen resolutions.
         (lambda () (interactive) (use-large-display-font t)))
       (define-key map (kbd "C-S-c 4")
         (lambda () (interactive) (use-x-large-display-font t)))
-      (which-key-add-key-based-replacements "C-S-c 1" "recenter-with-small-font")
-      (which-key-add-key-based-replacements "C-S-c 2" "recenter-with-medium-font")
-      (which-key-add-key-based-replacements "C-S-c 3" "recenter-with-large-font")
-      (which-key-add-key-based-replacements "C-S-c 4" "recenter-with-x-large-font")))
+      (which-key-add-key-based-replacements
+        "C-S-c 1" "recenter-with-small-font"
+        "C-S-c 2" "recenter-with-medium-font"
+        "C-S-c 3" "recenter-with-large-font"
+        "C-S-c 4" "recenter-with-x-large-font")))
 
 #+end_src
 
@@ -3283,7 +3289,7 @@ These functions resize the font to some pre-defined values and will optiononally
     (mifi/reset-if-spacious-padding-mode)
     (mifi/update-other-modes-font)
     (mifi/should-recenter force-recenter))
-
+  (defalias 'use-small-display-font-t (lambda () (use-small-display-font t)))
 
   (defun use-medium-display-font (&optional force-recenter)
     (interactive)
@@ -3291,7 +3297,7 @@ These functions resize the font to some pre-defined values and will optiononally
     (mifi/reset-if-spacious-padding-mode)
     (mifi/update-other-modes-font)
     (mifi/should-recenter force-recenter))
-
+  (defalias 'use-medium-display-font-t (lambda () (use-medium-display-font t)))
 
   (defun use-large-display-font (&optional force-recenter)
     (interactive)
@@ -3299,7 +3305,7 @@ These functions resize the font to some pre-defined values and will optiononally
     (mifi/reset-if-spacious-padding-mode)
     (mifi/update-other-modes-font)
     (mifi/should-recenter force-recenter))
-
+  (defalias 'use-large-display-font-t (lambda () (use-large-display-font t)))
 
   (defun use-x-large-display-font (&optional force-recenter)
     (interactive)
@@ -3307,6 +3313,7 @@ These functions resize the font to some pre-defined values and will optiononally
     (mifi/reset-if-spacious-padding-mode)
     (mifi/update-other-modes-font)
     (mifi/should-recenter force-recenter))
+  (defalias 'use-x-large-display-font-t (lambda () (use-x-large-display-font t)))
 
 #+end_src
 
@@ -3758,6 +3765,31 @@ This snippet adds a hook to =org-mode= buffers so that =mifi/org-babel-tangle-co
 
 #+end_src
 
+*** Org olivetti mode
+
+A simple Emacs minor mode for a nice writing environment.
+
+***** Features
+- Set a desired text body width to automatically resize window margins to keep the text comfortably in the middle of the window.
+-  Text body width can be the number of characters (an integer), a fraction of the window width (a float between 0.0 and 1.0), or nil which uses the value of fill-column +2.
+- Interactively change body width with:
+    - olivetti-shrink C-c { { { ...
+    - olivetti-expand C-c } } } ...
+    - olivetti-set-width C-c |
+- If olivetti-body-width is an integer, the text body width will scale with use of text-scale-mode, whereas if a fraction (float) then the text body width will remain at that fraction.
+- Change the way the text body margins look with option olivetti-style: use margins, fringes, or both for a fancy "page" look.
+- Customize olivetti-fringe face to affect only Olivetti buffers.
+- Optionally remember the state of visual-line-mode on entry and recall its state on exit.
+
+Olivetti keeps everything it does buffer-local, so you can write prose in one buffer and code in another, side-by-side in the same fram.e
+
+#+begin_src emacs-lisp :tangle no
+
+  (use-package olivetti
+    :ensure t)
+
+#+end_src
+
 *** Org Modern
 
 This package implements a modern style for your Org buffers using font locking and text properties. The package styles headlines, keywords, tables and source blocks. The styling is configurable, you can enable, disable or modify the style of each syntax element individually via the org-modern customization group.
@@ -3841,53 +3873,54 @@ Org Roam solves these problems by making it easy to create topic-focused Org Fil
 *** Main org-roam configuration
 
 #+begin_src emacs-lisp
-   ;;; ##########################################################################
+  ;;; ##########################################################################
 
-   (use-package org-roam
-     :ensure ( :package "org-roam" :source "MELPA" :protocol https :inherit t :depth 1
-   	    :fetcher github :repo "org-roam/org-roam" :files (:defaults "extensions/*"))
-     :when (equal custom-note-system 'custom-note-system-org-roam)
-     :init
-     (setq org-roam-v2-ack t)
-     (which-key-add-key-based-replacements "C-c n" "org-roam")
-     :custom
-     (org-roam-directory (expand-file-name "RoamNotes" custom-docs-dir))
-     (org-roam-completion-everywhere t)
-     :bind (("C-c n l" . org-roam-buffer-toggle)
-             ("C-c n f" . org-roam-node-find)
-             ("C-c n i" . org-roam-node-insert)
-             ("C-c n I" . org-roam-node-insert-immediate)
-             ("C-c n p" . mifi/org-roam-find-project)
-             ("C-c n t" . mifi/org-roam-capture-task)
-             ("C-c n b" . mifi/org-roam-capture-inbox)
-             :map org-mode-map
-             ("C-M-i" . completion-at-point))
-     :config
-     (mifi/org-roam-set-which-key-replacements)
-     (mifi/org-roam-refresh-agenda-list)
-     (add-to-list 'org-after-todo-state-change-hook
-       (lambda ()
-         (when (equal org-state "DONE")
-           (mifi/org-roam-copy-todo-to-today))))
-     (org-roam-db-autosync-mode))
+  (use-package org-roam
+    :ensure ( :package "org-roam" :source "MELPA" :protocol https :inherit t :depth 1
+  	    :fetcher github :repo "org-roam/org-roam" :files (:defaults "extensions/*"))
+    :when (equal custom-note-system 'custom-note-system-org-roam)
+    :init
+    (setq org-roam-v2-ack t)
+    (which-key-add-key-based-replacements "C-c n" "org-roam")
+    :custom
+    (org-roam-directory (expand-file-name "RoamNotes" custom-docs-dir))
+    (org-roam-completion-everywhere t)
+    :bind (("C-c n l" . org-roam-buffer-toggle)
+            ("C-c n f" . org-roam-node-find)
+            ("C-c n i" . org-roam-node-insert)
+            ("C-c n I" . org-roam-node-insert-immediate)
+            ("C-c n p" . mifi/org-roam-find-project)
+            ("C-c n t" . mifi/org-roam-capture-task)
+            ("C-c n b" . mifi/org-roam-capture-inbox)
+            :map org-mode-map
+            ("C-M-i" . completion-at-point))
+    :config
+    (mifi/org-roam-set-which-key-replacements)
+    (mifi/org-roam-refresh-agenda-list)
+    (add-to-list 'org-after-todo-state-change-hook
+      (lambda ()
+        (when (equal org-state "DONE")
+          (mifi/org-roam-copy-todo-to-today))))
+    (org-roam-db-autosync-mode))
 
-   (defun mifi/org-roam-set-which-key-replacements ()
-     (interactive)
-     (which-key-add-key-based-replacements "C-c n l" "toggle-buffer")
-     (which-key-add-key-based-replacements "C-c n f" "find-node")
-     (which-key-add-key-based-replacements "C-c n i" "insert-node")
-     (which-key-add-key-based-replacements "C-c n I" "insert-node-immediate")
-     (which-key-add-key-based-replacements "C-c n p" "find-project")
-     (which-key-add-key-based-replacements "C-c n t" "capture-task")
-     (which-key-add-key-based-replacements "C-c n b" "capture-inbox"))
+  (defun mifi/org-roam-set-which-key-replacements ()
+    (interactive)
+    (which-key-add-key-based-replacements
+      "C-c n l" "toggle-buffer"
+      "C-c n f" "find-node"
+      "C-c n i" "insert-node"
+      "C-c n I" "insert-node-immediate"
+      "C-c n p" "find-project"
+      "C-c n t" "capture-task"
+      "C-c n b" "capture-inbox"))
 
-   (defun org-roam-node-insert-immediate (arg &rest args)
-     (interactive "P")
-     (let ((args (push arg args))
-            (org-roam-capture-templates
-              (list (append (car org-roam-capture-templates)
-                      '(:immediate-finish t)))))
-       (apply #'org-roam-node-insert args)))
+  (defun org-roam-node-insert-immediate (arg &rest args)
+    (interactive "P")
+    (let ((args (push arg args))
+           (org-roam-capture-templates
+             (list (append (car org-roam-capture-templates)
+                     '(:immediate-finish t)))))
+      (apply #'org-roam-node-insert args)))
 
   #+end_src
 
@@ -3908,14 +3941,15 @@ Org Roam solves these problems by making it easy to create topic-focused Org Fil
             ("Y" . org-roam-dailies-capture-yesterday)
             ("T" . org-roam-dailies-capture-tomorrow))
     :config
-    (which-key-add-key-based-replacements "C-c n d" "org-roam-dailies")
-    (which-key-add-key-based-replacements "C-c n d ." "goto-date")
-    (which-key-add-key-based-replacements "C-c n d Y" "capture-yesterday")
-    (which-key-add-key-based-replacements "C-c n d T" "capture-tomorrow")
-    (which-key-add-key-based-replacements "C-c n d n" "capture-today")
-    (which-key-add-key-based-replacements "C-c n d d" "goto-today")
-    (which-key-add-key-based-replacements "C-c n d t" "goto-tomorrow")
-    (which-key-add-key-based-replacements "C-c n d y" "goto-yesterday")  )
+    (which-key-add-key-based-replacements
+      "C-c n d" "org-roam-dailies"
+      "C-c n d ." "goto-date"
+      "C-c n d Y" "capture-yesterday"
+      "C-c n d T" "capture-tomorrow"
+      "C-c n d n" "capture-today"
+      "C-c n d d" "goto-today"
+      "C-c n d t" "goto-tomorrow"
+      "C-c n d y" "goto-yesterday"))
 
 #+end_src
 
@@ -4505,10 +4539,11 @@ C-c C-c evaluates the current python script (or region if something is selected)
     ;;   :delight "fc"
     ;;   ;;:ensure (:host github :repo "flycheck/flycheck")
     ;;   :hook (elpy-mode . flycheck-mode))
-    (which-key-add-key-based-replacements "C-c g a" "goto-assignment")
-    (which-key-add-key-based-replacements "C-c g o" "find-defitions-other-window")
-    (which-key-add-key-based-replacements "C-c g g" "find-defitions")
-    (which-key-add-key-based-replacements "C-c g ?" "eldoc-definition")
+    (which-key-add-key-based-replacements
+      "C-c g a" "goto-assignment"
+      "C-c g o" "find-defitions-other-window"
+      "C-c g g" "find-defitions"
+      "C-c g ?" "eldoc-definition")
     (if (featurep 'company)
       (bind-keys :map elpy-mode-map
         ("<tab>" . company-indent-or-complete-common)))
@@ -4516,7 +4551,7 @@ C-c C-c evaluates the current python script (or region if something is selected)
 
   (use-package jedi
     :after python elpy)
-  
+
 #+end_src
 
 
@@ -6169,10 +6204,12 @@ This is a set of keymaps that do the same things as the popup menu. Both are her
           ("M-RET v m" . use-medium-display-font)
           ("M-RET v l" . use-large-display-font)
           ("M-RET v x" . use-x-large-display-font)
-          ("M-RET v 1" . recenter-with-small-font)
-          ("M-RET v 2" . recenter-with-medium-font)
-          ("M-RET v 3" . recenter-with-large-font)
-          ("M-RET v 4" . recenter-with-x-large-font)
+          ("M-RET v 1" . use-small-display-font-t)
+          ("M-RET v 2" . use-medium-display-font-t)
+          ("M-RET v 3" . use-large-display-font-t)
+          ("M-RET v 4" . use-x-large-display-font-t)
+  	("M-RET w <right>" . which-key-setup-side-window-right-bottom)
+  	("M-RET w <down>" . which-key-setup-side-window-bottom)
           ("M-RET =" . next-theme)
           ("M-RET -" . previous-theme)
           ("M-RET _" . which-theme)
@@ -6232,11 +6269,12 @@ For those menus that would normally show up as either =prefix= or =lambda=, give
             (unbind-key "M-RET M-RET" map)))))
 
     ;; Override default menu text with better things
-    (which-key-add-key-based-replacements "M-RET t t" "thesaurus-at-point")
-    (which-key-add-key-based-replacements "M-RET o" "org-menu")
-    (which-key-add-key-based-replacements "M-RET c" "ocaml-menu")
-    (which-key-add-key-based-replacements "M-RET o c" "toggle-org-centering")
-    (which-key-add-key-based-replacements "M-RET o f" "set-org-fill-column"))
+    (which-key-add-key-based-replacements
+      "M-RET t t" "thesaurus-at-point"
+      "M-RET o" "org-menu"
+      "M-RET c" "ocaml-menu"
+      "M-RET o c" "toggle-org-centering"
+      "M-RET o f" "set-org-fill-column"))
 
 #+end_src
 
@@ -6252,16 +6290,20 @@ What's also important with this function is that it calls the ~mifi/mmm-handle-c
   (defun mifi/mmm-update-menu (&optional winframe)
     (interactive)
     (mifi/mmm-handle-context-keys nil)
-    (which-key-add-key-based-replacements "M-RET M" "markdown-preview")
-    (which-key-add-key-based-replacements "M-RET S" "shells")
-    (which-key-add-key-based-replacements "M-RET P" "python-menu")
-    (which-key-add-key-based-replacements "M-RET e" "treemacs-toggle")
-    (which-key-add-key-based-replacements "M-RET t" "Thesaurus")
-    (which-key-add-key-based-replacements "M-RET f" "set-fill-column")
-    (which-key-add-key-based-replacements "M-RET j" "jump-to-register")
-    (which-key-add-key-based-replacements "M-RET v" "font-size")
-    (which-key-add-key-based-replacements "M-RET C-g" "Exit menu")
-    (which-key-add-key-based-replacements "M-RET" "Mitch's Menu"))
+    (which-key-add-key-based-replacements
+      "M-RET w" "which-key-position"
+      "M-RET w <right>" "which-key-on-right"
+      "M-RET w <down>" "which-key-on-bottom"
+      "M-RET M" "markdown-preview"
+      "M-RET S" "shells"
+      "M-RET P" "python-menu"
+      "M-RET e" "treemacs-toggle"
+      "M-RET t" "Thesaurus"
+      "M-RET f" "set-fill-column"
+      "M-RET j" "jump-to-register"
+      "M-RET v" "font-size"
+      "M-RET C-g" "Exit menu"
+      "M-RET" "Mitch's Menu"))
 
 #+end_src
 
