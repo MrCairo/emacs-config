@@ -1,5 +1,3 @@
-(use-package use-package-ensure-system-package)
-
 ;;; init.el -*- flycheck-disabled-checkers: (emacs-lisp); lexical-binding: nil -*-
 ;;;
 ;;; Commentary:
@@ -85,28 +83,41 @@
 
 ;;; ##########################################################################
 
-(defcustom custom-docs-dir "~/Documents/Emacs-Related"
+(defcustom custom-emacs-home
+  (expand-file-name
+    (format "emacs%d-home" emacs-major-version emacs-minor-version) "~/")
+  "The base directory to where emacs user-operation files are stored. This is
+in contrast to the `emacs-config-directory' where all the initialization and
+configuration of Emacs are stored."
+  :type 'string
+  :group 'mifi-config)
+
+(defcustom custom-docs-directory
+  (expand-file-name "emacs-docs" custom-emacs-home)
   "A directory used to store documents and customized data."
   :type 'string
   :group 'mifi-config)
 
+(defcustom custom-developer-root
+  (expand-file-name "Developer/src" "~/")
+  "The root of all development projects. Used when initializing project.el or
+     projectile."
+  :type 'string
+  :group 'mifi-config)
+
 (defcustom working-files-directory
-  (expand-file-name "emacs-working-files" custom-docs-dir)
-  "The directory where to store Emacs working files."
+  (expand-file-name "emacs-working-files" custom-emacs-home)
+  "The directory where to store Emacs working files. `user-emacs-directory'
+will also be set to this directory. The starting user-emacs-directory will
+become `emacs-config-directory'."
   :type 'string
   :group 'mifi-config)
 
 (defcustom custom-org-fill-column 120
   "The fill column width for Org mode text.
-    Note that the text is also centered on the screen so that should
-    be taken into consideration when providing a width."
+     Note that the text is also centered on the screen so that should
+     be taken into consideration when providing a width."
   :type 'natnum
-  :group 'mifi-config)
-
-(defcustom custom-developer-root "~/Developer/src"
-  "The root of all development projects. Used when initializing project.el or
-  projectile."
-  :type 'string
   :group 'mifi-config)
 
 ;;; ##########################################################################
@@ -452,8 +463,21 @@ font size is computed + 20 of this value."
 
 (defvar emacs-config-directory user-emacs-directory)
 
-;;; Different emacs configuration installs with have their own configuration
-;;; directory.
+;;; Put any emacs cusomized variables in a special file. Load this file early
+;;; since things like the working-files-directory or custom-docs-directory
+;;; customized values could be in this file.
+(setq custom-file (expand-file-name "customized-vars.el" emacs-config-directory))
+
+(unless (file-exists-p custom-file) ;; create custom file if it doesn't exists
+  (write-region "" nil custom-file))
+(load custom-file 'noerror 'nomessage)
+
+;;;
+;;; This directory stores any files that are used by the user to store
+;;; additional Emacs files, like themes or specialized moduls. This is
+;;; where emacs-config files are backed up to. Of course, any document that the
+;;; user wants to associate with an Emacs installation can be stored here.
+(message ">>> working-files-dir = %s" working-files-directory)
 (make-directory working-files-directory t)
 
 ;;; user-emacs-directory always ends in a "/" so we need to make the
@@ -465,15 +489,8 @@ font size is computed + 20 of this value."
 ;;; Point the user-emacs-directory to the new working directory
 (setq user-emacs-directory working-files-directory)
 
-;;; Put any emacs cusomized variables in a special file
-(setq custom-file (expand-file-name "customized-vars.el" user-emacs-directory))
-
-(unless (file-exists-p custom-file) ;; create custom file if it doesn't exists
-  (write-region "" nil custom-file))
-(load custom-file 'noerror 'nomessage)
-
 ;;; Add an additional INFO dir for custom info docs
-(let ((infodir (expand-file-name "share/info" custom-docs-dir)))
+(let ((infodir (expand-file-name "share/info" custom-docs-directory)))
   (unless (file-exists-p infodir)
     (make-directory infodir t)))
 
@@ -527,7 +544,7 @@ font size is computed + 20 of this value."
 (add-to-list 'load-path (expand-file-name "lisp" emacs-config-directory))
 ;; mostly for OCaml
 (add-to-list 'load-path (expand-file-name "." emacs-config-directory))
-(add-to-list 'custom-theme-load-path (expand-file-name "Themes" custom-docs-dir))
+(add-to-list 'custom-theme-load-path (expand-file-name "Themes" custom-docs-directory))
 
 ;;; ##########################################################################
 
@@ -870,7 +887,7 @@ font size is computed + 20 of this value."
   (setq yas-global-mode t)
   (setq yas-minor-mode t)
   (define-key yas-minor-mode-map (kbd "<tab>") nil)
-  (add-to-list #'yas-snippet-dirs (expand-file-name "Snippets" custom-docs-dir))
+  (add-to-list #'yas-snippet-dirs (expand-file-name "Snippets" custom-docs-directory))
   (yas-reload-all)
   (add-hook 'prog-mode-hook 'yas-minor-mode)
   (add-hook 'text-mode-hook 'yas-minor-mode)
@@ -1859,7 +1876,7 @@ font size is computed + 20 of this value."
 
 ;;; ##########################################################################
 
-(add-to-list 'custom-theme-load-path (expand-file-name "Themes" custom-docs-dir))
+(add-to-list 'custom-theme-load-path (expand-file-name "Themes" custom-docs-directory))
 (add-to-list 'custom-theme-load-path (expand-file-name "lisp" emacs-config-directory))
 
 (mifi/org-theme-override-values)
@@ -2558,7 +2575,7 @@ directory is relative to the working-files-directory
   (setq org-roam-v2-ack t)
   (which-key-add-key-based-replacements "C-c n" "org-roam")
   :custom
-  (org-roam-directory (expand-file-name "RoamNotes" custom-docs-dir))
+  (org-roam-directory (expand-file-name "RoamNotes" custom-docs-directory))
   (org-roam-completion-everywhere t)
   :bind (("C-c n l" . org-roam-buffer-toggle)
           ("C-c n f" . org-roam-node-find)
@@ -2603,7 +2620,6 @@ directory is relative to the working-files-directory
   (which-key-add-key-based-replacements "C-c n d" "org-roam-dailies")
   :ensure ( :package "org-roam-dailies" :source "MELPA" :protocol https :inherit t :depth 1
 	    :fetcher github :repo "org-roam/org-roam" :files ("extensions/*"))
-  :after org-roam
   :bind-keymap
   ("C-c n d" . org-roam-dailies-map)
   :bind (:map org-roam-dailies-map
@@ -3496,7 +3512,12 @@ capture was not aborted."
           ("C-c C-c q" . lsp-workspace-restart)
           ("C-c C-c Q" . lsp-workspace-shutdown)
           ("C-c C-c s" . lsp-rust-analyzer-status))
-  :hook (rustic-mode . rk/rustic-mode-hook)
+  :hook
+  (rustic-mode . rk/rustic-mode-hook)
+  :ensure-system-package
+  ( (rustc . "curl https://sh/rustup.rs -sSf | sh")
+    (cargo . "curl https://sh/rustup.rs -sSf | sh")
+    )
   :config
   ;; uncomment for less flashiness
   ;; (setq lsp-eldoc-hook nil)
@@ -3512,6 +3533,7 @@ capture was not aborted."
   ;; save rust buffers that are not file visiting. Once
   ;; https://github.com/brotzeit/rustic/issues/253 has been resolved this should
   ;; no longer be necessary.
+  (lsp-deferred)
   (when buffer-file-name
     (setq-local buffer-save-without-query t))
   (add-hook 'before-save-hook 'lsp-format-buffer nil t))
