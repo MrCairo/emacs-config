@@ -13,50 +13,21 @@
 
 ;;; ##########################################################################
 
-(defvar elpaca-installer-version 0.7)
-(defvar elpaca-directory (expand-file-name "elpaca/" user-emacs-directory))
-(defvar elpaca-builds-directory (expand-file-name "builds/" elpaca-directory))
-(defvar elpaca-repos-directory (expand-file-name "repos/" elpaca-directory))
-(defvar elpaca-order '(elpaca :repo "https://github.com/progfolio/elpaca.git"
-                        :ref nil :depth 1 :branch "feat/vars-keyword"
-                        :files (:defaults "elpaca-test.el" (:exclude "extensions"))
-                        :build (:not elpaca--activate-package)))
-(let* ((repo  (expand-file-name "elpaca/" elpaca-repos-directory))
-        (build (expand-file-name "elpaca/" elpaca-builds-directory))
-        (order (cdr elpaca-order))
-        (default-directory repo))
-  (add-to-list 'load-path (if (file-exists-p build) build repo))
-  (unless (file-exists-p repo)
-    (make-directory repo t)
-    (when (< emacs-major-version 28) (require 'subr-x))
-    (condition-case-unless-debug err
-      (if-let ((buffer
-                 (pop-to-buffer-same-window "*elpaca-bootstrap*"))
-                ((zerop (apply #'call-process
-                          `("git" nil ,buffer t "clone"
-                             ,@(when-let ((depth (plist-get order :depth)))
-                                 (list (format "--depth=%d" depth)
-                                   "--no-single-branch"))
-                             ,(plist-get order :repo) ,repo))))
-                ((zerop (call-process "git" nil buffer t "checkout"
-                          (or (plist-get order :ref) "--"))))
-                (emacs (concat invocation-directory invocation-name))
-                ((zerop (call-process emacs nil buffer nil "-Q" "-L" "." "--batch"
-                          "--eval" "(byte-recompile-directory \".\" 0 'force)")))
-                ((require 'elpaca))
-                ((elpaca-generate-autoloads "elpaca" repo)))
-        (progn (message "%s" (buffer-string)) (kill-buffer buffer))
-        (error "%s" (with-current-buffer buffer (buffer-string))))
-      ((error) (warn "%s" err) (delete-directory repo 'recursive))))
-  (unless (require 'elpaca-autoloads nil t)
-    (require 'elpaca)
-    (elpaca-generate-autoloads "elpaca" repo)
-    (load "./elpaca-autoloads")))
-(add-hook 'after-init-hook #'elpaca-process-queues)
-(elpaca `(,@elpaca-order))
-(elpaca elpaca-use-package
-  (elpaca-use-package-mode 1)
-  (setq use-package-always-ensure t))
+(add-to-list 'load-path (expand-file-name "lisp" user-emacs-directory))
+
+(let ((minver "29.1"))
+  (when (version< emacs-version minver)
+    (error "Your Emacs is too old -- this config requires v%s or higher" minver)))
+
+(when (version< emacs-version "30.0")
+  ;; add vc-use-package
+  (unless (package-installed-p 'vc-use-package)
+    (package-vc-install "https://github.com/slotThe/vc-use-package"))
+  (require 'vc-use-package))
+
+;;; init-customizable.el --- customizable variables -*- lexical-binding: t -*-
+;;; Commentary:
+;;; Code:
 
 ;;; ##########################################################################
 ;;; Define my customization groups
@@ -447,11 +418,21 @@ font size is computed + 20 of this value."
                ((x-family-fonts "Monospaced")      "Monospaced")
                (nil (warn "Cannot find a monospaced Font.  Install Source Code Pro.")))))
       (if monospace-font
-      (when (not (equal monospace-font variable-pitch-font-family))
+	(when (not (equal monospace-font variable-pitch-font-family))
           (setq mono-spaced-font-family monospace-font)
           (setq default-font-family monospace-font))
-      (message "---- Can't find a monospace font to use.")))
+	(message "---- Can't find a monospace font to use.")))
     (message (format ">>> monospace font is %s" mono-spaced-font-family))))
+
+(provide 'init-customizable)
+;;; init-customizable.el ends here.
+
+(use-package ruby
+  :ensure-system-package (ruby-lint . "gem install ruby-lint"))
+
+;;; init-general.el --- General Configuration -*- lexical-binding: t -*-
+;;; Commentary:
+;;; Code:
 
 ;;; ##########################################################################
 
@@ -530,7 +511,7 @@ font size is computed + 20 of this value."
   ;; (which-key-sort-order 'which-key-key-order-alpha)
   (which-key-min-display-lines 3)
   :config
-  (add-hook 'elpaca-after-init-hook #'mifi/after-which-key))
+  (add-hook 'after-init-hook #'mifi/after-which-key))
 
 ;;; ##########################################################################
 
@@ -541,7 +522,6 @@ font size is computed + 20 of this value."
     (add-to-list 'exec-path (format "%s:%s/bin" epath epath))
     (mifi/setup-path-from-exec-path)))
 
-(add-to-list 'load-path (expand-file-name "lisp" emacs-config-directory))
 ;; mostly for OCaml
 (add-to-list 'load-path (expand-file-name "." emacs-config-directory))
 (add-to-list 'custom-theme-load-path (expand-file-name "Themes" custom-docs-directory))
@@ -716,21 +696,28 @@ font size is computed + 20 of this value."
 ;;
 ;; This list is processed as a LIFO queue. This entry _should_ be made to be
 ;; the first so it executes last.
-(add-hook 'elpaca-after-init-hook
+(add-hook 'after-init-hook
   (lambda ()
     (mifi/config-landing)
     (mifi/set-recenter-keys)))
 
 ;;; ##########################################################################
 ;; Allow access from emacsclient
-(add-hook 'elpaca-after-init-hook
+(add-hook 'after-init-hook
   (lambda ()
-    (use-package server :ensure nil)
     (unless (server-running-p)
       (server-start))))
 
+(use-package server :ensure nil)
 (when (fboundp 'pixel-scroll-precision-mode)
   (pixel-scroll-precision-mode))
+
+(provide 'init-general)
+;;; init-general.el ends here.
+
+;;; init-universal.el --- Universal Packages -*- lexical-binding: t -*-
+;;; Commentary:
+;;; Code:
 
 (use-package system-packages :ensure t)
 
@@ -783,14 +770,14 @@ font size is computed + 20 of this value."
 (use-package eldoc-box
   :ensure t
   :delight DocBox
-  :hook (elpaca-after-init . mifi/setup-hooks-for-eldoc))
+  :hook (after-init . mifi/setup-hooks-for-eldoc))
 
 ;;; ##########################################################################
 
 (use-package hydra
-  ;; :vc (:url "https://github.com/abo-abo/hydra" :ignored-files ("lv.el")))
-  :ensure (:repo "abo-abo/hydra" :fetcher github
-            :files (:defaults (:exclude "lv.el"))))
+  :vc (:url "https://github.com/abo-abo/hydra" :ignored-files ("lv.el")))
+  ;; :ensure (:repo "abo-abo/hydra" :fetcher github
+  ;;           :files (:defaults (:exclude "lv.el"))))
 
 ;;; ##########################################################################
 
@@ -815,7 +802,7 @@ font size is computed + 20 of this value."
 
 (use-package default-text-scale
   :ensure t
-  :hook (elpaca-after-init . default-text-scale-mode))
+  :hook (after-init . default-text-scale-mode))
 
 ;;; ##########################################################################
 
@@ -829,7 +816,7 @@ font size is computed + 20 of this value."
       mac-right-command-modifier 'meta
       mac-right-control-modifier 'hyper)))
 
-(add-hook 'elpaca-after-init-hook #'mifi/set-mac-modifier-keys)
+(add-hook 'after-init-hook #'mifi/set-mac-modifier-keys)
 
 ;;; ##########################################################################
 
@@ -909,6 +896,7 @@ font size is computed + 20 of this value."
 ;;; ##########################################################################
 
 (use-package ace-window
+  :vc (:url "https://github.com/abo-abo/ace-window")
   ;;:ensure (:repo "abo-abo/ace-window" :fetcher github)
   :bind ("M-o" . ace-window))
 
@@ -918,6 +906,10 @@ font size is computed + 20 of this value."
 (use-package winum
   :ensure t
   :config (winum-mode))
+
+(require 'init-windows)
+;; (use-package init-windows
+;;   :hook (after-init . winner-mode))
 
 ;;; ##########################################################################
 
@@ -936,8 +928,8 @@ font size is computed + 20 of this value."
   :bind ("M-RET d" . dashboard-open)
   :config
   ;; (setq initial-buffer-choice (lambda () (get-buffer-create dashboard-buffer-name)))
-  (add-hook 'elpaca-after-init-hook #'dashboard-insert-startupify-lists)
-  (add-hook 'elpaca-after-init-hook #'dashboard-initialize)
+  (add-hook 'after-init-hook #'dashboard-insert-startupify-lists)
+  (add-hook 'after-init-hook #'dashboard-initialize)
   (when (equal custom-project-handler 'custom-project-projectile)
     (setq dashboard-projects-backend 'projectile))
   (setq dashboard-startup-banner (expand-file-name "Emacs-modern-is-sexy-v1.png" user-emacs-directory))
@@ -946,8 +938,8 @@ font size is computed + 20 of this value."
 ;;; ##########################################################################
 
 (use-package jinx
-  ;;:vc (:url "https://github.com/minad/jinx")
-  :ensure (:host github :repo "minad/jinx")
+  :vc (:url "https://github.com/minad/jinx")
+  ;; :ensure (:host github :repo "minad/jinx")
   ;;:hook (emacs-startup . global-jinx-mode)
   :bind (("C-c C-$" . jinx-correct)
           ("C-x C-$" . jinx-languages))
@@ -958,6 +950,9 @@ font size is computed + 20 of this value."
 ;;; ##########################################################################
 ;; These are packages located in the site-lisp or lisp directories in the
 ;; 'emacs-config-directory'
+
+(provide 'init-universal)
+;;; init-universal.el ends here.
 
 ;;; ##########################################################################
 
@@ -1396,7 +1391,7 @@ font size is computed + 20 of this value."
 ;; completion-handler variable will not yet be defined at this point in the
 ;; init phase usi\ng elpaca.
 
-(add-hook 'elpaca-after-init-hook
+(add-hook 'after-init-hook
   (lambda ()
     (use-package ido
       :when (equal completion-handler 'comp-hand-ido)
@@ -1859,7 +1854,7 @@ font size is computed + 20 of this value."
        (fg-mode-line-active fg-main)
        (border-mode-line-active blue-intense))))
 
-(add-hook 'elpaca-after-init-hook 'mifi/customize-modus-theme)
+(add-hook 'after-init-hook 'mifi/customize-modus-theme)
 
 (defun mifi/customize-ef-theme ()
   (defface ef-themes-fixed-pitch
@@ -1872,7 +1867,7 @@ font size is computed + 20 of this value."
        (fg-mode-line fg-main)
        (border-mode-line-active blue-intense))))
 ;;(add-hook 'org-load-hook 'mifi/customize-ef-theme)
-(add-hook 'elpaca-after-init-hook 'mifi/customize-ef-theme)
+(add-hook 'after-init-hook 'mifi/customize-ef-theme)
 
 ;;; ##########################################################################
 
@@ -1899,11 +1894,11 @@ font size is computed + 20 of this value."
   (load-theme (intern default-terminal-theme) t))
 
 (unless (display-graphic-p)
-  (add-hook 'elpaca-after-init-hook 'mifi/load-terminal-theme)
+  (add-hook 'after-init-hook 'mifi/load-terminal-theme)
   ;;else
   (progn
-    (if (not elpaca-after-init-time)
-      (add-hook 'elpaca-after-init-hook
+    (if (not after-init-time)
+      (add-hook 'after-init-hook
         (lambda ()
           (unless theme-did-load
             (mifi/load-theme-from-selector))))
@@ -2032,7 +2027,7 @@ font size is computed + 20 of this value."
 ;; with the default font size. Startup works without this but it's nice to see
 ;; the window expand early...
 
-(add-hook 'elpaca-after-init-hook
+(add-hook 'after-init-hook
   (lambda ()
     (when (display-graphic-p)
       (mifi/update-face-attribute)
@@ -2127,7 +2122,7 @@ font size is computed + 20 of this value."
   (mifi/reset-if-spacious-padding-mode)
   (mifi/update-other-modes-font)
   (mifi/should-recenter force-recenter))
-(defalias 'use-small-display-font-t (lambda () (use-small-display-font t)))
+(defun use-small-display-font-t () (interactive) (use-small-display-font t))
 
 (defun use-medium-display-font (&optional force-recenter)
   (interactive)
@@ -2135,7 +2130,7 @@ font size is computed + 20 of this value."
   (mifi/reset-if-spacious-padding-mode)
   (mifi/update-other-modes-font)
   (mifi/should-recenter force-recenter))
-(defalias 'use-medium-display-font-t (lambda () (use-medium-display-font t)))
+(defun use-medium-display-font-t () (interactive) (use-medium-display-font t))
 
 (defun use-large-display-font (&optional force-recenter)
   (interactive)
@@ -2143,7 +2138,7 @@ font size is computed + 20 of this value."
   (mifi/reset-if-spacious-padding-mode)
   (mifi/update-other-modes-font)
   (mifi/should-recenter force-recenter))
-(defalias 'use-large-display-font-t (lambda () (use-large-display-font t)))
+(defun use-large-display-font-t () (interactive) (use-large-display-font t))
 
 (defun use-x-large-display-font (&optional force-recenter)
   (interactive)
@@ -2151,13 +2146,13 @@ font size is computed + 20 of this value."
   (mifi/reset-if-spacious-padding-mode)
   (mifi/update-other-modes-font)
   (mifi/should-recenter force-recenter))
-(defalias 'use-x-large-display-font-t (lambda () (use-x-large-display-font t)))
+(defun use-x-large-display-font-t () (interactive) (use-x-large-display-font t))
 
 ;;; ##########################################################################
 ;; This is done so that the Emacs window is sized early in the init phase along with the default font size.
 ;; Startup works without this but it's nice to see the window expand early...
 (when (display-graphic-p)
-  (add-hook 'elpaca-after-init-hook
+  (add-hook 'after-init-hook
     (lambda ()
       (progn
         (mifi/update-face-attribute)
@@ -2170,11 +2165,11 @@ font size is computed + 20 of this value."
 (use-package spacious-padding
   :custom
   (spacious-padding-widths
-    '( :internal-border-width 10
+    '( :internal-border-width 15
        :header-line-width 4
        :mode-line-width 6
        :tab-width 4
-       :right-divider-width 10
+       :right-divider-width 30
        :scroll-bar-width 8
        :fringe-width 8))
   :ensure t
@@ -2568,8 +2563,10 @@ directory is relative to the working-files-directory
 ;;; ##########################################################################
 
 (use-package org-roam
-  :ensure ( :package "org-roam" :source "MELPA" :protocol https :inherit t :depth 1
-	    :fetcher github :repo "org-roam/org-roam" :files (:defaults "extensions/*"))
+  :vc (:url "https://github.com/org-roam/org-roam")
+  :ensure t
+  ;; :ensure ( :package "org-roam" :source "MELPA" :protocol https :inherit t :depth 1
+  ;;           :fetcher github :repo "org-roam/org-roam" :files (:defaults "extensions/*"))
   :when (equal custom-note-system 'custom-note-system-org-roam)
   :init
   (setq org-roam-v2-ack t)
@@ -2618,8 +2615,10 @@ directory is relative to the working-files-directory
   :when (equal custom-note-system 'custom-note-system-org-roam)
   :init
   (which-key-add-key-based-replacements "C-c n d" "org-roam-dailies")
-  :ensure ( :package "org-roam-dailies" :source "MELPA" :protocol https :inherit t :depth 1
-	    :fetcher github :repo "org-roam/org-roam" :files ("extensions/*"))
+  :vc  (:url "https://github.com/org-roam/org-roam"
+	 :main-file extensions/org-roam-dailies)
+  ;; :ensure ( :package "org-roam-dailies" :source "MELPA" :protocol https :inherit t :depth 1
+  ;;           :fetcher github :repo "org-roam/org-roam" :files ("extensions/*"))
   :bind-keymap
   ("C-c n d" . org-roam-dailies-map)
   :bind (:map org-roam-dailies-map
@@ -3114,8 +3113,8 @@ capture was not aborted."
 ;;; ##########################################################################
 
 (use-package transient :defer t)
-(use-package git-commit :after transient :defer t)
-(use-package magit :after git-commit :defer t)
+(use-package git-commit :after transient :ensure nil)
+(use-package magit :after git-commit :ensure t)
 
 ;; NOTE: Make sure to configure a GitHub token before using this package!
 ;; - https://magit.vc/manual/forge/Token-Creation.html#Token-Creation
@@ -3394,10 +3393,10 @@ capture was not aborted."
   :after opam-emacs-setup
   :ensure-system-package
   ("~/.opam/default/lib/ocp-indent" . "opam install ocp-indent --yes")
-  ;;:vc (:url "https://github.com/OCamlPro/ocp-indent" :main-file "tools/ocp-indent.el"))
-  :ensure (:inherit t :depth 1
-           :fetcher github :repo "OCamlPro/ocp-indent"
-           :files ("tools/ocp-indent.el")))
+  :vc (:url "https://github.com/OCamlPro/ocp-indent" :main-file tools/ocp-indent))
+  ;; :ensure (:inherit t :depth 1
+  ;;          :fetcher github :repo "OCamlPro/ocp-indent"
+  ;;          :files ("tools/ocp-indent.el")))
 
 (use-package ocamlformat
   :when enable-ocaml :ensure t
@@ -3485,19 +3484,19 @@ capture was not aborted."
 (when enable-gb-dev
   (use-package z80-mode
     :when enable-gb-dev
-    ;;:vc (:url "https://github.com/SuperDisk/z80-mode"))
-    :ensure (:host github :repo "SuperDisk/z80-mode"))
+    :vc (:url "https://github.com/SuperDisk/z80-mode"))
+    ;; :ensure (:host github :repo "SuperDisk/z80-mode"))
 
   (use-package mwim
     :when enable-gb-dev
-    ;;:vc (:url "https://github.com/alezost/mwim"))
-    :ensure (:host github :repo "alezost/mwim.el"))
+    :vc (:url "https://github.com/alezost/mwim"))
+    ;; :ensure (:host github :repo "alezost/mwim.el"))
 
   (use-package rgbds-mode
     :when enable-gb-dev
     :after mwim
-    ;;:vc (:url "https://github.com/japanoise/rgbds-mode"))
-    :ensure (:host github :repo "japanoise/rgbds-mode")))
+    :vc (:url "https://github.com/japanoise/rgbds-mode")))
+    ;; :ensure (:host github :repo "japanoise/rgbds-mode")))
 
 ;;; ##########################################################################
 
@@ -3564,13 +3563,14 @@ capture was not aborted."
 (use-package cargo-mode
   :defer t
   :after rust-mode
-  :ensure (:fetcher github :repo "ayrat555/cargo-mode"
-            :files ("*.el" "*.el.in" "dir" "*.info" "*.texi"
-                     "*.texinfo" "doc/dir" "doc/*.info" "doc/*.texi"
-                     "doc/*.texinfo" "lisp/*.el"
-                     (:exclude ".dir-locals.el" "test.el" "tests.el"
-                       "*-test.el" "*-tests.el" "LICENSE" "README*"
-                       "*-pkg.el"))))
+  :vc (:url "https://github.com/ayrat555/cargo-mode" :main-file cargo-mode))
+  ;; :ensure (:fetcher github :repo "ayrat555/cargo-mode"
+  ;;           :files ("*.el" "*.el.in" "dir" "*.info" "*.texi"
+  ;;                    "*.texinfo" "doc/dir" "doc/*.info" "doc/*.texi"
+  ;;                    "doc/*.texinfo" "lisp/*.el"
+  ;;                    (:exclude ".dir-locals.el" "test.el" "tests.el"
+  ;;                      "*-test.el" "*-tests.el" "LICENSE" "README*"
+  ;;                      "*-pkg.el"))))
 
 ;;; ##########################################################################
 
@@ -3620,16 +3620,20 @@ capture was not aborted."
 (use-package swift-helpful
   :defer t
   :after swift-mode
-  :ensure (:files ("*.el" "swift-info/*.info"
-                    ("images" "swift-info/images/*.png") "swift-helpful-pkg.el")
-            :host github
-            :repo "danielmartin/swift-helpful"))
+  :vc ( :url "https://github.com/danielmartin/swift-helpful"
+	:main-file swift-helpful
+	:lisp-dir ("swift-info" "target")))
+  ;; :ensure (:files ("*.el" "swift-info/*.info"
+  ;;                   ("images" "swift-info/images/*.png") "swift-helpful-pkg.el")
+  ;;           :host github
+  ;;          :repo "danielmartin/swift-helpful"))
 
 (use-package swift-playground-mode
   :defer t
   :after swift-mode
-  :ensure ( :package "swift-playground-mode"
-          :repo "https://gitlab.com/michael.sanders/swift-playground-mode.git")
+  :vc (:url "https://gitlab.com/michael.sanders")
+  ;; :ensure ( :package "swift-playground-mode"
+  ;;         :repo "https://gitlab.com/michael.sanders/swift-playground-mode.git")
   :init
   (autoload 'swift-playground-global-mode "swift-playground-mode" nil t)
   (add-hook 'swift-mode-hook #'swift-playground-global-mode))
@@ -3678,7 +3682,8 @@ capture was not aborted."
 (use-package dap-ocaml
   :when enable-ocaml
   :after (:all dap-mode opam-emacs-setup)
-  :ensure (:package "dap-ocaml" :type git :host github :repo "emacs-lsp/dap-mode")
+  :vc (:url "https://github.com/emacs-lsp/dap-mode" :main-file dap-ocaml) :ensure t
+  ;; :ensure (:package "dap-ocaml" :type git :host github :repo "emacs-lsp/dap-mode")
   :ensure-system-package
   ((ocamllsp . "opam install ocaml-lsp-server.1.18.0~5.2preview earlybird --yes")))
 
@@ -3686,15 +3691,16 @@ capture was not aborted."
   :when enable-ocaml
   :after dap-mode
   :defer t
-  :ensure (:package "dap-codelldb" :type git :host github :repo "emacs-lsp/dap-mode"))
+  :vc (:url "https://github.com/emacs-lsp/dap-mode" :main-file dap-codelldb) :ensure t)
+  ;; :ensure (:package "dap-codelldb" :type git :host github :repo "emacs-lsp/dap-mode"))
 
 ;;; ##########################################################################
 ;;; DAP for Python
 
 (when enable-python
   (use-package dap-python
-    ;; :vc (:url "https://github.com/emacs-lsp/dap-mode" :main-file "dap-python.el")
-    :ensure (:package "dap-python" :type git :host github :repo "emacs-lsp/dap-mode")
+    :vc (:url "https://github.com/emacs-lsp/dap-mode" :main-file dap-python)
+    ;; :ensure (:package "dap-python" :type git :host github :repo "emacs-lsp/dap-mode")
     :defer t
     :when (equal debug-adapter 'debug-adapter-dap-mode)
     :after dap-mode
@@ -3708,10 +3714,10 @@ capture was not aborted."
   :when (equal debug-adapter 'debug-adapter-dap-mode)
   :defer t
   :after dap-mode
-  ;; :vc (:url "https://github.com/emacs-lsp/dap-mode" :main-file "dap-lldb.el")
-  :ensure ( :package "dap-lldb" :source nil :protocol https
-            :inherit t :depth 1 :type git
-            :host github :repo "emacs-lsp/dap-mode")
+  :vc (:url "https://github.com/emacs-lsp/dap-mode" :main-file dap-lldb)
+  ;; :ensure ( :package "dap-lldb" :source nil :protocol https
+  ;;           :inherit t :depth 1 :type git
+  ;;           :host github :repo "emacs-lsp/dap-mode")
   :custom
   (dap-lldb-debug-program "~/Developer/command-line-unix/llvm/lldb-build/bin/lldb-dap"))
   ;; :config
@@ -3726,9 +3732,10 @@ capture was not aborted."
 
 (use-package dap-gdb-lldb
   :when (equal debug-adapter 'debug-adapter-dap-mode)
-  :ensure ( :package "dap-gdb-lldb" :source nil :protocol https
-            :inherit t :depth 1 :type git :host github
-            :repo "emacs-lsp/dap-mode")
+  :vc (:url "https://github.com/emacs-lsp/dap-mode" :main-file dap-gdb-lldb) :ensure t
+  ;; :ensure ( :package "dap-gdb-lldb" :source nil :protocol https
+  ;;           :inherit t :depth 1 :type git :host github
+  ;;           :repo "emacs-lsp/dap-mode")
   :defer t
   :after dap-lldb
   :config
@@ -3738,9 +3745,10 @@ capture was not aborted."
   :when (equal debug-adapter 'debug-adapter-dap-mode)
   :defer t
   :after dap-mode
-  :ensure ( :package "dap-cpptools" :source nil :protocol https
-            :inherit t :depth 1 :type git :host github
-            :repo "emacs-lsp/dap-mode"))
+  :vc (:url "https://github.com/emacs-lsp/dap-mode" :main-file dap-cpptools) :ensure t)
+  ;; :ensure ( :package "dap-cpptools" :source nil :protocol https
+  ;;           :inherit t :depth 1 :type git :host github
+  ;;           :repo "emacs-lsp/dap-mode"))
 ;; :config
 ;; (dap-cpptools-setup))
 
@@ -3844,11 +3852,11 @@ capture was not aborted."
 
 (use-package solaire-mode
   :after treemacs
-  ;; :vc ( :url "https://github.com/hlissner/emacs-solaire-mode"
-  ;;  :ignored-files ("solaire-mode-test.el") )
-  :ensure (:package "solaire-mode" :source "MELPA"
-            :repo "hlissner/emacs-solaire-mode" :fetcher github)
-  :hook (elpaca-after-init . solaire-global-mode)
+  :vc (:url "https://github.com/hlissner/emacs-solaire-mode"
+        :ignored-files (solaire-mode-test) )
+  ;; :ensure (:package "solaire-mode" :source "MELPA"
+  ;;          :repo "hlissner/emacs-solaire-mode" :fetcher github)
+  :hook (after-init . solaire-global-mode)
   :config
   (push '(treemacs-window-background-face . solaire-default-face) solaire-mode-remap-alist)
   (push '(treemacs-hl-line-face . solaire-hl-line-face) solaire-mode-remap-alist))
@@ -3977,7 +3985,6 @@ capture was not aborted."
 ;;     :config (setq warning-minimum-level :warning))
 ;;   (use-package websocket :ensure nil)
 ;;   (use-package web-server :ensure nil))
-  
 
 (use-package markdown-mode
   :ensure t
@@ -3986,7 +3993,7 @@ capture was not aborted."
          ("\\.md\\'" . markdown-mode)
          ("\\.markdown\\'" . markdown-mode))
   :init (setq markdown-command "multimarkdown"))
-  ;;:hook (elpaca-after-init . mifi/load-web-support))
+  ;;:hook (after-init . mifi/load-web-support))
 
 ;;; ##########################################################################
 
@@ -4124,7 +4131,7 @@ capture was not aborted."
 
 ;; Check the keys when:
 ;; - the whick-key menu is displayed
-(add-hook 'elpaca-after-init-hook
+(add-hook 'after-init-hook
   (lambda ()
     (add-hook 'which-key-inhibit-display-hook 'mifi/mmm-update-menu)
     ;; - the user updates/changes the buffer - like loading a file
