@@ -1,3 +1,16 @@
+;;; init.el -*- flycheck-disabled-checkers: (emacs-lisp); lexical-binding: nil -*-
+;;;
+;;; Commentary:
+
+;; This file bootstraps the configuration which is generated from tangling an org-mode file.
+;; So, DO NOT MODIFY this file directly as changes will be overwritten.
+
+;;; Code:
+
+;; Produce backtraces when errors occur: can be helpful to diagnose startup issues
+;; (setq debug-on-error t)
+;;
+
 ;;; init-customizable.el --- customizable variables -*- lexical-binding: t -*-
 ;;; Commentary:
 ;;; Code:
@@ -391,10 +404,10 @@ font size is computed + 20 of this value."
                ((x-family-fonts "Monospaced")      "Monospaced")
                (nil (warn "Cannot find a monospaced Font.  Install Source Code Pro.")))))
       (if monospace-font
-      (when (not (equal monospace-font variable-pitch-font-family))
+	(when (not (equal monospace-font variable-pitch-font-family))
           (setq mono-spaced-font-family monospace-font)
           (setq default-font-family monospace-font))
-      (message "---- Can't find a monospace font to use.")))
+	(message "---- Can't find a monospace font to use.")))
     (message (format ">>> monospace font is %s" mono-spaced-font-family))))
 
 (provide 'init-customizable)
@@ -658,13 +671,9 @@ font size is computed + 20 of this value."
               (spacious-padding-mode 1))))
         (use-medium-display-font t)))))
 
-;;; ##########################################################################
-
-(setq register-preview-delay 0) ;; Show registers ASAP
-(set-register ?o (cons 'file (concat emacs-config-directory "emacs-config-elpa.org")))
-(set-register ?O (cons 'file (concat emacs-config-directory "emacs-config.org")))
-(set-register ?G '(file . "~/Developer/game-dev/GB_asm"))
-(set-register ?S (cons 'file (concat emacs-config-directory "org-files/important-scripts.org")))
+(use-package init-registers
+  :ensure t
+  :hook (after-init . init-registers))
 
 ;;; ##########################################################################
 ;;
@@ -2170,16 +2179,16 @@ font size is computed + 20 of this value."
     'org-mode
     '(("^ *\\([-]\\) "
         (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))))
-
+  
   (set-face-attribute 'org-block nil
     :foreground 'unspecified
     :inherit 'fixed-pitch
     :font mono-spaced-font-family
     :height custom-default-mono-font-size)
-
+  
   (set-face-attribute 'org-formula nil
     :inherit 'fixed-pitch)
-
+  
   (set-face-attribute 'org-code nil
     :foreground 'unspecified
     :font mono-spaced-font-family
@@ -2197,31 +2206,31 @@ font size is computed + 20 of this value."
     :font mono-spaced-font-family
     :height custom-default-mono-font-size
     :inherit '(shadow fixed-pitch))
-
+  
   (set-face-attribute 'org-verbatim nil
     :foreground 'unspecified
     :font mono-spaced-font-family
     :height custom-default-mono-font-size
     :inherit '(shadow fixed-pitch))
-
+  
   (set-face-attribute 'org-special-keyword nil
     :inherit '(font-lock-comment-face fixed-pitch))
-
+  
   (set-face-attribute 'org-meta-line nil
     :inherit '(font-lock-comment-face fixed-pitch))
-
+  
   (set-face-attribute 'org-checkbox nil
     :foreground 'unspecified
     :font mono-spaced-font-family
     :height custom-default-mono-font-size
     :inherit 'fixed-pitch)
-
+  
   (set-face-attribute 'line-number nil
     :foreground 'unspecified
     :font mono-spaced-font-family
     :height custom-default-mono-font-size
     :inherit 'fixed-pitch)
-
+  
   (set-face-attribute 'line-number-current-line nil
     :foreground 'unspecified
     :font mono-spaced-font-family
@@ -2347,7 +2356,7 @@ directory is relative to the working-files-directory
 (defun mifi/org-setup-capture-templates ()
   (setq org-capture-templates
     `(("t" "Tasks / Projects")
-
+       
        ("tt" "Task" entry (file+olp (expand-file-name "OrgFiles/Tasks.org" user-emacs-directory) "Inbox")
          "* TODO %?\n  %U\n  %a\n        %i" :empty-lines 1)
 
@@ -2601,7 +2610,7 @@ directory is relative to the working-files-directory
   :bind-keymap
   ("C-c n d" . org-roam-dailies-map)
   :bind (:map org-roam-dailies-map
-  	("." . org-roam-dailies-goto-date)
+	  ("." . org-roam-dailies-goto-date)
           ("Y" . org-roam-dailies-capture-yesterday)
           ("T" . org-roam-dailies-capture-tomorrow))
   :config
@@ -4001,8 +4010,8 @@ capture was not aborted."
         ("M-RET v 2" . use-medium-display-font-t)
         ("M-RET v 3" . use-large-display-font-t)
         ("M-RET v 4" . use-x-large-display-font-t)
-      ("M-RET w <right>" . which-key-setup-side-window-right-bottom)
-      ("M-RET w <down>" . which-key-setup-side-window-bottom)
+	("M-RET w <right>" . which-key-setup-side-window-right-bottom)
+	("M-RET w <down>" . which-key-setup-side-window-bottom)
         ("M-RET =" . next-theme)
         ("M-RET -" . previous-theme)
         ("M-RET _" . which-theme)
@@ -4043,9 +4052,9 @@ capture was not aborted."
         ((equal major-mode 'python-mode)
           (bind-keys :map map
             ("M-RET P" . 'pydoc-at-point)))
-      ((equal major-mode 'tuareg-mode)
-  	(bind-keys :map map
-  	  ("M-RET c m" . tuarg-browse-manual)))
+	((equal major-mode 'tuareg-mode)
+	  (bind-keys :map map
+	    ("M-RET c m" . tuarg-browse-manual)))
         (t   ;; Default 
           (unbind-key "M-RET o f" map)
           (unbind-key "M-RET o c" map)

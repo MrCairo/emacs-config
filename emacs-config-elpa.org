@@ -1114,16 +1114,13 @@ These functions will save and restore Emacs framework. These are normally called
 
 ** Some Common Registers
 
-These are just some common registers that I have just so I can bookmark files and locations and quckly jump to them.
+This local package defines some commonly used registers. Registers need to be loaded after the initial happens hence the call to initialize the registers via a hook.
 
-#+begin_src emacs-lisp #:tangle "lisp/init-general.el"
-  ;;; ##########################################################################
+#+begin_src emacs-lisp
 
-  (setq register-preview-delay 0) ;; Show registers ASAP
-  (set-register ?o (cons 'file (concat emacs-config-directory "emacs-config-elpa.org")))
-  (set-register ?O (cons 'file (concat emacs-config-directory "emacs-config.org")))
-  (set-register ?G '(file . "~/Developer/game-dev/GB_asm"))
-  (set-register ?S (cons 'file (concat emacs-config-directory "org-files/important-scripts.org")))
+  (use-package init-registers
+    :ensure t
+    :hook (after-init . init-registers))
 
 #+end_src
 
