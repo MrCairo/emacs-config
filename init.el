@@ -1,30 +1,3 @@
-;;; init.el -*- flycheck-disabled-checkers: (emacs-lisp); lexical-binding: nil -*-
-;;;
-;;; Commentary:
-
-;; This file bootstraps the configuration which is generated from tangling an org-mode file.
-;; So, DO NOT MODIFY this file directly as changes will be overwritten.
-
-;;; Code:
-
-;; Produce backtraces when errors occur: can be helpful to diagnose startup issues
-;; (setq debug-on-error t)
-;;
-
-;;; ##########################################################################
-
-(add-to-list 'load-path (expand-file-name "lisp" user-emacs-directory))
-
-(let ((minver "29.1"))
-  (when (version< emacs-version minver)
-    (error "Your Emacs is too old -- this config requires v%s or higher" minver)))
-
-(when (version< emacs-version "30.0")
-  ;; add vc-use-package
-  (unless (package-installed-p 'vc-use-package)
-    (package-vc-install "https://github.com/slotThe/vc-use-package"))
-  (require 'vc-use-package))
-
 ;;; init-customizable.el --- customizable variables -*- lexical-binding: t -*-
 ;;; Commentary:
 ;;; Code:
@@ -418,16 +391,16 @@ font size is computed + 20 of this value."
                ((x-family-fonts "Monospaced")      "Monospaced")
                (nil (warn "Cannot find a monospaced Font.  Install Source Code Pro.")))))
       (if monospace-font
-	(when (not (equal monospace-font variable-pitch-font-family))
+      (when (not (equal monospace-font variable-pitch-font-family))
           (setq mono-spaced-font-family monospace-font)
           (setq default-font-family monospace-font))
-	(message "---- Can't find a monospace font to use.")))
+      (message "---- Can't find a monospace font to use.")))
     (message (format ">>> monospace font is %s" mono-spaced-font-family))))
 
 (provide 'init-customizable)
 ;;; init-customizable.el ends here.
 
-(use-package ruby
+(use-package enh-ruby-mode
   :ensure-system-package (ruby-lint . "gem install ruby-lint"))
 
 ;;; init-general.el --- General Configuration -*- lexical-binding: t -*-
@@ -688,6 +661,7 @@ font size is computed + 20 of this value."
 ;;; ##########################################################################
 
 (setq register-preview-delay 0) ;; Show registers ASAP
+(set-register ?o (cons 'file (concat emacs-config-directory "emacs-config-elpa.org")))
 (set-register ?O (cons 'file (concat emacs-config-directory "emacs-config.org")))
 (set-register ?G '(file . "~/Developer/game-dev/GB_asm"))
 (set-register ?S (cons 'file (concat emacs-config-directory "org-files/important-scripts.org")))
@@ -907,7 +881,7 @@ font size is computed + 20 of this value."
   :ensure t
   :config (winum-mode))
 
-(require 'init-windows)
+;; (require 'init-windows)
 ;; (use-package init-windows
 ;;   :hook (after-init . winner-mode))
 
@@ -1155,10 +1129,14 @@ font size is computed + 20 of this value."
 
 ;;; ##########################################################################
 
-(use-package company-box
-  :after company
-  :delight 'cb
-  :hook (company-mode . company-box-mode))
+(require 'company-box)
+(add-hook 'company-mode-hook 'company-box-mode)
+
+;; (use-package company-box
+;;   :after company
+;;   :delight 'cb
+;;   :vc (:url "https://github.com/sebastiencs/company-box.git")
+;;   :hook (company-mode . company-box-mode))
 
 (use-package company-jedi
   :when  (equal custom-ide 'custom-ide-elpy)
@@ -2192,16 +2170,16 @@ font size is computed + 20 of this value."
     'org-mode
     '(("^ *\\([-]\\) "
         (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))))
-  
+
   (set-face-attribute 'org-block nil
     :foreground 'unspecified
     :inherit 'fixed-pitch
     :font mono-spaced-font-family
     :height custom-default-mono-font-size)
-  
+
   (set-face-attribute 'org-formula nil
     :inherit 'fixed-pitch)
-  
+
   (set-face-attribute 'org-code nil
     :foreground 'unspecified
     :font mono-spaced-font-family
@@ -2219,31 +2197,31 @@ font size is computed + 20 of this value."
     :font mono-spaced-font-family
     :height custom-default-mono-font-size
     :inherit '(shadow fixed-pitch))
-  
+
   (set-face-attribute 'org-verbatim nil
     :foreground 'unspecified
     :font mono-spaced-font-family
     :height custom-default-mono-font-size
     :inherit '(shadow fixed-pitch))
-  
+
   (set-face-attribute 'org-special-keyword nil
     :inherit '(font-lock-comment-face fixed-pitch))
-  
+
   (set-face-attribute 'org-meta-line nil
     :inherit '(font-lock-comment-face fixed-pitch))
-  
+
   (set-face-attribute 'org-checkbox nil
     :foreground 'unspecified
     :font mono-spaced-font-family
     :height custom-default-mono-font-size
     :inherit 'fixed-pitch)
-  
+
   (set-face-attribute 'line-number nil
     :foreground 'unspecified
     :font mono-spaced-font-family
     :height custom-default-mono-font-size
     :inherit 'fixed-pitch)
-  
+
   (set-face-attribute 'line-number-current-line nil
     :foreground 'unspecified
     :font mono-spaced-font-family
@@ -2369,7 +2347,7 @@ directory is relative to the working-files-directory
 (defun mifi/org-setup-capture-templates ()
   (setq org-capture-templates
     `(("t" "Tasks / Projects")
-       
+
        ("tt" "Task" entry (file+olp (expand-file-name "OrgFiles/Tasks.org" user-emacs-directory) "Inbox")
          "* TODO %?\n  %U\n  %a\n        %i" :empty-lines 1)
 
@@ -2613,16 +2591,17 @@ directory is relative to the working-files-directory
 
 (use-package org-roam-dailies
   :when (equal custom-note-system 'custom-note-system-org-roam)
+  :ensure t
   :init
   (which-key-add-key-based-replacements "C-c n d" "org-roam-dailies")
-  :vc  (:url "https://github.com/org-roam/org-roam"
-	 :main-file extensions/org-roam-dailies)
+  ;; :vc  (:url "https://github.com/org-roam/org-roam"
+  ;; 	 :main-file "extensions/org-roam-dailies.el")
   ;; :ensure ( :package "org-roam-dailies" :source "MELPA" :protocol https :inherit t :depth 1
   ;;           :fetcher github :repo "org-roam/org-roam" :files ("extensions/*"))
   :bind-keymap
   ("C-c n d" . org-roam-dailies-map)
   :bind (:map org-roam-dailies-map
-	  ("." . org-roam-dailies-goto-date)
+  	("." . org-roam-dailies-goto-date)
           ("Y" . org-roam-dailies-capture-yesterday)
           ("T" . org-roam-dailies-capture-tomorrow))
   :config
@@ -2994,6 +2973,7 @@ capture was not aborted."
 ;;; ##########################################################################
 
 (use-package lsp-bridge
+  :disabled
   :when (equal custom-ide 'custom-ide-lsp-bridge)
   :ensure ( :host github :repo "manateelazycat/lsp-bridge"
             :files (:defaults "*.el" "*.py" "acm" "core" "langserver"
@@ -3016,8 +2996,8 @@ capture was not aborted."
   (when (featurep 'company)
     (bind-keys :map anaconda-mode-map
       ("<tab>" . company-indent-or-complete-common)))
-  (use-package pyvenv-auto)
-  :hook (python-mode-hook . anaconda-eldoc-mode))
+  (use-package pyvenv-auto :after python :hook (python-mode . pyvenv-auto-run))
+  :hook (python-mode . anaconda-eldoc-mode))
 
 ;;; ##########################################################################
 
@@ -3232,8 +3212,9 @@ capture was not aborted."
 ;; Using when instead of :when so that the package doesn't get loaded.
 (when enable-python
   (use-package py-autopep8
+    :vc (:url "https://github.com/emacsmirror/py-autopep8.git")
     :after python
-    :hook (python-mode . py-autopep8-mode)))
+    :hook ((python-mode . py-autopep8-mode))))
 
 ;;; ##########################################################################
 
@@ -3611,33 +3592,6 @@ capture was not aborted."
   :after go-mode
   :hook (go-mode . go-guru-hl-identifier-mode))
 
-;;; ##########################################################################
-
-(use-package swift-mode
-  :defer t
-  :mode ("\\.swift\\'" . swift-mode))
-
-(use-package swift-helpful
-  :defer t
-  :after swift-mode
-  :vc ( :url "https://github.com/danielmartin/swift-helpful"
-	:main-file swift-helpful
-	:lisp-dir ("swift-info" "target")))
-  ;; :ensure (:files ("*.el" "swift-info/*.info"
-  ;;                   ("images" "swift-info/images/*.png") "swift-helpful-pkg.el")
-  ;;           :host github
-  ;;          :repo "danielmartin/swift-helpful"))
-
-(use-package swift-playground-mode
-  :defer t
-  :after swift-mode
-  :vc (:url "https://gitlab.com/michael.sanders")
-  ;; :ensure ( :package "swift-playground-mode"
-  ;;         :repo "https://gitlab.com/michael.sanders/swift-playground-mode.git")
-  :init
-  (autoload 'swift-playground-global-mode "swift-playground-mode" nil t)
-  (add-hook 'swift-mode-hook #'swift-playground-global-mode))
-
 (use-package elisp-mode
   :ensure nil
   :defer t
@@ -3777,6 +3731,7 @@ capture was not aborted."
 ;;; ##########################################################################
 
 (defun define-dap-hydra ()
+  (message ">>> define-dap-hydra()")
   (defhydra dap-hydra (:color pink :hint nil :foreign-keys run)
     "
   ^Stepping^            ^Switch^                 ^Breakpoints^          ^Debug^                     ^Eval
@@ -3853,7 +3808,7 @@ capture was not aborted."
 (use-package solaire-mode
   :after treemacs
   :vc (:url "https://github.com/hlissner/emacs-solaire-mode"
-        :ignored-files (solaire-mode-test) )
+       :ignored-files ("solaire-mode-test.el") )
   ;; :ensure (:package "solaire-mode" :source "MELPA"
   ;;          :repo "hlissner/emacs-solaire-mode" :fetcher github)
   :hook (after-init . solaire-global-mode)
@@ -4046,8 +4001,8 @@ capture was not aborted."
         ("M-RET v 2" . use-medium-display-font-t)
         ("M-RET v 3" . use-large-display-font-t)
         ("M-RET v 4" . use-x-large-display-font-t)
-	("M-RET w <right>" . which-key-setup-side-window-right-bottom)
-	("M-RET w <down>" . which-key-setup-side-window-bottom)
+      ("M-RET w <right>" . which-key-setup-side-window-right-bottom)
+      ("M-RET w <down>" . which-key-setup-side-window-bottom)
         ("M-RET =" . next-theme)
         ("M-RET -" . previous-theme)
         ("M-RET _" . which-theme)
@@ -4088,9 +4043,9 @@ capture was not aborted."
         ((equal major-mode 'python-mode)
           (bind-keys :map map
             ("M-RET P" . 'pydoc-at-point)))
-	((equal major-mode 'tuareg-mode)
-	  (bind-keys :map map
-	    ("M-RET c m" . tuarg-browse-manual)))
+      ((equal major-mode 'tuareg-mode)
+  	(bind-keys :map map
+  	  ("M-RET c m" . tuarg-browse-manual)))
         (t   ;; Default 
           (unbind-key "M-RET o f" map)
           (unbind-key "M-RET o c" map)

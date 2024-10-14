@@ -12,7 +12,7 @@
 ;;; ##########################################################################
 
 (setq gc-cons-threshold 80000000) ;; original value * 100
-(setq package-enable-at-startup nil)
+(setq package-enable-at-startup t)
 
 ;; Process performance tuning
 
@@ -29,26 +29,36 @@
   (when (file-exists-p file)
     (load file)))
 
-(setq package-archives
-  '(( "gnu-elpa" . "https://elpa.gnu.org/packages/")
-     ( "nongnu" . "https://elpa.nongnu.org/nongnu/")
-     ( "gnu-dev" . "https://elpa.gnu.org/devel/")
-     ( "melpa" . "https://melpa.org/packages/")
-     ( "org" . "https://orgmode.org/elpa/")
-     ( "melpa-stable" . "https://stable.melpa.org/packages/")))
-
-;; Highest number gets priority (what is not mentioned has priority 0)
-(setq package-archive-priorities
-  '(
-     ( "org" . 99 )
-     ( "gnu-elpa" . 50 )
-     ( "melpa-stable" . 40 )
-     ( "melpa" . 30 )
-     ( "gnu-dev" . 20 )
-     ( "nongnu" . 10)
-     ))
+(defvar package-archives nil
+  "An alist of archives from which to fetch.")
+(when (file-directory-p "/opt/local/elpa-mirror")
+  ;; Make sure to refresh this local reppo often!!
+  (add-to-list 'package-archives '("local-gnu" "/opt/local/elpa-mirror/gnu/"))
+  (add-to-list 'package-archives '("local-nongnu" "/opt/local/elpa-mirror/nongnu/"))
+  (add-to-list 'package-archives '("local-melpa" "/opt/local/elpa-mirror/melpa/"))
+  (add-to-list 'package-archives '("local-melpa-stable" "/opt/local/elpa-mirror/stable-melpa/")))
+(add-to-list 'package-archives '("gnu" . "https://elpa.gnu.org/packages/"))
+(add-to-list 'package-archives '("nongnu" . "https://elpa.nongnu.org/nongnu/"))
+(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
+(add-to-list 'package-archives '("melpa-stable" . "https://stable.melpa.org/packages/"))
+(add-to-list 'package-archives '("org" . "https://orgmode.org/elpa/"))
 
 (setq gnutls-algorithm-priority "NORMAL:-VERS-TLS1.3") ;; w/o this Emacs freezes when refreshing ELPA
+
+;;; ##########################################################################
+
+(add-to-list 'load-path (expand-file-name "lisp" user-emacs-directory))
+
+(let ((minver "29.1"))
+  (when (version< emacs-version minver)
+    (error "Your Emacs is too old -- this config requires v%s or higher" minver)))
+
+(let ((ver-need-vc "30.0"))
+  (when (version< emacs-version ver-need-vc)
+    ;; (unless (package-installed-p 'package-vc)
+    ;;   (package-vc-install "https://github.com/slotThe/vc-use-package"))
+    (message ">>> Loading local-package-vc.el")
+    (require 'local-package-vc)))
 
 (setq use-package-compute-statistics t
   use-package-verbose t
