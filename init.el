@@ -413,9 +413,6 @@ font size is computed + 20 of this value."
 (provide 'init-customizable)
 ;;; init-customizable.el ends here.
 
-(use-package enh-ruby-mode
-  :ensure-system-package (ruby-lint . "gem install ruby-lint"))
-
 ;;; init-general.el --- General Configuration -*- lexical-binding: t -*-
 ;;; Commentary:
 ;;; Code:
@@ -627,7 +624,7 @@ font size is computed + 20 of this value."
 
 ;; Used to highlight matching delimiters '( { [ ] } )
 (use-package paren
-  :ensure nil    ;; built-in
+      ;; built-in
   :custom
   show-paren-delay 0.1
   show-paren-highlight-openparen t
@@ -691,7 +688,7 @@ font size is computed + 20 of this value."
     (unless (server-running-p)
       (server-start))))
 
-(use-package server :ensure nil)
+(use-package server )
 (when (fboundp 'pixel-scroll-precision-mode)
   (pixel-scroll-precision-mode))
 
@@ -706,8 +703,7 @@ font size is computed + 20 of this value."
 
 ;;; ##########################################################################
 
-(use-package jsonrpc
-  :ensure t)
+(use-package jsonrpc)
   ;; :config
   ;; For some odd reason, it is possible that jsonrpc will try to load a
   ;; theme. (jsonrpc/lisp/custom.el:1362). If our theme hasn't been loaded
@@ -717,9 +713,9 @@ font size is computed + 20 of this value."
   ;;   (mifi/load-theme-from-selector)))
 
 ;; All kept in local /lisp directory.
-;; (use-package web-server-status-codes :ensure nil)
-;; (use-package simple-httpd :ensure nil)
-;; (use-package web-server :ensure nil)
+;; (use-package web-server-status-codes )
+;; (use-package simple-httpd )
+;; (use-package web-server )
 
 ;;; ##########################################################################
 
@@ -748,10 +744,9 @@ font size is computed + 20 of this value."
     (mifi/load-theme-from-selector)))
 
 (use-package eldoc
-  :ensure nil)
+  )
 
 (use-package eldoc-box
-  :ensure t
   :delight DocBox
   :hook (after-init . mifi/setup-hooks-for-eldoc))
 
@@ -773,7 +768,7 @@ font size is computed + 20 of this value."
 ;;; ##########################################################################
 
 (use-package visual-fill-column
-  :ensure nil
+  
   :after org)
 
 (use-package writeroom-mode
@@ -784,7 +779,6 @@ font size is computed + 20 of this value."
 ;;; Default keys are C-M-= or C-M--
 
 (use-package default-text-scale
-  :ensure t
   :hook (after-init . default-text-scale-mode))
 
 ;;; ##########################################################################
@@ -873,8 +867,7 @@ font size is computed + 20 of this value."
 
 ;;; ##########################################################################
 
-(use-package all-the-icons
-  :ensure t)
+(use-package all-the-icons)
 
 ;;; ##########################################################################
 
@@ -887,12 +880,11 @@ font size is computed + 20 of this value."
 ;;; Window Number
 
 (use-package winum
-  :ensure t
   :config (winum-mode))
 
 ;; (require 'init-windows)
-;; (use-package init-windows
-;;   :hook (after-init . winner-mode))
+(use-package init-windows)
+;;  :hook (after-init . winner-mode))
 
 ;;; ##########################################################################
 
@@ -996,11 +988,9 @@ font size is computed + 20 of this value."
 
 (use-package prescient
   :after (:any ivy vertico corfu)
-  :defer t
-  :ensure t)
+  :defer t)
 
 (use-package company-prescient
-  :ensure t
   :after prescient)
 
 ;;; ##########################################################################
@@ -1010,7 +1000,6 @@ font size is computed + 20 of this value."
                 (equal completion-handler 'comphand-ivy))
             (equal completion-handler 'comphand-corfu))
   :after (:any ivy swiper vertico counsel corfu)
-  :ensure t
   :custom
   (when (equal completion-handler 'comphand-ivy)
     (setq ivy-re-builders-alist '((t . orderless-ivy-re-builder)))
@@ -1023,7 +1012,6 @@ font size is computed + 20 of this value."
 
 (use-package ivy
   :when (equal completion-handler 'comphand-ivy)
-  :ensure t
   :bind (("C-s" . swiper)
           :map ivy-minibuffer-map
             ;;; ("TAB" . ivy-alt-done)
@@ -1065,8 +1053,7 @@ font size is computed + 20 of this value."
 
 (use-package swiper
   :when (equal completion-handler 'comphand-ivy)
-  :after ivy
-  :ensure t)
+  :after ivy)
 
 ;;; ##########################################################################
 
@@ -1246,7 +1233,6 @@ font size is computed + 20 of this value."
 ;;; ##########################################################################
 
 (use-package corfu-prescient
-  :ensure t
   :when (equal completion-handler 'comphand-corfu)
   :after corfu prescient)
 
@@ -1295,7 +1281,6 @@ font size is computed + 20 of this value."
 (use-package consult
   :when (equal completion-handler 'comphand-vertico)
   :after vertico
-  :ensure t
   :bind
   ([remap switch-to-buffer] . consult-buffer)
   ([remap switch-to-buffer-other-window] . consult-buffer-other-window)
@@ -1345,7 +1330,6 @@ font size is computed + 20 of this value."
 
 (use-package vertico-prescient
   :when (equal completion-handler 'comphand-vertico)
-  :ensure t
   :after (vertico prescient)
   :config (vertico-prescient-mode t))
 
@@ -1353,7 +1337,6 @@ font size is computed + 20 of this value."
 
 (use-package vertico-posframe
   :when (equal completion-handler 'comphand-vertico)
-  :ensure t
   :after vertico
   :custom
   (setq vertico-multiform-commands
@@ -1382,7 +1365,7 @@ font size is computed + 20 of this value."
   (lambda ()
     (use-package ido
       :when (equal completion-handler 'comp-hand-ido)
-      :ensure nil
+      
       :config
       (ido-everywhere t))))
 
@@ -1421,7 +1404,7 @@ font size is computed + 20 of this value."
 (use-package embark-consult
   :when (equal completion-handler 'comphand-vertico)
   :defer t
-  ;;:ensure t ; only need to install it, embark loads it after consult if found
+  :ensure t
   :hook
   (embark-collect-mode . consult-preview-at-point-mode))
 
@@ -1469,7 +1452,7 @@ font size is computed + 20 of this value."
   :after eshell)
 
 (use-package eshell
-  :ensure nil
+  
   :defer t
   :hook (eshell-first-time-mode . mifi/configure-eshell)
   :config
@@ -1518,7 +1501,6 @@ font size is computed + 20 of this value."
 
 (use-package dired-single
   :after dired
-  :ensure t
   :config
   (mifi/dired-single-keymap-init))
 
@@ -1568,13 +1550,13 @@ font size is computed + 20 of this value."
 ;;; ##########################################################################
 
 (use-package dired
-  :ensure nil  ;; local package hint for elpaca
+  ;;   ;; local package hint for elpaca
   :no-require t
   :bind (:map dired-mode-map
         ("=" . mifi/dired-ediff-marked-files)))
 
 (use-package ediff
-  :ensure nil ;; local package hint for elpaca
+  ;;  ;; local package hint for elpaca
   :no-require t
   :custom
   (ediff-diff-options "-w")
@@ -1869,7 +1851,7 @@ font size is computed + 20 of this value."
 (use-package color-theme-modern :defer t)
 (use-package color-theme-sanityinc-tomorrow :defer t)
 ;; Can't defer darktooth since we need the base theme to always load
-(use-package darktooth-theme :ensure t)
+(use-package darktooth-theme)
 (use-package zenburn-theme :defer t)
 
 ;;; ##########################################################################
@@ -2159,7 +2141,6 @@ font size is computed + 20 of this value."
        :right-divider-width 30
        :scroll-bar-width 8
        :fringe-width 8))
-  :ensure t
   :config
   (spacious-padding-mode t))
 
@@ -2171,7 +2152,7 @@ font size is computed + 20 of this value."
 
 ;;; ##########################################################################
 
-(use-package faces :ensure nil)
+(use-package faces)
 (defun mifi/org-font-setup ()
   "Setup org mode fonts."
 
@@ -2429,6 +2410,7 @@ directory is relative to the working-files-directory
   (mifi/org-theme-override-values)
   (add-to-list 'auto-mode-alist '("\\.org\\'" . org-mode))
   :commands (org-capture org-agenda)
+  :ensure t
   :defer t
   :hook (org-mode . mifi/org-mode-setup)
   :custom
@@ -2507,7 +2489,6 @@ directory is relative to the working-files-directory
 (use-package org-modern
   :when (display-graphic-p)
   :after org
-  :ensure t
   :hook (org-mode . org-modern-mode)
   :config
   ;; Add frame borders and window dividers
@@ -2549,12 +2530,15 @@ directory is relative to the working-files-directory
 
 ;;; ##########################################################################
 
+(use-package emacsql :ensure t)
+
 (use-package org-roam
-  :vc (:url "https://github.com/org-roam/org-roam")
+  :after emacsql
+  :when (equal custom-note-system 'custom-note-system-org-roam)
   :ensure t
+  :demand t
   ;; :ensure ( :package "org-roam" :source "MELPA" :protocol https :inherit t :depth 1
   ;;           :fetcher github :repo "org-roam/org-roam" :files (:defaults "extensions/*"))
-  :when (equal custom-note-system 'custom-note-system-org-roam)
   :init
   (setq org-roam-v2-ack t)
   (which-key-add-key-based-replacements "C-c n" "org-roam")
@@ -2600,11 +2584,12 @@ directory is relative to the working-files-directory
 
 (use-package org-roam-dailies
   :when (equal custom-note-system 'custom-note-system-org-roam)
+  ;; :vc  ( :url "https://github.com/org-roam/org-roam"
+  ;; 	 :main-file "extensions/org-roam-dailies.el")
   :ensure t
+  :demand t
   :init
   (which-key-add-key-based-replacements "C-c n d" "org-roam-dailies")
-  ;; :vc  (:url "https://github.com/org-roam/org-roam"
-  ;; 	 :main-file "extensions/org-roam-dailies.el")
   ;; :ensure ( :package "org-roam-dailies" :source "MELPA" :protocol https :inherit t :depth 1
   ;;           :fetcher github :repo "org-roam/org-roam" :files ("extensions/*"))
   :bind-keymap
@@ -2834,7 +2819,6 @@ capture was not aborted."
 
 (use-package project
   :when (equal custom-project-handler 'custom-project-project-el)
-  :ensure nil
   :config
   (setq project-vc-extra-root-markers '(".project.el" ".projectile" )))
   ;; (when (featurep 'go-mode
@@ -2868,7 +2852,6 @@ capture was not aborted."
 (use-package eglot
   :when (equal custom-ide 'custom-ide-eglot)
   :after lsp-mode
-  :ensure nil
   :defer t
   :hook
   (lisp-mode . eglot-ensure)
@@ -2897,7 +2880,6 @@ capture was not aborted."
 
 (use-package lsp-mode
   :when (or (equal custom-ide 'custom-ide-lsp) (equal custom-ide 'custom-ide-eglot))
-  :ensure t
   :commands (lsp lsp-deferred)
   :hook (lsp-mode . mifi/lsp-mode-setup)
   :init
@@ -2984,9 +2966,9 @@ capture was not aborted."
 (use-package lsp-bridge
   :disabled
   :when (equal custom-ide 'custom-ide-lsp-bridge)
-  :ensure ( :host github :repo "manateelazycat/lsp-bridge"
-            :files (:defaults "*.el" "*.py" "acm" "core" "langserver"
-                     "multiserver" "resources") :build (:not compile))
+  ;; :ensure ( :host github :repo "manateelazycat/lsp-bridge"
+  ;;           :files (:defaults "*.el" "*.py" "acm" "core" "langserver"
+  ;;                    "multiserver" "resources") :build (:not compile))
   :custom
   (lsp-bridge-python-lsp-server "pylsp")
   :config
@@ -3089,20 +3071,18 @@ capture was not aborted."
   (js2-mode . lsp-deferred))
 
 (use-package tree-sitter-langs
-  :ensure t
   :after tree-sitter)
 
 ;;; ##########################################################################
 
 (use-package treesit-auto
-  :demand t :ensure t
+  :demand t
   :config
   (global-treesit-auto-mode))
 
 ;;; ##########################################################################
 
 (use-package transient :defer t)
-(use-package git-commit :after transient :ensure nil)
 (use-package magit :after git-commit :ensure t)
 
 ;; NOTE: Make sure to configure a GitHub token before using this package!
@@ -3266,7 +3246,7 @@ capture was not aborted."
   ((installer "bash -c \"sh <(curl -fsSL https://raw.githubusercontent.com/ocaml/opam/master/shell/install.sh) --version 2.2.0\""))
   (use-package opam
     :when enable-ocaml
-    :ensure t
+    :demand t
     :ensure-system-package (opam . installer)))
 
 (defun opam-switch-prefix+relative-path (relative-path)
@@ -3277,7 +3257,6 @@ capture was not aborted."
 
 (use-package opam-std-libs
   :when enable-ocaml
-  :ensure nil
   :ensure-system-package
   ( ("~/.opam"                  . "opam init && opam install core utop base stdio --yes")
     ("~/.opam/default/lib/core" . "opam install core --yes")
@@ -3288,7 +3267,6 @@ capture was not aborted."
 (use-package opam-emacs-setup
   :when enable-ocaml
   :after opam-std-libs
-  :ensure nil
   :config
   (add-to-list 'exec-path "~/.opam/default/bin"))
   ;;
@@ -3308,23 +3286,23 @@ capture was not aborted."
 ;;; ##########################################################################
 
 (use-package merlin
-  :when enable-ocaml :ensure nil :defer t 
+  :when enable-ocaml :defer t 
   :delight " 🪄"
   :after opam-emacs-setup)
 
 (use-package merlin-eldoc
-  :when enable-ocaml :ensure nil :defer t :after merlin)
+  :when enable-ocaml  :defer t :after merlin)
 
 (use-package merlin-company
   :when (and enable-ocaml (not (equal custom-ide 'custom-ide-lsp-bridge)))
-  :ensure nil :defer t :after merlin company
+   :defer t :after merlin company
   :config
   (add-hook 'merlin-mode-hook 'company-mode)
   (with-eval-after-load 'company
     (add-to-list 'company-backends 'merlin-company-backend)))
 
 (use-package dune
-  :when enable-ocaml :ensure t
+  :when enable-ocaml
   :hook (dune-mode . opam-init)
   :ensure-system-package
   (dune . "opam install dune --yes"))
@@ -3342,7 +3320,7 @@ capture was not aborted."
     (prettify-symbols-mode)))
 
 (use-package tuareg
-  :when enable-ocaml :ensure nil :defer t
+  :when enable-ocaml  :defer t
   ;; :after opam-emacs-setup merlin jsonrpc
   :hook (tuareg-mode . mifi/tuareg-mode-hook)
   ;; ("\\.ml\\'" . mifi/tuareg-mode-hook)
@@ -3358,7 +3336,7 @@ capture was not aborted."
 ;; opam environment.
 (use-package tuareg-opam
   :when enable-ocaml
-  :ensure nil
+  
   :after tuareg)
 
 ;;; ##########################################################################
@@ -3369,7 +3347,7 @@ capture was not aborted."
     (use-package opam-user-setup
       :unless (featurep 'opam-user-setup) ;; Don't allow to be run twice!
       :when enable-ocaml
-      :ensure nil
+      
       :after tuareg
       :config
       (setq-default tuareg-indent-align-with-first-arg t)
@@ -3382,14 +3360,14 @@ capture was not aborted."
   :when enable-ocaml
   :after opam-emacs-setup
   :ensure-system-package
-  ("~/.opam/default/lib/ocp-indent" . "opam install ocp-indent --yes")
-  :vc (:url "https://github.com/OCamlPro/ocp-indent" :main-file tools/ocp-indent))
+  ("~/.opam/default/bin/ocp-indent" . "opam install ocp-indent --yes"))
+  ;; :vc (:url "https://github.com/OCamlPro/ocp-indent" :main-file tools/ocp-indent))
   ;; :ensure (:inherit t :depth 1
   ;;          :fetcher github :repo "OCamlPro/ocp-indent"
   ;;          :files ("tools/ocp-indent.el")))
 
 (use-package ocamlformat
-  :when enable-ocaml :ensure t
+  :when enable-ocaml
   :after ocp-indent
   :bind ("<f6>" . ocamlformat)
   :ensure-system-package
@@ -3399,14 +3377,12 @@ capture was not aborted."
 (use-package utop
   :when enable-ocaml
   :after opam-user-setup
-  :ensure t
   :defer t
   :custom
   (utop-command "opam config exec utop -- -emacs"))
 
 (use-package opam-switch-mode
   :when enable-ocaml
-  :ensure t
   :after opam-user-setup
   :hook
   (tuareg-mode . opam-switch-mode))
@@ -3453,7 +3429,6 @@ capture was not aborted."
 
 (use-package js2-mode
   ;;:after simple-httpd
-  :ensure t
   :hook (js-mode . js2-minor-mode)
   ;; :bind (:map js2-mode-map
   ;;         ("{" . paredit-open-curly)
@@ -3462,7 +3437,6 @@ capture was not aborted."
   :custom (js2-highlight-level 3))
 
 (use-package skewer-mode
-  :ensure t
   :after js2-mode)
 
 (use-package ac-js2
@@ -3491,7 +3465,6 @@ capture was not aborted."
 ;;; ##########################################################################
 
 (use-package rustic
-  :ensure t
   :bind (:map rustic-mode-map
           ("M-j" . lsp-ui-imenu)
           ("M-?" . lsp-find-references)
@@ -3541,12 +3514,12 @@ capture was not aborted."
   :config
   (setq rust-format-on-save t))
 
-(use-package rust-playground :ensure t :after rust-mode)
+(use-package rust-playground :after rust-mode)
 
 ;;; ##########################################################################
 ;; for Cargo.toml and other config files
 
-(use-package toml-mode :ensure t :defer t :after rust-mode)
+(use-package toml-mode :defer t :after rust-mode)
 
 ;;; ##########################################################################
 
@@ -3602,7 +3575,7 @@ capture was not aborted."
   :hook (go-mode . go-guru-hl-identifier-mode))
 
 (use-package elisp-mode
-  :ensure nil
+  
   :defer t
   :mode ("\\.el\\'" . emacs-lisp-mode))
 
@@ -3645,10 +3618,11 @@ capture was not aborted."
 (use-package dap-ocaml
   :when enable-ocaml
   :after (:all dap-mode opam-emacs-setup)
-  :vc (:url "https://github.com/emacs-lsp/dap-mode" :main-file dap-ocaml) :ensure t
+  :ensure t
+  :vc (:url "https://github.com/emacs-lsp/dap-mode" :main-file dap-ocaml)
   ;; :ensure (:package "dap-ocaml" :type git :host github :repo "emacs-lsp/dap-mode")
   :ensure-system-package
-  ((ocamllsp . "opam install ocaml-lsp-server.1.18.0~5.2preview earlybird --yes")))
+  ((ocamllsp . "opam install earlybird --yes")))
 
 (use-package dap-codelldb
   :when enable-ocaml
@@ -3797,7 +3771,6 @@ capture was not aborted."
 
 (use-package mw-thesaurus
   :when enable-thesaurus
-  :ensure t
   :custom
   (mw-thesaurus-api-key "429331e9-b40e-4f17-9988-0632ef3ddd2d")
   :defer t
@@ -3892,7 +3865,6 @@ capture was not aborted."
 ;;; ##########################################################################
 
 (use-package pulsar
-  :ensure t
   :config
   (pulsar-global-mode)
   :custom
@@ -3905,14 +3877,13 @@ capture was not aborted."
 ;;; ##########################################################################
 
 (use-package rainbow-mode
-  :ensure nil
+  
   :hook (prog-mode . (lambda () (rainbow-mode t))))
 
 ;;; ##########################################################################
 
 (use-package highlight-defined
   :defer t
-  :ensure t
   :after emacs-lisp-mode
   :hook (emacs-lisp-mode . highlight-defined-mode))
 
@@ -3942,16 +3913,15 @@ capture was not aborted."
 ;;; ##########################################################################
 
 ;; (defun mifi/load-web-support ()
-;;   (use-package web-server-status-codes :ensure nil)
+;;   (use-package web-server-status-codes )
 ;;   (use-package simple-httpd
 ;;     :preface (setq warning-minimum-level :emergency)
-;;     :ensure nil
+;;     
 ;;     :config (setq warning-minimum-level :warning))
-;;   (use-package websocket :ensure nil)
-;;   (use-package web-server :ensure nil))
+;;   (use-package websocket )
+;;   (use-package web-server ))
 
 (use-package markdown-mode
-  :ensure t
   ;;:defer t
   :mode (("README\\.md\\'" . gfm-mode)
          ("\\.md\\'" . markdown-mode)
@@ -3989,6 +3959,11 @@ capture was not aborted."
   (interactive)
   (call-interactively 'jump-to-register))
 
+(defun mifi/customize-mifi ()
+  "Opens up the customize section for all of the MiFi options."
+  (interactive)
+  (customize-apropos "mifi-config"))
+
 ;;; ##########################################################################
 
 (defun mifi/define-mmm-minor-mode-map ()
@@ -4015,6 +3990,7 @@ capture was not aborted."
         ("M-RET =" . next-theme)
         ("M-RET -" . previous-theme)
         ("M-RET _" . which-theme)
+        ("M-RET c" . mifi/customize-mifi)
         ("M-RET d" . dashboard-open)
         ("M-RET e" . treemacs) ;; e for Explore
         ("M-RET f" . mifi/set-fill-column-interactively)
