@@ -12,7 +12,7 @@
 ;;; ##########################################################################
 
 (setq gc-cons-threshold 80000000) ;; original value * 100
-(setq package-enable-at-startup t)
+(setq package-enable-at-startup nil)
 
 ;; Process performance tuning
 
@@ -31,6 +31,7 @@
 
 (defvar package-archives nil
   "An alist of archives from which to fetch.")
+
 (when (file-directory-p "/opt/local/elpa-mirror")
   ;; Make sure to refresh this local reppo often!!
   (add-to-list 'package-archives '("local-gnu" . "/opt/local/elpa-mirror/gnu"))
@@ -43,26 +44,26 @@
 (add-to-list 'package-archives '("melpa-stable" . "https://stable.melpa.org/packages/"))
 (add-to-list 'package-archives '("org" . "https://orgmode.org/elpa/"))
 
+;; Highest number gets priority (what is not mentioned has priority 0)
+(setq package-archive-priorities
+  '(
+     ( "local-gnu" . 99 )
+     ( "local-melpa" . 98 )
+     ( "local-nongnu" . 97)
+     ( "local-melpa-stable" . 90 )
+     ( "org" . 5 )
+     ( "gnu" . 50 )
+     ( "melpa-stable" . 40 )
+     ( "melpa" . 30 )
+     ( "gnu-dev" . 20 )
+     ( "nongnu" . 10)
+     ))
+
 (setq gnutls-algorithm-priority "NORMAL:-VERS-TLS1.3") ;; w/o this Emacs freezes when refreshing ELPA
-
-;;; ##########################################################################
-
-(add-to-list 'load-path (expand-file-name "lisp" user-emacs-directory))
-
-(let ((minver "29.1"))
-  (when (version< emacs-version minver)
-    (error "Your Emacs is too old -- this config requires v%s or higher" minver)))
-
-(let ((ver-need-vc "30.0"))
-  (when (version< emacs-version ver-need-vc)
-    ;; (unless (package-installed-p 'package-vc)
-    ;;   (package-vc-install "https://github.com/slotThe/vc-use-package"))
-    (message ">>> Loading local-package-vc.el")
-    (require 'local-package-vc)))
 
 (setq use-package-compute-statistics t
   use-package-verbose t
-  use-package-always-ensure nil
+  use-package-always-ensure t
   use-package-always-demand nil
   use-package-always-defer nil)
 
