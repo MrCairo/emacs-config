@@ -6,7 +6,7 @@
 #+property: header-args:emacs-lisp :tangle ./init.el :results silent :exports code :mkdirp yes
 #+visibility: folded
 #+export_file_name: .emacs-temp
-#+modified-date: <2024-08-13 Tue>
+#+modified-date: <2024-10-16 Wed>
 
 * Synopsis
 
