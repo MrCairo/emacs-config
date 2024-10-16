@@ -914,6 +914,10 @@ font size is computed + 20 of this value."
   :ensure t
   :config (winum-mode))
 
+(use-package init-windows ;; From purcell
+  :ensure nil
+  :hook (elpaca-after-init . winner-mode))
+
 ;;; ##########################################################################
 
 (use-package dashboard
@@ -2576,16 +2580,17 @@ directory is relative to the working-files-directory
   :init
   (setq org-roam-v2-ack t)
   (which-key-add-key-based-replacements "C-c n" "org-roam")
+  :demand t
   :custom
   (org-roam-directory (expand-file-name "RoamNotes" custom-docs-directory))
   (org-roam-completion-everywhere t)
-  :bind (("C-c n l" . org-roam-buffer-toggle)
+  :bind ( ("C-c n l" . org-roam-buffer-toggle)
+          ("C-c n I" . org-roam-node-insert-immediate)
+          ("C-c n b" . mifi/org-roam-capture-inbox)
           ("C-c n f" . org-roam-node-find)
           ("C-c n i" . org-roam-node-insert)
-          ("C-c n I" . org-roam-node-insert-immediate)
           ("C-c n p" . mifi/org-roam-find-project)
           ("C-c n t" . mifi/org-roam-capture-task)
-          ("C-c n b" . mifi/org-roam-capture-inbox)
           :map org-mode-map
           ("C-M-i" . completion-at-point))
   :config
@@ -2618,8 +2623,8 @@ directory is relative to the working-files-directory
 
 (use-package org-roam-dailies
   :when (equal custom-note-system 'custom-note-system-org-roam)
-  :after (:any org org-roam)
-  :ensure t
+  :after org-roam
+  :ensure nil
   :init
   (which-key-add-key-based-replacements "C-c n d" "org-roam-dailies")
   :ensure ( :package "org-roam-dailies" :source "MELPA" :protocol https :inherit t :depth 1
@@ -2999,6 +3004,7 @@ capture was not aborted."
 ;;; ##########################################################################
 
 (use-package lsp-bridge
+  :disabled
   :when (equal custom-ide 'custom-ide-lsp-bridge)
   :ensure ( :host github :repo "manateelazycat/lsp-bridge"
             :files (:defaults "*.el" "*.py" "acm" "core" "langserver"
@@ -3981,6 +3987,19 @@ capture was not aborted."
 
 ;;; ##########################################################################
 
+(defadvice custom-buffer-create (before my-advice-custom-buffer-create)
+  "Exit the current Customize buffer before creating a new one, unless there are modified widgets."
+  (if (eq major-mode 'Custom-mode)
+      (let ((custom-buffer-done-kill t)
+            (custom-buffer-modified nil))
+        (mapc (lambda (widget)
+                (and (not custom-buffer-modified)
+                     (eq (widget-get widget :custom-state) 'modified)
+                     (setq custom-buffer-modified t)))
+              custom-options)
+        (if (not custom-buffer-modified)
+            (Custom-buffer-done)))))
+
 (defun mifi/set-fill-column-interactively (num)
   "Asks for the fill column."
   (interactive "nfill-column: ")
@@ -3997,6 +4016,12 @@ capture was not aborted."
   "Asks for a register to jump to."
   (interactive)
   (call-interactively 'jump-to-register))
+
+(defun mifi/customize-mifi ()
+  "Opens up the customize section for all of the MiFi options."
+  (interactive)
+  (ad-activate 'custom-buffer-create)
+  (customize-apropos "mifi-config"))
 
 ;;; ##########################################################################
 
@@ -4024,6 +4049,7 @@ capture was not aborted."
         ("M-RET =" . next-theme)
         ("M-RET -" . previous-theme)
         ("M-RET _" . which-theme)
+        ("M-RET M-c" . mifi/customize-mifi)
         ("M-RET d" . dashboard-open)
         ("M-RET e" . treemacs) ;; e for Explore
         ("M-RET f" . mifi/set-fill-column-interactively)

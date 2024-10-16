@@ -92,7 +92,7 @@ So far, the following collections of options are included here:
 ** Tried Ideas
 Some of the ideas that keep coming back and then leaving. It's worth while to keep a record of the ideas that have/were implemented at one point along with an outcome.
 
-:properties:
+:ideas:
 
   1. Going between using ~elpaca~ or ~straight~ and just using plain Emacs ~use-package~.
      * I like the performancs of ~elpaca~ but I've sometimes run into issues when it fails to install packages where plain ~use-package~ would not fail. =:ensure= with a repo doesn't always help either.
@@ -1659,6 +1659,15 @@ Window numbers for Emacs: Navigate your windows and frames using numbers. This i
   (use-package winum
     :ensure t
     :config (winum-mode))
+
+#+end_src
+
+** winner-mode
+#+begin_src emacs-lisp
+
+  (use-package init-windows ;; From purcell
+    :ensure nil
+    :hook (elpaca-after-init . winner-mode))
 
 #+end_src
 
@@ -3998,16 +4007,17 @@ Org Roam solves these problems by making it easy to create topic-focused Org Fil
     :init
     (setq org-roam-v2-ack t)
     (which-key-add-key-based-replacements "C-c n" "org-roam")
+    :demand t
     :custom
     (org-roam-directory (expand-file-name "RoamNotes" custom-docs-directory))
     (org-roam-completion-everywhere t)
-    :bind (("C-c n l" . org-roam-buffer-toggle)
+    :bind ( ("C-c n l" . org-roam-buffer-toggle)
+            ("C-c n I" . org-roam-node-insert-immediate)
+            ("C-c n b" . mifi/org-roam-capture-inbox)
             ("C-c n f" . org-roam-node-find)
             ("C-c n i" . org-roam-node-insert)
-            ("C-c n I" . org-roam-node-insert-immediate)
             ("C-c n p" . mifi/org-roam-find-project)
             ("C-c n t" . mifi/org-roam-capture-task)
-            ("C-c n b" . mifi/org-roam-capture-inbox)
             :map org-mode-map
             ("C-M-i" . completion-at-point))
     :config
@@ -4045,8 +4055,8 @@ Org Roam solves these problems by making it easy to create topic-focused Org Fil
 
   (use-package org-roam-dailies
     :when (equal custom-note-system 'custom-note-system-org-roam)
-    :after (:any org org-roam)
-    :ensure t
+    :after org-roam
+    :ensure nil
     :init
     (which-key-add-key-based-replacements "C-c n d" "org-roam-dailies")
     :ensure ( :package "org-roam-dailies" :source "MELPA" :protocol https :inherit t :depth 1
@@ -4583,6 +4593,7 @@ Advantages of lsp-bridge:
   ;;; ##########################################################################
 
   (use-package lsp-bridge
+    :disabled
     :when (equal custom-ide 'custom-ide-lsp-bridge)
     :ensure ( :host github :repo "manateelazycat/lsp-bridge"
               :files (:defaults "*.el" "*.py" "acm" "core" "langserver"
@@ -6285,6 +6296,19 @@ Mitch's minor mode (or <<<mmm>>>) just defines frequently used hot-keys. It work
 #+begin_src emacs-lisp
   ;;; ##########################################################################
 
+  (defadvice custom-buffer-create (before my-advice-custom-buffer-create)
+    "Exit the current Customize buffer before creating a new one, unless there are modified widgets."
+    (if (eq major-mode 'Custom-mode)
+        (let ((custom-buffer-done-kill t)
+              (custom-buffer-modified nil))
+          (mapc (lambda (widget)
+                  (and (not custom-buffer-modified)
+                       (eq (widget-get widget :custom-state) 'modified)
+                       (setq custom-buffer-modified t)))
+                custom-options)
+          (if (not custom-buffer-modified)
+              (Custom-buffer-done)))))
+
   (defun mifi/set-fill-column-interactively (num)
     "Asks for the fill column."
     (interactive "nfill-column: ")
@@ -6301,6 +6325,12 @@ Mitch's minor mode (or <<<mmm>>>) just defines frequently used hot-keys. It work
     "Asks for a register to jump to."
     (interactive)
     (call-interactively 'jump-to-register))
+
+  (defun mifi/customize-mifi ()
+    "Opens up the customize section for all of the MiFi options."
+    (interactive)
+    (ad-activate 'custom-buffer-create)
+    (customize-apropos "mifi-config"))
 
 #+end_src
 
@@ -6335,6 +6365,7 @@ This is a set of keymaps that do the same things as the popup menu. Both are her
           ("M-RET =" . next-theme)
           ("M-RET -" . previous-theme)
           ("M-RET _" . which-theme)
+          ("M-RET M-c" . mifi/customize-mifi)
           ("M-RET d" . dashboard-open)
           ("M-RET e" . treemacs) ;; e for Explore
           ("M-RET f" . mifi/set-fill-column-interactively)

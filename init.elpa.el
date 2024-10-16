@@ -681,10 +681,10 @@ font size is computed + 20 of this value."
 ;; Allow access from emacsclient
 (add-hook 'after-init-hook
   (lambda ()
+    (use-package server )
     (unless (server-running-p)
       (server-start))))
 
-(use-package server )
 (when (fboundp 'pixel-scroll-precision-mode)
   (pixel-scroll-precision-mode))
 
@@ -2522,7 +2522,7 @@ directory is relative to the working-files-directory
   :after emacsql
   :when (equal custom-note-system 'custom-note-system-org-roam)
   :ensure t
-  :defer t
+  :demand t
   ;; :ensure ( :package "org-roam" :source "MELPA" :protocol https :inherit t :depth 1
   ;;           :fetcher github :repo "org-roam/org-roam" :files (:defaults "extensions/*"))
   :init
@@ -2573,7 +2573,7 @@ directory is relative to the working-files-directory
   ;; :vc  ( :url "https://github.com/org-roam/org-roam"
   ;; 	 :main-file "extensions/org-roam-dailies.el")
   :ensure t
-  :after org
+  :after org-roam
   :init
   (which-key-add-key-based-replacements "C-c n d" "org-roam-dailies")
   ;; :ensure ( :package "org-roam-dailies" :source "MELPA" :protocol https :inherit t :depth 1
@@ -3700,7 +3700,6 @@ capture was not aborted."
 ;;; ##########################################################################
 
 (defun define-dap-hydra ()
-  (message ">>> define-dap-hydra()")
   (defhydra dap-hydra (:color pink :hint nil :foreign-keys run)
     "
   ^Stepping^            ^Switch^                 ^Breakpoints^          ^Debug^                     ^Eval
