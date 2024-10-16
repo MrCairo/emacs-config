@@ -1,11 +1,11 @@
 #+title: Mitch's Emacs Configuration Using Standard package.el
 #+author: Mitch Fisher
 #+date: 2024-05-11
-#+OPTIONS: toc:nil h:4
-#+STARTUP: showeverything
-#+PROPERTY: header-args:emacs-lisp :tangle ./init.el :results silent :exports code :mkdirp yes
-#+EXPORT_FILE_NAME: .emacs-temp
-#+modified-date: <2024-10-06 Sun>
+#+options: toc:nil h:4
+#+startup: showall
+#+visibility: folded
+#+property: header-args:emacs-lisp :tangle ./init.el :results silent :exports code :mkdirp yes
+#+modified-date: <2024-10-15 Tue>
 
 * Synopsis
 
@@ -83,15 +83,34 @@ So far, the following collections of options are included here:
 - *Shout out to the many people in the Emacs community from which a lot of this configuration took inspiration from.*
 
   --------------------------------------------------------------------------------
-  
 
-* early-init.el
+** Tried Ideas
+  Some of the ideas that keep coming back and then leaving. It's worth while to keep a record of the ideas that have/were implemented at one point along with an outcome.
 
+:properties:
+
+  1. Going between using ~elpaca~ or ~straight~ and just using plain Emacs ~use-package~.
+     * I like the performancs of ~elpaca~ but I've sometimes run into issues when it fails to install packages where plain ~use-package~ would not fail. =:ensure= with a repo doesn't always help either.
+       - I /have/ gotten and ~elpaca~ Emacs config to properly rebuild without issue but as I change (add/delete/update) the config, it doesn't always continue to work.
+     * ~use-package~ isn't perfect either.
+       
+  2. Using separate =lisp/init-*= files as opposed to a single init.el. Some good, some bad.
+     * Bad:  ~defvar~ variables must be re-declared in the =init=*= file in order to prevent warning messages. Not that it's *that* big a deal, just more of an annoyance.
+     * Bad: It does make it more difficult to deal with functions that may be considered global. Can they go into the main init file, sure, but what about functions that are used for things like themes that will likely be defined in a separate init-* file.
+     * Good: It seems to make the overall maintenance of Emac's init files easier since they're broken up and organized.
+     * *For now, using a common ~org~ file seems to be the way to go.*
+       
+  3. Trying to pack in a lot of different languages and behaviors. It's great that I as a user can enable, disable and choose how my Emacs experience will be, it does make managing the Emacs config file more complex.
+     * *Right now I pack as much as I can in as far as things I like (or could like) to use.*
+       
+:end:
+
+
+* Early init file
 This is where all of the settings/setup goes for the ~early-init.el~ file.
 
-*NOTE:* Each source header line in this section has =:tangle "early-init.el"= . This is required for anything going to the early-init.el file. If it's not present, the code will be tangled to the default location of init.el.
-
 ** Lispy Header for early-init.el
+:properties:
 
 Standard fare and good practice.
 
@@ -108,8 +127,9 @@ Standard fare and good practice.
   ;;; Code:
 
 #+end_src
-
+:end:
 ** Package archives
+:properties:
 
 #+begin_src emacs-lisp :tangle "early-init.el" 
   ;;; ##########################################################################
@@ -149,8 +169,10 @@ Standard fare and good practice.
   (setq gnutls-algorithm-priority "NORMAL:-VERS-TLS1.3") ;; w/o this Emacs freezes when refreshing ELPA
 
 #+end_src
-
+:end:
 ** Version check and early init stuff
+:properties:
+
 #+begin_src emacs-lisp :tangle "early-init.el"
   ;;; ##########################################################################
 
@@ -168,8 +190,9 @@ Standard fare and good practice.
       (require 'local-package-vc)))
 
 #+end_src
-
+:end:
 ** Configure use-package
+:properties:
 
 #+begin_src emacs-lisp :tangle "early-init.el" 
 
@@ -180,8 +203,9 @@ Standard fare and good practice.
     use-package-always-defer nil)
 
 #+end_src
-
+:end:
 ** Garbage Collection
+:properties:
 
 #+begin_src emacs-lisp :tangle "early-init.el" 
 
@@ -193,8 +217,9 @@ Standard fare and good practice.
   ;;   (gcmh-mode 1))
 
 #+end_src
-
+:end:
 ** Calculate startup time and restore gc-cons-percentage
+:properties:
 
 #+begin_src emacs-lisp :tangle "early-init.el"
 
@@ -212,8 +237,9 @@ Standard fare and good practice.
       (message startup-time-message)))
 
 #+end_src
-
+:end:
 ** Establish PATH
+:properties:
 
 Because in macOS, Emacs could be started outside of a shell (like an application on the Dock), this code is used to migrate the <current user's shell path to Emacs ~exec-path~.
 
@@ -259,17 +285,21 @@ Because in macOS, Emacs could be started outside of a shell (like an application
   (add-hook 'before-init-hook #'mifi/setup-exec-path)
 
 #+end_src
-
+:end:
 ** Lispy end of early-init.el
+:properties:
 
 Standard fare and good practice.
 
 #+begin_src emacs-lisp :tangle "early-init.el" 
   ;;; early-init.el ends here.
 #+end_src
+:end:
 
-* Main init.el file
+* Main init file
 ** Lispy Header
+:properties:
+
 This is the standard format of a =lisp= header that should appear for all =lisp= scripts. It also indicates that the ~init.el~ file is generated from this ~Configure.org~ file.
 
 #+begin_src emacs-lisp :tangle "init.el"
@@ -287,22 +317,11 @@ This is the standard format of a =lisp= header that should appear for all =lisp=
   ;;
 
 #+end_src
+:end:
 
 * Customizable Values
 
 Variables that define the operational behavior 
-
-#+begin_src emacs-lisp :tangle no
-  (use-package init-customizable)
-#+end_src
-
-**** Module Header
-#+begin_src emacs-lisp
-  ;;; init-customizable.el --- customizable variables -*- lexical-binding: t -*-
-  ;;; Commentary:
-  ;;; Code:
-
-#+end_src
 
 ** Customization groups
 These are the groups used by this Emacs config for customization.
@@ -333,7 +352,7 @@ These are the groups used by this Emacs config for customization.
 #+end_src
 
 ** File Locations and Variables
-
+:properties:
 #+begin_src emacs-lisp
    ;;; ##########################################################################
 
@@ -375,9 +394,9 @@ These are the groups used by this Emacs config for customization.
     :group 'mifi-config)
 
 #+end_src
-
+:end:
 ** Custom Package Toggles
-
+:properties:
 Thes values toggle the availability of specific packages. These options are not grouped together as can be done with the =mifi-config-features= group so are all separate values.
 
 #+begin_src emacs-lisp
@@ -443,9 +462,9 @@ Thes values toggle the availability of specific packages. These options are not 
     :group 'mifi-config-toggles)
 
 #+end_src
-
+:end:
 ** Feature selections
-
+:properties:
 These are features that basically have multiple-choice options instead of being a typical binary t or nil.
 
 #+begin_src emacs-lisp
@@ -581,7 +600,7 @@ These are features that basically have multiple-choice options instead of being 
 #+end_src
 
 #+INLCLUDE: org-incl/project.el src org
-
+:end:
 ** Theme Specific Values
 
 This is a curated selection of themes that I personally like. Most of them are dark mode but there are a few light versions. New themes can be added here or done via the =customize= interface. If a new theme is added to this list, it's important to ensure that the theme is actually included (see [[Color Theming][Color Theming]] section)
@@ -746,13 +765,6 @@ Look for a proportional font that is available on the OS. If the actual default 
   
 #+end_src
 
-***** Module Footer
-#+begin_src emacs-lisp
-  (provide 'init-customizable)
-  ;;; init-customizable.el ends here.
-#+end_src
-
-
 * General Configuration
 
 Setup initial paths, global values and settings, and Emacs working directories.
@@ -780,14 +792,6 @@ This will check for the binary ~ruby-lint~ in the current PATH and if not found 
 ** Emacs/User Config Directory
 
 By default, the =user-emacs-directory= points to the .emacs.d* directory from which the =init.el= is used when Emacs starts. What this means is that any package that writes to this directory will be writing files to this initialization directory. Since we want to keep this directory clean, we set this directory to something external. A new variable, =emacs-config-directory= is set to now point to the starting Emacs condfiguration directory.
-
-****** Module Header
-#+begin_src emacs-lisp
-  ;;; init-general.el --- General Configuration -*- lexical-binding: t -*-
-  ;;; Commentary:
-  ;;; Code:
-
-#+end_src
 
 ** Dirs
 #+begin_src emacs-lisp
@@ -839,11 +843,6 @@ By default, the =user-emacs-directory= points to the .emacs.d* directory from wh
 
 #+end_src
 
-#+begin_src emacs-lisp :tangle no
-
-  (use-package init-general)
-    
-#+end_src
 
 ** Which Key
 
@@ -1118,9 +1117,16 @@ This local package defines some commonly used registers. Registers need to be lo
 
 #+begin_src emacs-lisp
 
-  (use-package init-registers
-    :ensure t
-    :hook (after-init . init-registers))
+  (defun mifi/setup-common-registers ()
+    "Define some common registers."
+    (setq register-preview-delay 0) ;; Show registers ASAP
+    (set-register ?o (cons 'file (concat emacs-config-directory "emacs-config-elpa.org")))
+    (set-register ?O (cons 'file (concat emacs-config-directory "emacs-config.org")))
+    (set-register ?G '(file . "~/Developer/game-dev/GB_asm"))
+    (set-register ?S (cons 'file (concat emacs-config-directory "org-files/important-scripts.org"))))
+
+  (add-hook 'after-init-hook
+    (lambda () (mifi/setup-common-registers)))
 
 #+end_src
 
@@ -1157,32 +1163,12 @@ Handle the case of starting the Emacs server when Emacs is started as a foregrou
 
 #+end_src
 
-****** Module Footer
-#+begin_src emacs-lisp
-  (provide 'init-general)
-  ;;; init-general.el ends here.
-#+end_src
-
 
 * Universal Packages
 
 These are the common packages that I pretty much use universally in my normal Emacs workflow. It excludes packages that can be customized through my =mifi-config= variables as they are generally in their own section.
 
 It's also important to note that some of these packages are required to be loaded prior to packages later on in this configuration.
-
-#+begin_src emacs-lisp :tangle no
-
-  (use-package init-universal)
-  
-#+end_src
-
-****** Module Header
-#+begin_src emacs-lisp
-  ;;; init-universal.el --- Universal Packages -*- lexical-binding: t -*-
-  ;;; Commentary:
-  ;;; Code:
-
-#+end_src
 
 ** System-packages
 This is a collection of functions to make handling installed system packages more convenient through Emacs.
@@ -1304,8 +1290,7 @@ This package displays ElDoc documentations in a childframe. The childframe is se
     (unless theme-did-load
       (mifi/load-theme-from-selector)))
 
-  (use-package eldoc
-    )
+  (use-package eldoc)
 
   (use-package eldoc-box
     :delight DocBox
@@ -1565,8 +1550,7 @@ Window numbers for Emacs: Navigate your windows and frames using numbers. This i
 ** winner-mode
 #+begin_src emacs-lisp
 
-  ;; (require 'init-windows)
-  (use-package init-windows)
+  (use-package init-windows) ;; From purcell
   ;;  :hook (after-init . winner-mode))
 
 #+end_src
@@ -1646,12 +1630,6 @@ These are packages located in the ~"lisp"~ directory within the emacs-config-dir
   ;; 'emacs-config-directory'
 
 
-#+end_src
-
-****** Module Footer
-#+begin_src emacs-lisp
-  (provide 'init-universal)
-  ;;; init-universal.el ends here.
 #+end_src
 
 
@@ -1942,14 +1920,15 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
 #+begin_src emacs-lisp
   ;;; ##########################################################################
 
-  (require 'company-box)
-  (add-hook 'company-mode-hook 'company-box-mode)
+  ;; (require 'company-box)
+  ;; (add-hook 'company-mode-hook 'company-box-mode)
 
-  ;; (use-package company-box
-  ;;   :after company
-  ;;   :delight 'cb
-  ;;   :vc (:url "https://github.com/sebastiencs/company-box.git")
-  ;;   :hook (company-mode . company-box-mode))
+  (use-package company-box
+    :ensure t
+    :after company
+    :delight 'cb
+    ;; :vc (:url "https://github.com/sebastiencs/company-box.git")
+    :hook (company-mode . company-box-mode))
 
   (use-package company-jedi
     :when  (equal custom-ide 'custom-ide-elpy)
@@ -2527,9 +2506,10 @@ Dired, by default, opens up multiple windows - one for each directory. It would 
 
   (use-package dired-single
     :after dired
+    :vc (:url "https://github.com/emacsattic/dired-single" :main-file "dired-single.el")
     :config
     (mifi/dired-single-keymap-init))
-  
+
 #+end_src
 
 **** Special ediff with dired
@@ -3896,7 +3876,7 @@ Org Roam solves these problems by making it easy to create topic-focused Org Fil
     :after emacsql
     :when (equal custom-note-system 'custom-note-system-org-roam)
     :ensure t
-    :demand t
+    :defer t
     ;; :ensure ( :package "org-roam" :source "MELPA" :protocol https :inherit t :depth 1
     ;;           :fetcher github :repo "org-roam/org-roam" :files (:defaults "extensions/*"))
     :init
@@ -3952,7 +3932,7 @@ Org Roam solves these problems by making it easy to create topic-focused Org Fil
     ;; :vc  ( :url "https://github.com/org-roam/org-roam"
     ;; 	 :main-file "extensions/org-roam-dailies.el")
     :ensure t
-    :demand t
+    :after org
     :init
     (which-key-add-key-based-replacements "C-c n d" "org-roam-dailies")
     ;; :ensure ( :package "org-roam-dailies" :source "MELPA" :protocol https :inherit t :depth 1
@@ -6188,6 +6168,19 @@ Mitch's minor mode (or <<<mmm>>>) just defines frequently used hot-keys. It work
 #+begin_src emacs-lisp
   ;;; ##########################################################################
 
+  (defadvice custom-buffer-create (before my-advice-custom-buffer-create)
+    "Exit the current Customize buffer before creating a new one, unless there are modified widgets."
+    (if (eq major-mode 'Custom-mode)
+        (let ((custom-buffer-done-kill t)
+              (custom-buffer-modified nil))
+          (mapc (lambda (widget)
+                  (and (not custom-buffer-modified)
+                       (eq (widget-get widget :custom-state) 'modified)
+                       (setq custom-buffer-modified t)))
+                custom-options)
+          (if (not custom-buffer-modified)
+              (Custom-buffer-done)))))
+
   (defun mifi/set-fill-column-interactively (num)
     "Asks for the fill column."
     (interactive "nfill-column: ")
@@ -6208,6 +6201,7 @@ Mitch's minor mode (or <<<mmm>>>) just defines frequently used hot-keys. It work
   (defun mifi/customize-mifi ()
     "Opens up the customize section for all of the MiFi options."
     (interactive)
+    (ad-activate 'custom-buffer-create)
     (customize-apropos "mifi-config"))
 
 #+end_src
@@ -6243,7 +6237,7 @@ This is a set of keymaps that do the same things as the popup menu. Both are her
           ("M-RET =" . next-theme)
           ("M-RET -" . previous-theme)
           ("M-RET _" . which-theme)
-          ("M-RET c" . mifi/customize-mifi)
+          ("M-RET M-c" . mifi/customize-mifi)
           ("M-RET d" . dashboard-open)
           ("M-RET e" . treemacs) ;; e for Explore
           ("M-RET f" . mifi/set-fill-column-interactively)

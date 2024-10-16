@@ -11,10 +11,6 @@
 ;; (setq debug-on-error t)
 ;;
 
-;;; init-customizable.el --- customizable variables -*- lexical-binding: t -*-
-;;; Commentary:
-;;; Code:
-
 ;;; ##########################################################################
 ;;; Define my customization groups
 
@@ -410,13 +406,6 @@ font size is computed + 20 of this value."
 	(message "---- Can't find a monospace font to use.")))
     (message (format ">>> monospace font is %s" mono-spaced-font-family))))
 
-(provide 'init-customizable)
-;;; init-customizable.el ends here.
-
-;;; init-general.el --- General Configuration -*- lexical-binding: t -*-
-;;; Commentary:
-;;; Code:
-
 ;;; ##########################################################################
 
 ;;; Set a variable that represents the actual emacs configuration directory.
@@ -668,9 +657,16 @@ font size is computed + 20 of this value."
               (spacious-padding-mode 1))))
         (use-medium-display-font t)))))
 
-(use-package init-registers
-  :ensure t
-  :hook (after-init . init-registers))
+(defun mifi/setup-common-registers ()
+  "Define some common registers."
+  (setq register-preview-delay 0) ;; Show registers ASAP
+  (set-register ?o (cons 'file (concat emacs-config-directory "emacs-config-elpa.org")))
+  (set-register ?O (cons 'file (concat emacs-config-directory "emacs-config.org")))
+  (set-register ?G '(file . "~/Developer/game-dev/GB_asm"))
+  (set-register ?S (cons 'file (concat emacs-config-directory "org-files/important-scripts.org"))))
+
+(add-hook 'after-init-hook
+  (lambda () (mifi/setup-common-registers)))
 
 ;;; ##########################################################################
 ;;
@@ -691,13 +687,6 @@ font size is computed + 20 of this value."
 (use-package server )
 (when (fboundp 'pixel-scroll-precision-mode)
   (pixel-scroll-precision-mode))
-
-(provide 'init-general)
-;;; init-general.el ends here.
-
-;;; init-universal.el --- Universal Packages -*- lexical-binding: t -*-
-;;; Commentary:
-;;; Code:
 
 (use-package system-packages :ensure t)
 
@@ -743,8 +732,7 @@ font size is computed + 20 of this value."
   (unless theme-did-load
     (mifi/load-theme-from-selector)))
 
-(use-package eldoc
-  )
+(use-package eldoc)
 
 (use-package eldoc-box
   :delight DocBox
@@ -882,8 +870,7 @@ font size is computed + 20 of this value."
 (use-package winum
   :config (winum-mode))
 
-;; (require 'init-windows)
-(use-package init-windows)
+(use-package init-windows) ;; From purcell
 ;;  :hook (after-init . winner-mode))
 
 ;;; ##########################################################################
@@ -925,9 +912,6 @@ font size is computed + 20 of this value."
 ;;; ##########################################################################
 ;; These are packages located in the site-lisp or lisp directories in the
 ;; 'emacs-config-directory'
-
-(provide 'init-universal)
-;;; init-universal.el ends here.
 
 ;;; ##########################################################################
 
@@ -1125,14 +1109,15 @@ font size is computed + 20 of this value."
 
 ;;; ##########################################################################
 
-(require 'company-box)
-(add-hook 'company-mode-hook 'company-box-mode)
+;; (require 'company-box)
+;; (add-hook 'company-mode-hook 'company-box-mode)
 
-;; (use-package company-box
-;;   :after company
-;;   :delight 'cb
-;;   :vc (:url "https://github.com/sebastiencs/company-box.git")
-;;   :hook (company-mode . company-box-mode))
+(use-package company-box
+  :ensure t
+  :after company
+  :delight 'cb
+  ;; :vc (:url "https://github.com/sebastiencs/company-box.git")
+  :hook (company-mode . company-box-mode))
 
 (use-package company-jedi
   :when  (equal custom-ide 'custom-ide-elpy)
@@ -1501,6 +1486,7 @@ font size is computed + 20 of this value."
 
 (use-package dired-single
   :after dired
+  :vc (:url "https://github.com/emacsattic/dired-single" :main-file "dired-single.el")
   :config
   (mifi/dired-single-keymap-init))
 
@@ -2536,7 +2522,7 @@ directory is relative to the working-files-directory
   :after emacsql
   :when (equal custom-note-system 'custom-note-system-org-roam)
   :ensure t
-  :demand t
+  :defer t
   ;; :ensure ( :package "org-roam" :source "MELPA" :protocol https :inherit t :depth 1
   ;;           :fetcher github :repo "org-roam/org-roam" :files (:defaults "extensions/*"))
   :init
@@ -2587,7 +2573,7 @@ directory is relative to the working-files-directory
   ;; :vc  ( :url "https://github.com/org-roam/org-roam"
   ;; 	 :main-file "extensions/org-roam-dailies.el")
   :ensure t
-  :demand t
+  :after org
   :init
   (which-key-add-key-based-replacements "C-c n d" "org-roam-dailies")
   ;; :ensure ( :package "org-roam-dailies" :source "MELPA" :protocol https :inherit t :depth 1
@@ -3942,6 +3928,19 @@ capture was not aborted."
 
 ;;; ##########################################################################
 
+(defadvice custom-buffer-create (before my-advice-custom-buffer-create)
+  "Exit the current Customize buffer before creating a new one, unless there are modified widgets."
+  (if (eq major-mode 'Custom-mode)
+      (let ((custom-buffer-done-kill t)
+            (custom-buffer-modified nil))
+        (mapc (lambda (widget)
+                (and (not custom-buffer-modified)
+                     (eq (widget-get widget :custom-state) 'modified)
+                     (setq custom-buffer-modified t)))
+              custom-options)
+        (if (not custom-buffer-modified)
+            (Custom-buffer-done)))))
+
 (defun mifi/set-fill-column-interactively (num)
   "Asks for the fill column."
   (interactive "nfill-column: ")
@@ -3962,6 +3961,7 @@ capture was not aborted."
 (defun mifi/customize-mifi ()
   "Opens up the customize section for all of the MiFi options."
   (interactive)
+  (ad-activate 'custom-buffer-create)
   (customize-apropos "mifi-config"))
 
 ;;; ##########################################################################
@@ -3990,7 +3990,7 @@ capture was not aborted."
         ("M-RET =" . next-theme)
         ("M-RET -" . previous-theme)
         ("M-RET _" . which-theme)
-        ("M-RET c" . mifi/customize-mifi)
+        ("M-RET M-c" . mifi/customize-mifi)
         ("M-RET d" . dashboard-open)
         ("M-RET e" . treemacs) ;; e for Explore
         ("M-RET f" . mifi/set-fill-column-interactively)
