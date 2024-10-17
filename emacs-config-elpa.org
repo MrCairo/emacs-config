@@ -5,7 +5,7 @@
 #+startup: showall
 #+visibility: folded
 #+property: header-args:emacs-lisp :tangle ./init.el :results silent :exports code :mkdirp yes
-#+modified-date: <2024-10-15 Tue>
+#+modified-date: <2024-10-16 Wed>
 
 * Synopsis
 
@@ -66,7 +66,7 @@ So far, the following collections of options are included here:
 
 - This configuration requires Emacs 29.1+. It has been tested with Emacs 29.1 - 29.3 and Emacs 30
 
-- This configuration only uses the standard =use-package=. It does assume that the =:vc= use-package option is available. This means that Emacs 29 will use 
+- This configuration only uses the standard =use-package=. It does assume that the =:vc= use-package option is available. This means that Emacs 29 will use
 
 - While this configuration includes support for several languages - and I mean support for syntax highlighting and, to some extent, debugging - this configuration caters to be a Python development environment.
 
@@ -244,6 +244,7 @@ Standard fare and good practice.
 
   (add-hook 'emacs-startup-hook
     (lambda ()
+      (setq gc-cons-threshold 80000000) ;; original value * 100
       (setq gc-cons-percentage 0.1) ;; Default value for `gc-cons-percentage'
       (setq startup-time-message
         (format "Emacs read in %.2f seconds with %d garbage collections."
@@ -780,6 +781,7 @@ Look for a proportional font that is available on the OS. If the actual default 
   
 #+end_src
 
+
 * General Configuration
 
 Setup initial paths, global values and settings, and Emacs working directories.
@@ -1073,7 +1075,6 @@ Delight enables you to customise the mode names displayed in the mode line. It's
 
   ;; Used to highlight matching delimiters '( { [ ] } )
   (use-package paren
-        ;; built-in
     :custom
     show-paren-delay 0.1
     show-paren-highlight-openparen t
@@ -1201,7 +1202,8 @@ The JSON-RPC protocol is used to communicate with many different types of server
 #+begin_src emacs-lisp
   ;;; ##########################################################################
 
-  (use-package jsonrpc)
+  (use-package jsonrpc
+    :ensure t)
     ;; :config
     ;; For some odd reason, it is possible that jsonrpc will try to load a
     ;; theme. (jsonrpc/lisp/custom.el:1362). If our theme hasn't been loaded
@@ -1322,8 +1324,8 @@ The Hydra is vanquished once Hercules, any binding that isn't the Hydra's head, 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
 
-  (use-package hydra
-    :vc (:url "https://github.com/abo-abo/hydra" :ignored-files ("lv.el")))
+  (use-package hydra)
+    ;; :vc (:url "https://github.com/abo-abo/hydra" :ignored-files ("lv.el")))
     ;; :ensure (:repo "abo-abo/hydra" :fetcher github
     ;;           :files (:defaults (:exclude "lv.el"))))
 
@@ -1353,6 +1355,7 @@ anzu.el is an Emacs port of anzu.vim. anzu.el provides a minor mode which displa
   ;;; ##########################################################################
 
   (use-package anzu
+    :ensure t
     :custom
     (anzu-mode-lighter "")
     (anzu-deactivate-region t)
@@ -1399,6 +1402,7 @@ This package provides commands for increasing or decreasing the default font siz
   ;;; Default keys are C-M-= or C-M--
 
   (use-package default-text-scale
+    :ensure t
     :hook (after-init . default-text-scale-mode))
 
 #+end_src
@@ -1543,7 +1547,8 @@ ace-window]] is a package for selecting a window to switch to. Like =other-windo
   ;;; ##########################################################################
 
   (use-package ace-window
-    :vc (:url "https://github.com/abo-abo/ace-window")
+    :ensure t
+    ;; :vc (:url "https://github.com/abo-abo/ace-window")
     ;;:ensure (:repo "abo-abo/ace-window" :fetcher github)
     :bind ("M-o" . ace-window))
 
@@ -1565,8 +1570,8 @@ Window numbers for Emacs: Navigate your windows and frames using numbers. This i
 ** winner-mode
 #+begin_src emacs-lisp
 
-  (use-package init-windows) ;; From purcell
-  ;;  :hook (after-init . winner-mode))
+  (use-package init-windows ;; From purcell
+    :hook (after-init . winner-mode))
 
 #+end_src
 
@@ -1623,7 +1628,7 @@ Jinx is a fast just-in-time spell-checker for Emacs. Jinx highlights misspelled 
   ;;; ##########################################################################
 
   (use-package jinx
-    :vc (:url "https://github.com/minad/jinx")
+    ;; :vc (:url "https://github.com/minad/jinx")
     ;; :ensure (:host github :repo "minad/jinx")
     ;;:hook (emacs-startup . global-jinx-mode)
     :bind (("C-c C-$" . jinx-correct)
@@ -1760,6 +1765,7 @@ This package provides an orderless completion style that divides the pattern int
                   (equal completion-handler 'comphand-ivy))
               (equal completion-handler 'comphand-corfu))
     :after (:any ivy swiper vertico counsel corfu)
+    :ensure t
     :custom
     (when (equal completion-handler 'comphand-ivy)
       (setq ivy-re-builders-alist '((t . orderless-ivy-re-builder)))
@@ -2501,29 +2507,25 @@ the buffer editable directly to rename them! Press =Z Z= to confirm renaming or
 
 #+end_src
 
-**** Single Window
+**** Better =dired= and Single Window
 
-Dired, by default, opens up multiple windows - one for each directory. It would be nice to be able to limit =dired= to use just a single window. [[https://codeberg.org/amano.kenji/dired-single][dired-single]] does just that. We configure =dired-single= to open up a directory while in dired with the =C-<return>= key combination. This will then open up the directory in the buffer named =*dired*=. Whenever a directory is opened with the =C-<return>= key sequence, that directory will then replace what's currently in the =*dired*= buffer.
+Dired, by default, opens up multiple windows - one for each directory. It would be nice to be able to limit =dired= to use just a single window. dired+ does just that and much more.
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
-  ;; Single Window dired - don't continually open new buffers
-
-  (defun mifi/dired-single-keymap-init ()
-    "Bunch of stuff to run for dired, either immediately or when it's
-     loaded."
-    (define-key dired-mode-map
-      [remap dired-find-file] 'dired-single-buffer)
-    (define-key dired-mode-map
-      [remap dired-mouse-find-file-other-window] 'dired-single-buffer-mouse)
-    (define-key dired-mode-map
-      [remap dired-up-directory] 'dired-single-up-directory))
-
-  (use-package dired-single
-    :after dired
-    :vc (:url "https://github.com/emacsattic/dired-single" :main-file "dired-single.el")
+  ;;  Extensions to Dired.
+  ;;
+  ;;  This file extends functionalities provided by standard GNU Emacs
+  ;;  files `dired.el', `dired-aux.el', and `dired-x.el'.
+  ;;
+  ;;  Key bindings changed.  Menus redefined.  `diredp-mouse-3-menu'
+  ;;  popup menu added.  New commands.  Some commands enhanced.
+  ;;
+  ;;  All of the new functions, variables, and faces defined here have
+  ;;  the prefix `diredp-' (for Dired Plus) in their names.  
+  (use-package dired+
     :config
-    (mifi/dired-single-keymap-init))
+    (diredp-toggle-find-file-reuse-dir 1))
 
 #+end_src
 
@@ -3814,6 +3816,7 @@ Note that org-modern is a full replacement for both org-superstar and org-bullet
   (use-package org-modern
     :when (display-graphic-p)
     :after org
+    :ensure t
     :hook (org-mode . org-modern-mode)
     :config
     ;; Add frame borders and window dividers
@@ -4673,14 +4676,13 @@ If a tree-sitter grammer is available and installed, use it instead of the corre
 #+begin_src emacs-lisp
   ;;; ##########################################################################
 
-  (use-package transient :defer t)
   (use-package magit :after git-commit :ensure t)
 
   ;; NOTE: Make sure to configure a GitHub token before using this package!
   ;; - https://magit.vc/manual/forge/Token-Creation.html#Token-Creation
   ;; - https://magit.vc/manual/ghub/Getting-Started.html#Getting-Started
 
-  (use-package forge :after magit :defer t)
+  (use-package forge :after magit :defer t :ensure t)
   (use-package treemacs-magit :defer t :after treemacs magit)
 
 #+end_src
@@ -4847,7 +4849,8 @@ autopep8 automatically formats Python code to conform to the `PEP 8` style guide
   ;; Using when instead of :when so that the package doesn't get loaded.
   (when enable-python
     (use-package py-autopep8
-      :vc (:url "https://github.com/emacsmirror/py-autopep8.git")
+      :ensure t
+      ;; :vc (:url "https://github.com/emacsmirror/py-autopep8.git")
       :after python
       :hook ((python-mode . py-autopep8-mode))))
 
@@ -5477,14 +5480,7 @@ Much of this configuration was taken from the [[https://robert.kra.hn/posts/rust
   (use-package cargo-mode
     :defer t
     :after rust-mode
-    :vc (:url "https://github.com/ayrat555/cargo-mode" :main-file cargo-mode))
-    ;; :ensure (:fetcher github :repo "ayrat555/cargo-mode"
-    ;;           :files ("*.el" "*.el.in" "dir" "*.info" "*.texi"
-    ;;                    "*.texinfo" "doc/dir" "doc/*.info" "doc/*.texi"
-    ;;                    "doc/*.texinfo" "lisp/*.el"
-    ;;                    (:exclude ".dir-locals.el" "test.el" "tests.el"
-    ;;                      "*-test.el" "*-tests.el" "LICENSE" "README*"
-    ;;                      "*-pkg.el"))))
+    :ensure t)
 
 #+end_src
 
@@ -5914,11 +5910,8 @@ The ubiquitous Merriam-Websters Thesaurus
   ;;; ##########################################################################
 
   (use-package solaire-mode
+    :ensure t
     :after treemacs
-    :vc (:url "https://github.com/hlissner/emacs-solaire-mode"
-         :ignored-files ("solaire-mode-test.el") )
-    ;; :ensure (:package "solaire-mode" :source "MELPA"
-    ;;          :repo "hlissner/emacs-solaire-mode" :fetcher github)
     :hook (after-init . solaire-global-mode)
     :config
     (push '(treemacs-window-background-face . solaire-default-face) solaire-mode-remap-alist)
@@ -6129,7 +6122,7 @@ It's important to note that ~multimarkdown~ is set as the ~markdown-command~. Th
 
 #+end_src
 
-** Markdown Preview Mode
+*** Markdown Preview Mode
 Markdown preview in emacs features:
 
 + on save/idle preview update
@@ -6155,6 +6148,28 @@ Markdown preview in emacs features:
       "http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-MML-AM_CHTML"))
 
 #+end_src
+
+*** Impatient Mode
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (defun markdown-html (buffer)
+    (princ (with-current-buffer buffer
+  	   (format "<!DOCTYPE html><html><title>Impatient Markdown</title><xmp theme=\"united\" style=\"display:none;\"> %s  </xmp><script src=\"http://ndossougbe.github.io/strapdown/dist/strapdown.js\"></script></html>" (buffer-substring-no-properties (point-min) (point-max))))
+      (current-buffer)))
+
+  (use-package simple-httpd
+    :ensure t)
+
+  (use-package impatient-mode
+    :ensure t
+    :config
+    (imp-set-user-filter #'markdown-html)
+    :hook (elpaca-after-init . httpd-start))
+
+#+end_src
+
 
 ** GRIP Mode
 

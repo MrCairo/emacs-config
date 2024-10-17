@@ -901,7 +901,6 @@ So, if there is need to ensure that, for example, ~ruby-lint~ was installed the 
 
 This will check for the binary ~ruby-lint~ in the current PATH and if not found the command ~"gem install ruby-lint"~ would be called to install ~ruby-lint~.
 
-
 ** Emacs/User Config Directory
 
 By default, the =user-emacs-directory= points to the .emacs.d* directory from which the =init.el= is used when Emacs starts. What this means is that any package that writes to this directory will be writing files to this initialization directory. Since we want to keep this directory clean, we set this directory to something external. A new variable, =emacs-config-directory= is set to now point to the starting Emacs condfiguration directory.
@@ -1268,6 +1267,11 @@ Handle the case of starting the Emacs server when Emacs is started as a foregrou
 
   (when (fboundp 'pixel-scroll-precision-mode)
     (pixel-scroll-precision-mode))
+
+  (defadvice save-buffers-kill-emacs (around no-query-kill-emacs activate)
+    "Prevent annoying \"Active processes exist\" query when you quit Emacs."
+    (cl-letf (((symbol-function #'process-list) (lambda ())))
+      ad-do-it))
 
 #+end_src
 
@@ -2609,30 +2613,25 @@ the buffer editable directly to rename them! Press =Z Z= to confirm renaming or
 
 #+end_src
 
-**** Single Window
+**** Better =dired= and Single Window
 
-Dired, by default, opens up multiple windows - one for each directory. It would be nice to be able to limit =dired= to use just a single window. [[https://codeberg.org/amano.kenji/dired-single][dired-single]] does just that. We configure =dired-single= to open up a directory while in dired with the =C-<return>= key combination. This will then open up the directory in the buffer named =*dired*=. Whenever a directory is opened with the =C-<return>= key sequence, that directory will then replace what's currently in the =*dired*= buffer.
+Dired, by default, opens up multiple windows - one for each directory. It would be nice to be able to limit =dired= to use just a single window. dired+ does just that and much more.
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
-  ;; Single Window dired - don't continually open new buffers
-
-  (defun mifi/dired-single-keymap-init ()
-    "Bunch of stuff to run for dired, either immediately or when it's
-     loaded."
-    (define-key dired-mode-map
-      [remap dired-find-file] 'dired-single-buffer)
-    (define-key dired-mode-map
-      [remap dired-mouse-find-file-other-window] 'dired-single-buffer-mouse)
-    (define-key dired-mode-map
-      [remap dired-up-directory] 'dired-single-up-directory))
-
-  (use-package dired-single
-    :after dired
-    :demand t
-    :ensure (:host github :repo "emacsattic/dired-single" :depth 1)
+  ;;  Extensions to Dired.
+  ;;
+  ;;  This file extends functionalities provided by standard GNU Emacs
+  ;;  files `dired.el', `dired-aux.el', and `dired-x.el'.
+  ;;
+  ;;  Key bindings changed.  Menus redefined.  `diredp-mouse-3-menu'
+  ;;  popup menu added.  New commands.  Some commands enhanced.
+  ;;
+  ;;  All of the new functions, variables, and faces defined here have
+  ;;  the prefix `diredp-' (for Dired Plus) in their names.  
+  (use-package dired+
     :config
-    (mifi/dired-single-keymap-init))
+    (diredp-toggle-find-file-reuse-dir 1))
 
 #+end_src
 
@@ -4786,14 +4785,13 @@ If a tree-sitter grammer is available and installed, use it instead of the corre
 #+begin_src emacs-lisp
   ;;; ##########################################################################
 
-  (use-package transient :defer t)
   (use-package magit :defer t)
 
   ;; NOTE: Make sure to configure a GitHub token before using this package!
   ;; - https://magit.vc/manual/forge/Token-Creation.html#Token-Creation
   ;; - https://magit.vc/manual/ghub/Getting-Started.html#Getting-Started
 
-  (use-package forge :after magit :defer t)
+  (use-package forge :after magit :defer t :ensure t)
   (use-package treemacs-magit :defer t :after treemacs magit)
 
 #+end_src
@@ -6267,6 +6265,39 @@ Markdown preview in emacs features:
       "https://raw.githubusercontent.com/richleland/pygments-css/master/emacs.css")
     (add-to-list 'markdown-preview-javascript
       "http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-MML-AM_CHTML"))
+  
+#+end_src
+
+*** Impatient Mode
+
+#+begin_src emacs-lisp
+
+  (defun markdown-html (buffer)
+    (princ (with-current-buffer buffer
+  	   (format "<!DOCTYPE html><html><title>Impatient Markdown</title><xmp theme=\"united\" style=\"display:none;\"> %s  </xmp><script src=\"http://ndossougbe.github.io/strapdown/dist/strapdown.js\"></script></html>" (buffer-substring-no-properties (point-min) (point-max))))
+      (current-buffer)))
+
+  (defun mifi/my-md-filter (buffer)
+    (let ((count 
+            (with-current-buffer buffer
+              (count-words-region (point-min) (point-max)))))
+        (princ (format "<html><body>%d</body></html>" count) (current-buffer))))
+
+  (use-package simple-httpd
+    :ensure t)
+
+  (use-package impatient-mode
+    :ensure t
+    :config
+    (imp-set-user-filter #'markdown-html)
+    :hook (elpaca-after-init . httpd-start))
+
+#+end_src
+
+*** Experimental Emacs Application Framework
+#+begin_src emacs-lisp :tangle no
+
+  (require 'init-eaf)
 
 #+end_src
 
@@ -6542,6 +6573,8 @@ These are the hools that update the context-aware menu triggered by various stat
         (let ((src (expand-file-name "opam-user-setup.el" emacs-config-directory)))
         (when (file-exists-p src)
           (byte-compile-file src))))
+      (when (featurep 'simple-httpd)
+        (httpd-stop))
       (mifi/backup-file "early-init.el")
       (mifi/backup-file "init.el")
       (mifi/backup-file "emacs-config.org")))
