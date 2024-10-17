@@ -6,6 +6,7 @@
 ;; of the Emacs startup. This file is executed before init.el.
 ;;
 ;; DO NOT MODIFY this file directly as changes will be overwritten.
+;; The source this file is generated from is from "emacs-config.org"
 
 ;;; Code:
 

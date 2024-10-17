@@ -119,9 +119,9 @@ This is where all of the settings/setup goes for the ~early-init.el~ file.
 *NOTE:* Each source header line in this section has =:tangle "early-init.el"= . This is required for anything going to the early-init.el file. If it's not present, the code will be tangled to the default location of init.el.
 
 ** Lispy Header for early-init.el
-
 Standard fare and good practice.
 
+:properties:
 #+begin_src emacs-lisp :tangle "early-init.el"
   ;;; early-init.el -*- flycheck-disabled-checkers: (emacs-lisp); lexical-binding: nil -*-
   ;;;
@@ -131,11 +131,12 @@ Standard fare and good practice.
   ;; of the Emacs startup. This file is executed before init.el.
   ;;
   ;; DO NOT MODIFY this file directly as changes will be overwritten.
+  ;; The source this file is generated from is from "emacs-config.org"
 
   ;;; Code:
 
 #+end_src
-
+:end:
 ** Package archives
 :properties:
 #+begin_src emacs-lisp :tangle "early-init.el" 
@@ -193,9 +194,8 @@ Standard fare and good practice.
 
 #+end_src
 :end:
-
 ** Configure use-package
-
+:properties:
 #+begin_src emacs-lisp :tangle "early-init.el" 
 
   (setq use-package-compute-statistics t
@@ -205,9 +205,9 @@ Standard fare and good practice.
     use-package-always-defer nil)
 
 #+end_src
-
+:end:
 ** Garbage Collection
-
+:properties:
 #+begin_src emacs-lisp :tangle "early-init.el" 
 
   ;; (use-package gcmh
@@ -218,9 +218,9 @@ Standard fare and good practice.
   ;;   (gcmh-mode 1))
 
 #+end_src
-
+:end:
 ** Calculate startup time and restore gc-cons-percentage
-
+:properties:
 #+begin_src emacs-lisp :tangle "early-init.el"
 
   ;;; Set high for initial load.
@@ -237,11 +237,11 @@ Standard fare and good practice.
       (message startup-time-message)))
 
 #+end_src
-
+:end:
 ** Establish PATH
 
-Because in macOS, Emacs could be started outside of a shell (like an application on the Dock), this code is used to migrate the <current user's shell path to Emacs ~exec-path~.
-
+Because in macOS, Emacs could be started outside of a shell (like an application on the Dock), this code is used to migrate the current user's shell path to Emacs ~exec-path~.
+:properties:
 #+begin_src emacs-lisp :tangle "early-init.el"
   ;;; ##########################################################################
 
@@ -284,15 +284,15 @@ Because in macOS, Emacs could be started outside of a shell (like an application
   (add-hook 'before-init-hook #'mifi/setup-exec-path)
 
 #+end_src
-
+:end:
 ** Lispy end of early-init.el
 
 Standard fare and good practice.
-
+:properties:
 #+begin_src emacs-lisp :tangle "early-init.el" 
   ;;; early-init.el ends here.
 #+end_src
-
+:end:
 
 * Bootstrap
 
@@ -300,14 +300,15 @@ Using the Elpaca package management system. While the typical ~use-package~ work
 
 ** Lispy Header
 This is the standard format of a =lisp= header that should appear for all =lisp= scripts. It also indicates that the ~init.el~ file is generated from this ~Configure.org~ file.
-
+:properties:
 #+begin_src emacs-lisp
   ;;; init.el -*- flycheck-disabled-checkers: (emacs-lisp); lexical-binding: nil -*-
   ;;;
   ;;; Commentary:
 
   ;; This file bootstraps the configuration which is generated from tangling an org-mode file.
-  ;; So, DO NOT MODIFY this file directly as changes will be overwritten.
+  ;; DO NOT MODIFY this file directly as changes will be overwritten.
+  ;; The source this file is generated from is from "emacs-config.org"
 
   ;;; Code:
 
@@ -316,71 +317,18 @@ This is the standard format of a =lisp= header that should appear for all =lisp=
   ;;
 
 #+end_src
-
+:end:
 
 ** Elpaca Bootstrap
 
 Elpaca is an elisp package manager. It allows users to find, install, update, and remove third-party packages for Emacs. It is a replacement for the built-in Emacs package manager, package.el.
 
-:properties:
-Elpaca Features:
-
+:Elpaca-features-and-bootstrap:
 - Installs packages asynchronously, in parallel for fast, non-blocking installations.
 - Includes a flexible UI for finding and operating on packages.
 - Downloads packages from their sources for convenient elisp development.
 - Supports thousands of elisp packages out of the box (MELPA, NonGNU/GNU ELPA, Org/org-contrib).
 - Makes it easy for users to create their own ELPAs.
-:end:
-
-#+begin_src emacs-lisp :tangle no
-  ;;; ##########################################################################
-
-  (defvar elpaca-installer-version 0.7)
-  (defvar elpaca-directory (expand-file-name "elpaca/" user-emacs-directory))
-  (defvar elpaca-builds-directory (expand-file-name "builds/" elpaca-directory))
-  (defvar elpaca-repos-directory (expand-file-name "repos/" elpaca-directory))
-  (defvar elpaca-order '(elpaca :repo "https://github.com/progfolio/elpaca.git"
-                          :ref nil :depth 1 :branch "feat/vars-keyword"
-                          :files (:defaults "elpaca-test.el" (:exclude "extensions"))
-                          :build (:not elpaca--activate-package)))
-  (let* ((repo  (expand-file-name "elpaca/" elpaca-repos-directory))
-          (build (expand-file-name "elpaca/" elpaca-builds-directory))
-          (order (cdr elpaca-order))
-          (default-directory repo))
-    (add-to-list 'load-path (if (file-exists-p build) build repo))
-    (unless (file-exists-p repo)
-      (make-directory repo t)
-      (when (< emacs-major-version 28) (require 'subr-x))
-      (condition-case-unless-debug err
-        (if-let ((buffer
-                   (pop-to-buffer-same-window "*elpaca-bootstrap*"))
-                  ((zerop (apply #'call-process
-                            `("git" nil ,buffer t "clone"
-                               ,@(when-let ((depth (plist-get order :depth)))
-                                   (list (format "--depth=%d" depth)
-                                     "--no-single-branch"))
-                               ,(plist-get order :repo) ,repo))))
-                  ((zerop (call-process "git" nil buffer t "checkout"
-                            (or (plist-get order :ref) "--"))))
-                  (emacs (concat invocation-directory invocation-name))
-                  ((zerop (call-process emacs nil buffer nil "-Q" "-L" "." "--batch"
-                            "--eval" "(byte-recompile-directory \".\" 0 'force)")))
-                  ((require 'elpaca))
-                  ((elpaca-generate-autoloads "elpaca" repo)))
-          (progn (message "%s" (buffer-string)) (kill-buffer buffer))
-          (error "%s" (with-current-buffer buffer (buffer-string))))
-        ((error) (warn "%s" err) (delete-directory repo 'recursive))))
-    (unless (require 'elpaca-autoloads nil t)
-      (require 'elpaca)
-      (elpaca-generate-autoloads "elpaca" repo)
-      (load "./elpaca-autoloads")))
-  (add-hook 'after-init-hook #'elpaca-process-queues)
-  (elpaca `(,@elpaca-order))
-  (elpaca elpaca-use-package
-    (elpaca-use-package-mode 1)
-    (setq use-package-always-ensure t))
-
-#+end_src
 
 #+begin_src emacs-lisp
 
@@ -426,14 +374,14 @@ Elpaca Features:
     (elpaca-use-package-mode))
 
 #+end_src
-
+:end:
 
 * Customizable Values
 
 Variables that define the operational behavior 
 ** Customization groups
 These are the groups used by this Emacs config for customization.
-
+:groups:
 #+begin_src emacs-lisp
   ;;; ##########################################################################
   ;;; Define my customization groups
@@ -459,9 +407,11 @@ These are the groups used by this Emacs config for customization.
     :group 'mifi-config)
 
 #+end_src
+:end:
 
 ** File Locations and Variables
-
+Variables that hold dirtectory paths to where Emacs is to find and/or store it's files. Some variables can also be used for where the user will put their files as well.
+:file-locations:
 #+begin_src emacs-lisp
    ;;; ##########################################################################
 
@@ -503,11 +453,12 @@ These are the groups used by this Emacs config for customization.
     :group 'mifi-config)
 
 #+end_src
+:end:
 
 ** Custom Package Toggles
 
 Thes values toggle the availability of specific packages. These options are not grouped together as can be done with the =mifi-config-features= group so are all separate values.
-
+:Toggles:
 #+begin_src emacs-lisp
   ;;; ##########################################################################
   ;;; Feature Toggles
@@ -571,11 +522,12 @@ Thes values toggle the availability of specific packages. These options are not 
     :group 'mifi-config-toggles)
 
 #+end_src
+:end:
 
 ** Feature selections
 
 These are features that basically have multiple-choice options instead of being a typical binary t or nil.
-
+:Feature-selection-from-list:
 #+begin_src emacs-lisp
   ;;; ##########################################################################
 
@@ -709,11 +661,11 @@ These are features that basically have multiple-choice options instead of being 
 #+end_src
 
 #+INLCLUDE: org-incl/project.el src org
-
+:end:
 ** Theme Specific Values
 
 This is a curated selection of themes that I personally like. Most of them are dark mode but there are a few light versions. New themes can be added here or done via the =customize= interface. If a new theme is added to this list, it's important to ensure that the theme is actually included (see [[Color Theming][Color Theming]] section)
-
+:Themes:
 #+begin_src emacs-lisp
   ;;; ##########################################################################
   ;;; Theming related
@@ -817,11 +769,12 @@ This is a curated selection of themes that I personally like. Most of them are d
     "Set to true if the last Theme was loaded.")
 
 #+end_src
+:end:
 
 *** Verify Default variable-pitch Font
 
 Look for a proportional font that is available on the OS. If the actual default font isn't available, find another that will work instead.
-
+:proportional-font-validator-and-defaults:
 #+begin_src emacs-lisp
   ;;; ##########################################################################
 
@@ -846,11 +799,12 @@ Look for a proportional font that is available on the OS. If the actual default 
       (message (format ">>> variable-pitch font is %s" variable-pitch-font-family))))
 
 #+end_src
+:end:
 
 *** Verify Default monospace / default font
 
 Look for a proportional font that is available on the OS. If the actual default font isn't available, find another that will work instead.
-
+:fixed-font-validator-and-defaults:
 #+begin_src emacs-lisp
   ;;; ##########################################################################
 
@@ -873,7 +827,7 @@ Look for a proportional font that is available on the OS. If the actual default 
       (message (format ">>> monospace font is %s" mono-spaced-font-family))))
 
 #+end_src
-
+:end:
 
 * General Configuration
 
@@ -882,7 +836,7 @@ Setup initial paths, global values and settings, and Emacs working directories.
 ** use-package-ensure-system-packages
 This package enables the ~:ensure-system-package~ within a ~use-package~ statement that allows the enforcement that system binaries (or files) exist alongside the actual ~use-package~ declaration. 
 
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
 
   (use-package use-package-ensure-system-package)
 
@@ -893,7 +847,7 @@ This package enables the ~:ensure-system-package~ within a ~use-package~ stateme
 So, if there is need to ensure that, for example, ~ruby-lint~ was installed the inclusion of the value.
 
 #+begin_src emacs-lisp :tangle no
-
+  ;; This is an example and shouldn't be included in the init.el file.
   (use-package ruby
     :ensure-system-package (ruby-lint . "gem install ruby-lint")))
 
@@ -1480,7 +1434,6 @@ We use [[https://github.com/joostkremers/visual-fill-column][visual-fill-column]
   ;;; ##########################################################################
 
   (use-package visual-fill-column
-    :ensure nil
     :after org)
 
   (use-package writeroom-mode
@@ -2630,6 +2583,7 @@ Dired, by default, opens up multiple windows - one for each directory. It would 
   ;;  All of the new functions, variables, and faces defined here have
   ;;  the prefix `diredp-' (for Dired Plus) in their names.  
   (use-package dired+
+    :ensure nil
     :config
     (diredp-toggle-find-file-reuse-dir 1))
 

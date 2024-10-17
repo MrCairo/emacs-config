@@ -122,7 +122,9 @@ Standard fare and good practice.
   ;; Settings/Packages that need to be used early in the initialization process
   ;; of the Emacs startup. This file is executed before init.el.
   ;;
+  ;;
   ;; DO NOT MODIFY this file directly as changes will be overwritten.
+  ;; The source this file is generated from is from "emacs-config-elpa.org"
 
   ;;; Code:
 
@@ -324,7 +326,8 @@ This is the standard format of a =lisp= header that should appear for all =lisp=
   ;;; Commentary:
 
   ;; This file bootstraps the configuration which is generated from tangling an org-mode file.
-  ;; So, DO NOT MODIFY this file directly as changes will be overwritten.
+  ;; DO NOT MODIFY this file directly as changes will be overwritten.
+  ;; The source this file is generated from is from "emacs-config-elpa.org"
 
   ;;; Code:
 
@@ -789,8 +792,10 @@ Setup initial paths, global values and settings, and Emacs working directories.
 ** use-package-ensure-system-packages
 This package enables the ~:ensure-system-package~ within a ~use-package~ statement that allows the enforcement that system binaries (or files) exist alongside the actual ~use-package~ declaration. 
 
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
+
   (use-package use-package-ensure-system-package)
+  
 #+end_src
 
 **** Example
@@ -798,7 +803,7 @@ This package enables the ~:ensure-system-package~ within a ~use-package~ stateme
 So, if there is need to ensure that, for example, ~ruby-lint~ was installed the inclusion of the value.
 
 #+begin_src emacs-lisp :tangle no
-
+  ;; This is an example and shouldn't be included in the init.el file.
   (use-package enh-ruby-mode
     :ensure-system-package (ruby-lint . "gem install ruby-lint"))
 
