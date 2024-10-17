@@ -448,7 +448,9 @@ font size is computed + 20 of this value."
       (message "---- Can't find a monospace font to use.")))
     (message (format ">>> monospace font is %s" mono-spaced-font-family))))
 
-(use-package use-package-ensure-system-package)
+(use-package system-packages :ensure t)
+
+(use-package use-package-ensure-system-package :ensure t :after system-packages)
 
 ;;; ##########################################################################
 
@@ -735,8 +737,6 @@ font size is computed + 20 of this value."
   (cl-letf (((symbol-function #'process-list) (lambda ())))
     ad-do-it))
 
-(use-package system-packages :ensure t)
-
 ;;; ##########################################################################
 
 (use-package jsonrpc
@@ -923,6 +923,7 @@ font size is computed + 20 of this value."
 
 (use-package init-windows ;; From purcell
   :ensure nil
+  :demand t
   :hook (elpaca-after-init . winner-mode))
 
 ;;; ##########################################################################

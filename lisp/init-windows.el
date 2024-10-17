@@ -13,7 +13,7 @@
 
 ;; Navigate window layouts with "C-c <left>" and "C-c <right>"
 
-(add-hook 'after-init-hook 'winner-mode)
+;; (add-hook 'after-init-hook 'winner-mode)
 
 
 ;; Make "C-x o" prompt for a target window when there are more than 2
@@ -109,9 +109,14 @@ Call a second time to restore the original window configuration."
 
 (unless (memq window-system '(nt w32))
   (use-package windswap :ensure t)
-  (add-hook 'after-init-hook (apply-partially 'windmove-default-keybindings 'control))
-  (add-hook 'after-init-hook (apply-partially 'windswap-default-keybindings 'shift 'control)))
-
+  (let ( (using-elpaca (featurep 'elpaca))
+	 (select-hook 'after-init-hook) )
+    (when using-elpaca
+      (message "<<< init-windows.el using elpaca-after-init-hook")
+      (setq select-hook 'elpaca-after-init-hook))
+    (add-hook select-hook (apply-partially 'windmove-default-keybindings 'control))
+    (add-hook select-hook (apply-partially 'windswap-default-keybindings 'shift 'control))
+    ))
 
 (provide 'init-windows)
 ;;; init-windows.el ends here

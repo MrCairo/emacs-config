@@ -200,7 +200,7 @@ Standard fare and good practice.
 
   (setq use-package-compute-statistics t
     use-package-verbose t
-    use-package-always-ensure t
+    use-package-always-ensure nil
     use-package-always-demand nil
     use-package-always-defer nil)
 
@@ -833,12 +833,21 @@ Look for a proportional font that is available on the OS. If the actual default 
 
 Setup initial paths, global values and settings, and Emacs working directories.
 
+** System-packages
+This is a collection of functions to make handling installed system packages more convenient through Emacs.
+
+#+begin_src emacs-lisp
+
+  (use-package system-packages :ensure t)
+
+#+end_src
+
 ** use-package-ensure-system-packages
 This package enables the ~:ensure-system-package~ within a ~use-package~ statement that allows the enforcement that system binaries (or files) exist alongside the actual ~use-package~ declaration. 
 
 #+begin_src emacs-lisp
 
-  (use-package use-package-ensure-system-package)
+  (use-package use-package-ensure-system-package :ensure t :after system-packages)
 
 #+end_src
 
@@ -1236,15 +1245,6 @@ These are the common packages that I pretty much use universally in my normal Em
 
 It's also important to note that some of these packages are required to be loaded prior to packages later on in this configuration.
 
-** System-packages
-This is a collection of functions to make handling installed system packages more convenient through Emacs.
-
-#+begin_src emacs-lisp
-
-  (use-package system-packages :ensure t)
-
-#+end_src
-
 ** JSON-RPC
 
 The JSON-RPC protocol is used to communicate with many different types of server. This is required for the DAP Debug Adapter as well as Eglot.
@@ -1624,6 +1624,7 @@ Window numbers for Emacs: Navigate your windows and frames using numbers. This i
 
   (use-package init-windows ;; From purcell
     :ensure nil
+    :demand t
     :hook (elpaca-after-init . winner-mode))
 
 #+end_src

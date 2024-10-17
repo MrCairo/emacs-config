@@ -794,7 +794,7 @@ This package enables the ~:ensure-system-package~ within a ~use-package~ stateme
 
 #+begin_src emacs-lisp
 
-  (use-package use-package-ensure-system-package)
+  (use-package use-package-ensure-system-package :ensure t :demand t)
   
 #+end_src
 
@@ -1576,6 +1576,7 @@ Window numbers for Emacs: Navigate your windows and frames using numbers. This i
 #+begin_src emacs-lisp
 
   (use-package init-windows ;; From purcell
+    :demand t
     :hook (after-init . winner-mode))
 
 #+end_src
