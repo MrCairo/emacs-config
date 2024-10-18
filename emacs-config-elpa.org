@@ -162,10 +162,10 @@ Standard fare and good practice.
     (add-to-list 'package-archives '("local-nongnu" . "/opt/local/elpa-mirror/nongnu"))
     (add-to-list 'package-archives '("local-melpa" . "/opt/local/elpa-mirror/melpa"))
     (add-to-list 'package-archives '("local-melpa-stable" . "/opt/local/elpa-mirror/stable-melpa")))
-  (add-to-list 'package-archives '("gnu" . "https://elpa.gnu.org/packages/"))
-  (add-to-list 'package-archives '("nongnu" . "https://elpa.nongnu.org/nongnu/"))
-  (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
-  (add-to-list 'package-archives '("melpa-stable" . "https://stable.melpa.org/packages/"))
+  ;; (add-to-list 'package-archives '("gnu" . "https://elpa.gnu.org/packages/"))
+  ;; (add-to-list 'package-archives '("nongnu" . "https://elpa.nongnu.org/nongnu/"))
+  ;; (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
+  ;; (add-to-list 'package-archives '("melpa-stable" . "https://stable.melpa.org/packages/"))
   (add-to-list 'package-archives '("org" . "https://orgmode.org/elpa/"))
 
     ;; Highest number gets priority (what is not mentioned has priority 0)
@@ -891,6 +891,7 @@ By default, the =user-emacs-directory= points to the .emacs.d* directory from wh
 
   (use-package which-key
     ;; :ensure (:wait t)
+    :ensure t
     :demand t
     :commands which-key-mode
     :delight which-key-mode
@@ -913,7 +914,9 @@ This directory is expected to be in the ~emacs-config-direcory~ dir. This can be
 #+begin_src emacs-lisp
   ;;; ##########################################################################
 
-  (use-package f :ensure t :demand t
+  (use-package f
+    :ensure t
+    :demand t
     :config
     (let ((epath (f-dirname
                  (expand-file-name invocation-name invocation-directory))))
@@ -1080,6 +1083,7 @@ Delight enables you to customise the mode names displayed in the mode line. It's
 
   ;; Used to highlight matching delimiters '( { [ ] } )
   (use-package paren
+    :ensure nil
     :custom
     show-paren-delay 0.1
     show-paren-highlight-openparen t
@@ -1175,7 +1179,7 @@ Handle the case of starting the Emacs server when Emacs is started as a foregrou
   ;; Allow access from emacsclient
   (add-hook 'after-init-hook
     (lambda ()
-      (use-package server )
+      (use-package server :ensure nil)
       (unless (server-running-p)
         (server-start))))
 
@@ -1329,7 +1333,8 @@ The Hydra is vanquished once Hercules, any binding that isn't the Hydra's head, 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
 
-  (use-package hydra)
+  (use-package hydra
+    :ensure t)
     ;; :vc (:url "https://github.com/abo-abo/hydra" :ignored-files ("lv.el")))
     ;; :ensure (:repo "abo-abo/hydra" :fetcher github
     ;;           :files (:defaults (:exclude "lv.el"))))
@@ -1345,6 +1350,7 @@ Multiple cursors for Emacs. This is some pretty crazy functionality, so yes, the
   ;;; ##########################################################################
 
   (use-package multiple-cursors
+    :ensure t
     :bind (("C-S-c C-S-c" . mc/edit-lines)
             ("C->" . mc/mark-next-like-this)
             ("C-<" . mc/mark-previous-like-this)
@@ -1386,10 +1392,11 @@ We use [[https://github.com/joostkremers/visual-fill-column][visual-fill-column]
   ;;; ##########################################################################
 
   (use-package visual-fill-column
-    
+    :ensure nil ;; Should be installed in the local lisp dir.
     :after org)
 
   (use-package writeroom-mode
+    :ensure t
     :defer t
     :after visual-fill-column)
 
@@ -1466,6 +1473,7 @@ These are key-bindings that are done at a global level.
     (global-unset-key (kbd "C-<wheel-up>")))
 
   (use-package evil-nerd-commenter
+    :ensure t
     :bind ("M-/" . evilnc-comment-or-uncomment-lines))
 
   (add-hook 'emacs-startup-hook #'mifi/setup-global-keybindings)
@@ -1484,6 +1492,7 @@ You can also use =M-x auto-package-update-now= to update right now!
 
   (use-package auto-package-update
     ;; :ensure (:fetcher github :repo "rranelli/auto-package-update.el")
+    :ensure t
     :defer t
     :custom
     (auto-package-update-interval 7)
@@ -1504,6 +1513,8 @@ These are useful snippets of code that are commonly used in various languages. Y
   ;; YASnippets
 
   (use-package yasnippet
+    :ensure t
+    :defer t
     :bind (:map yas-minor-mode-map
             ("<C-'>" . yas-expand))
     :config
@@ -1529,6 +1540,7 @@ Collections of more yasnippet snippets for various languages.
   ;;; ##########################################################################
 
   (use-package yasnippet-snippets
+    :ensure t
     :after yasnippet)
 
 #+end_src
@@ -1540,7 +1552,7 @@ This package is a utility for using and formatting various Icon fonts within Ema
 #+begin_src emacs-lisp
   ;;; ##########################################################################
 
-  (use-package all-the-icons)
+  (use-package all-the-icons :ensure t)
 
 #+end_src
 
@@ -1576,6 +1588,7 @@ Window numbers for Emacs: Navigate your windows and frames using numbers. This i
 #+begin_src emacs-lisp
 
   (use-package init-windows ;; From purcell
+    :ensure nil
     :demand t
     :hook (after-init . winner-mode))
 
@@ -1601,6 +1614,8 @@ Window numbers for Emacs: Navigate your windows and frames using numbers. This i
   ;;; ##########################################################################
 
   (use-package dashboard
+    :ensure t
+    :defer t
     :custom
     (dashboard-items '( (recents   . 12)
                         (bookmarks . 5)
@@ -1637,6 +1652,7 @@ Jinx is a fast just-in-time spell-checker for Emacs. Jinx highlights misspelled 
     ;; :vc (:url "https://github.com/minad/jinx")
     ;; :ensure (:host github :repo "minad/jinx")
     ;;:hook (emacs-startup . global-jinx-mode)
+    :ensure t
     :bind (("C-c C-$" . jinx-correct)
             ("C-x C-$" . jinx-languages))
     :config
@@ -1860,6 +1876,7 @@ Swiper is an alternative to isearch that uses Ivy to show an overview of all mat
 
   (use-package counsel
     :when (equal completion-handler 'comphand-ivy)
+    :ensure t
     :after ivy
     :defer t
     :bind ( ("C-M-j" . 'counsel-switch-buffer)
@@ -1892,6 +1909,7 @@ Swiper is an alternative to isearch that uses Ivy to show an overview of all mat
   (use-package ivy-prescient
     :when (equal completion-handler 'comphand-ivy)
     :after (ivy prescient)
+    :ensure t
     :custom
     (prescient-persist-mode t)
     (ivy-prescient-mode t)
@@ -1926,7 +1944,7 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
   (use-package company
     :unless (equal custom-ide 'custom-ide-lsp-bridge)
     ;; :after tree-sitter
-    ;; :ensure (:wait t)
+    :ensure t
     :delight company-mode
     :config (mifi/company-config)
     :custom
@@ -1985,7 +2003,7 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
 
   ;;;; Code Completion
   (use-package corfu
-    :disabled
+    :ensure t
     :when (equal completion-handler 'comphand-corfu)
     ;; Optional customizations
     :custom
@@ -2027,6 +2045,7 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
   (use-package cape
     :when (equal completion-handler 'comphand-corfu)
     :after corfu
+    :ensure t
     ;; Bind dedicated completion commands
     ;; Alternative prefix keys: C-c p, M-p, M-+, ...
     :bind ( ("C-c C-p p" . completion-at-point) ;; capf
@@ -2046,7 +2065,7 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
             ("C-c C-p ^" . cape-tex)
             ("C-c C-p &" . cape-sgml)
             ("C-c C-p r" . cape-rfc1345))
-    :init
+    :config
     ;; Add to the global default value of `completion-at-point-functions' which is
     ;; used by `completion-at-point'.  The order of the functions matters, the
     ;; first function returning a result wins.  Note that the list of buffer-local
@@ -2074,6 +2093,7 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
 
   (use-package corfu-prescient
     :when (equal completion-handler 'comphand-corfu)
+    :ensure t
     :after corfu prescient)
 
 #+end_src
@@ -2132,6 +2152,7 @@ Marginalia are marks or annotations placed at the margin of the page of a book o
   ;;; ##########################################################################
 
   (use-package all-the-icons-completion
+    :ensure t
     :after (marginalia all-the-icons)
     :hook (marginalia-mode . all-the-icons-completion-marginalia-setup))
 
@@ -2147,6 +2168,7 @@ Consult provides search and navigation commands based on the Emacs completion fu
   (use-package consult
     :when (equal completion-handler 'comphand-vertico)
     :after vertico
+    :ensure t
     :bind
     ([remap switch-to-buffer] . consult-buffer)
     ([remap switch-to-buffer-other-window] . consult-buffer-other-window)
@@ -2201,6 +2223,7 @@ Consult provides search and navigation commands based on the Emacs completion fu
 
   (use-package vertico-prescient
     :when (equal completion-handler 'comphand-vertico)
+    :ensure t
     :after (vertico prescient)
     :config (vertico-prescient-mode t))
 
@@ -2213,6 +2236,7 @@ vertico-posframe is an vertico extension, which lets vertico use posframe to sho
 
   (use-package vertico-posframe
     :when (equal completion-handler 'comphand-vertico)
+    :ensure t
     :after vertico
     :custom
     (setq vertico-multiform-commands
@@ -2248,7 +2272,7 @@ Enable the IDO handler everywhere.
     (lambda ()
       (use-package ido
         :when (equal completion-handler 'comp-hand-ido)
-        
+        :ensure nil
         :config
         (ido-everywhere t))))
 
@@ -2263,6 +2287,8 @@ Embark makes it easy to choose a command to run based on what is near point, bot
 
   (use-package embark
     :when (equal completion-handler 'comphand-vertico)
+    :ensure t
+    :defer t
     :bind
     (("C-." . embark-act)         ;; pick some comfortable binding
       ("C-;" . embark-dwim)        ;; good alternative: M-.
@@ -2356,6 +2382,8 @@ Make sure that you have the [[https://github.com/akermu/emacs-libvterm/#requirem
 
   (use-package vterm
     ;;:ensure (:fetcher github :repo "akermu/emacs-libvterm")
+    :ensure t
+    :defer t
     :commands vterm
     :config
     (setq vterm-environment ("PS1=\\u@\\h:\\w \n$"))
@@ -2412,7 +2440,7 @@ For more thoughts on Eshell, check out these articles by Pierre Neidhardt:
     :after eshell)
 
   (use-package eshell
-    
+    :ensure nil
     :defer t
     :hook (eshell-first-time-mode . mifi/configure-eshell)
     :config
@@ -2530,6 +2558,7 @@ Dired, by default, opens up multiple windows - one for each directory. It would 
   ;;  All of the new functions, variables, and faces defined here have
   ;;  the prefix `diredp-' (for Dired Plus) in their names.  
   (use-package dired+
+    :ensure nil
     :config
     (diredp-toggle-find-file-reuse-dir 1))
 
@@ -2600,6 +2629,7 @@ Virtical Split comparison of two files selected from the dired window.
 
   (use-package dired
     ;;   ;; local package hint for elpaca
+    :ensure nil
     :no-require t
     :bind (:map dired-mode-map
           ("=" . mifi/dired-ediff-marked-files)))
@@ -2629,6 +2659,7 @@ Virtical Split comparison of two files selected from the dired window.
 
   (use-package treemacs
     :after (:all winum ace-window)
+    :ensure t
     :bind (:map global-map
             ("M-0"       . treemacs-select-window)
             ("C-x t 1"   . treemacs-delete-other-windows)
@@ -2987,15 +3018,15 @@ Color Theming (or just <<<theming>>>) is a curated list of theming packages.
   (add-to-list 'custom-theme-load-path (expand-file-name "lisp" emacs-config-directory))
 
   (mifi/org-theme-override-values)
-  (use-package tron-legacy-theme :defer t)
-  (use-package ef-themes :init (mifi/customize-ef-theme) :defer t)
-  (use-package modus-themes :init (mifi/customize-modus-theme) :defer t)
-  (use-package material-theme :defer t)
-  (use-package color-theme-modern :defer t)
-  (use-package color-theme-sanityinc-tomorrow :defer t)
+  (use-package tron-legacy-theme :defer t :ensure t)
+  (use-package ef-themes :init (mifi/customize-ef-theme) :defer t :ensure t)
+  (use-package modus-themes :init (mifi/customize-modus-theme) :defer t :ensure t)
+  (use-package material-theme :defer t :ensure t)
+  (use-package color-theme-modern :defer t :ensure t)
+  (use-package color-theme-sanityinc-tomorrow :defer t :ensure t)
   ;; Can't defer darktooth since we need the base theme to always load
-  (use-package darktooth-theme)
-  (use-package zenburn-theme :defer t)
+  (use-package darktooth-theme :ensure t)
+  (use-package zenburn-theme :defer t :ensure t)
 
 #+end_src
 
@@ -3078,6 +3109,7 @@ A better version of variable-pitch mode. This keeps certain faces (defined in mi
 
   (use-package mixed-pitch
     :defer t
+    :ensure t
     :custom
     (mixed-pitch-set-height t)
     :config
@@ -3364,6 +3396,7 @@ This package provides a global minor mode to increase the spacing/padding of Ema
   ;;; ##########################################################################
 
   (use-package spacious-padding
+    :ensure t
     :custom
     (spacious-padding-widths
       '( :internal-border-width 15
@@ -4175,6 +4208,7 @@ Denote’s file-naming scheme is not limited to “notes”. It can be used for 
   (use-package denote
     :when (equal custom-note-system 'custom-note-system-denote)
     ;; :after which-key dired
+    :ensure t
     :defer t
     :custom
     (denote-directory (expand-file-name "notes" user-emacs-directory))
@@ -4224,6 +4258,7 @@ Denote’s file-naming scheme is not limited to “notes”. It can be used for 
   (use-package projectile
     :when (equal custom-project-handler 'custom-project-projectile)
     :delight Proj
+    :ensure t
     :config (projectile-mode)
     :bind-keymap
     ("C-c p" . projectile-command-map)
@@ -4236,6 +4271,7 @@ Denote’s file-naming scheme is not limited to “notes”. It can be used for 
   (when (equal completion-handler 'comphand-ivy)
     (use-package counsel-projectile
       :when (equal custom-project-handler 'custom-project-projectile)
+      :ensure t
       :after projectile
       :config
       (setq projectile-completion-system 'ivy)
@@ -4300,6 +4336,7 @@ The following are configured for Python development and provide an <<<IDE>>> typ
       (and root (cons 'transient root))))
 
   (use-package track-changes
+    :ensure t
     :defer t
     :config
     (unless theme-did-load
@@ -4318,6 +4355,7 @@ The following are configured for Python development and provide an <<<IDE>>> typ
   (use-package eglot
     :when (equal custom-ide 'custom-ide-eglot)
     :after lsp-mode
+    :ensure nil
     :defer t
     :hook
     (lisp-mode . eglot-ensure)
@@ -4383,6 +4421,7 @@ This package contains all the higher level UI modules of lsp-mode, like flycheck
   (use-package lsp-ui
     :when (or (equal custom-ide 'custom-ide-lsp) (equal custom-ide 'custom-ide-eglot))
     :after lsp
+    :ensure t
     :custom
     (lsp-ui-sideline-enable t)
     (lsp-ui-sideline-show-hover t)
@@ -4547,6 +4586,7 @@ C-c C-c evaluates the current python script (or region if something is selected)
   (use-package elpy
     :when (equal custom-ide 'custom-ide-elpy)
     :after python which-key
+    :ensure t
     :custom
     (elpy-rpc-python-command "python3")
     (display-fill-column-indicator-mode 1)
@@ -4575,6 +4615,7 @@ C-c C-c evaluates the current python script (or region if something is selected)
     (elpy-enable))
 
   (use-package jedi
+    :ensure t
     :after python elpy)
 
 #+end_src
@@ -4594,6 +4635,7 @@ This is more support for a language rather than a langage itself
 
   (use-package flycheck
     ;;:unless (equal custom-ide 'custom-ide-elpy)
+    :ensure t
     :delight 'fc
     :defer t
     ;;:ensure (:host github :repo "flycheck/flycheck")
@@ -4603,6 +4645,7 @@ This is more support for a language rather than a langage itself
     (global-flycheck-mode))
 
   (use-package flycheck-package
+    :ensure t
     :after flycheck)
 
 #+end_src
@@ -4640,6 +4683,7 @@ Some functions that are used during the initialization of tree-sitter.
   (use-package tree-sitter
     :defer t
     :after (:any python python-mode lisp-mode merlin-mode tuareg)
+    :ensure t
     :config
     ;; Activate tree-sitter globally (minor mode registered on every buffer)
     (global-tree-sitter-mode)
@@ -4657,6 +4701,7 @@ Some functions that are used during the initialization of tree-sitter.
     (js2-mode . lsp-deferred))
 
   (use-package tree-sitter-langs
+    :ensure t
     :after tree-sitter)
 
 #+end_src
@@ -4831,6 +4876,7 @@ This is the primary Python setup that is triggered by the first load of the Pyth
   ;; Use built-in python language mode.
   (use-package python-mode
     :when enable-python
+    :ensure t
     :mode ("\\.py\\'" . mifi/load-python-file-hook)
     :hook (python-mode . mifi/python-mode-triggered)
     :config
@@ -4840,6 +4886,7 @@ This is the primary Python setup that is triggered by the first load of the Pyth
 
   (when enable-python
     (use-package blacken
+      :ensure t
       :when enable-python
       :after python)) ;Format Python file upon save.
 
@@ -4897,6 +4944,7 @@ We use Pyvenv-auto is a package that automatically changes to the Python virtual
   ;; Using when instead of :when so that the package doesn't get loaded.
   (when enable-python
     (use-package pyvenv-auto
+      :ensure t
       :after python
       :hook (python-mode . pyvenv-auto-run)))
 
