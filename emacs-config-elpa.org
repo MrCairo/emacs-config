@@ -66,8 +66,8 @@ So far, the following collections of options are included here:
 
 - This configuration requires Emacs 29.1+. It has been tested with Emacs 29.1 - 29.3 and Emacs 30
 
-- This configuration only uses the standard =use-package=. It does assume that the =:vc= use-package option is available. This means that Emacs 29 will use
-
+- This configuration only uses the standard =use-package=. It does assume that the =:vc= use-package option is available. This means that Emacs 29 will use.
+  
 - While this configuration includes support for several languages - and I mean support for syntax highlighting and, to some extent, debugging - this configuration caters to be a Python development environment.
 
 - The C/C++ debugger for these type of programs are done via LSP/LLDB. The chosen =debug-adapter= custom variable doesn't apply. The reason for this is that the DAP/LSP/LLDB interaction doesn't work properly on my =Apple Silicon= mac. Until GDB supports =ARM= instruction sets then this (=RealGUD=) will remain as the only best way to support a more integrated debugging experience.
@@ -107,10 +107,15 @@ So far, the following collections of options are included here:
 
 
 * Early init file
+:properties:
+:custom_id: h:early-init-file
+:end:
+
 This is where all of the settings/setup goes for the ~early-init.el~ file.
 
 ** Lispy Header for early-init.el
 :properties:
+:custom_id: l:lisp-header-for-early-init
 
 Standard fare and good practice.
 
@@ -132,56 +137,57 @@ Standard fare and good practice.
 :end:
 ** Package archives
 :properties:
+:custom_id: l:early-init-package-archives
 
 #+begin_src emacs-lisp :tangle "early-init.el" 
-  ;;; ##########################################################################
+    ;;; ##########################################################################
 
-  (setq gc-cons-threshold 80000000) ;; original value * 100
-  (setq package-enable-at-startup t)
+    (setq gc-cons-threshold 80000000) ;; original value * 100
+    (setq package-enable-at-startup t)
 
-  ;; Process performance tuning
+    ;; Process performance tuning
 
-  (setq read-process-output-max (* 64 1024))
-  (setq process-adaptive-read-buffering nil)
+    (setq read-process-output-max (* 64 1024))
+    (setq process-adaptive-read-buffering nil)
 
-  (setq package-vc-register-as-project nil) ; Emacs 30
-  (add-hook 'package-menu-mode-hook #'hl-line-mode)
+    (setq package-vc-register-as-project nil) ; Emacs 30
+    (add-hook 'package-menu-mode-hook #'hl-line-mode)
 
-  ;; This allows for a set of PROXY variables/settings to be loaded before
-  ;; we actually begin the load.
-  (let
-    ((file (expand-file-name "early-init-proxy.el" user-emacs-directory)))
-    (when (file-exists-p file)
-      (load file)))
+    ;; This allows for a set of PROXY variables/settings to be loaded before
+    ;; we actually begin the load.
+    (let
+      ((file (expand-file-name "early-init-proxy.el" user-emacs-directory)))
+      (when (file-exists-p file)
+        (load file)))
 
-  (defvar package-archives nil
-    "An alist of archives from which to fetch.")
-  (when (file-directory-p "/opt/local/elpa-mirror")
-    ;; Make sure to refresh this local reppo often!!
-    (add-to-list 'package-archives '("local-gnu" . "/opt/local/elpa-mirror/gnu"))
-    (add-to-list 'package-archives '("local-nongnu" . "/opt/local/elpa-mirror/nongnu"))
-    (add-to-list 'package-archives '("local-melpa" . "/opt/local/elpa-mirror/melpa"))
-    (add-to-list 'package-archives '("local-melpa-stable" . "/opt/local/elpa-mirror/stable-melpa")))
-  ;; (add-to-list 'package-archives '("gnu" . "https://elpa.gnu.org/packages/"))
-  ;; (add-to-list 'package-archives '("nongnu" . "https://elpa.nongnu.org/nongnu/"))
-  ;; (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
-  ;; (add-to-list 'package-archives '("melpa-stable" . "https://stable.melpa.org/packages/"))
-  (add-to-list 'package-archives '("org" . "https://orgmode.org/elpa/"))
+    (defvar package-archives nil
+      "An alist of archives from which to fetch.")
+    (when (file-directory-p "/opt/local/elpa-mirror")
+      ;; Make sure to refresh this local reppo often!!
+      (add-to-list 'package-archives '("local-gnu" . "/opt/local/elpa-mirror/gnu"))
+      (add-to-list 'package-archives '("local-nongnu" . "/opt/local/elpa-mirror/nongnu"))
+      (add-to-list 'package-archives '("local-melpa" . "/opt/local/elpa-mirror/melpa"))
+      (add-to-list 'package-archives '("local-melpa-stable" . "/opt/local/elpa-mirror/stable-melpa")))
+    (add-to-list 'package-archives '("gnu" . "https://elpa.gnu.org/packages/"))
+    ;; (add-to-list 'package-archives '("nongnu" . "https://elpa.nongnu.org/nongnu/"))
+    (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
+    ;; (add-to-list 'package-archives '("melpa-stable" . "https://stable.melpa.org/packages/"))
+    ;; (add-to-list 'package-archives '("org" . "https://orgmode.org/elpa/"))
 
-    ;; Highest number gets priority (what is not mentioned has priority 0)
-  (setq package-archive-priorities
-    '(
-       ( "local-gnu" . 99 )
-       ( "local-melpa" . 98 )
-       ( "local-nongnu" . 97)
-       ( "local-melpa-stable" . 90 )
-       ( "org" . 5 )
-       ( "gnu" . 50 )
-       ( "melpa-stable" . 40 )
-       ( "melpa" . 30 )
-       ( "gnu-dev" . 20 )
-       ( "nongnu" . 10)
-       ))
+      ;; Highest number gets priority (what is not mentioned has priority 0)
+    (setq package-archive-priorities
+      '(
+         ( "local-gnu" . 99 )
+         ( "local-melpa" . 98 )
+         ( "local-nongnu" . 97)
+         ( "local-melpa-stable" . 90 )
+         ( "org" . 5 )
+         ( "gnu" . 50 )
+         ( "melpa-stable" . 40 )
+         ( "melpa" . 30 )
+         ( "gnu-dev" . 20 )
+         ( "nongnu" . 10)
+         ))
 
   (setq gnutls-algorithm-priority "NORMAL:-VERS-TLS1.3") ;; w/o this Emacs freezes when refreshing ELPA
 
@@ -320,7 +326,7 @@ Standard fare and good practice.
 
 This is the standard format of a =lisp= header that should appear for all =lisp= scripts. It also indicates that the ~init.el~ file is generated from this ~Configure.org~ file.
 
-#+begin_src emacs-lisp :tangle "init.el"
+#+begin_src emacs-lisp
   ;;; init.el -*- flycheck-disabled-checkers: (emacs-lisp); lexical-binding: nil -*-
   ;;;
   ;;; Commentary:
@@ -784,7 +790,6 @@ Look for a proportional font that is available on the OS. If the actual default 
   
 #+end_src
 
-
 * General Configuration
 
 Setup initial paths, global values and settings, and Emacs working directories.
@@ -794,8 +799,21 @@ This package enables the ~:ensure-system-package~ within a ~use-package~ stateme
 
 #+begin_src emacs-lisp
 
+  ;; For some reason, the function recentf-expand-file-name has been showing up
+  ;; as 'undefined' even though this is a byte-compiled internal function. So,
+  ;; instead of trying to find the issue, I'm just including it here as a
+  ;; local package so that it works. Maybe one day I can remove it.
+  (use-package recentf :ensure nil :demand t)
+  ;; This package allows 'use-package' to support a 'use-system-package' option
+  ;; which specifies the thing (library, executable, etc) that should exist
+  ;; followed by the command used to install it. This allows for an expression
+  ;; like (ruby . "brew install ruby") which tests for the presence of ruby and
+  ;; if it can't be found (on the path) then 'brew install ruby' will be run to
+  ;; install it.
+  ;; NOTE: This option, while very powerful, will increase the Emacs startup time
+  ;; because of the overhead in checking for commands. Use it with discretion.
   (use-package use-package-ensure-system-package :ensure t :demand t)
-  
+
 #+end_src
 
 **** Example
@@ -815,7 +833,7 @@ This will check for the binary ~ruby-lint~ in the current PATH and if not found 
 
 By default, the =user-emacs-directory= points to the .emacs.d* directory from which the =init.el= is used when Emacs starts. What this means is that any package that writes to this directory will be writing files to this initialization directory. Since we want to keep this directory clean, we set this directory to something external. A new variable, =emacs-config-directory= is set to now point to the starting Emacs condfiguration directory.
 
-** Dirs
+*** Dirs
 #+begin_src emacs-lisp
   ;;; ##########################################################################
 
@@ -865,6 +883,29 @@ By default, the =user-emacs-directory= points to the .emacs.d* directory from wh
 
 #+end_src
 
+** Automatic Package Updates
+
+The auto-package-update package helps us keep our Emacs packages up to date! It will prompt you after a certain number of days either at startup or at a specific time of day to remind you to update your packages.
+
+You can also use =M-x auto-package-update-now= to update right now!
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+  ;;; Automatic Package Updates
+
+  (use-package auto-package-update
+    ;; :ensure (:fetcher github :repo "rranelli/auto-package-update.el")
+    :ensure t
+    :demand t
+    :custom
+    (auto-package-update-interval 7)
+    (auto-package-update-prompt-before-update t)
+    (auto-package-update-hide-results t)
+    :config
+    (auto-package-update-maybe)
+    (auto-package-update-at-time "09:00"))
+
+#+end_src
 
 ** Which Key
 
@@ -962,7 +1003,9 @@ These are global variables that effect the behavior of Emacs in general. These v
   (setq-default
     window-resize-pixelwise t ;; enable smooth resizing
     window-resize-pixelwise t
+    frame-inhibit-implied-resize t
     frame-resize-pixelwise t
+    frame-title-format '("%b")
     dired-dwim-target t       ;; try to guess target directory
     use-short-answers t
     truncate-partial-width-windows 1 ;; truncate lines in partial-width windows
@@ -1187,7 +1230,6 @@ Handle the case of starting the Emacs server when Emacs is started as a foregrou
     (pixel-scroll-precision-mode))
 
 #+end_src
-
 
 * Universal Packages
 
@@ -1480,30 +1522,6 @@ These are key-bindings that are done at a global level.
 
 #+end_src
 
-** Automatic Package Updates
-
-The auto-package-update package helps us keep our Emacs packages up to date! It will prompt you after a certain number of days either at startup or at a specific time of day to remind you to update your packages.
-
-You can also use =M-x auto-package-update-now= to update right now!
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-  ;;; Automatic Package Updates
-
-  (use-package auto-package-update
-    ;; :ensure (:fetcher github :repo "rranelli/auto-package-update.el")
-    :ensure t
-    :defer t
-    :custom
-    (auto-package-update-interval 7)
-    (auto-package-update-prompt-before-update t)
-    (auto-package-update-hide-results t)
-    :config
-    (auto-package-update-maybe)
-    (auto-package-update-at-time "09:00"))
-
-#+end_src
-
 ** YASnippet
 
 These are useful snippets of code that are commonly used in various languages. You can even create your own.
@@ -1673,7 +1691,6 @@ These are packages located in the ~"lisp"~ directory within the emacs-config-dir
 
 
 #+end_src
-
 
 * Operational Systems
 
@@ -2293,9 +2310,7 @@ Embark makes it easy to choose a command to run based on what is near point, bot
     (("C-." . embark-act)         ;; pick some comfortable binding
       ("C-;" . embark-dwim)        ;; good alternative: M-.
       ("C-h B" . embark-bindings)) ;; alternative for `describe-bindings'
-
     :init
-
     ;; Optionally replace the key help with a completing-read interface
     (setq prefix-help-command #'embark-prefix-help-command)
 
@@ -2309,7 +2324,6 @@ Embark makes it easy to choose a command to run based on what is near point, bot
     ;; (setq eldoc-documentation-strategy #'eldoc-documentation-compose-eagerly)
 
     :config
-
     ;; Hide the mode line of the Embark live/completions buffers
     (add-to-list 'display-buffer-alist
       '("\\`\\*Embark Collect \\(Live\\|Completions\\)\\*"
@@ -2319,7 +2333,7 @@ Embark makes it easy to choose a command to run based on what is near point, bot
   ;; Consult users will also want the embark-consult package.
   (use-package embark-consult
     :when (equal completion-handler 'comphand-vertico)
-    :defer t
+    :after embark
     :ensure t
     :hook
     (embark-collect-mode . consult-preview-at-point-mode))
@@ -2804,7 +2818,6 @@ Virtical Split comparison of two files selected from the dired window.
     :when (display-graphic-p))
 
 #+end_src
-
 
 * Visuals
 
@@ -3405,6 +3418,8 @@ This package provides a global minor mode to increase the spacing/padding of Ema
          :tab-width 4
          :right-divider-width 30
          :scroll-bar-width 8
+         :left-fringe-width 20
+         :right-fringe-width 20
          :fringe-width 8))
     :config
     (spacious-padding-mode t))
@@ -3415,7 +3430,6 @@ This package provides a global minor mode to increase the spacing/padding of Ema
   ;;       `( :mode-line-active 'default
   ;;          :mode-line-inactive vertical-border))
 #+end_src
-
 
 * Productivity
 
@@ -4304,7 +4318,6 @@ enerally enough.
 
 #+end_src
 
-
 * Integrated Development Environments
 
 The following are configured for Python development and provide an <<<IDE>>> type experience. It's worth noting that Eglot/LSP can be configured for other languages. The others are Python specific. Use the =configure= system to select which one is used (=Mrf Custom Selection=). I like to keep several different IDE systems available since each has it's advantages and I like to switch between them on occasion.
@@ -4622,7 +4635,6 @@ C-c C-c evaluates the current python script (or region if something is selected)
 
 
 -----
-
 
 * Language Integration
 ** Language Support Packages
@@ -4967,7 +4979,7 @@ We use Pyvenv-auto is a package that automatically changes to the Python virtual
 
 #+end_src
 
-** OCaml ([[https://ocaml.org][ocaml.org]])
+** OCaml ( [[https://ocaml.org][ocaml.org]] )
 
 An industrial-strength functional programming language with an emphasis on expressiveness and safety
 
@@ -5071,7 +5083,7 @@ This is not 100% necessary since Ocaml can use =merlin= directly instead of fron
 
 #+begin_src shell
 
-  opam install ocaml-lsp-server.1.18.0~5.2preview -y # Preview for >= 5.2 version of ocaml
+  opam install ocaml-lsp-server -y
 
 #+end_src
 
@@ -5079,6 +5091,29 @@ This is not 100% necessary since Ocaml can use =merlin= directly instead of fron
 #+begin_src bash
 
   opam install ocamlformat dune -y
+
+#+end_src
+
+*** Setup path to ~opam~ installed emacs lisp modules
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (defun mrf/set-opam-load-path ()
+    (let ((opam-share (ignore-errors (car (process-lines "opam" "var" "share")))))
+      (when (and (and opam-share (file-directory-p opam-share)) enable-ocaml)
+        (message "Updating load-path for OPAM to %s" (expand-file-name "emacs/site-lisp" opam-share))
+        (add-to-list 'load-path (expand-file-name "emacs/site-lisp" opam-share))
+        (autoload 'merlin-mode "merlin" nil t nil)
+        ;; Automatically start it in OCaml buffers
+        ;; (add-hook 'tuareg-mode-hook 'merlin-mode t)
+        (add-hook 'caml-mode-hook 'merlin-mode t)
+        ;; Use opam switch to lookup ocamlmerlin binary
+        (setq merlin-command 'opam)
+        ;; To easily change opam switches within a given Emacs session, you can
+        ;; install the minor mode https://github.com/ProofGeneral/opam-switch-mod
+        ;; and use one of its "OPSW" menus.
+        )))
 
 #+end_src
 
@@ -5091,28 +5126,13 @@ is specifc to a macOS or Linux OS.
   ;;; ##########################################################################
 
   (use-package opam-emacs-setup
+    :init
+    (mrf/set-opam-load-path)
+    :ensure nil
     :when enable-ocaml
     :after opam-std-libs
     :config
     (add-to-list 'exec-path "~/.opam/default/bin"))
-    ;;
-    ;; :ensure-system-package
-    ;; ;; we're using the new lps-server preview for 5.2.0 compatibility.
-    ;; ( ((opam-switch-prefix+relative-path "share/emacs/site-lisp/tuareg.el") .
-    ;;     "opam install merlin tuareg ocaml-lsp-server.1.18.0~5.2preview --yes")))
-
-#+end_src
-
-*** Setup path to ~opam~ installed emacs lisp modules
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (let ((opam-share (ignore-errors (car (process-lines "opam" "var" "share")))))
-    (when (and (and opam-share (file-directory-p opam-share)) enable-ocaml)
-      (message "Updating load-path for OPAM to %s" (expand-file-name "emacs/site-lisp" opam-share))
-      (add-to-list 'load-path (expand-file-name "emacs/site-lisp" opam-share))
-      (autoload 'merlin-mode "merlin" nil t nil)))
 
 #+end_src
 
@@ -5124,16 +5144,18 @@ Merlin is an editor service that provides advanced IDE features for OCaml.
   ;;; ##########################################################################
 
   (use-package merlin
-    :when enable-ocaml :defer t 
+    :when enable-ocaml :defer t
+    :ensure nil
     :delight " 🪄"
     :after opam-emacs-setup)
 
   (use-package merlin-eldoc
-    :when enable-ocaml  :defer t :after merlin)
+    :when enable-ocaml :defer t :after merlin :ensure t)
 
   (use-package merlin-company
     :when (and enable-ocaml (not (equal custom-ide 'custom-ide-lsp-bridge)))
-     :defer t :after merlin company
+    :ensure nil
+    :defer t :after merlin company
     :config
     (add-hook 'merlin-mode-hook 'company-mode)
     (with-eval-after-load 'company
@@ -5148,10 +5170,23 @@ Dune is a build system for OCaml (with support for Reason and Coq). It is not in
 #+begin_src emacs-lisp
 
   (use-package dune
+    :ensure nil
     :when enable-ocaml
-    :hook (dune-mode . opam-init)
-    :ensure-system-package
-    (dune . "opam install dune --yes"))
+    :hook (dune-mode . opam-init))
+    ;; :ensure-system-package
+    ;; (dune . "opam install dune --yes"))
+
+  (use-package dune-flymake
+    :when enable-ocaml
+    :after dune
+    :ensure nil
+    :defer t)
+
+  (use-package dune-watch
+    :when enable-ocaml
+    :after dune
+    :ensure nil
+    :defer t)
 
 #+end_src
 
@@ -5166,6 +5201,7 @@ This archive contains files to help editing OCaml code, to highlight important p
 
   (defun mifi/tuareg-mode-hook ()
     (interactive)
+    ;; (tuareg-mode)
     (merlin-mode t)
     (opam-init)
     (eglot-ensure)
@@ -5175,11 +5211,13 @@ This archive contains files to help editing OCaml code, to highlight important p
       (prettify-symbols-mode)))
 
   (use-package tuareg
-    :when enable-ocaml  :defer t
+    :when enable-ocaml
+    :ensure nil
+    :defer t
     ;; :after opam-emacs-setup merlin jsonrpc
     :hook (tuareg-mode . mifi/tuareg-mode-hook)
-    ;; ("\\.ml\\'" . mifi/tuareg-mode-hook)
-    ;; ("\\.mli\\'" . tuareg-mode)
+    :mode (("\\.ml\\'" . mifi/tuareg-mode-hook)
+     	  ("\\.mli\\'" . tuareg-mode))
     :custom
     (tuareg-indent-align-with-first-arg t)
     (compile-command "dune build ")
@@ -5199,7 +5237,7 @@ This module does many things but most important is that it updates the =exec-pat
   ;; opam environment.
   (use-package tuareg-opam
     :when enable-ocaml
-    
+    :ensure nil
     :after tuareg)
   
 #+end_src
@@ -5213,11 +5251,10 @@ This file is created by the actual opam/ocaml installation and contains paths an
 
   (let
     ((file (expand-file-name "opam-user-setup.el" emacs-config-directory)))
-    (when (file-exists-p file)
+    (when (and (file-exists-p file) (not (featurep 'opam-user-setup)))
       (use-package opam-user-setup
-        :unless (featurep 'opam-user-setup) ;; Don't allow to be run twice!
         :when enable-ocaml
-        
+        :ensure nil
         :after tuareg
         :config
         (setq-default tuareg-indent-align-with-first-arg t)
@@ -5237,6 +5274,7 @@ Here are some other packages that are useful when using OCaml.
   (use-package ocp-indent
     :when enable-ocaml
     :after opam-emacs-setup
+    :ensure nil
     :ensure-system-package
     ("~/.opam/default/bin/ocp-indent" . "opam install ocp-indent --yes"))
     ;; :vc (:url "https://github.com/OCamlPro/ocp-indent" :main-file tools/ocp-indent))
@@ -5247,6 +5285,7 @@ Here are some other packages that are useful when using OCaml.
   (use-package ocamlformat
     :when enable-ocaml
     :after ocp-indent
+    :ensure nil
     :bind ("<f6>" . ocamlformat)
     :ensure-system-package
     ("~/.opam/default/lib/ocamlformat-lib" . "opam install ocamlformat --yes")
@@ -5255,6 +5294,7 @@ Here are some other packages that are useful when using OCaml.
   (use-package utop
     :when enable-ocaml
     :after opam-user-setup
+    :ensure nil
     :defer t
     :custom
     (utop-command "opam config exec utop -- -emacs"))
@@ -5929,7 +5969,6 @@ Below are all the necessary functions and definitions for Hydra use under DAP.
 
 #+end_src
 
-
 * Miscellaneous
 
 The following packages are some additional quality of life features.
@@ -6492,19 +6531,17 @@ These are the hools that update the context-aware menu triggered by various stat
     "Backup Emacs initialization files for recovery. If old files exist, they are
   backed up as tilde (~) files. Also, if ocaml is enabled, byte (re)compile the
   opam-user-setup.el so that upon next startup, it can be loaded quickly."
-    (progn
-      (when enable-ocaml
-        (let ((src (expand-file-name "opam-user-setup.el" emacs-config-directory)))
+    (when enable-ocaml
+      (let ((src (expand-file-name "opam-user-setup.el" emacs-config-directory)))
         (when (file-exists-p src)
           (byte-compile-file src))))
-      (mifi/backup-file "early-init.el")
-      (mifi/backup-file "init.el")
-      (mifi/backup-file "emacs-config.org")))
+    (mifi/backup-file "early-init.el")
+    (mifi/backup-file "init.el")
+    (mifi/backup-file "emacs-config.org"))
 
   (add-hook 'kill-emacs-hook #'mifi/when-exiting-emacs)
 
 #+end_src
-
 
 * Lastly
 ** Ignore Line Number Mode

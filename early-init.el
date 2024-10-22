@@ -13,52 +13,52 @@
 
 ;;; ##########################################################################
 
-(setq gc-cons-threshold 80000000) ;; original value * 100
-(setq package-enable-at-startup t)
+  (setq gc-cons-threshold 80000000) ;; original value * 100
+  (setq package-enable-at-startup t)
 
-;; Process performance tuning
+  ;; Process performance tuning
 
-(setq read-process-output-max (* 64 1024))
-(setq process-adaptive-read-buffering nil)
+  (setq read-process-output-max (* 64 1024))
+  (setq process-adaptive-read-buffering nil)
 
-(setq package-vc-register-as-project nil) ; Emacs 30
-(add-hook 'package-menu-mode-hook #'hl-line-mode)
+  (setq package-vc-register-as-project nil) ; Emacs 30
+  (add-hook 'package-menu-mode-hook #'hl-line-mode)
 
-;; This allows for a set of PROXY variables/settings to be loaded before
-;; we actually begin the load.
-(let
-  ((file (expand-file-name "early-init-proxy.el" user-emacs-directory)))
-  (when (file-exists-p file)
-    (load file)))
+  ;; This allows for a set of PROXY variables/settings to be loaded before
+  ;; we actually begin the load.
+  (let
+    ((file (expand-file-name "early-init-proxy.el" user-emacs-directory)))
+    (when (file-exists-p file)
+      (load file)))
 
-(defvar package-archives nil
-  "An alist of archives from which to fetch.")
-(when (file-directory-p "/opt/local/elpa-mirror")
-  ;; Make sure to refresh this local reppo often!!
-  (add-to-list 'package-archives '("local-gnu" . "/opt/local/elpa-mirror/gnu"))
-  (add-to-list 'package-archives '("local-nongnu" . "/opt/local/elpa-mirror/nongnu"))
-  (add-to-list 'package-archives '("local-melpa" . "/opt/local/elpa-mirror/melpa"))
-  (add-to-list 'package-archives '("local-melpa-stable" . "/opt/local/elpa-mirror/stable-melpa")))
-;; (add-to-list 'package-archives '("gnu" . "https://elpa.gnu.org/packages/"))
-;; (add-to-list 'package-archives '("nongnu" . "https://elpa.nongnu.org/nongnu/"))
-;; (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
-;; (add-to-list 'package-archives '("melpa-stable" . "https://stable.melpa.org/packages/"))
-(add-to-list 'package-archives '("org" . "https://orgmode.org/elpa/"))
+  (defvar package-archives nil
+    "An alist of archives from which to fetch.")
+  (when (file-directory-p "/opt/local/elpa-mirror")
+    ;; Make sure to refresh this local reppo often!!
+    (add-to-list 'package-archives '("local-gnu" . "/opt/local/elpa-mirror/gnu"))
+    (add-to-list 'package-archives '("local-nongnu" . "/opt/local/elpa-mirror/nongnu"))
+    (add-to-list 'package-archives '("local-melpa" . "/opt/local/elpa-mirror/melpa"))
+    (add-to-list 'package-archives '("local-melpa-stable" . "/opt/local/elpa-mirror/stable-melpa")))
+  (add-to-list 'package-archives '("gnu" . "https://elpa.gnu.org/packages/"))
+  ;; (add-to-list 'package-archives '("nongnu" . "https://elpa.nongnu.org/nongnu/"))
+  (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
+  ;; (add-to-list 'package-archives '("melpa-stable" . "https://stable.melpa.org/packages/"))
+  ;; (add-to-list 'package-archives '("org" . "https://orgmode.org/elpa/"))
 
-  ;; Highest number gets priority (what is not mentioned has priority 0)
-(setq package-archive-priorities
-  '(
-     ( "local-gnu" . 99 )
-     ( "local-melpa" . 98 )
-     ( "local-nongnu" . 97)
-     ( "local-melpa-stable" . 90 )
-     ( "org" . 5 )
-     ( "gnu" . 50 )
-     ( "melpa-stable" . 40 )
-     ( "melpa" . 30 )
-     ( "gnu-dev" . 20 )
-     ( "nongnu" . 10)
-     ))
+    ;; Highest number gets priority (what is not mentioned has priority 0)
+  (setq package-archive-priorities
+    '(
+       ( "local-gnu" . 99 )
+       ( "local-melpa" . 98 )
+       ( "local-nongnu" . 97)
+       ( "local-melpa-stable" . 90 )
+       ( "org" . 5 )
+       ( "gnu" . 50 )
+       ( "melpa-stable" . 40 )
+       ( "melpa" . 30 )
+       ( "gnu-dev" . 20 )
+       ( "nongnu" . 10)
+       ))
 
 (setq gnutls-algorithm-priority "NORMAL:-VERS-TLS1.3") ;; w/o this Emacs freezes when refreshing ELPA
 

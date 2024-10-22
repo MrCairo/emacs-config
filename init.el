@@ -407,6 +407,19 @@ font size is computed + 20 of this value."
 	(message "---- Can't find a monospace font to use.")))
     (message (format ">>> monospace font is %s" mono-spaced-font-family))))
 
+;; For some reason, the function recentf-expand-file-name has been showing up
+;; as 'undefined' even though this is a byte-compiled internal function. So,
+;; instead of trying to find the issue, I'm just including it here as a
+;; local package so that it works. Maybe one day I can remove it.
+(use-package recentf :ensure nil :demand t)
+;; This package allows 'use-package' to support a 'use-system-package' option
+;; which specifies the thing (library, executable, etc) that should exist
+;; followed by the command used to install it. This allows for an expression
+;; like (ruby . "brew install ruby") which tests for the presence of ruby and
+;; if it can't be found (on the path) then 'brew install ruby' will be run to
+;; install it.
+;; NOTE: This option, while very powerful, will increase the Emacs startup time
+;; because of the overhead in checking for commands. Use it with discretion.
 (use-package use-package-ensure-system-package :ensure t :demand t)
 
 ;;; ##########################################################################
@@ -454,6 +467,21 @@ font size is computed + 20 of this value."
 ;; to correct them.
 (mifi/validate-variable-pitch-font)
 (mifi/validate-monospace-font)
+
+;;; ##########################################################################
+;;; Automatic Package Updates
+
+(use-package auto-package-update
+  ;; :ensure (:fetcher github :repo "rranelli/auto-package-update.el")
+  :ensure t
+  :demand t
+  :custom
+  (auto-package-update-interval 7)
+  (auto-package-update-prompt-before-update t)
+  (auto-package-update-hide-results t)
+  :config
+  (auto-package-update-maybe)
+  (auto-package-update-at-time "09:00"))
 
 ;;; ##########################################################################
 
@@ -524,7 +552,9 @@ font size is computed + 20 of this value."
 (setq-default
   window-resize-pixelwise t ;; enable smooth resizing
   window-resize-pixelwise t
+  frame-inhibit-implied-resize t
   frame-resize-pixelwise t
+  frame-title-format '("%b")
   dired-dwim-target t       ;; try to guess target directory
   use-short-answers t
   truncate-partial-width-windows 1 ;; truncate lines in partial-width windows
@@ -826,21 +856,6 @@ font size is computed + 20 of this value."
   :bind ("M-/" . evilnc-comment-or-uncomment-lines))
 
 (add-hook 'emacs-startup-hook #'mifi/setup-global-keybindings)
-
-;;; ##########################################################################
-;;; Automatic Package Updates
-
-(use-package auto-package-update
-  ;; :ensure (:fetcher github :repo "rranelli/auto-package-update.el")
-  :ensure t
-  :defer t
-  :custom
-  (auto-package-update-interval 7)
-  (auto-package-update-prompt-before-update t)
-  (auto-package-update-hide-results t)
-  :config
-  (auto-package-update-maybe)
-  (auto-package-update-at-time "09:00"))
 
 ;;; ##########################################################################
 ;; YASnippets
@@ -1395,9 +1410,7 @@ font size is computed + 20 of this value."
   (("C-." . embark-act)         ;; pick some comfortable binding
     ("C-;" . embark-dwim)        ;; good alternative: M-.
     ("C-h B" . embark-bindings)) ;; alternative for `describe-bindings'
-
   :init
-
   ;; Optionally replace the key help with a completing-read interface
   (setq prefix-help-command #'embark-prefix-help-command)
 
@@ -1411,7 +1424,6 @@ font size is computed + 20 of this value."
   ;; (setq eldoc-documentation-strategy #'eldoc-documentation-compose-eagerly)
 
   :config
-
   ;; Hide the mode line of the Embark live/completions buffers
   (add-to-list 'display-buffer-alist
     '("\\`\\*Embark Collect \\(Live\\|Completions\\)\\*"
@@ -1421,7 +1433,7 @@ font size is computed + 20 of this value."
 ;; Consult users will also want the embark-consult package.
 (use-package embark-consult
   :when (equal completion-handler 'comphand-vertico)
-  :defer t
+  :after embark
   :ensure t
   :hook
   (embark-collect-mode . consult-preview-at-point-mode))
@@ -2162,6 +2174,8 @@ font size is computed + 20 of this value."
        :tab-width 4
        :right-divider-width 30
        :scroll-bar-width 8
+       :left-fringe-width 20
+       :right-fringe-width 20
        :fringe-width 8))
   :config
   (spacious-padding-mode t))
@@ -3302,53 +3316,77 @@ capture was not aborted."
 
 ;;; ##########################################################################
 
+(defun mrf/set-opam-load-path ()
+  (let ((opam-share (ignore-errors (car (process-lines "opam" "var" "share")))))
+    (when (and (and opam-share (file-directory-p opam-share)) enable-ocaml)
+      (message "Updating load-path for OPAM to %s" (expand-file-name "emacs/site-lisp" opam-share))
+      (add-to-list 'load-path (expand-file-name "emacs/site-lisp" opam-share))
+      (autoload 'merlin-mode "merlin" nil t nil)
+      ;; Automatically start it in OCaml buffers
+      ;; (add-hook 'tuareg-mode-hook 'merlin-mode t)
+      (add-hook 'caml-mode-hook 'merlin-mode t)
+      ;; Use opam switch to lookup ocamlmerlin binary
+      (setq merlin-command 'opam)
+      ;; To easily change opam switches within a given Emacs session, you can
+      ;; install the minor mode https://github.com/ProofGeneral/opam-switch-mod
+      ;; and use one of its "OPSW" menus.
+      )))
+
+;;; ##########################################################################
+
 (use-package opam-emacs-setup
+  :init
+  (mrf/set-opam-load-path)
+  :ensure nil
   :when enable-ocaml
   :after opam-std-libs
   :config
   (add-to-list 'exec-path "~/.opam/default/bin"))
-  ;;
-  ;; :ensure-system-package
-  ;; ;; we're using the new lps-server preview for 5.2.0 compatibility.
-  ;; ( ((opam-switch-prefix+relative-path "share/emacs/site-lisp/tuareg.el") .
-  ;;     "opam install merlin tuareg ocaml-lsp-server.1.18.0~5.2preview --yes")))
-
-;;; ##########################################################################
-
-(let ((opam-share (ignore-errors (car (process-lines "opam" "var" "share")))))
-  (when (and (and opam-share (file-directory-p opam-share)) enable-ocaml)
-    (message "Updating load-path for OPAM to %s" (expand-file-name "emacs/site-lisp" opam-share))
-    (add-to-list 'load-path (expand-file-name "emacs/site-lisp" opam-share))
-    (autoload 'merlin-mode "merlin" nil t nil)))
 
 ;;; ##########################################################################
 
 (use-package merlin
-  :when enable-ocaml :defer t 
+  :when enable-ocaml :defer t
+  :ensure nil
   :delight " 🪄"
   :after opam-emacs-setup)
 
 (use-package merlin-eldoc
-  :when enable-ocaml  :defer t :after merlin)
+  :when enable-ocaml :defer t :after merlin :ensure t)
 
 (use-package merlin-company
   :when (and enable-ocaml (not (equal custom-ide 'custom-ide-lsp-bridge)))
-   :defer t :after merlin company
+  :ensure nil
+  :defer t :after merlin company
   :config
   (add-hook 'merlin-mode-hook 'company-mode)
   (with-eval-after-load 'company
     (add-to-list 'company-backends 'merlin-company-backend)))
 
 (use-package dune
+  :ensure nil
   :when enable-ocaml
-  :hook (dune-mode . opam-init)
-  :ensure-system-package
-  (dune . "opam install dune --yes"))
+  :hook (dune-mode . opam-init))
+  ;; :ensure-system-package
+  ;; (dune . "opam install dune --yes"))
+
+(use-package dune-flymake
+  :when enable-ocaml
+  :after dune
+  :ensure nil
+  :defer t)
+
+(use-package dune-watch
+  :when enable-ocaml
+  :after dune
+  :ensure nil
+  :defer t)
 
 ;;; ##########################################################################
 
 (defun mifi/tuareg-mode-hook ()
   (interactive)
+  ;; (tuareg-mode)
   (merlin-mode t)
   (opam-init)
   (eglot-ensure)
@@ -3358,11 +3396,13 @@ capture was not aborted."
     (prettify-symbols-mode)))
 
 (use-package tuareg
-  :when enable-ocaml  :defer t
+  :when enable-ocaml
+  :ensure nil
+  :defer t
   ;; :after opam-emacs-setup merlin jsonrpc
   :hook (tuareg-mode . mifi/tuareg-mode-hook)
-  ;; ("\\.ml\\'" . mifi/tuareg-mode-hook)
-  ;; ("\\.mli\\'" . tuareg-mode)
+  :mode (("\\.ml\\'" . mifi/tuareg-mode-hook)
+   	  ("\\.mli\\'" . tuareg-mode))
   :custom
   (tuareg-indent-align-with-first-arg t)
   (compile-command "dune build ")
@@ -3374,18 +3414,17 @@ capture was not aborted."
 ;; opam environment.
 (use-package tuareg-opam
   :when enable-ocaml
-  
+  :ensure nil
   :after tuareg)
 
 ;;; ##########################################################################
 
 (let
   ((file (expand-file-name "opam-user-setup.el" emacs-config-directory)))
-  (when (file-exists-p file)
+  (when (and (file-exists-p file) (not (featurep 'opam-user-setup)))
     (use-package opam-user-setup
-      :unless (featurep 'opam-user-setup) ;; Don't allow to be run twice!
       :when enable-ocaml
-      
+      :ensure nil
       :after tuareg
       :config
       (setq-default tuareg-indent-align-with-first-arg t)
@@ -3397,6 +3436,7 @@ capture was not aborted."
 (use-package ocp-indent
   :when enable-ocaml
   :after opam-emacs-setup
+  :ensure nil
   :ensure-system-package
   ("~/.opam/default/bin/ocp-indent" . "opam install ocp-indent --yes"))
   ;; :vc (:url "https://github.com/OCamlPro/ocp-indent" :main-file tools/ocp-indent))
@@ -3407,6 +3447,7 @@ capture was not aborted."
 (use-package ocamlformat
   :when enable-ocaml
   :after ocp-indent
+  :ensure nil
   :bind ("<f6>" . ocamlformat)
   :ensure-system-package
   ("~/.opam/default/lib/ocamlformat-lib" . "opam install ocamlformat --yes")
@@ -3415,6 +3456,7 @@ capture was not aborted."
 (use-package utop
   :when enable-ocaml
   :after opam-user-setup
+  :ensure nil
   :defer t
   :custom
   (utop-command "opam config exec utop -- -emacs"))
@@ -4186,14 +4228,13 @@ exits."
   "Backup Emacs initialization files for recovery. If old files exist, they are
 backed up as tilde (~) files. Also, if ocaml is enabled, byte (re)compile the
 opam-user-setup.el so that upon next startup, it can be loaded quickly."
-  (progn
-    (when enable-ocaml
-      (let ((src (expand-file-name "opam-user-setup.el" emacs-config-directory)))
+  (when enable-ocaml
+    (let ((src (expand-file-name "opam-user-setup.el" emacs-config-directory)))
       (when (file-exists-p src)
         (byte-compile-file src))))
-    (mifi/backup-file "early-init.el")
-    (mifi/backup-file "init.el")
-    (mifi/backup-file "emacs-config.org")))
+  (mifi/backup-file "early-init.el")
+  (mifi/backup-file "init.el")
+  (mifi/backup-file "emacs-config.org"))
 
 (add-hook 'kill-emacs-hook #'mifi/when-exiting-emacs)
 
