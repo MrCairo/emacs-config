@@ -2897,8 +2897,6 @@ capture was not aborted."
   :defer t
   :hook
   (lisp-mode . eglot-ensure)
-  (go-mode . eglot-ensure)
-  (rustic-mode . eglot-ensure)
   (tuareg-mode . eglot-ensure)
   :config
   (flymake-mode 0)
@@ -3297,6 +3295,7 @@ capture was not aborted."
 (let
   ((installer "bash -c \"sh <(curl -fsSL https://raw.githubusercontent.com/ocaml/opam/master/shell/install.sh) --version 2.2.0\""))
   (use-package opam
+    :ensure t
     :when enable-ocaml
     :demand t
     :ensure-system-package (opam . installer)))
@@ -3328,7 +3327,7 @@ capture was not aborted."
       ;; Use opam switch to lookup ocamlmerlin binary
       (setq merlin-command 'opam)
       ;; To easily change opam switches within a given Emacs session, you can
-      ;; install the minor mode https://github.com/ProofGeneral/opam-switch-mod
+      ;; install the minor mode https://github.com/ProofGeneral/opam-switch-mode
       ;; and use one of its "OPSW" menus.
       )))
 
@@ -3346,7 +3345,8 @@ capture was not aborted."
 ;;; ##########################################################################
 
 (use-package merlin
-  :when enable-ocaml :defer t
+  :when enable-ocaml
+  :demand t
   :ensure nil
   :delight " 🪄"
   :after opam-emacs-setup)
@@ -3366,9 +3366,10 @@ capture was not aborted."
 (use-package dune
   :ensure nil
   :when enable-ocaml
-  :hook (dune-mode . opam-init))
-  ;; :ensure-system-package
-  ;; (dune . "opam install dune --yes"))
+  :hook (dune-mode . opam-init)
+  :demand t
+  :ensure-system-package
+  (dune . "opam install dune --yes"))
 
 (use-package dune-flymake
   :when enable-ocaml
@@ -3386,7 +3387,6 @@ capture was not aborted."
 
 (defun mifi/tuareg-mode-hook ()
   (interactive)
-  ;; (tuareg-mode)
   (merlin-mode t)
   (opam-init)
   (eglot-ensure)
@@ -3398,11 +3398,12 @@ capture was not aborted."
 (use-package tuareg
   :when enable-ocaml
   :ensure nil
-  :defer t
+  :demand t
   ;; :after opam-emacs-setup merlin jsonrpc
   :hook (tuareg-mode . mifi/tuareg-mode-hook)
-  :mode (("\\.ml\\'" . mifi/tuareg-mode-hook)
-   	  ("\\.mli\\'" . tuareg-mode))
+  :mode
+  ("\\.ml\\'" . mifi/tuareg-mode-hook)
+  ("\\.mli\\'" . tuareg-mode)
   :custom
   (tuareg-indent-align-with-first-arg t)
   (compile-command "dune build ")
@@ -3462,6 +3463,7 @@ capture was not aborted."
   (utop-command "opam config exec utop -- -emacs"))
 
 (use-package opam-switch-mode
+  :ensure t
   :when enable-ocaml
   :after opam-user-setup
   :hook
