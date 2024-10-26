@@ -1300,6 +1300,82 @@ Handle the case of starting the Emacs server when Emacs is started as a foregrou
 
 #+end_src
 
+** Company Mode
+
+[[http://company-mode.github.io/][Company Mode]] provides a nicer in-buffer completion interface than =completion-at-point= which is more reminiscent of what you would expect from an IDE. We add a simple configuration to make the keybindings a little more useful (=TAB= now completes the selection and initiates completion at the current location if needed).
+
+We also use [[https://github.com/sebastiencs/company-box][company-box]] to further enhance the look of the completions with icons and better overall presentation.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  ;; Don't use lsp-bridge with company as lsp-bridge already provides the same
+  ;; features. They actually collide.
+
+  (use-package company
+    :preface
+    (defun mifi/company-config ()
+      (interactive)
+      (bind-keys :map company-active-map
+        ("C-n". company-select-next)
+        ("C-p". company-select-previous)
+        ("M-<". company-select-first)
+        ("M->". company-select-last)
+        ("<tab>" . company-complete-selection))
+      (global-company-mode 1)
+      (when (featurep 'prescient)
+        (company-prescient-mode 1)))    
+    :unless (equal custom-ide 'custom-ide-lsp-bridge)
+    :ensure t
+    :delight company-mode
+    :config (mifi/company-config)
+    :custom
+    (company-minimum-prefix-length 2)
+    (company-idle-delay 0.5))
+
+  ;; IMPORTANT:
+  ;; Don't use company at all if lsp-bridge is active.
+  ;; lsp-bridge already provides similar functionality.
+
+  ;; :config
+  ;; (add-to-list 'company-backends 'company-yasnippet))
+
+#+end_src
+
+**** Company Packages
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  ;; (require 'company-box)
+  ;; (add-hook 'company-mode-hook 'company-box-mode)
+
+  (use-package company-box
+    :ensure t
+    :after company
+    :delight 'cb
+    ;; :vc (:url "https://github.com/sebastiencs/company-box.git")
+    :hook (company-mode . company-box-mode))
+
+  (use-package company-jedi
+    :when  (equal custom-ide 'custom-ide-elpy)
+    :after (:all python company)
+    :config
+    (jedi:setup)
+    (defun my/company-jedi-python-mode-hook ()
+      (add-to-list 'company-backends 'company-jedi))
+    (add-hook 'python-mode-hook 'my/company-jedi-python-mode-hook))
+
+  (use-package company-anaconda
+    :when (equal custom-ide 'custom-ide-anaconda)
+    :after (:all anaconda company)
+    :hook (python-mode . anaconda-mode)
+    :config
+    (eval-after-load "company"
+      '(add-to-list 'company-backends 'company-anaconda)))
+
+#+end_src
+
 * Universal Packages
 
 These are the common packages that I pretty much use universally in my normal Emacs workflow. It excludes packages that can be customized through my =mifi-config= variables as they are generally in their own section.
@@ -1673,7 +1749,7 @@ Window numbers for Emacs: Navigate your windows and frames using numbers. This i
 
 #+end_src
 
-** winner-mode
+** winner-mode (from init-windows)
 #+begin_src emacs-lisp
 
   (use-package init-windows ;; From purcell
@@ -2002,83 +2078,6 @@ Swiper is an alternative to isearch that uses Ivy to show an overview of all mat
     (prescient-persist-mode t)
     (ivy-prescient-mode t)
     (ivy-prescient-enable-filtering t))
-
-#+end_src
-
-*** Company Mode
-
-[[http://company-mode.github.io/][Company Mode]] provides a nicer in-buffer completion interface than =completion-at-point= which is more reminiscent of what you would expect from an IDE. We add a simple configuration to make the keybindings a little more useful (=TAB= now completes the selection and initiates completion at the current location if needed).
-
-We also use [[https://github.com/sebastiencs/company-box][company-box]] to further enhance the look of the completions with icons and better overall presentation.
-
-#+begin_src emacs-lisp
-    ;;; ##########################################################################
-
-  ;; Don't use lsp-bridge with company as lsp-bridge already provides the same
-  ;; features. They actually collide.
-
-  (defun mifi/company-config ()
-    (interactive)
-    (bind-keys :map company-active-map
-      ("C-n". company-select-next)
-      ("C-p". company-select-previous)
-      ("M-<". company-select-first)
-      ("M->". company-select-last)
-      ("<tab>" . company-complete-selection))
-    (global-company-mode 1)
-    (when (featurep 'prescient)
-      (company-prescient-mode 1)))
-
-  (use-package company
-    :unless (equal custom-ide 'custom-ide-lsp-bridge)
-    ;; :after tree-sitter
-    :ensure t
-    :delight company-mode
-    :config (mifi/company-config)
-    :custom
-    (company-minimum-prefix-length 2)
-    (company-idle-delay 0.5))
-
-  ;; IMPORTANT:
-  ;; Don't use company at all if lsp-bridge is active.
-  ;; lsp-bridge already provides similar functionality.
-
-  ;; :config
-  ;; (add-to-list 'company-backends 'company-yasnippet))
-
-#+end_src
-
-**** Company Packages
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  ;; (require 'company-box)
-  ;; (add-hook 'company-mode-hook 'company-box-mode)
-
-  (use-package company-box
-    :ensure t
-    :after company
-    :delight 'cb
-    ;; :vc (:url "https://github.com/sebastiencs/company-box.git")
-    :hook (company-mode . company-box-mode))
-
-  (use-package company-jedi
-    :when  (equal custom-ide 'custom-ide-elpy)
-    :after (:all python company)
-    :config
-    (jedi:setup)
-    (defun my/company-jedi-python-mode-hook ()
-      (add-to-list 'company-backends 'company-jedi))
-    (add-hook 'python-mode-hook 'my/company-jedi-python-mode-hook))
-
-  (use-package company-anaconda
-    :when (equal custom-ide 'custom-ide-anaconda)
-    :after (:all anaconda company)
-    :hook (python-mode . anaconda-mode)
-    :config
-    (eval-after-load "company"
-      '(add-to-list 'company-backends 'company-anaconda)))
 
 #+end_src
 
@@ -4993,11 +4992,10 @@ This is the primary Python setup that is triggered by the first load of the Pyth
       (add-to-list 'python-shell-completion-native-disabled-interpreters "python3")
       (setq python-shell-completion-native-disabled-interpreters '("python3"))))
 
-  (when enable-python
-    (use-package blacken
-      :ensure t
-      :when enable-python
-      :after python)) ;Format Python file upon save.
+  (use-package blacken
+    :ensure t
+    :when enable-python
+    :after python) ;Format Python file upon save.
 
 #+end_src
 
@@ -5008,13 +5006,12 @@ autopep8 automatically formats Python code to conform to the `PEP 8` style guide
 #+begin_src emacs-lisp
   ;;; ##########################################################################
 
-  ;; Using when instead of :when so that the package doesn't get loaded.
-  (when enable-python
-    (use-package py-autopep8
-      :ensure t
-      ;; :vc (:url "https://github.com/emacsmirror/py-autopep8.git")
-      :after python
-      :hook ((python-mode . py-autopep8-mode))))
+  (use-package py-autopep8
+    :when enable-python
+    :ensure t
+    ;; :vc (:url "https://github.com/emacsmirror/py-autopep8.git")
+    :after python
+    :hook ((python-mode . py-autopep8-mode)))
 
 #+end_src
 
@@ -5050,12 +5047,11 @@ We use Pyvenv-auto is a package that automatically changes to the Python virtual
 #+begin_src emacs-lisp
   ;;; ##########################################################################
 
-  ;; Using when instead of :when so that the package doesn't get loaded.
-  (when enable-python
-    (use-package pyvenv-auto
-      :ensure t
-      :after python
-      :hook (python-mode . pyvenv-auto-run)))
+  (use-package pyvenv-auto
+    :when enable-python
+    :ensure t
+    :after python
+    :hook (python-mode . pyvenv-auto-run))
 
 #+end_src
 
@@ -5065,14 +5061,15 @@ We use Pyvenv-auto is a package that automatically changes to the Python virtual
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
-  ;; Using when instead of :when so that the package doesn't get loaded.
-  (when enable-python
-    (use-package pydoc
-      ;;:ensure (:host github :repo "statmobile/pydoc")
-      :after python
-      :custom
-      (pydoc-python-command "python3")
-      (pydoc-pip-version-command "pip3 --version")))
+
+  (use-package pydoc
+    ;;:ensure (:host github :repo "statmobile/pydoc")
+    :ensure t
+    :when enable-python
+    :after python
+    :custom
+    (pydoc-python-command "python3")
+    (pydoc-pip-version-command "pip3 --version"))
 
 #+end_src
 
@@ -5168,6 +5165,7 @@ good and have become more-or-less the defacto standard.
 
   (use-package opam-std-libs
     :when enable-ocaml
+    :ensure nil
     :ensure-system-package
     ( ("~/.opam"                  . "opam init && opam install core utop base stdio --yes")
       ("~/.opam/default/lib/core" . "opam install core --yes")
@@ -5223,16 +5221,19 @@ is specifc to a macOS or Linux OS.
 #+begin_src emacs-lisp
   ;;; ##########################################################################
 
-  (use-package opam-emacs-setup
-    :init
-    (mrf/set-opam-load-path)
-    :ensure nil
-    :when enable-ocaml
-    :after opam-std-libs
-    :config
-    (add-to-list 'exec-path "~/.opam/default/bin")
-    :ensure-system-package
-    ((ocamllsp . "opam install earlybird --yes")))
+  (defun mifi/opam-emacs-setup ()
+    (use-package opam-emacs-setup
+      :init
+      (mrf/set-opam-load-path)
+      :ensure nil
+      :when enable-ocaml
+      :after opam-std-libs
+      :config
+      (add-to-list 'exec-path "~/.opam/default/bin")
+      :ensure-system-package
+      ((ocamllsp . "opam install earlybird --yes"))))
+
+  (add-hook 'elpaca-after-init-hook #'mifi/opam-emacs-setup)
 
 #+end_src
 
@@ -5245,8 +5246,7 @@ Merlin is an editor service that provides advanced IDE features for OCaml.
 
   (use-package merlin
     :when enable-ocaml
-    :demand t
-    :ensure nil
+    :ensure nil :defer t
     :delight " 🪄"
     :after opam-emacs-setup)
 
@@ -5303,6 +5303,7 @@ This archive contains files to help editing OCaml code, to highlight important p
 
   (defun mifi/tuareg-mode-hook ()
     (interactive)
+    (message "<<<>>> tuareg-mode-hook called.")
     (merlin-mode t)
     (opam-init)
     (eglot-ensure)
@@ -5315,7 +5316,7 @@ This archive contains files to help editing OCaml code, to highlight important p
     :when enable-ocaml
     :ensure nil
     :demand t
-    ;; :after opam-emacs-setup merlin jsonrpc
+    :after opam-emacs-setup
     :hook (tuareg-mode . mifi/tuareg-mode-hook)
     :mode
     ("\\.ml\\'" . mifi/tuareg-mode-hook)
@@ -5360,8 +5361,7 @@ This file is created by the actual opam/ocaml installation and contains paths an
         :after tuareg
         :config
         (setq-default tuareg-indent-align-with-first-arg t)
-        (setq-default compile-command "dune build ")
-        (add-hook 'tuareg-mode-hook #'mifi/tuareg-mode-hook))))
+        (setq-default compile-command "dune build "))))
 
 #+end_src
 
@@ -5475,20 +5475,19 @@ This is a basic configuration for the TypeScript language so that =.ts= files ac
 #+begin_src emacs-lisp
   ;;; ##########################################################################
 
-  (when enable-ts
-    (use-package typescript-mode
-      :defer t
-      :mode "\\.ts\\'"
-      :hook
-      (typescript-mode . lsp-deferred)
-      (js2-mode . lsp-deferred)
-      :config
-      (setq typescript-indent-level 4)
-      (cond
-        ((equal debug-adapter 'debug-adapter-dap-mode)
+  (use-package typescript-ts-mode
+    :ensure nil :when enable-ts :defer t
+    :mode "\\.ts\\'"
+    :hook
+    (typescript-ts-mode . lsp-deferred)
+    (js2-mode . lsp-deferred)
+    :config
+    (setq typescript-indent-level 4)
+    (cond
+      ((equal debug-adapter 'debug-adapter-dap-mode)
         (bind-keys :map typescript-mode-map
-            ("C-c ." . dap-hydra/body))
-        (dap-node-setup)))))
+          ("C-c ." . dap-hydra/body))
+        (dap-node-setup))))
 
 #+end_src
 
@@ -5880,16 +5879,15 @@ The Debug Adapter Protocol makes it possible to implement a generic debugger for
   ;;; ##########################################################################
   ;;; DAP for Python
 
-  (when enable-python
-    (use-package dap-python
-      ;; :vc (:url "https://github.com/emacs-lsp/dap-mode" :main-file dap-python)
-      :ensure (:package "dap-python" :type git :host github :repo "emacs-lsp/dap-mode")
-      :defer t
-      :when (equal debug-adapter 'debug-adapter-dap-mode)
-      :after dap-mode
-      :config
-      (setq dap-python-executable "python3") ;; Otherwise it looks for 'python' else error.
-      (setq dap-python-debugger 'debugpy)))
+  (use-package dap-python
+    ;; :vc (:url "https://github.com/emacs-lsp/dap-mode" :main-file dap-python)
+    :ensure (:package "dap-python" :type git :host github :repo "emacs-lsp/dap-mode")
+    :defer t
+    :when (and (equal debug-adapter 'debug-adapter-dap-mode) enable-python)
+    :after dap-mode
+    :config
+    (setq dap-python-executable "python3") ;; Otherwise it looks for 'python' else error.
+    (setq dap-python-debugger 'debugpy))
 
 #+end_src
 
@@ -6200,6 +6198,7 @@ A tree plugin like NerdTree for Vim
 
   (use-package diff-hl
     :after track-changes
+    :ensure t
     :config
     (global-diff-hl-mode))
 

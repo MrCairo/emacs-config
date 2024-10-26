@@ -779,6 +779,68 @@ font size is computed + 20 of this value."
 (when (fboundp 'pixel-scroll-precision-mode)
   (pixel-scroll-precision-mode))
 
+;;; ##########################################################################
+
+;; Don't use lsp-bridge with company as lsp-bridge already provides the same
+;; features. They actually collide.
+
+(use-package company
+  :preface
+  (defun mifi/company-config ()
+    (interactive)
+    (bind-keys :map company-active-map
+      ("C-n". company-select-next)
+      ("C-p". company-select-previous)
+      ("M-<". company-select-first)
+      ("M->". company-select-last)
+      ("<tab>" . company-complete-selection))
+    (global-company-mode 1)
+    (when (featurep 'prescient)
+      (company-prescient-mode 1)))    
+  :unless (equal custom-ide 'custom-ide-lsp-bridge)
+  :ensure t
+  :delight company-mode
+  :config (mifi/company-config)
+  :custom
+  (company-minimum-prefix-length 2)
+  (company-idle-delay 0.5))
+
+;; IMPORTANT:
+;; Don't use company at all if lsp-bridge is active.
+;; lsp-bridge already provides similar functionality.
+
+;; :config
+;; (add-to-list 'company-backends 'company-yasnippet))
+
+;;; ##########################################################################
+
+;; (require 'company-box)
+;; (add-hook 'company-mode-hook 'company-box-mode)
+
+(use-package company-box
+  :ensure t
+  :after company
+  :delight 'cb
+  ;; :vc (:url "https://github.com/sebastiencs/company-box.git")
+  :hook (company-mode . company-box-mode))
+
+(use-package company-jedi
+  :when  (equal custom-ide 'custom-ide-elpy)
+  :after (:all python company)
+  :config
+  (jedi:setup)
+  (defun my/company-jedi-python-mode-hook ()
+    (add-to-list 'company-backends 'company-jedi))
+  (add-hook 'python-mode-hook 'my/company-jedi-python-mode-hook))
+
+(use-package company-anaconda
+  :when (equal custom-ide 'custom-ide-anaconda)
+  :after (:all anaconda company)
+  :hook (python-mode . anaconda-mode)
+  :config
+  (eval-after-load "company"
+    '(add-to-list 'company-backends 'company-anaconda)))
+
 (use-package system-packages :ensure t)
 
 ;;; ##########################################################################
@@ -1169,69 +1231,6 @@ font size is computed + 20 of this value."
   (prescient-persist-mode t)
   (ivy-prescient-mode t)
   (ivy-prescient-enable-filtering t))
-
-;;; ##########################################################################
-
-;; Don't use lsp-bridge with company as lsp-bridge already provides the same
-;; features. They actually collide.
-
-(defun mifi/company-config ()
-  (interactive)
-  (bind-keys :map company-active-map
-    ("C-n". company-select-next)
-    ("C-p". company-select-previous)
-    ("M-<". company-select-first)
-    ("M->". company-select-last)
-    ("<tab>" . company-complete-selection))
-  (global-company-mode 1)
-  (when (featurep 'prescient)
-    (company-prescient-mode 1)))
-
-(use-package company
-  :unless (equal custom-ide 'custom-ide-lsp-bridge)
-  ;; :after tree-sitter
-  :ensure t
-  :delight company-mode
-  :config (mifi/company-config)
-  :custom
-  (company-minimum-prefix-length 2)
-  (company-idle-delay 0.5))
-
-;; IMPORTANT:
-;; Don't use company at all if lsp-bridge is active.
-;; lsp-bridge already provides similar functionality.
-
-;; :config
-;; (add-to-list 'company-backends 'company-yasnippet))
-
-;;; ##########################################################################
-
-;; (require 'company-box)
-;; (add-hook 'company-mode-hook 'company-box-mode)
-
-(use-package company-box
-  :ensure t
-  :after company
-  :delight 'cb
-  ;; :vc (:url "https://github.com/sebastiencs/company-box.git")
-  :hook (company-mode . company-box-mode))
-
-(use-package company-jedi
-  :when  (equal custom-ide 'custom-ide-elpy)
-  :after (:all python company)
-  :config
-  (jedi:setup)
-  (defun my/company-jedi-python-mode-hook ()
-    (add-to-list 'company-backends 'company-jedi))
-  (add-hook 'python-mode-hook 'my/company-jedi-python-mode-hook))
-
-(use-package company-anaconda
-  :when (equal custom-ide 'custom-ide-anaconda)
-  :after (:all anaconda company)
-  :hook (python-mode . anaconda-mode)
-  :config
-  (eval-after-load "company"
-    '(add-to-list 'company-backends 'company-anaconda)))
 
 ;;; ##########################################################################
 
@@ -3326,21 +3325,19 @@ capture was not aborted."
     (add-to-list 'python-shell-completion-native-disabled-interpreters "python3")
     (setq python-shell-completion-native-disabled-interpreters '("python3"))))
 
-(when enable-python
-  (use-package blacken
-    :ensure t
-    :when enable-python
-    :after python)) ;Format Python file upon save.
+(use-package blacken
+  :ensure t
+  :when enable-python
+  :after python) ;Format Python file upon save.
 
 ;;; ##########################################################################
 
-;; Using when instead of :when so that the package doesn't get loaded.
-(when enable-python
-  (use-package py-autopep8
-    :ensure t
-    ;; :vc (:url "https://github.com/emacsmirror/py-autopep8.git")
-    :after python
-    :hook ((python-mode . py-autopep8-mode))))
+(use-package py-autopep8
+  :when enable-python
+  :ensure t
+  ;; :vc (:url "https://github.com/emacsmirror/py-autopep8.git")
+  :after python
+  :hook ((python-mode . py-autopep8-mode)))
 
 ;;; ##########################################################################
 
@@ -3363,22 +3360,22 @@ capture was not aborted."
 
 ;;; ##########################################################################
 
-;; Using when instead of :when so that the package doesn't get loaded.
-(when enable-python
-  (use-package pyvenv-auto
-    :ensure t
-    :after python
-    :hook (python-mode . pyvenv-auto-run)))
+(use-package pyvenv-auto
+  :when enable-python
+  :ensure t
+  :after python
+  :hook (python-mode . pyvenv-auto-run))
 
 ;;; ##########################################################################
-;; Using when instead of :when so that the package doesn't get loaded.
-(when enable-python
-  (use-package pydoc
-    ;;:ensure (:host github :repo "statmobile/pydoc")
-    :after python
-    :custom
-    (pydoc-python-command "python3")
-    (pydoc-pip-version-command "pip3 --version")))
+
+(use-package pydoc
+  ;;:ensure (:host github :repo "statmobile/pydoc")
+  :ensure t
+  :when enable-python
+  :after python
+  :custom
+  (pydoc-python-command "python3")
+  (pydoc-pip-version-command "pip3 --version"))
 
 (let
   ((installer "bash -c \"sh <(curl -fsSL https://raw.githubusercontent.com/ocaml/opam/master/shell/install.sh) --version 2.2.0\""))
@@ -3396,6 +3393,7 @@ capture was not aborted."
 
 (use-package opam-std-libs
   :when enable-ocaml
+  :ensure nil
   :ensure-system-package
   ( ("~/.opam"                  . "opam init && opam install core utop base stdio --yes")
     ("~/.opam/default/lib/core" . "opam install core --yes")
@@ -3421,23 +3419,25 @@ capture was not aborted."
 
 ;;; ##########################################################################
 
-(use-package opam-emacs-setup
-  :init
-  (mrf/set-opam-load-path)
-  :ensure nil
-  :when enable-ocaml
-  :after opam-std-libs
-  :config
-  (add-to-list 'exec-path "~/.opam/default/bin")
-  :ensure-system-package
-  ((ocamllsp . "opam install earlybird --yes")))
+(defun mifi/opam-emacs-setup ()
+  (use-package opam-emacs-setup
+    :init
+    (mrf/set-opam-load-path)
+    :ensure nil
+    :when enable-ocaml
+    :after opam-std-libs
+    :config
+    (add-to-list 'exec-path "~/.opam/default/bin")
+    :ensure-system-package
+    ((ocamllsp . "opam install earlybird --yes"))))
+
+(add-hook 'elpaca-after-init-hook #'mifi/opam-emacs-setup)
 
 ;;; ##########################################################################
 
 (use-package merlin
   :when enable-ocaml
-  :demand t
-  :ensure nil
+  :ensure nil :defer t
   :delight " 🪄"
   :after opam-emacs-setup)
 
@@ -3477,6 +3477,7 @@ capture was not aborted."
 
 (defun mifi/tuareg-mode-hook ()
   (interactive)
+  (message "<<<>>> tuareg-mode-hook called.")
   (merlin-mode t)
   (opam-init)
   (eglot-ensure)
@@ -3489,7 +3490,7 @@ capture was not aborted."
   :when enable-ocaml
   :ensure nil
   :demand t
-  ;; :after opam-emacs-setup merlin jsonrpc
+  :after opam-emacs-setup
   :hook (tuareg-mode . mifi/tuareg-mode-hook)
   :mode
   ("\\.ml\\'" . mifi/tuareg-mode-hook)
@@ -3519,8 +3520,7 @@ capture was not aborted."
       :after tuareg
       :config
       (setq-default tuareg-indent-align-with-first-arg t)
-      (setq-default compile-command "dune build ")
-      (add-hook 'tuareg-mode-hook #'mifi/tuareg-mode-hook))))
+      (setq-default compile-command "dune build "))))
 
 ;;; ##########################################################################
 
@@ -3561,20 +3561,19 @@ capture was not aborted."
 
 ;;; ##########################################################################
 
-(when enable-ts
-  (use-package typescript-mode
-    :defer t
-    :mode "\\.ts\\'"
-    :hook
-    (typescript-mode . lsp-deferred)
-    (js2-mode . lsp-deferred)
-    :config
-    (setq typescript-indent-level 4)
-    (cond
-      ((equal debug-adapter 'debug-adapter-dap-mode)
+(use-package typescript-ts-mode
+  :ensure nil :when enable-ts :defer t
+  :mode "\\.ts\\'"
+  :hook
+  (typescript-ts-mode . lsp-deferred)
+  (js2-mode . lsp-deferred)
+  :config
+  (setq typescript-indent-level 4)
+  (cond
+    ((equal debug-adapter 'debug-adapter-dap-mode)
       (bind-keys :map typescript-mode-map
-          ("C-c ." . dap-hydra/body))
-      (dap-node-setup)))))
+        ("C-c ." . dap-hydra/body))
+      (dap-node-setup))))
 
 ;;; ##########################################################################
 
@@ -3796,16 +3795,15 @@ capture was not aborted."
 ;;; ##########################################################################
 ;;; DAP for Python
 
-(when enable-python
-  (use-package dap-python
-    ;; :vc (:url "https://github.com/emacs-lsp/dap-mode" :main-file dap-python)
-    :ensure (:package "dap-python" :type git :host github :repo "emacs-lsp/dap-mode")
-    :defer t
-    :when (equal debug-adapter 'debug-adapter-dap-mode)
-    :after dap-mode
-    :config
-    (setq dap-python-executable "python3") ;; Otherwise it looks for 'python' else error.
-    (setq dap-python-debugger 'debugpy)))
+(use-package dap-python
+  ;; :vc (:url "https://github.com/emacs-lsp/dap-mode" :main-file dap-python)
+  :ensure (:package "dap-python" :type git :host github :repo "emacs-lsp/dap-mode")
+  :defer t
+  :when (and (equal debug-adapter 'debug-adapter-dap-mode) enable-python)
+  :after dap-mode
+  :config
+  (setq dap-python-executable "python3") ;; Otherwise it looks for 'python' else error.
+  (setq dap-python-debugger 'debugpy))
 
 ;;; ##########################################################################
 
@@ -4017,6 +4015,7 @@ capture was not aborted."
 
 (use-package diff-hl
   :after track-changes
+  :ensure t
   :config
   (global-diff-hl-mode))
 
