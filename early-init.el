@@ -7,14 +7,12 @@
 ;;
 ;;
 ;; DO NOT MODIFY this file directly as changes will be overwritten.
-;; The source this file is generated from is from "emacs-config-elpa.org"
+;; The source this file is generated from is from "emacs-config.org"
 
 ;;; Code:
 
 ;;; ##########################################################################
-
-(setq gc-cons-threshold 80000000) ;; original value * 100
-(setq package-enable-at-startup t)
+(setq package-enable-at-startup nil)
 
 ;; Process performance tuning
 
@@ -90,13 +88,13 @@
 ;;   (gcmh-mode 1))
 
 ;;; Set high for initial load.
-(setq gc-cons-threshold (* 1024 1024 100))
+;; (setq gc-cons-threshold (* 1024 1024 100))
+(setq gc-cons-threshold 8000000) ;; Default
 (setq gc-cons-percentage 0.3)
 
 (add-hook 'emacs-startup-hook
   (lambda ()
-    (setq gc-cons-threshold 80000000) ;; original value * 100
-    (setq gc-cons-percentage 0.1) ;; Default value for `gc-cons-percentage'
+    ;; (setq gc-cons-percentage 0.1) ;; Default value for `gc-cons-percentage'
     (setq startup-time-message
       (format "Emacs read in %.2f seconds with %d garbage collections."
         (float-time (time-subtract after-init-time before-init-time))
@@ -140,6 +138,10 @@ defined path-separator."
     "/Applications/Firefox.app/Contents/MacOS/firefox")
   (setq browse-url-chrome-program
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"))
+
+;;; Fixup native-comp-eln-load-path directory
+(add-to-list 'native-comp-eln-load-path
+  (expand-file-name "eln-cache" user-emacs-directory))
 
 (add-hook 'before-init-hook #'mifi/setup-exec-path)
 
