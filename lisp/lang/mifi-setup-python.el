@@ -16,78 +16,6 @@
 (defvar python-executable (locate-file "python3" exec-path))
 ;;; ...........................................................................
 
-;;;
-;;; The following `defvar` and `declare-function` statements are to JUST get
-;;; rid of byte-compilation warnings - a pet peeve of mine.
-;;;
-(defvar dap-next)
-(defvar dap-step-in)
-(defvar dap-step-out)
-(defvar dap-next)
-(defvar dap-step-in)
-(defvar dap-step-out)
-(defvar dap-continue)
-(defvar dap-restart-frame)
-(defvar dap-switch-session)
-(defvar dap-switch-thread)
-(defvar dap-switch-stack-frame)
-(defvar dap-up-stack-frame)
-(defvar dap-down-stack-frame)
-(defvar dap-ui-locals)
-(defvar dap-ui-breakpoints)
-(defvar dap-ui-repl)
-(defvar dap-ui-sessions)
-(defvar dap-breakpoint-toggle)
-(defvar dap-breakpoint-add)
-(defvar dap-breakpoint-delete)
-(defvar dap-breakpoint-condition)
-(defvar dap-breakpoint-hit-condition)
-(defvar dap-breakpoint-log-message)
-(defvar dap-debug)
-(defvar dap-debug-recent)
-(defvar dap-debug-restart)
-(defvar dap-debug-last)
-(defvar dap-debug-edit-template)
-(defvar dap-eval)
-(defvar dap-ui-expressions-add)
-(defvar dap-eval-region)
-(defvar dap-eval-thing-at-point)
-
-(delcare-function dap-next "dap-mode" ())
-(delcare-function dap-step-in "dap-mode" ())
-(delcare-function dap-step-out "dap-mode" ())
-(delcare-function dap-next "dap-mode" ())
-(delcare-function dap-step-in "dap-mode" ())
-(delcare-function dap-step-out "dap-mode" ())
-(delcare-function dap-continue "dap-mode" ())
-(delcare-function dap-restart-frame "dap-mode" ())
-(delcare-function dap-switch-session "dap-mode" ())
-(delcare-function dap-switch-thread "dap-mode" ())
-(delcare-function dap-switch-stack-frame "dap-mode" ())
-(delcare-function dap-up-stack-frame "dap-mode" ())
-(delcare-function dap-down-stack-frame "dap-mode" ())
-(delcare-function dap-ui-locals "dap-mode" ())
-(delcare-function dap-ui-breakpoints "dap-mode" ())
-(delcare-function dap-ui-repl "dap-mode" ())
-(delcare-function dap-ui-sessions "dap-mode" ())
-(delcare-function dap-breakpoint-toggle "dap-mode" ())
-(delcare-function dap-breakpoint-add "dap-mode" ())
-(delcare-function dap-breakpoint-delete "dap-mode" ())
-(delcare-function dap-breakpoint-condition "dap-mode" ())
-(delcare-function dap-breakpoint-hit-condition "dap-mode" ())
-(delcare-function dap-breakpoint-log-message "dap-mode" ())
-(delcare-function dap-debug "dap-mode" ())
-(delcare-function dap-debug-recent "dap-mode" ())
-(delcare-function dap-debug-restart "dap-mode" ())
-(delcare-function dap-debug-last "dap-mode" ())
-(delcare-function dap-debug-edit-template "dap-mode" ())
-(delcare-function dap-eval "dap-mode" ())
-(delcare-function dap-ui-expressions-add "dap-mode" ())
-(delcare-function dap-eval-region "dap-mode" ())
-(delcare-function dap-eval-thing-at-point "dap-mode" ())
-;;;
-;;; ...........................................................................
-
 ;;; ##########################################################################
 
 (defun mifi/set-custom-ide-python-keymaps ()
@@ -105,6 +33,7 @@
         ("C-c g D" . xref-find-definitions-other-window)
         ("C-c g g" . xref-find-definitions)
         ("C-c g n" . xref-find-references-and-replace)
+        ("C-c g ." . python-eldoc-at-point)
         ("C-c g ?" . eldoc-doc-buffer)))
     ((equal custom-ide 'custom-ide-elpy)
       (elpy-enable)
@@ -213,6 +142,10 @@
   :defer t
   :mode ("\\.py\\'" . mifi/load-python-file-hook)
   :hook (python-mode . mifi/python-mode-triggered)
+  :bind (:map python-mode-map
+          ("C-c C-q" . quote-region)
+          ("C-c q"   . quote-word)
+          ("C-c |"   . display-fill-column-indicator-mode))
   :config
   (if (boundp 'python-shell-completion-native-disabled-interpreters)
     (add-to-list 'python-shell-completion-native-disabled-interpreters python-executable)
@@ -246,7 +179,7 @@
   (kmacro "C-s b e g i n _ s r c SPC e m a c s - l i s p <return> <down> C-c ' C-x h C-c ] C-x h M-x u n t a b <return> C-c ' C-s e n d _ s r c <return> <down>"))
 
 (when enable-python
-  (eval-after-load "python"
+  (eval-after-load "python-mode"
     #'(bind-keys :map python-mode-map
       ("C-c C-q" . quote-region)
       ("C-c q"   . quote-word)

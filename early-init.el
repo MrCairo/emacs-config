@@ -39,20 +39,8 @@
      ("nongnu" . "https://elpa.nongnu.org/nongnu/")
      ("melpa" . "https://melpa.org/packages/")))
 
-(when (file-directory-p "/opt/local/elpa-mirror")
-  ;; Make sure to refresh this local reppo often!!
-  (add-to-list 'package-archives '("local-gnu" . "/opt/local/elpa-mirror/gnu"))
-  (add-to-list 'package-archives '("local-nongnu" . "/opt/local/elpa-mirror/nongnu"))
-  (add-to-list 'package-archives '("local-melpa" . "/opt/local/elpa-mirror/melpa"))
-  (add-to-list 'package-archives '("local-melpa-stable" . "/opt/local/elpa-mirror/stable-melpa")))
-
-;; Highest number gets priority (what is not mentioned has priority 0)
 (setq package-archive-priorities
   '(
-     ( "local-gnu" . 99 )
-     ( "local-melpa" . 98 )
-     ( "local-nongnu" . 97)
-     ( "local-melpa-stable" . 90 )
      ( "org" . 5 )
      ( "gnu" . 50 )
      ( "melpa-stable" . 40 )
@@ -60,6 +48,17 @@
      ( "gnu-dev" . 20 )
      ( "nongnu" . 10)
      ))
+
+(when (file-directory-p "/opt/local/elpa-mirror")
+  ;; Make sure to refresh this local reppo often!!
+  (add-to-list 'package-archives '("local-gnu" . "/opt/local/elpa-mirror/gnu"))
+  (add-to-list 'package-archives '("local-nongnu" . "/opt/local/elpa-mirror/nongnu"))
+  (add-to-list 'package-archives '("local-melpa" . "/opt/local/elpa-mirror/melpa"))
+  (add-to-list 'package-archives '("local-melpa-stable" . "/opt/local/elpa-mirror/stable-melpa"))
+  (add-to-list 'package-archive-priorities '( "local-gnu" . 99 ))
+  (add-to-list 'package-archive-priorities '( "local-melpa" . 98 ))
+  (add-to-list 'package-archive-priorities '( "local-nongnu" . 97))
+  (add-to-list 'package-archive-priorities '( "local-melpa-stable" . 90 )))
 
 (setq gnutls-algorithm-priority "NORMAL:-VERS-TLS1.3") ;; w/o this Emacs freezes when refreshing ELPA
 

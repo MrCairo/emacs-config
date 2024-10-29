@@ -167,20 +167,8 @@ Standard fare and good practice.
        ("nongnu" . "https://elpa.nongnu.org/nongnu/")
        ("melpa" . "https://melpa.org/packages/")))
 
-  (when (file-directory-p "/opt/local/elpa-mirror")
-    ;; Make sure to refresh this local reppo often!!
-    (add-to-list 'package-archives '("local-gnu" . "/opt/local/elpa-mirror/gnu"))
-    (add-to-list 'package-archives '("local-nongnu" . "/opt/local/elpa-mirror/nongnu"))
-    (add-to-list 'package-archives '("local-melpa" . "/opt/local/elpa-mirror/melpa"))
-    (add-to-list 'package-archives '("local-melpa-stable" . "/opt/local/elpa-mirror/stable-melpa")))
-
-  ;; Highest number gets priority (what is not mentioned has priority 0)
   (setq package-archive-priorities
     '(
-       ( "local-gnu" . 99 )
-       ( "local-melpa" . 98 )
-       ( "local-nongnu" . 97)
-       ( "local-melpa-stable" . 90 )
        ( "org" . 5 )
        ( "gnu" . 50 )
        ( "melpa-stable" . 40 )
@@ -188,6 +176,17 @@ Standard fare and good practice.
        ( "gnu-dev" . 20 )
        ( "nongnu" . 10)
        ))
+
+  (when (file-directory-p "/opt/local/elpa-mirror")
+    ;; Make sure to refresh this local reppo often!!
+    (add-to-list 'package-archives '("local-gnu" . "/opt/local/elpa-mirror/gnu"))
+    (add-to-list 'package-archives '("local-nongnu" . "/opt/local/elpa-mirror/nongnu"))
+    (add-to-list 'package-archives '("local-melpa" . "/opt/local/elpa-mirror/melpa"))
+    (add-to-list 'package-archives '("local-melpa-stable" . "/opt/local/elpa-mirror/stable-melpa"))
+    (add-to-list 'package-archive-priorities '( "local-gnu" . 99 ))
+    (add-to-list 'package-archive-priorities '( "local-melpa" . 98 ))
+    (add-to-list 'package-archive-priorities '( "local-nongnu" . 97))
+    (add-to-list 'package-archive-priorities '( "local-melpa-stable" . 90 )))
 
   (setq gnutls-algorithm-priority "NORMAL:-VERS-TLS1.3") ;; w/o this Emacs freezes when refreshing ELPA
 
@@ -618,7 +617,7 @@ These are features that basically have multiple-choice options instead of being 
   for their personal wiki."
     :type '(radio
              (const :tag "Denote" custom-note-system-denote)
-             (const :tag "Org-roam" custom-note-system-org-roam)
+             (const :tag "Org Roam" custom-note-system-org-roam)
              (const :tag "Org Journal" custom-note-system-org-journal)
              (const :tag "None" custom-note-system-none))
     :group 'mifi-config-features)
@@ -1106,14 +1105,13 @@ Delight enables you to customise the mode names displayed in the mode line. It's
     (delight '( (abbrev-mode " Abv" abbrev)
                 (anaconda-mode)
                 (buffer-face-mode "Buff")
-                (company-box-mode "CBox")
                 (counsel-mode)
                 (golden-ratio-mode " 𝜑")
                 (lisp-interaction-mode " 𝝺")
                 (mmm-keys-minor-mode " m3")
                 (projectile-mode " ->")
                 (tree-sitter-mode " ts")
-              (eldoc-mode " 📖")
+                (eldoc-mode " 📖")
                 (overwrite-mode " Ov" t)
                 (python-mode " Py" :major)
                 (rainbow-mode " 🌈")
@@ -1401,7 +1399,7 @@ The Hydra is vanquished once Hercules, any binding that isn't the Hydra's head, 
 
   (use-package hydra
     :defer t
-    :command defhydra
+    :commands defhydra
     :ensure t)
 
 #+end_src
@@ -1968,28 +1966,25 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
   ;; Don't use lsp-bridge with company as lsp-bridge already provides the same
   ;; features. They actually collide.
 
-  (defun mifi/company-config ()
-    (interactive)
-    (bind-keys :map company-active-map
-      ("C-n". company-select-next)
-      ("C-p". company-select-previous)
-      ("M-<". company-select-first)
-      ("M->". company-select-last)
-      ("<tab>" . company-complete-selection))
-    (global-company-mode 1)
-    (when (featurep 'prescient)
-      (company-prescient-mode 1)))
-
   (use-package company
     :unless (equal custom-ide 'custom-ide-lsp-bridge)
-    ;; :after tree-sitter
     :ensure t
-    :defer t
-    :delight company-mode
-    :config (mifi/company-config)
+    :delight
+    (company-mode " 🏢")
     :custom
     (company-minimum-prefix-length 2)
-    (company-idle-delay 0.5))
+    (company-idle-delay 0.5)
+    :commands (global-company-mode company-mode)
+    :bind (:map company-active-map
+            ("C-n". company-select-next)
+            ("C-p". company-select-previous)
+            ("M-<". company-select-first)
+            ("M->". company-select-last)
+            ("<tab>" . company-complete-selection))
+    :hook (after-init . (lambda () (global-company-mode 1)))
+    :config
+    (when (featurep 'prescient)
+      (company-prescient-mode 1)))
 
   ;; IMPORTANT:
   ;; Don't use company at all if lsp-bridge is active.
@@ -2011,7 +2006,8 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
   (use-package company-box
     :ensure t
     :after company
-    :delight 'cb
+    :delight
+    (company-box-mode " 📦")
     ;; :vc (:url "https://github.com/sebastiencs/company-box.git")
     :hook (company-mode . company-box-mode))
 
@@ -2181,19 +2177,19 @@ Helm is an Emacs framework for incremental completions and narrowing selections.
     ("M-s o" . helm-occur)
     ([remap find-file] . helm-find-files)
     ([remap switch-to-buffer] . helm-mini)
-    :custom
+    :init
     ;; open helm buffer inside current window, not occupy whole other window
-    (helm-split-window-in-side-p t)
+    (setq helm-split-window-inside-p t)
     ;; move to end or beginning of source when reaching top or bottom of source.
-    (helm-move-to-line-cycle-in-source t)
+    (setq helm-move-to-line-cycle-in-source t)
     ;; search for library in `require' and `declare-function' sexp.
-    (helm-ff-search-library-in-sexp t)
+    (setq helm-ff-search-library-in-sexp t)
     ;; scroll 8 lines other window using M-<next>/M-<prior>
-    (helm-scroll-amount 8)
-    (helm-ff-file-name-history-use-recentf t)
-    (helm-echo-input-in-header-line t)
-    (helm-autoresize-max-height 0)
-    (helm-autoresize-min-height 20)
+    (setq helm-scroll-amount 8)
+    (setq helm-ff-file-name-history-use-recentf t)
+    (setq helm-echo-input-in-header-line t)
+    ;; (setq helm-autoresize-max-height 0)
+    ;; (setq helm-autoresize-min-height 20)
     :config
     (global-set-key (kbd "C-c h") 'helm-command-prefix)
     (when (executable-find "curl")
@@ -2230,7 +2226,7 @@ Marginalia are marks or annotations placed at the margin of the page of a book o
     :when (or (equal completion-handler 'comphand-vertico)
             (equal completion-handler 'comphand-corfu))
     :ensure t
-    :defer t
+    :after (:any vertico corfu)
     ;; :commands marginalia-mode
     :custom
     (marginalia-max-relative-age 60)
@@ -4864,7 +4860,7 @@ If a tree-sitter grammer is available and installed, use it instead of the corre
   (use-package magit
     :after transient
     :ensure t :defer t
-    :command magit-status)
+    :commands magit-status)
 
   ;; NOTE: Make sure to configure a GitHub token before using this package!
   ;; - https://magit.vc/manual/forge/Token-Creation.html#Token-Creation
@@ -4943,369 +4939,6 @@ This is an easy way to install =opam= using ~brew~ but it may not be the most cu
   
 #+end_src
 
-*** opam (environment)
-
-This package will automatically perform the equivalent of =eval $(opam env)= and set the current OPAM and PATH environment variables. The package determines the new environment based upon the presence of an =_opam= or =.opam= directory in the cwd. If there is no matching directory, the current OPAM environment is not changed.
-
-#+begin_src emacs-lisp :tangle no
-
-  (let
-    ((installer "bash -c \"sh <(curl -fsSL https://raw.githubusercontent.com/ocaml/opam/master/shell/install.sh) --version 2.2.0\""))
-    (use-package opam
-      :ensure t
-      :when enable-ocaml
-      :demand t
-      :ensure-system-package (opam . installer)))
-
-  (defun opam-switch-prefix+relative-path (relative-path)
-    (let ((base (getenv "OPAM_SWITCH_PREFIX")))
-      (concat (concat base "/") relative-path)))
-
-#+end_src
-
-*** The .ocamlinit file
-
-This should be added/appended to anything in the existing ~.ocamlinit~ file.
-
-#+begin_src shell :tangle no
-
-  sig=" ## Added by Emacs config for Ocaml "
-  count=$(grep -l "${sig}" ~/.ocamlinit)
-  if [ -z $count ]; then
-      printf "
-  (*${sig}*)
-  #require \"core.top\";;
-  #require \"ppx_jane\";;
-  open Base;;
-  (* ## End Emacs custom config *)
-  " >> ~/.ocamlinit
-  fi
-
-#+end_src
-
-#+RESULTS:
-
-*** HOWTO Install Merlin / Taureg
-
-Merlin is an editor service that provides advanced IDE features for OCaml.
-**Note**: when running =opam user-setup install -y= the resulting ~opam-user-setup.el~ file is specific to the current =opam switch= that is in effect. 
-
-#+begin_src shell :tangle no
-
-  opam update -y             # (optional) check latests releases
-  opam install tuareg -y     # For Emacs only
-  opam install merlin -y     # Install merlin and it's dependencies
-  opam user-setup install -y # Emacs and VIM auto-configuration
-
-#+end_src
-
-*** Install Standard Libraries
-
-These are (mostly) the Jane Street libraries that ship with OCaml. They're very
-good and have become more-or-less the defacto standard.
-
-#+begin_src emacs-lisp :tangle no
-  ;;; ##########################################################################
-
-  (use-package opam-std-libs
-    :when enable-ocaml
-    :ensure-system-package
-    ( ("~/.opam"                  . "opam init && opam install core utop base stdio --yes")
-      ("~/.opam/default/lib/core" . "opam install core --yes")
-      ("~/.opam/default/lib/utop" . "opam install utop --yes")))
-
-#+end_src
-
-*** HOWTO Install OCaml LSP Server
-
-This is not 100% necessary since Ocaml can use =merlin= directly instead of fronting with an LSP server. But, we install it since EGLOT makes use of it.
-
-#+begin_src shell :tangle no
-
-  opam install ocaml-lsp-server -y
-
-#+end_src
-
-*** Code Formatter and Builder
-#+begin_src bash :tangle no
-
-  opam install ocamlformat dune -y
-
-#+end_src
-
-*** Setup path to ~opam~ installed emacs lisp modules
-
-#+begin_src emacs-lisp :tangle no
-  ;;; ##########################################################################
-
-  (defun mrf/set-opam-load-path ()
-    (let ((opam-share (ignore-errors (car (process-lines "opam" "var" "share")))))
-      (when (and (and opam-share (file-directory-p opam-share)) enable-ocaml)
-        (message "Updating load-path for OPAM to %s" (expand-file-name "emacs/site-lisp" opam-share))
-        (add-to-list 'load-path (expand-file-name "emacs/site-lisp" opam-share))
-        (autoload 'merlin-mode "merlin" nil t nil)
-        ;; Automatically start it in OCaml buffers
-        ;; (add-hook 'tuareg-mode-hook 'merlin-mode t)
-        (add-hook 'caml-mode-hook 'merlin-mode t)
-        ;; Use opam switch to lookup ocamlmerlin binary
-        (setq merlin-command 'opam)
-        ;; To easily change opam switches within a given Emacs session, you can
-        ;; install the minor mode https://github.com/ProofGeneral/opam-switch-mode
-        ;; and use one of its "OPSW" menus.
-        )))
-
-#+end_src
-
-*** Opam Emacs Configuration
-
-This puts a most of the installs mentioned above into a nice ~use-package~ form. This makes use of the ~opam-emacs-setup~ package in the ~lisp~ directory. It's just a stub but allows us to configure enacs using the =:ensure-system-package= option. This
-is specifc to a macOS or Linux OS.
-
-#+begin_src emacs-lisp :tangle no
-  ;;; ##########################################################################
-
-  (use-package opam-emacs-setup
-    :init
-    (mrf/set-opam-load-path)
-    :ensure nil
-    :when enable-ocaml
-    :after opam-std-libs
-    :config
-    (add-to-list 'exec-path "~/.opam/default/bin"))
-
-#+end_src
-
-*** Configure Merlin / merlin-eldoc / merlin-company
-
-Merlin is an editor service that provides advanced IDE features for OCaml.
-
-#+begin_src emacs-lisp :tangle no
-  ;;; ##########################################################################
-
-  (use-package merlin
-    :when enable-ocaml
-    :demand t
-    :ensure nil
-    :delight " 🪄"
-    :after opam-emacs-setup)
-
-  (use-package merlin-eldoc
-    :when enable-ocaml :defer t :after merlin :ensure t)
-
-  (use-package merlin-company
-    :when (and enable-ocaml (not (equal custom-ide 'custom-ide-lsp-bridge)))
-    :ensure nil
-    :defer t :after merlin company
-    :config
-    (add-hook 'merlin-mode-hook 'company-mode)
-    (with-eval-after-load 'company
-      (add-to-list 'company-backends 'merlin-company-backend)))
-
-#+end_src
-
-*** Dune
-
-Dune is a build system for OCaml (with support for Reason and Coq). It is not intended as a completely generic build system that’s able to build any project in any language. On the contrary, it makes lots of choices in order to encourage a consistent development style.
-
-#+begin_src emacs-lisp :tangle no
-
-  (use-package dune
-    :ensure nil
-    :when enable-ocaml
-    :hook (dune-mode . opam-init)
-    :demand t
-    :ensure-system-package
-    (dune . "opam install dune --yes"))
-
-  (use-package dune-flymake
-    :when enable-ocaml
-    :after dune
-    :ensure nil
-    :defer t)
-
-  (use-package dune-watch
-    :when enable-ocaml
-    :after dune
-    :ensure nil
-    :defer t)
-
-#+end_src
-
-*** Configure Tuareg
-
-*Tuareg: an Emacs OCaml mode*
-
-This archive contains files to help editing OCaml code, to highlight important parts of the code, to run an OCaml REPL (also called toplevel), and to run the OCaml debugger within Emacs.
-
-#+begin_src emacs-lisp :tangle no
-  ;;; ##########################################################################
-
-  (defun mifi/tuareg-mode-hook ()
-    (interactive)
-    (merlin-mode t)
-    (opam-init)
-    (eglot-ensure)
-    (dap-mode)
-    (setq tuareg-mode-name "🐫")
-    (when (functionp 'prettify-symbols-mode)
-      (prettify-symbols-mode)))
-
-  (use-package tuareg
-    :when enable-ocaml
-    :ensure nil
-    :demand t
-    ;; :after opam-emacs-setup merlin jsonrpc
-    :hook (tuareg-mode . mifi/tuareg-mode-hook)
-    :mode
-    ("\\.ml\\'" . mifi/tuareg-mode-hook)
-    ("\\.mli\\'" . tuareg-mode)
-    :custom
-    (tuareg-indent-align-with-first-arg t)
-    (compile-command "dune build ")
-    :config
-    (bind-keys :map tuareg-mode-map
-      ("C-c ," . dap-hydra/body)))
-
-#+end_src
-
-**** tuareg-opam
-
-This module does many things but most important is that it updates the =exec-path= based upon the local opam environment. If the project contains an ~_opam~ directory, then this package will automatically update the exec-path. If the ~_opam~ directory is not present, the the default ("~/.opam/default") is used instead.
-
-#+begin_src emacs-lisp :tangle no
-
-  ;; Does many things but also updates the exec-path to the local
-  ;; opam environment.
-  (use-package tuareg-opam
-    :when enable-ocaml
-    :ensure nil
-    :after tuareg)
-  
-#+end_src
-
-*** Load the opam-user-setup.el
-
-This file is created by the actual opam/ocaml installation and contains paths and other imports that are specific to the user login. It also includes hooks that will change the PATH to opam to the current projec t- similar to how the package 'pyvenv-auto' works.
-
-#+begin_src emacs-lisp :tangle no
-  ;;; ##########################################################################
-
-  (let
-    ((file (expand-file-name "opam-user-setup.el" emacs-config-directory)))
-    (when (and (file-exists-p file) (not (featurep 'opam-user-setup)))
-      (use-package opam-user-setup
-        :when enable-ocaml
-        :ensure nil
-        :after tuareg
-        :config
-        (setq-default tuareg-indent-align-with-first-arg t)
-        (setq-default compile-command "dune build ")
-        (add-hook 'tuareg-mode-hook #'mifi/tuareg-mode-hook))))
-
-#+end_src
-
-
-*** Other OCaml Related Packages and functions
-
-Here are some other packages that are useful when using OCaml.
-
-#+begin_src emacs-lisp :tangle no
-  ;;; ##########################################################################
-
-  (use-package ocp-indent
-    :when enable-ocaml
-    :after opam-emacs-setup
-    :ensure nil
-    :ensure-system-package
-    ("~/.opam/default/bin/ocp-indent" . "opam install ocp-indent --yes"))
-    ;; :vc (:url "https://github.com/OCamlPro/ocp-indent" :main-file tools/ocp-indent))
-    ;; :ensure (:inherit t :depth 1
-    ;;          :fetcher github :repo "OCamlPro/ocp-indent"
-    ;;          :files ("tools/ocp-indent.el")))
-
-  (use-package ocamlformat
-    :when enable-ocaml
-    :after ocp-indent
-    :ensure nil
-    :bind ("<f6>" . ocamlformat)
-    :ensure-system-package
-    ("~/.opam/default/lib/ocamlformat-lib" . "opam install ocamlformat --yes")
-    :custom (ocamlformat-enable 'enable-outside-detected-project))
-
-  (use-package utop
-    :when enable-ocaml
-    :after opam-user-setup
-    :ensure nil
-    :defer t
-    :custom
-    (utop-command "opam config exec utop -- -emacs"))
-
-  (use-package opam-switch-mode
-    :ensure t
-    :when enable-ocaml
-    :after opam-user-setup
-    :hook
-    (tuareg-mode . opam-switch-mode))
-
-#+end_src
-
-*** OCaml Tree-sitter Grammer
-#+begin_src emacs-lisp :tangle no
-  
-  (setq treesit-language-source-alist
-   '((ocaml "https://github.com/tree-sitter/tree-sitter-ocaml" "master" "ocaml/src")))
-
-#+end_src
-
-#+begin_src tuareg
-
-  open Printf;;
-
-  print_endline "Hello world!";;
-
-#+end_src
-
-#+RESULTS:
-: ()
-
-
-#+begin_src tuareg
-
-  open Stdio;;
-  open List;;
-
-  let rec even_index_elements l =
-    match l with
-      _::b::t -> b :: even_index_elements t
-    | _ -> [];;
-
-  even_index_elements [1;2;1;4;1;5];;
-
-  let rec print_list = function
-      [] -> ()
-    | e::l -> print_int e ; print_string " " ; print_list l;;
-
-  let plain_list = [1;100;50;12];;
-
-  let rec reverse_list l =
-    match l with
-    | [] -> []
-    | h::t -> reverse_list t @ [h]
-
-  let make_palendrome l =
-    match l with
-    | [] -> []
-    | h::t -> h::t @ reverse_list l;;
-
-  print_endline "Print a Palendrome\n";;
-  print_list(make_palendrome plain_list);;
-
-  print_list (even_index_elements [1;2;1;4;1;5]);;
-
-#+end_src
-
-#+RESULTS:
-: ()
 ** JavaScript
 *** Typescript
 

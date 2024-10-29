@@ -262,7 +262,7 @@ augments the Org-mode syntax, and will work for anyone already using Org-mode
 for their personal wiki."
   :type '(radio
            (const :tag "Denote" custom-note-system-denote)
-           (const :tag "Org-roam" custom-note-system-org-roam)
+           (const :tag "Org Roam" custom-note-system-org-roam)
            (const :tag "Org Journal" custom-note-system-org-journal)
            (const :tag "None" custom-note-system-none))
   :group 'mifi-config-features)
@@ -636,14 +636,13 @@ font size is computed + 20 of this value."
   (delight '( (abbrev-mode " Abv" abbrev)
               (anaconda-mode)
               (buffer-face-mode "Buff")
-              (company-box-mode "CBox")
               (counsel-mode)
               (golden-ratio-mode " 𝜑")
               (lisp-interaction-mode " 𝝺")
               (mmm-keys-minor-mode " m3")
               (projectile-mode " ->")
               (tree-sitter-mode " ts")
-            (eldoc-mode " 📖")
+              (eldoc-mode " 📖")
               (overwrite-mode " Ov" t)
               (python-mode " Py" :major)
               (rainbow-mode " 🌈")
@@ -795,7 +794,7 @@ font size is computed + 20 of this value."
 
 (use-package hydra
   :defer t
-  :command defhydra
+  :commands defhydra
   :ensure t)
 
 ;;; ##########################################################################
@@ -1133,28 +1132,25 @@ font size is computed + 20 of this value."
 ;; Don't use lsp-bridge with company as lsp-bridge already provides the same
 ;; features. They actually collide.
 
-(defun mifi/company-config ()
-  (interactive)
-  (bind-keys :map company-active-map
-    ("C-n". company-select-next)
-    ("C-p". company-select-previous)
-    ("M-<". company-select-first)
-    ("M->". company-select-last)
-    ("<tab>" . company-complete-selection))
-  (global-company-mode 1)
-  (when (featurep 'prescient)
-    (company-prescient-mode 1)))
-
 (use-package company
   :unless (equal custom-ide 'custom-ide-lsp-bridge)
-  ;; :after tree-sitter
   :ensure t
-  :defer t
-  :delight company-mode
-  :config (mifi/company-config)
+  :delight
+  (company-mode " 🏢")
   :custom
   (company-minimum-prefix-length 2)
-  (company-idle-delay 0.5))
+  (company-idle-delay 0.5)
+  :commands (global-company-mode company-mode)
+  :bind (:map company-active-map
+          ("C-n". company-select-next)
+          ("C-p". company-select-previous)
+          ("M-<". company-select-first)
+          ("M->". company-select-last)
+          ("<tab>" . company-complete-selection))
+  :hook (after-init . (lambda () (global-company-mode 1)))
+  :config
+  (when (featurep 'prescient)
+    (company-prescient-mode 1)))
 
 ;; IMPORTANT:
 ;; Don't use company at all if lsp-bridge is active.
@@ -1171,7 +1167,8 @@ font size is computed + 20 of this value."
 (use-package company-box
   :ensure t
   :after company
-  :delight 'cb
+  :delight
+  (company-box-mode " 📦")
   ;; :vc (:url "https://github.com/sebastiencs/company-box.git")
   :hook (company-mode . company-box-mode))
 
@@ -1310,19 +1307,19 @@ font size is computed + 20 of this value."
   ("M-s o" . helm-occur)
   ([remap find-file] . helm-find-files)
   ([remap switch-to-buffer] . helm-mini)
-  :custom
+  :init
   ;; open helm buffer inside current window, not occupy whole other window
-  (helm-split-window-in-side-p t)
+  (setq helm-split-window-inside-p t)
   ;; move to end or beginning of source when reaching top or bottom of source.
-  (helm-move-to-line-cycle-in-source t)
+  (setq helm-move-to-line-cycle-in-source t)
   ;; search for library in `require' and `declare-function' sexp.
-  (helm-ff-search-library-in-sexp t)
+  (setq helm-ff-search-library-in-sexp t)
   ;; scroll 8 lines other window using M-<next>/M-<prior>
-  (helm-scroll-amount 8)
-  (helm-ff-file-name-history-use-recentf t)
-  (helm-echo-input-in-header-line t)
-  (helm-autoresize-max-height 0)
-  (helm-autoresize-min-height 20)
+  (setq helm-scroll-amount 8)
+  (setq helm-ff-file-name-history-use-recentf t)
+  (setq helm-echo-input-in-header-line t)
+  ;; (setq helm-autoresize-max-height 0)
+  ;; (setq helm-autoresize-min-height 20)
   :config
   (global-set-key (kbd "C-c h") 'helm-command-prefix)
   (when (executable-find "curl")
@@ -1347,7 +1344,7 @@ font size is computed + 20 of this value."
   :when (or (equal completion-handler 'comphand-vertico)
           (equal completion-handler 'comphand-corfu))
   :ensure t
-  :defer t
+  :after (:any vertico corfu)
   ;; :commands marginalia-mode
   :custom
   (marginalia-max-relative-age 60)
@@ -3239,7 +3236,7 @@ capture was not aborted."
 (use-package magit
   :after transient
   :ensure t :defer t
-  :command magit-status)
+  :commands magit-status)
 
 ;; NOTE: Make sure to configure a GitHub token before using this package!
 ;; - https://magit.vc/manual/forge/Token-Creation.html#Token-Creation
