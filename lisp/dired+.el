@@ -1046,6 +1046,8 @@
 ;;
 ;;; Change Log:
 ;;
+;; 2024/10/29 mfisher
+;;     Changed 'defadvice' to 'define-advice' because 'defadvice' will be deprecated as of Emacs 30.1.
 ;; 2024/10/08 dadams
 ;;     diredp-default-sort-arbitrary-function, diredp-sort-arbitrary-command: Added sorting by file date.
 ;; 2024/10/04 dadams
@@ -4462,7 +4464,7 @@ additional multi-command keys.  See `dired' (defadvice doc)."
 ;;
 ;; Add to doc string, to document non-positive prefix arg.
 ;;
-(defadvice dired (before diredp-doc-cons-arg activate)
+(define-advice dired (before diredp-doc-cons-arg activate)
   "Interactively, a prefix argument changes the behavior as follows:
 
 * If >= 0, you are first prompted for the `ls' switches to use.
@@ -4524,7 +4526,7 @@ means the key requires library `Bookmark+'):
 ;;
 ;; Add to doc string, to document non-positive prefix arg.
 ;;
-(defadvice dired-other-window (before diredp-doc-cons-arg activate)
+(define-advice dired-other-window (before diredp-doc-cons-arg activate)
   "Interactively, a prefix argument changes the behavior.
 A non-positive prefix arg lets you choose an explicit set of files and
 directories to list.  See the advice for `dired' for more information."
@@ -4535,7 +4537,7 @@ directories to list.  See the advice for `dired' for more information."
 ;;
 ;; Add to doc string, to document non-positive prefix arg.
 ;;
-(defadvice dired-other-frame (before diredp-doc-cons-arg activate)
+(define-advice dired-other-frame (before diredp-doc-cons-arg activate)
   "Interactively, a prefix argument changes the behavior.
 A non-positive prefix arg lets you choose an explicit set of files and
 directories to list.  See the advice for `dired' for more information."
@@ -15569,7 +15571,7 @@ Also abbreviate `mode-name', using \"Dired/\" instead of \"Dired by\"."
   (eval-after-load "find-dired"
     '(if (require 'nadvice nil t)       ; Emacs 24+
          (advice-add 'find-dired-sentinel :after #'diredp--find-dired-sentinel-advice)
-       (defadvice find-dired-sentinel (after diredp-find-dired-sentinel activate)
+       (define-advice find-dired-sentinel (after diredp-find-dired-sentinel activate)
          "Invoke `diredp-nb-marked-in-mode-name'."
          (diredp-nb-marked-in-mode-name))))
 

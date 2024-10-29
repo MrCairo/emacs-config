@@ -12,59 +12,6 @@
 ;; (setq debug-on-error t)
 ;;
 
-(defvar elpaca-installer-version 0.7)
-(defvar elpaca-directory (expand-file-name "elpaca/" user-emacs-directory))
-(defvar elpaca-builds-directory (expand-file-name "builds/" elpaca-directory))
-(defvar elpaca-repos-directory (expand-file-name "repos/" elpaca-directory))
-(defvar elpaca-order '(elpaca :repo "https://github.com/progfolio/elpaca.git"
-                              :ref nil :depth 1
-                              :files (:defaults "elpaca-test.el" (:exclude "extensions"))
-                              :build (:not elpaca--activate-package)))
-(let* ((repo  (expand-file-name "elpaca/" elpaca-repos-directory))
-       (build (expand-file-name "elpaca/" elpaca-builds-directory))
-       (order (cdr elpaca-order))
-       (default-directory repo))
-  (add-to-list 'load-path (if (file-exists-p build) build repo))
-  (unless (file-exists-p repo)
-    (make-directory repo t)
-    (when (< emacs-major-version 28) (require 'subr-x))
-    (condition-case-unless-debug err
-        (if-let ((buffer (pop-to-buffer-same-window "*elpaca-bootstrap*"))
-                 ((zerop (apply #'call-process `("git" nil ,buffer t "clone"
-                                                 ,@(when-let ((depth (plist-get order :depth)))
-                                                     (list (format "--depth=%d" depth) "--no-single-branch"))
-                                                 ,(plist-get order :repo) ,repo))))
-                 ((zerop (call-process "git" nil buffer t "checkout"
-                                       (or (plist-get order :ref) "--"))))
-                 (emacs (concat invocation-directory invocation-name))
-                 ((zerop (call-process emacs nil buffer nil "-Q" "-L" "." "--batch"
-                                       "--eval" "(byte-recompile-directory \".\" 0 'force)")))
-                 ((require 'elpaca))
-                 ((elpaca-generate-autoloads "elpaca" repo)))
-            (progn (message "%s" (buffer-string)) (kill-buffer buffer))
-          (error "%s" (with-current-buffer buffer (buffer-string))))
-      ((error) (warn "%s" err) (delete-directory repo 'recursive))))
-  (unless (require 'elpaca-autoloads nil t)
-    (require 'elpaca)
-    (elpaca-generate-autoloads "elpaca" repo)
-    (load "./elpaca-autoloads")))
-(add-hook 'after-init-hook #'elpaca-process-queues)
-(elpaca `(,@elpaca-order))
-(elpaca elpaca-use-package
-  (elpaca-use-package-mode))
-
-;;; ##########################################################################
-
-;; This package allows 'use-package' to support a 'use-system-package' option
-;; which specifies the thing (library, executable, etc) that should exist
-;; followed by the command used to install it. This allows for an expression
-;; like (ruby . "brew install ruby") which tests for the presence of ruby and
-;; if it can't be found (on the path) then 'brew install ruby' will be run to
-;; install it.
-;; NOTE: This option, while very powerful, will increase the Emacs startup time
-;; because of the overhead in checking for commands. Use it with discretion.
-(use-package use-package-ensure-system-package :ensure nil :demand t)
-
 ;;; ##########################################################################
 ;;; Define my customization groups
 
@@ -87,6 +34,8 @@
 (defgroup mifi-config-theming nil
   "Custom theming list and list index values."
   :group 'mifi-config)
+
+(defconst *is-a-mac* (eq system-type 'darwin))
 
 ;;; ##########################################################################
 
@@ -247,7 +196,8 @@ alternative to isearch that uses Ivy to show an overview of all matches."
   :type '(radio
            (const :tag "Vertico, Orderless, Consult, Embark completion system." comphand-vertico)
            (const :tag "Ivy, Counsel, Swiper completion systems" comphand-ivy)
-         (const :tag "Corfu, Orderless, Cape" comphand-corfu)
+           (const :tag "Helm" comphand-helm)
+           (const :tag "Corfu, Orderless, Cape" comphand-corfu)
            (const :tag "Built-in Ido" comp-hand-ido))
   :group 'mifi-config-features)
 
@@ -313,7 +263,7 @@ for their personal wiki."
   :type '(radio
            (const :tag "Denote" custom-note-system-denote)
            (const :tag "Org-roam" custom-note-system-org-roam)
-           (const :tag "Org-journal" custom-note-system-org-journal)
+           (const :tag "Org Journal" custom-note-system-org-journal)
            (const :tag "None" custom-note-system-none))
   :group 'mifi-config-features)
 
@@ -464,7 +414,18 @@ font size is computed + 20 of this value."
 ;; as 'undefined' even though this is a byte-compiled internal function. So,
 ;; instead of trying to find the issue, I'm just including it here as a
 ;; local package so that it works. Maybe one day I can remove it.
+;; (use-package recentf :ensure nil :demand t)
 (use-package recentf :ensure nil :demand t)
+
+;; This package allows 'use-package' to support a 'use-system-package' option
+;; which specifies the thing (library, executable, etc) that should exist
+;; followed by the command used to install it. This allows for an expression
+;; like (ruby . "brew install ruby") which tests for the presence of ruby and
+;; if it can't be found (on the path) then 'brew install ruby' will be run to
+;; install it.
+;; NOTE: This option, while very powerful, will increase the Emacs startup time
+;; because of the overhead in checking for commands. Use it with discretion.
+(use-package use-package-ensure-system-package :ensure t :demand t)
 
 ;;; ##########################################################################
 
@@ -507,10 +468,6 @@ font size is computed + 20 of this value."
   (unless (file-exists-p infodir)
     (make-directory infodir t)))
 
-;;; Fixup native-comp-eln-load-path directory
-(add-to-list 'native-comp-eln-load-path
-  (expand-file-name "eln-cache" emacs-config-directory))
-
 ;; ensure that the loaded font values are supported by this OS. If not, try
 ;; to correct them.
 (mifi/validate-variable-pitch-font)
@@ -521,16 +478,8 @@ font size is computed + 20 of this value."
 
 (use-package auto-package-update
   ;; :ensure (:fetcher github :repo "rranelli/auto-package-update.el")
-  :ensure ( :package "auto-package-update" :source "MELPA" :protocol https
-          :inherit t :depth treeless :fetcher github
-          :repo "rranelli/auto-package-update.el"
-          :files ("*.el" "*.el.in" "dir" "*.info" "*.texi" "*.texinfo"
-                   "doc/dir" "doc/*.info" "doc/*.texi" "doc/*.texinfo"
-                   "lisp/*.el" "docs/dir" "docs/*.info" "docs/*.texi"
-                   "docs/*.texinfo" (:exclude ".dir-locals.el" "test.el"
-                                      "tests.el" "*-test.el" "*-tests.el"
-                                      "LICENSE" "README*" "*-pkg.el")))
-  :demand t
+  :ensure t
+  :defer t
   :custom
   (auto-package-update-interval 7)
   (auto-package-update-prompt-before-update t)
@@ -558,7 +507,8 @@ font size is computed + 20 of this value."
   (mifi/set-recenter-keys))
 
 (use-package which-key
-  :ensure (:wait t)
+  ;; :ensure (:wait t)
+  :ensure t
   :demand t
   :commands which-key-mode
   :delight which-key-mode
@@ -570,13 +520,12 @@ font size is computed + 20 of this value."
   ;; (which-key-sort-order 'which-key-key-order-alpha)
   (which-key-min-display-lines 3)
   :config
-  (add-hook 'elpaca-after-init-hook #'mifi/after-which-key))
+  (add-hook 'after-init-hook #'mifi/after-which-key))
 
 ;;; ##########################################################################
 
 (use-package f
-  :ensure t
-  :demand t
+  :ensure t :demand t
   :config
   (let ((epath (f-dirname
                (expand-file-name invocation-name invocation-directory))))
@@ -675,6 +624,11 @@ font size is computed + 20 of this value."
      try-complete-lisp-symbol-partially
      try-complete-lisp-symbol))
 
+(defadvice save-buffers-kill-emacs (around no-query-kill-emacs activate)
+  "Prevent annoying \"Active processes exist\" query when you quit Emacs."
+  (cl-letf (((symbol-function #'process-list) (lambda ())))
+    ad-do-it))
+
 ;;; ##########################################################################
 
 (defun mifi/delight-config ()
@@ -689,7 +643,7 @@ font size is computed + 20 of this value."
               (mmm-keys-minor-mode " m3")
               (projectile-mode " ->")
               (tree-sitter-mode " ts")
-              (eldoc-mode " 📖")
+            (eldoc-mode " 📖")
               (overwrite-mode " Ov" t)
               (python-mode " Py" :major)
               (rainbow-mode " 🌈")
@@ -727,7 +681,7 @@ font size is computed + 20 of this value."
                 "(setq desktop-saved-frameset %S)"
                 desktop-saved-frameset)))))
 
-(add-hook 'kill-emacs-hook 'mifi/save-desktop-frameset)
+(add-hook 'kill-emacs-hook 'mifi/save-desktop-frameset -100)
 
 ;;; ##########################################################################
 
@@ -756,21 +710,21 @@ font size is computed + 20 of this value."
   (set-register ?G '(file . "~/Developer/game-dev/GB_asm"))
   (set-register ?S (cons 'file (concat emacs-config-directory "org-files/important-scripts.org"))))
 
-(add-hook 'elpaca-after-init-hook
+(add-hook 'after-init-hook
   (lambda () (mifi/setup-common-registers)))
 
 ;;; ##########################################################################
 ;;
 ;; This list is processed as a LIFO queue. This entry _should_ be made to be
 ;; the first so it executes last.
-(add-hook 'elpaca-after-init-hook
+(add-hook 'after-init-hook
   (lambda ()
     (mifi/config-landing)
     (mifi/set-recenter-keys)))
 
 ;;; ##########################################################################
 ;; Allow access from emacsclient
-(add-hook 'elpaca-after-init-hook
+(add-hook 'after-init-hook
   (lambda ()
     (use-package server :ensure nil)
     (unless (server-running-p)
@@ -778,68 +732,6 @@ font size is computed + 20 of this value."
 
 (when (fboundp 'pixel-scroll-precision-mode)
   (pixel-scroll-precision-mode))
-
-;;; ##########################################################################
-
-;; Don't use lsp-bridge with company as lsp-bridge already provides the same
-;; features. They actually collide.
-
-(use-package company
-  :preface
-  (defun mifi/company-config ()
-    (interactive)
-    (bind-keys :map company-active-map
-      ("C-n". company-select-next)
-      ("C-p". company-select-previous)
-      ("M-<". company-select-first)
-      ("M->". company-select-last)
-      ("<tab>" . company-complete-selection))
-    (global-company-mode 1)
-    (when (featurep 'prescient)
-      (company-prescient-mode 1)))    
-  :unless (equal custom-ide 'custom-ide-lsp-bridge)
-  :ensure t
-  :delight company-mode
-  :config (mifi/company-config)
-  :custom
-  (company-minimum-prefix-length 2)
-  (company-idle-delay 0.5))
-
-;; IMPORTANT:
-;; Don't use company at all if lsp-bridge is active.
-;; lsp-bridge already provides similar functionality.
-
-;; :config
-;; (add-to-list 'company-backends 'company-yasnippet))
-
-;;; ##########################################################################
-
-;; (require 'company-box)
-;; (add-hook 'company-mode-hook 'company-box-mode)
-
-(use-package company-box
-  :ensure t
-  :after company
-  :delight 'cb
-  ;; :vc (:url "https://github.com/sebastiencs/company-box.git")
-  :hook (company-mode . company-box-mode))
-
-(use-package company-jedi
-  :when  (equal custom-ide 'custom-ide-elpy)
-  :after (:all python company)
-  :config
-  (jedi:setup)
-  (defun my/company-jedi-python-mode-hook ()
-    (add-to-list 'company-backends 'company-jedi))
-  (add-hook 'python-mode-hook 'my/company-jedi-python-mode-hook))
-
-(use-package company-anaconda
-  :when (equal custom-ide 'custom-ide-anaconda)
-  :after (:all anaconda company)
-  :hook (python-mode . anaconda-mode)
-  :config
-  (eval-after-load "company"
-    '(add-to-list 'company-backends 'company-anaconda)))
 
 (use-package system-packages :ensure t)
 
@@ -854,6 +746,11 @@ font size is computed + 20 of this value."
   ;; properly loaded.
   ;; (unless theme-did-load
   ;;   (mifi/load-theme-from-selector)))
+
+;;; ##########################################################################
+
+(use-package async
+  :ensure t)
 
 ;; All kept in local /lisp directory.
 ;; (use-package web-server-status-codes )
@@ -890,15 +787,13 @@ font size is computed + 20 of this value."
 
 (use-package eldoc-box
   :delight DocBox
-  :hook (elpaca-after-init . mifi/setup-hooks-for-eldoc))
+  :ensure t
+  :hook (after-init . mifi/setup-hooks-for-eldoc))
 
 ;;; ##########################################################################
 
 (use-package hydra
   :ensure t)
-  ;; :vc (:url "https://github.com/abo-abo/hydra" :ignored-files ("lv.el")))
-  ;; :ensure (:repo "abo-abo/hydra" :fetcher github
-  ;;           :files (:defaults (:exclude "lv.el"))))
 
 ;;; ##########################################################################
 
@@ -913,6 +808,7 @@ font size is computed + 20 of this value."
 
 (use-package visual-fill-column
   :ensure nil ;; Should be installed in the local lisp dir.
+  :defer t
   :after org)
 
 (use-package writeroom-mode
@@ -925,7 +821,7 @@ font size is computed + 20 of this value."
 
 (use-package default-text-scale
   :ensure t
-  :hook (elpaca-after-init . default-text-scale-mode))
+  :hook (after-init . default-text-scale-mode))
 
 ;;; ##########################################################################
 
@@ -939,7 +835,7 @@ font size is computed + 20 of this value."
       mac-right-command-modifier 'meta
       mac-right-control-modifier 'hyper)))
 
-(add-hook 'elpaca-after-init-hook #'mifi/set-mac-modifier-keys)
+(add-hook 'after-init-hook #'mifi/set-mac-modifier-keys)
 
 ;;; ##########################################################################
 
@@ -1009,22 +905,19 @@ font size is computed + 20 of this value."
 
 (use-package ace-window
   :ensure t
-  ;; :vc (:url "https://github.com/abo-abo/ace-window")
-  ;;:ensure (:repo "abo-abo/ace-window" :fetcher github)
   :bind ("M-o" . ace-window))
 
 ;;; ##########################################################################
 ;;; Window Number
 
 (use-package winum
-  :ensure ( :package "winum" :source nil :protocol https :inherit t
-          :depth treeless :fetcher github :repo "deb0ch/emacs-winum")
+  :ensure t
   :config (winum-mode))
 
 (use-package init-windows ;; From purcell
   :ensure nil
   :demand t
-  :hook (elpaca-after-init . winner-mode))
+  :hook (after-init . winner-mode))
 
 ;;; ##########################################################################
 
@@ -1045,8 +938,8 @@ font size is computed + 20 of this value."
   :bind ("M-RET d" . dashboard-open)
   :config
   ;; (setq initial-buffer-choice (lambda () (get-buffer-create dashboard-buffer-name)))
-  (add-hook 'elpaca-after-init-hook #'dashboard-insert-startupify-lists)
-  (add-hook 'elpaca-after-init-hook #'dashboard-initialize)
+  (add-hook 'after-init-hook #'dashboard-insert-startupify-lists)
+  (add-hook 'after-init-hook #'dashboard-initialize)
   (when (equal custom-project-handler 'custom-project-projectile)
     (setq dashboard-projects-backend 'projectile))
   (setq dashboard-startup-banner (expand-file-name "Emacs-modern-is-sexy-v1.png" user-emacs-directory))
@@ -1234,6 +1127,69 @@ font size is computed + 20 of this value."
 
 ;;; ##########################################################################
 
+;; Don't use lsp-bridge with company as lsp-bridge already provides the same
+;; features. They actually collide.
+
+(defun mifi/company-config ()
+  (interactive)
+  (bind-keys :map company-active-map
+    ("C-n". company-select-next)
+    ("C-p". company-select-previous)
+    ("M-<". company-select-first)
+    ("M->". company-select-last)
+    ("<tab>" . company-complete-selection))
+  (global-company-mode 1)
+  (when (featurep 'prescient)
+    (company-prescient-mode 1)))
+
+(use-package company
+  :unless (equal custom-ide 'custom-ide-lsp-bridge)
+  ;; :after tree-sitter
+  :ensure t
+  :delight company-mode
+  :config (mifi/company-config)
+  :custom
+  (company-minimum-prefix-length 2)
+  (company-idle-delay 0.5))
+
+;; IMPORTANT:
+;; Don't use company at all if lsp-bridge is active.
+;; lsp-bridge already provides similar functionality.
+
+;; :config
+;; (add-to-list 'company-backends 'company-yasnippet))
+
+;;; ##########################################################################
+
+;; (require 'company-box)
+;; (add-hook 'company-mode-hook 'company-box-mode)
+
+(use-package company-box
+  :ensure t
+  :after company
+  :delight 'cb
+  ;; :vc (:url "https://github.com/sebastiencs/company-box.git")
+  :hook (company-mode . company-box-mode))
+
+(use-package company-jedi
+  :when  (equal custom-ide 'custom-ide-elpy)
+  :after (:all python company)
+  :config
+  (jedi:setup)
+  (defun my/company-jedi-python-mode-hook ()
+    (add-to-list 'company-backends 'company-jedi))
+  (add-hook 'python-mode-hook 'my/company-jedi-python-mode-hook))
+
+(use-package company-anaconda
+  :when (equal custom-ide 'custom-ide-anaconda)
+  :after (:all anaconda company)
+  :hook (python-mode . anaconda-mode)
+  :config
+  (eval-after-load "company"
+    '(add-to-list 'company-backends 'company-anaconda)))
+
+;;; ##########################################################################
+
 ;;;; Code Completion
 (use-package corfu
   :ensure t
@@ -1341,10 +1297,53 @@ font size is computed + 20 of this value."
 
 ;;; ##########################################################################
 
+(use-package helm
+  :when (equal completion-handler 'comphand-helm)
+  :after async
+  :ensure t
+  :bind
+  ("M-x"   . helm-M-x)
+  ("M-s o" . helm-occur)
+  ([remap find-file] . helm-find-files)
+  ([remap switch-to-buffer] . helm-mini)
+  :custom
+  ;; open helm buffer inside current window, not occupy whole other window
+  (helm-split-window-in-side-p t)
+  ;; move to end or beginning of source when reaching top or bottom of source.
+  (helm-move-to-line-cycle-in-source t)
+  ;; search for library in `require' and `declare-function' sexp.
+  (helm-ff-search-library-in-sexp t)
+  ;; scroll 8 lines other window using M-<next>/M-<prior>
+  (helm-scroll-amount 8)
+  (helm-ff-file-name-history-use-recentf t)
+  (helm-echo-input-in-header-line t)
+  (helm-autoresize-max-height 0)
+  (helm-autoresize-min-height 20)
+  :config
+  (global-set-key (kbd "C-c h") 'helm-command-prefix)
+  (when (executable-find "curl")
+    (setq helm-google-suggest-use-curl-p t))
+  (helm-autoresize-mode 1)
+  (helm-mode 1))
+
+(use-package helm-wikipedia
+  :after helm
+  :ensure t
+  :bind
+  ("C-c h w" . helm-wikipedia-lookup)
+  :custom
+  (helm-wikipedia-summary-url
+    "https://fr.wikipedia.org/w/api.php?action=query&format=json&prop=extracts&titles=%s&exintro=1&explaintext=1&redirects=1")
+  (helm-wikipedia-suggest-url
+    "https://fr.wikipedia.org/w/api.php?action=opensearch&search=%s"))
+
+;;; ##########################################################################
+
 (use-package marginalia
   :when (or (equal completion-handler 'comphand-vertico)
           (equal completion-handler 'comphand-corfu))
   :ensure t
+  :defer t
   ;; :commands marginalia-mode
   :custom
   (marginalia-max-relative-age 60)
@@ -1366,6 +1365,7 @@ font size is computed + 20 of this value."
   :when (equal completion-handler 'comphand-vertico)
   :after vertico
   :ensure t
+  :defer t
   :bind
   ([remap switch-to-buffer] . consult-buffer)
   ([remap switch-to-buffer-other-window] . consult-buffer-other-window)
@@ -1448,7 +1448,7 @@ font size is computed + 20 of this value."
 ;; completion-handler variable will not yet be defined at this point in the
 ;; init phase usi\ng elpaca.
 
-(add-hook 'elpaca-after-init-hook
+(add-hook 'after-init-hook
   (lambda ()
     (use-package ido
       :when (equal completion-handler 'comp-hand-ido)
@@ -1560,10 +1560,12 @@ font size is computed + 20 of this value."
               dired-listing-switches "-al --group-directories-first")))
 
 (use-package all-the-icons-dired
+  :ensure t
   :after dired
   :hook (dired-mode . all-the-icons-dired-mode))
 
 (use-package dired-open
+  :ensure t
   :commands (dired dired-jump)
   :config
   ;; Doesn't work as expected!
@@ -1572,6 +1574,7 @@ font size is computed + 20 of this value."
                                  ("mkv" . "mpv"))))
 
 (use-package dired-hide-dotfiles
+  :ensure t
   :after dired-mode
   :hook (dired-mode . dired-hide-dotfiles-mode))
 
@@ -1748,12 +1751,14 @@ font size is computed + 20 of this value."
 ;;; ##########################################################################
 
 (use-package treemacs-projectile
+  :ensure t
   :when (equal custom-project-handler 'custom-project-projectile)
   :after treemacs projectile)
 
 ;;; ##########################################################################
 
 (use-package treemacs-icons-dired
+  :ensure t
   :after treemacs
   :hook (dired-mode . treemacs-icons-dired-enable-once))
 
@@ -1766,18 +1771,21 @@ font size is computed + 20 of this value."
 
 (use-package treemacs-persp ;;treemacs-perspective if you use perspective.el vs. persp-mode
   ;;:ensure (:files ("src/extra/treemacs-persp.el" "treemacs-persp-pkg.el"):host github :repo "Alexander-Miller/treemacs")
+  :ensure t
   :after (:any treemacs persp-mode) ;;or perspective vs. persp-mode
   :config (treemacs-set-scope-type 'Perspectives))
 
 ;;; ##########################################################################
 
 (use-package treemacs-tab-bar ;;treemacs-tab-bar if you use tab-bar-mode
+  :ensure t
   :after treemacs
   :config (treemacs-set-scope-type 'Tabs))
 
 ;;; ##########################################################################
 
 (use-package treemacs-all-the-icons
+  :ensure t
   :after treemacs
   :when (display-graphic-p))
 
@@ -1912,7 +1920,7 @@ font size is computed + 20 of this value."
        (fg-mode-line-active fg-main)
        (border-mode-line-active blue-intense))))
 
-(add-hook 'elpaca-after-init-hook 'mifi/customize-modus-theme)
+(add-hook 'after-init-hook 'mifi/customize-modus-theme)
 
 (defun mifi/customize-ef-theme ()
   (defface ef-themes-fixed-pitch
@@ -1925,7 +1933,7 @@ font size is computed + 20 of this value."
        (fg-mode-line fg-main)
        (border-mode-line-active blue-intense))))
 ;;(add-hook 'org-load-hook 'mifi/customize-ef-theme)
-(add-hook 'elpaca-after-init-hook 'mifi/customize-ef-theme)
+(add-hook 'after-init-hook 'mifi/customize-ef-theme)
 
 ;;; ##########################################################################
 
@@ -1952,11 +1960,11 @@ font size is computed + 20 of this value."
   (load-theme (intern default-terminal-theme) t))
 
 (unless (display-graphic-p)
-  (add-hook 'elpaca-after-init-hook 'mifi/load-terminal-theme)
+  (add-hook 'after-init-hook 'mifi/load-terminal-theme)
   ;;else
   (progn
     (if (not after-init-time)
-      (add-hook 'elpaca-after-init-hook
+      (add-hook 'after-init-hook
         (lambda ()
           (unless theme-did-load
             (mifi/load-theme-from-selector))))
@@ -2086,7 +2094,7 @@ font size is computed + 20 of this value."
 ;; with the default font size. Startup works without this but it's nice to see
 ;; the window expand early...
 
-(add-hook 'elpaca-after-init-hook
+(add-hook 'after-init-hook
   (lambda ()
     (when (display-graphic-p)
       (mifi/update-face-attribute)
@@ -2211,7 +2219,7 @@ font size is computed + 20 of this value."
 ;; This is done so that the Emacs window is sized early in the init phase along with the default font size.
 ;; Startup works without this but it's nice to see the window expand early...
 (when (display-graphic-p)
-  (add-hook 'elpaca-after-init-hook
+  (add-hook 'after-init-hook
     (lambda ()
       (progn
         (mifi/update-face-attribute)
@@ -2253,16 +2261,16 @@ font size is computed + 20 of this value."
     'org-mode
     '(("^ *\\([-]\\) "
         (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))))
-  
+
   (set-face-attribute 'org-block nil
     :foreground 'unspecified
     :inherit 'fixed-pitch
     :font mono-spaced-font-family
     :height custom-default-mono-font-size)
-  
+
   (set-face-attribute 'org-formula nil
     :inherit 'fixed-pitch)
-  
+
   (set-face-attribute 'org-code nil
     :foreground 'unspecified
     :font mono-spaced-font-family
@@ -2280,31 +2288,31 @@ font size is computed + 20 of this value."
     :font mono-spaced-font-family
     :height custom-default-mono-font-size
     :inherit '(shadow fixed-pitch))
-  
+
   (set-face-attribute 'org-verbatim nil
     :foreground 'unspecified
     :font mono-spaced-font-family
     :height custom-default-mono-font-size
     :inherit '(shadow fixed-pitch))
-  
+
   (set-face-attribute 'org-special-keyword nil
     :inherit '(font-lock-comment-face fixed-pitch))
-  
+
   (set-face-attribute 'org-meta-line nil
     :inherit '(font-lock-comment-face fixed-pitch))
-  
+
   (set-face-attribute 'org-checkbox nil
     :foreground 'unspecified
     :font mono-spaced-font-family
     :height custom-default-mono-font-size
     :inherit 'fixed-pitch)
-  
+
   (set-face-attribute 'line-number nil
     :foreground 'unspecified
     :font mono-spaced-font-family
     :height custom-default-mono-font-size
     :inherit 'fixed-pitch)
-  
+
   (set-face-attribute 'line-number-current-line nil
     :foreground 'unspecified
     :font mono-spaced-font-family
@@ -2430,7 +2438,7 @@ directory is relative to the working-files-directory
 (defun mifi/org-setup-capture-templates ()
   (setq org-capture-templates
     `(("t" "Tasks / Projects")
-       
+
        ("tt" "Task" entry (file+olp (expand-file-name "OrgFiles/Tasks.org" user-emacs-directory) "Inbox")
          "* TODO %?\n  %U\n  %a\n        %i" :empty-lines 1)
 
@@ -2519,7 +2527,7 @@ directory is relative to the working-files-directory
   (org-startup-with-inline-images t)
   (org-image-actual-width '(300))
   :bind (("C-c o" . mifi/org-capture)
-	  :map org-mode-map
+        :map org-mode-map
           ("C-c e" . org-edit-src-code))
   :config
   (setq org-hide-emphasis-markers nil)
@@ -2628,28 +2636,29 @@ directory is relative to the working-files-directory
 
 ;;; ##########################################################################
 
-(use-package org-journal
-  :when (equal custom-note-system 'custom-note-system-org-journal)
-  :ensure ( :source "MELPA" :protocol https :inherit t :depth treeless
-	    :fetcher github :repo "bastibe/org-journal" )
-  :preface
-  (defun org-journal-file-header-func (time)
-    "Custom function to create journal header."
-    (concat (pcase org-journal-file-type
-	      (`daily "#+TITLE: Daily Journal\n#+STARTUP: showeverything")
-	      (`weekly "#+TITLE: Weekly Journal\n#+STARTUP: folded")
-	      (`monthly "#+TITLE: Monthly Journal\n#+STARTUP: folded")
-	      (`yearly "#+TITLE: Yearly Journal\n#+STARTUP: folded"))))
-  :init
-  (setq org-journal-prefix-key "C-c j ")
-  (setq org-journal-dir (expand-file-name "journal" working-files-directory ))
-  (setq org-journal-date-format "%A, %d %B %Y")
-  (setq org-journal-file-header 'org-journal-file-header-func)  
-  :bind (("C-c j n" . org-journal-new-entry)
-          ("C-c j f" . find-file-other-window)
-          ("C-c j s" . org-journal-schedule-view) )
-  :config
-  (message ">>> Configring org-journal."))
+(when (equal custom-note-system 'custom-note-system-org-journal)
+  (use-package org-journal
+    :ensure t
+    :after org
+    :preface
+    (defun org-journal-file-header-func (time)
+      "Custom function to create journal header."
+      (concat (pcase org-journal-file-type
+                (`daily "#+TITLE: Daily Journal\n#+STARTUP: showeverything")
+                (`weekly "#+TITLE: Weekly Journal\n#+STARTUP: folded")
+                (`monthly "#+TITLE: Monthly Journal\n#+STARTUP: folded")
+                (`yearly "#+TITLE: Yearly Journal\n#+STARTUP: folded"))))
+    :init
+    (setq org-journal-prefix-key "C-c j ")
+    (setq org-journal-dir (expand-file-name "journal" working-files-directory ))
+    (setq org-journal-date-format "%A, %d %B %Y")
+    (setq org-journal-file-header 'org-journal-file-header-func)  
+    :bind (("C-c j n" . org-journal-new-entry)
+            ("C-c j f" . find-file-other-window)
+            ("C-c j s" . org-journal-schedule-view) )
+    :config
+    (message ">>> Configured org-journal."))
+)
 
 ;;; ##########################################################################
 
@@ -2705,31 +2714,28 @@ directory is relative to the working-files-directory
                    '(:immediate-finish t)))))
     (apply #'org-roam-node-insert args)))
 
-(use-package org-roam-dailies
-  :when (equal custom-note-system 'custom-note-system-org-roam)
-  ;; :vc  ( :url "https://github.com/org-roam/org-roam"
-  ;;   :main-file "extensions/org-roam-dailies.el")
-  :ensure ( :package "org-roam-dailies" :source "MELPA" :protocol https :inherit t :depth 1
-            :fetcher github :repo "org-roam/org-roam" :files ("extensions/*"))
-  :after org-roam
-  :init
-  (which-key-add-key-based-replacements "C-c n d" "org-roam-dailies")
-  :bind-keymap
-  ("C-c n d" . org-roam-dailies-map)
-  :bind (:map org-roam-dailies-map
-        ("." . org-roam-dailies-goto-date)
-          ("Y" . org-roam-dailies-capture-yesterday)
-          ("T" . org-roam-dailies-capture-tomorrow))
-  :config
-  (which-key-add-key-based-replacements
-    "C-c n d" "org-roam-dailies"
-    "C-c n d ." "goto-date"
-    "C-c n d Y" "capture-yesterday"
-    "C-c n d T" "capture-tomorrow"
-    "C-c n d n" "capture-today"
-    "C-c n d d" "goto-today"
-    "C-c n d t" "goto-tomorrow"
-    "C-c n d y" "goto-yesterday"))
+(when (equal custom-note-system 'custom-note-system-org-roam)
+  (use-package org-roam-dailies
+    :ensure t
+    :after org-roam
+    :init
+    (which-key-add-key-based-replacements "C-c n d" "org-roam-dailies")
+    :bind-keymap
+    ("C-c n d" . org-roam-dailies-map)
+    :bind (:map org-roam-dailies-map
+            ("." . org-roam-dailies-goto-date)
+            ("Y" . org-roam-dailies-capture-yesterday)
+            ("T" . org-roam-dailies-capture-tomorrow))
+    :config
+    (which-key-add-key-based-replacements
+      "C-c n d" "org-roam-dailies"
+      "C-c n d ." "goto-date"
+      "C-c n d Y" "capture-yesterday"
+      "C-c n d T" "capture-tomorrow"
+      "C-c n d n" "capture-today"
+      "C-c n d d" "goto-today"
+      "C-c n d t" "goto-tomorrow"
+      "C-c n d y" "goto-yesterday")))
 
 ;;; ##########################################################################
 ;; The buffer you put this code in must have lexical-binding set to t!
@@ -2951,6 +2957,15 @@ capture was not aborted."
   ;;   (cdr project))
   ;; (add-hook 'project-find-functions #'project-find-go-module))
 
+(use-package gnus
+  :disabled
+  :ensure nil
+  :defer t
+  :config
+  (setq user-full-name '"MrCairo")
+  (setq user-mail-address '"mr.cairo@invalidname.com")
+  (setq gnus-select-method '(nntp "news.eternal-september.org")))
+
 ;;; ##########################################################################
 ;;; Emacs Polyglot is the Emacs LSP client that stays out of your way:
 
@@ -2982,7 +2997,7 @@ capture was not aborted."
   :defer t
   :hook
   (lisp-mode . eglot-ensure)
-  (tuareg-mode . eglot-ensure)
+  ;; (tuareg-mode . eglot-ensure)
   :config
   (flymake-mode 0)
   (add-to-list 'major-mode-remap-alist '(python-mode . python-ts-mode))
@@ -3006,6 +3021,7 @@ capture was not aborted."
 (use-package lsp-mode
   :when (or (equal custom-ide 'custom-ide-lsp) (equal custom-ide 'custom-ide-eglot))
   :commands (lsp lsp-deferred)
+  :ensure t
   :hook (lsp-mode . mifi/lsp-mode-setup)
   :init
   (setq lsp-keymap-prefix "C-c l")  ;; Or 'C-l', 's-l'
@@ -3216,7 +3232,10 @@ capture was not aborted."
 ;;; ##########################################################################
 
 (use-package transient :ensure t)
-(use-package magit :after transient :ensure t)
+(use-package magit
+  :after transient
+  :ensure t :defer t
+  :command magit-status)
 
 ;; NOTE: Make sure to configure a GitHub token before using this package!
 ;; - https://magit.vc/manual/forge/Token-Creation.html#Token-Creation
@@ -3225,157 +3244,9 @@ capture was not aborted."
 (use-package forge :after magit :defer t :ensure t)
 (use-package treemacs-magit :defer t :after treemacs magit)
 
-;;; ##########################################################################
-
-(defun mifi/set-custom-ide-python-keymaps ()
-  (cond
-    ((equal custom-ide 'custom-ide-lsp)
-      (bind-keys :map python-mode-map
-        ("C-c g r" . lsp-find-references)
-        ("C-c g g" . xref-find-definitions)
-        ("C-c g G" . xref-find-definitions-other-window)
-        ("C-c g ?" . eldoc-doc-buffer)))
-    ((equal custom-ide 'custom-ide-eglot)
-      (bind-keys :map python-mode-map
-        ("C-c g i" . eglot-find-implementation)
-        ("C-c g r" . xref-find-references)
-        ("C-c g D" . xref-find-definitions-other-window)
-        ("C-c g g" . xref-find-definitions)
-        ("C-c g n" . xref-find-references-and-replace)
-        ("C-c g ?" . eldoc-doc-buffer)))
-    ((equal custom-ide 'custom-ide-elpy)
-      (elpy-enable)
-      (bind-keys :map python-mode-map
-        ("C-c g a" . elpy-goto-assignment)
-        ("C-c g A" . elpy-goto-definition-other-window)
-        ("C-c g g" . elpy-goto-definition)
-        ("C-c g ?" . elpy-doc)))
-    ((equal custom-ide 'custom-ide-lsp-bridge)
-      (bind-keys :map python-mode-map
-        ("C-c g a" . lsp-bridge-find-reference)
-        ("C-c g A" . lsp-bridge-find-def-other-window)
-        ("C-c g g" . lsp-bridge-find-def)
-        ("C-c g i" . lsp-bridge-find-impl)
-        ("C-c g n" . lsp-bridge-rename)
-        ("C-c g ?" . lsp-bridge-popup-documentation)))
-    ((equal custom-ide 'custom-ide-anaconda)
-      (bind-keys :map python-mode-map
-        ("C-c g a" . anaconda-mode-find-assignments)
-        ("C-c g A" . anaconda-mode-find-assignments-other-window)
-        ("C-c g r" . anaconda-mode-find-references)
-        ("C-c g R" . anaconda-mode-find-references-other-window)
-        ("C-c g g" . anaconda-mode-find-definitions)
-        ("C-c g G" . anaconda-mode-find-definitions-other-window)
-        ("C-c g ?" . anaconda-mode-show-doc)))
-    ))
-
-;;; ##########################################################################
-
-(defun mifi/load-python-file-hook ()
-  (python-mode)
-  (flymake-mode 0)
-  (when (equal custom-ide 'custom-ide-anaconda)
-    (anaconda-mode 1))
-  (message ">>> mifi/load-python-file-hook")
-  (setq highlight-indentation-mode -1)
-  (setq display-fill-column-indicator-mode t))
-
-(defun mifi/before-save ()
-  "Force the check of the current python file being saved."
-  (when (eq major-mode 'python-mode) ;; Python Only
-    (flycheck-mode 0)
-    (flycheck-mode t)
-    (delete-trailing-whitespace)))
-
-;; This function should only be called ONCE during python-mode startup.
-(defun mifi/enable-python-features ()
-  (message ">>> mifi/enable-python-features")
-  ;; _____________________________
-  (cond
-    ((equal debug-adapter 'debug-adapter-dap-mode)
-      (unless (featurep 'dap-mode) (dap-mode)) ;; Load if not loaded.
-      (define-dap-hydra)))
-  ;;___________________________
-  ;; check for which custom-ide
-  (cond
-    ((equal custom-ide 'custom-ide-eglot)
-      (eglot-ensure))
-    ((equal custom-ide 'custom-ide-lsp)
-      (lsp-deferred))))
-
-(defun mifi/python-mode-triggered ()
-  ;; (eldoc-box-hover-at-point-mode t) ;; Using Mitch Key for this
-  (mifi/enable-python-features)
-  (mifi/set-custom-ide-python-keymaps)
-  (unless (featurep 'yasnippet)
-    (yas-global-mode t))
-  (add-hook 'before-save-hook 'mifi/before-save)
-  (set-fill-column 80))
-
-;;; ##########################################################################
-
-;; Use built-in python language mode.
-(use-package python-mode
+(use-package mifi-setup-python
   :when enable-python
-  :ensure t
-  :mode ("\\.py\\'" . mifi/load-python-file-hook)
-  :hook (python-mode . mifi/python-mode-triggered)
-  :config
-  (if (boundp 'python-shell-completion-native-disabled-interpreters)
-    (add-to-list 'python-shell-completion-native-disabled-interpreters "python3")
-    (setq python-shell-completion-native-disabled-interpreters '("python3"))))
-
-(use-package blacken
-  :ensure t
-  :when enable-python
-  :after python) ;Format Python file upon save.
-
-;;; ##########################################################################
-
-(use-package py-autopep8
-  :when enable-python
-  :ensure t
-  ;; :vc (:url "https://github.com/emacsmirror/py-autopep8.git")
-  :after python
-  :hook ((python-mode . py-autopep8-mode)))
-
-;;; ##########################################################################
-
-;; This is a helpful macro that is used to put double quotes around a word.
-(defalias 'quote-word
-  (kmacro "\" M-d \" <left> C-y"))
-
-(defalias 'quote-region
-  (kmacro "C-w \" \" <left> C-y <right>"))
-
-(defalias 'reformat-src-block
-  (kmacro "C-s b e g i n _ s r c SPC e m a c s - l i s p <return> <down> C-c ' C-x h C-c ] C-x h M-x u n t a b <return> C-c ' C-s e n d _ s r c <return> <down>"))
-
-(when enable-python
-  (eval-after-load "python"
-    #'(bind-keys :map python-mode-map
-      ("C-c C-q" . quote-region)
-      ("C-c q"   . quote-word)
-      ("C-c |"   . display-fill-column-indicator-mode))))
-
-;;; ##########################################################################
-
-(use-package pyvenv-auto
-  :when enable-python
-  :ensure t
-  :after python
-  :hook (python-mode . pyvenv-auto-run))
-
-;;; ##########################################################################
-
-(use-package pydoc
-  ;;:ensure (:host github :repo "statmobile/pydoc")
-  :ensure t
-  :when enable-python
-  :after python
-  :custom
-  (pydoc-python-command "python3")
-  (pydoc-pip-version-command "pip3 --version"))
+  :ensure nil)
 
 (let
   ((installer "bash -c \"sh <(curl -fsSL https://raw.githubusercontent.com/ocaml/opam/master/shell/install.sh) --version 2.2.0\""))
@@ -3393,7 +3264,6 @@ capture was not aborted."
 
 (use-package opam-std-libs
   :when enable-ocaml
-  :ensure nil
   :ensure-system-package
   ( ("~/.opam"                  . "opam init && opam install core utop base stdio --yes")
     ("~/.opam/default/lib/core" . "opam install core --yes")
@@ -3419,25 +3289,21 @@ capture was not aborted."
 
 ;;; ##########################################################################
 
-(defun mifi/opam-emacs-setup ()
-  (use-package opam-emacs-setup
-    :init
-    (mrf/set-opam-load-path)
-    :ensure nil
-    :when enable-ocaml
-    :after opam-std-libs
-    :config
-    (add-to-list 'exec-path "~/.opam/default/bin")
-    :ensure-system-package
-    ((ocamllsp . "opam install earlybird --yes"))))
-
-(add-hook 'elpaca-after-init-hook #'mifi/opam-emacs-setup)
+(use-package opam-emacs-setup
+  :init
+  (mrf/set-opam-load-path)
+  :ensure nil
+  :when enable-ocaml
+  :after opam-std-libs
+  :config
+  (add-to-list 'exec-path "~/.opam/default/bin"))
 
 ;;; ##########################################################################
 
 (use-package merlin
   :when enable-ocaml
-  :ensure nil :defer t
+  :demand t
+  :ensure nil
   :delight " 🪄"
   :after opam-emacs-setup)
 
@@ -3477,7 +3343,6 @@ capture was not aborted."
 
 (defun mifi/tuareg-mode-hook ()
   (interactive)
-  (message "<<<>>> tuareg-mode-hook called.")
   (merlin-mode t)
   (opam-init)
   (eglot-ensure)
@@ -3490,7 +3355,7 @@ capture was not aborted."
   :when enable-ocaml
   :ensure nil
   :demand t
-  :after opam-emacs-setup
+  ;; :after opam-emacs-setup merlin jsonrpc
   :hook (tuareg-mode . mifi/tuareg-mode-hook)
   :mode
   ("\\.ml\\'" . mifi/tuareg-mode-hook)
@@ -3520,7 +3385,8 @@ capture was not aborted."
       :after tuareg
       :config
       (setq-default tuareg-indent-align-with-first-arg t)
-      (setq-default compile-command "dune build "))))
+      (setq-default compile-command "dune build ")
+      (add-hook 'tuareg-mode-hook #'mifi/tuareg-mode-hook))))
 
 ;;; ##########################################################################
 
@@ -3561,19 +3427,21 @@ capture was not aborted."
 
 ;;; ##########################################################################
 
-(use-package typescript-ts-mode
-  :ensure nil :when enable-ts :defer t
-  :mode "\\.ts\\'"
-  :hook
-  (typescript-ts-mode . lsp-deferred)
-  (js2-mode . lsp-deferred)
-  :config
-  (setq typescript-indent-level 4)
-  (cond
-    ((equal debug-adapter 'debug-adapter-dap-mode)
+(when enable-ts
+  (use-package typescript-ts-mode
+    :ensure nil
+    :defer t
+    :mode "\\.ts\\'"
+    :hook
+    (typescript-ts-mode . lsp-deferred)
+    (js2-mode . lsp-deferred)
+    :config
+    (setq typescript-indent-level 4)
+    (cond
+      ((equal debug-adapter 'debug-adapter-dap-mode)
       (bind-keys :map typescript-mode-map
-        ("C-c ." . dap-hydra/body))
-      (dap-node-setup))))
+          ("C-c ." . dap-hydra/body))
+      (dap-node-setup)))))
 
 ;;; ##########################################################################
 
@@ -3618,20 +3486,18 @@ capture was not aborted."
 
 (when enable-gb-dev
   (use-package z80-mode
-    :when enable-gb-dev
+    :ensure nil) ;; should have been installed in 'lisp' subdir.
     ;; :vc (:url "https://github.com/SuperDisk/z80-mode"))
-    :ensure (:host github :repo "SuperDisk/z80-mode"))
 
   (use-package mwim
-    :when enable-gb-dev
+    :ensure t)
     ;; :vc (:url "https://github.com/alezost/mwim"))
-    :ensure (:host github :repo "alezost/mwim.el"))
 
   (use-package rgbds-mode
-    :when enable-gb-dev
     :after mwim
+    :ensure nil) ;; should have been installed in 'lisp' subdir.
     ;; :vc (:url "https://github.com/japanoise/rgbds-mode")))
-    :ensure (:host github :repo "japanoise/rgbds-mode")))
+  )
 
 ;;; ##########################################################################
 
@@ -3705,6 +3571,7 @@ capture was not aborted."
   (add-hook 'before-save-hook #'eglot-format-buffer -10 t))
 
 (use-package go-mode
+  :ensure t
   :defer t
   :mode ("\\.go\\'" . go-mode)
   :custom
@@ -3739,7 +3606,7 @@ capture was not aborted."
   :hook (go-mode . go-guru-hl-identifier-mode))
 
 (use-package elisp-mode
-  
+
   :defer t
   :mode ("\\.el\\'" . emacs-lisp-mode))
 
@@ -3756,20 +3623,20 @@ capture was not aborted."
 ;;; Debug Adapter Protocol
 (use-package dap-mode
   :when (equal debug-adapter 'debug-adapter-dap-mode)
+  :ensure t
   :defer t
-  :after hydra
   ;; Uncomment the config below if you want all UI panes to be hidden by default!
   ;; :custom
   ;; (lsp-enable-dap-auto-configure nil)
-  :commands dap-debug
+  :commands (dap-debug dap-mode dap-ui-mode)
   :custom
   (dap-auto-configure-features '(sessions locals breakpoints expressions repl controls tooltip))
   :config
   ;; (require 'dap-lldb)
   ;; (require 'dap-gdb-lldb)
-  (define-dap-hydra)
-  (bind-keys :map prog-mode-map
-    ("C-c ." . dap-hydra/body))
+  ;; (define-dap-hydra)
+  ;; (bind-keys :map prog-mode-map
+  ;;   ("C-c ." . dap-hydra/body))
   (dap-ui-controls-mode)
   (dap-ui-mode 1))
 
@@ -3782,39 +3649,23 @@ capture was not aborted."
 (use-package dap-ocaml
   :when enable-ocaml
   :after (:all dap-mode opam-emacs-setup)
-  ;; :vc (:url "https://github.com/emacs-lsp/dap-mode" :main-file dap-ocaml)
-  :ensure (:package "dap-ocaml" :type git :host github :repo "emacs-lsp/dap-mode"))
+  :ensure nil
+  :ensure-system-package
+  ((ocamllsp . "opam install earlybird --yes")))
 
 (use-package dap-codelldb
   :when enable-ocaml
   :after dap-mode
-  :defer t
-  ;; :vc (:url "https://github.com/emacs-lsp/dap-mode" :main-file dap-codelldb) :ensure t)
-  :ensure (:package "dap-codelldb" :type git :host github :repo "emacs-lsp/dap-mode"))
-
-;;; ##########################################################################
-;;; DAP for Python
-
-(use-package dap-python
-  ;; :vc (:url "https://github.com/emacs-lsp/dap-mode" :main-file dap-python)
-  :ensure (:package "dap-python" :type git :host github :repo "emacs-lsp/dap-mode")
-  :defer t
-  :when (and (equal debug-adapter 'debug-adapter-dap-mode) enable-python)
-  :after dap-mode
-  :config
-  (setq dap-python-executable "python3") ;; Otherwise it looks for 'python' else error.
-  (setq dap-python-debugger 'debugpy))
+  :ensure nil
+  :defer t)
 
 ;;; ##########################################################################
 
 (use-package dap-lldb
   :when (equal debug-adapter 'debug-adapter-dap-mode)
+  :ensure nil
   :defer t
   :after dap-mode
-  ;; :vc (:url "https://github.com/emacs-lsp/dap-mode" :main-file dap-lldb)
-  :ensure ( :package "dap-lldb" :source nil :protocol https
-            :inherit t :depth 1 :type git
-            :host github :repo "emacs-lsp/dap-mode")
   :custom
   (dap-lldb-debug-program "~/Developer/command-line-unix/llvm/lldb-build/bin/lldb-dap"))
   ;; :config
@@ -3829,10 +3680,7 @@ capture was not aborted."
 
 (use-package dap-gdb-lldb
   :when (equal debug-adapter 'debug-adapter-dap-mode)
-  ;; :vc (:url "https://github.com/emacs-lsp/dap-mode" :main-file dap-gdb-lldb) :ensure t
-  :ensure ( :package "dap-gdb-lldb" :source nil :protocol https
-            :inherit t :depth 1 :type git :host github
-            :repo "emacs-lsp/dap-mode")
+  :ensure nil
   :defer t
   :after dap-lldb
   :config
@@ -3840,91 +3688,11 @@ capture was not aborted."
 
 (use-package dap-cpptools
   :when (equal debug-adapter 'debug-adapter-dap-mode)
+  :ensure nil
   :defer t
-  :after dap-mode
-  ;; :vc (:url "https://github.com/emacs-lsp/dap-mode" :main-file dap-cpptools) :ensure t)
-  :ensure ( :package "dap-cpptools" :source nil :protocol https
-            :inherit t :depth 1 :type git :host github
-            :repo "emacs-lsp/dap-mode"))
+  :after dap-mode)
 ;; :config
 ;; (dap-cpptools-setup))
-
-;;; ##########################################################################
-
-(defun mifi/dap-end-debug-session ()
-  "End the debug session and delete project Python buffers."
-  (interactive)
-  (kill-matching-buffers "\*Python :: Run file [from|\(buffer]*" nil :NO-ASK)
-  (kill-matching-buffers "\*Python: Current File*" nil :NO-ASK)
-  (kill-matching-buffers "\*dap-ui-*" nil :NO-ASK)
-  (dap-disconnect (dap--cur-session)))
-
-(defun mifi/dap-delete-all-debug-sessions ()
-  "End the debug session and delete project Python buffers and all breakpoints."
-  (interactive)
-  (dap-breakpoint-delete-all)
-  (mifi/dap-end-debug-session))
-
-(defun mifi/dap-begin-debug-session ()
-  "Begin a debug session with several dap windows enabled."
-  (interactive)
-  (dap-ui-show-many-windows)
-  (dap-debug))
-
-;;; ##########################################################################
-
-(defun define-dap-hydra ()
-  (defhydra dap-hydra (:color pink :hint nil :foreign-keys run)
-    "
-  ^Stepping^            ^Switch^                 ^Breakpoints^          ^Debug^                     ^Eval
-  ^^^^^^^^-----------------------------------------------------------------------------------------------------------------
-  _._: Next            _ss_: Session            _bb_: Toggle           _dd_: Debug                 _ee_: Eval
-  _/_: Step in         _st_: Thread             _bd_: Delete           _dr_: Debug recent          _er_: Eval region
-  _,_: Step out        _sf_: Stack frame        _ba_: Add              _dl_: Debug last            _es_: Eval thing at point
-  _c_: Continue        _su_: Up stack frame     _bc_: Set condition    _de_: Edit debug template   _ea_: Add expression.
-  _r_: Restart frame   _sd_: Down stack frame   _bh_: Set hit count    _ds_: Debug restart
-  _Q_: Disconnect      _sl_: List locals        _bl_: Set log message  _dx_: end session
-                       _sb_: List breakpoints                          _dX_: end all sessions
-                       _sS_: List sessions
-                       _sR_: Session Repl
-"
-    ("n" dap-next)
-    ("i" dap-step-in)
-    ("o" dap-step-out)
-    ("." dap-next)
-    ("/" dap-step-in)
-    ("," dap-step-out)
-    ("c" dap-continue)
-    ("r" dap-restart-frame)
-    ("ss" dap-switch-session)
-    ("st" dap-switch-thread)
-    ("sf" dap-switch-stack-frame)
-    ("su" dap-up-stack-frame)
-    ("sd" dap-down-stack-frame)
-    ("sl" dap-ui-locals)
-    ("sb" dap-ui-breakpoints)
-    ("sR" dap-ui-repl)
-    ("sS" dap-ui-sessions)
-    ("bb" dap-breakpoint-toggle)
-    ("ba" dap-breakpoint-add)
-    ("bd" dap-breakpoint-delete)
-    ("bc" dap-breakpoint-condition)
-    ("bh" dap-breakpoint-hit-condition)
-    ("bl" dap-breakpoint-log-message)
-    ("dd" dap-debug)
-    ("dr" dap-debug-recent)
-    ("ds" dap-debug-restart)
-    ("dl" dap-debug-last)
-    ("de" dap-debug-edit-template)
-    ("ee" dap-eval)
-    ("ea" dap-ui-expressions-add)
-    ("er" dap-eval-region)
-    ("es" dap-eval-thing-at-point)
-    ("dx" mifi/dap-end-debug-session)
-    ("dX" mifi/dap-delete-all-debug-sessions)
-    ("x" nil "exit Hydra" :color yellow)
-    ("q" mifi/dap-end-debug-session "quit" :color blue)
-    ("Q" mifi/dap-delete-all-debug-sessions :color red)))
 
 ;;; ##########################################################################
 
@@ -3949,7 +3717,7 @@ capture was not aborted."
 (use-package solaire-mode
   :ensure t
   :after treemacs
-  :hook (elpaca-after-init . solaire-global-mode)
+  :hook (after-init . solaire-global-mode)
   :config
   (push '(treemacs-window-background-face . solaire-default-face) solaire-mode-remap-alist)
   (push '(treemacs-hl-line-face . solaire-hl-line-face) solaire-mode-remap-alist))
@@ -4014,7 +3782,6 @@ capture was not aborted."
 ;;; ##########################################################################
 
 (use-package diff-hl
-  :after track-changes
   :ensure t
   :config
   (global-diff-hl-mode))
@@ -4035,7 +3802,7 @@ capture was not aborted."
 ;;; ##########################################################################
 
 (use-package rainbow-mode
-  
+  :ensure t
   :hook (prog-mode . (lambda () (rainbow-mode t))))
 
 ;;; ##########################################################################
@@ -4048,6 +3815,7 @@ capture was not aborted."
 ;;; ##########################################################################
 
 (use-package popper
+  :ensure t :defer t
   :bind (("C-`"   . popper-toggle)
           ("M-`"   . popper-cycle)
           ("C-M-`" . popper-toggle-type))
@@ -4080,25 +3848,25 @@ capture was not aborted."
 ;;   (use-package web-server ))
 
 (use-package markdown-mode
-  ;;:defer t
+  :defer t :ensure t
   :mode (("README\\.md\\'" . gfm-mode)
          ("\\.md\\'" . markdown-mode)
          ("\\.markdown\\'" . markdown-mode))
   :init (setq markdown-command "multimarkdown"))
-  ;;:hook (elpaca-after-init . mifi/load-web-support))
+  ;;:hook (after-init . mifi/load-web-support))
 
 ;;; ##########################################################################
 
 (defun markdown-html (buffer)
   (princ (with-current-buffer buffer
-         (format "<!DOCTYPE html><html><title>Impatient Markdown</title><xmp theme=\"united\" style=\"display:none;\"> %s  </xmp><script src=\"http://ndossougbe.github.io/strapdown/dist/strapdown.js\"></script></html>" (buffer-substring-no-properties (point-min) (point-max))))
+  	 (format "<!DOCTYPE html><html><title>Impatient Markdown</title><xmp theme=\"united\" style=\"display:none;\"> %s  </xmp><script src=\"http://ndossougbe.github.io/strapdown/dist/strapdown.js\"></script></html>" (buffer-substring-no-properties (point-min) (point-max))))
     (current-buffer)))
 
 (use-package simple-httpd
   :ensure t)
 
 (use-package impatient-mode
-  :ensure t
+  :ensure t :defer t
   :config
   (imp-set-user-filter #'markdown-html)
   :hook (elpaca-after-init . httpd-start))
@@ -4107,6 +3875,7 @@ capture was not aborted."
 
 ;; Use keybindings
 (use-package grip-mode
+  :ensure t :defer t
   :bind (:map markdown-mode-command-map
           ("g" . grip-mode)))
 
@@ -4217,8 +3986,8 @@ capture was not aborted."
           (bind-keys :map map
             ("M-RET P" . 'pydoc-at-point)))
       ((equal major-mode 'tuareg-mode)
-        (bind-keys :map map
-          ("M-RET c m" . tuarg-browse-manual)))
+  	(bind-keys :map map
+  	  ("M-RET c m" . tuarg-browse-manual)))
         (t   ;; Default 
           (unbind-key "M-RET o f" map)
           (unbind-key "M-RET o c" map)
@@ -4259,7 +4028,7 @@ capture was not aborted."
 
 ;; Check the keys when:
 ;; - the whick-key menu is displayed
-(add-hook 'elpaca-after-init-hook
+(add-hook 'after-init-hook
   (lambda ()
     (add-hook 'which-key-inhibit-display-hook 'mifi/mmm-update-menu)
     ;; - the user updates/changes the buffer - like loading a file
@@ -4317,6 +4086,8 @@ exits."
   "Backup Emacs initialization files for recovery. If old files exist, they are
 backed up as tilde (~) files. Also, if ocaml is enabled, byte (re)compile the
 opam-user-setup.el so that upon next startup, it can be loaded quickly."
+  (when (featurep 'simple-httpd)
+    (httpd-stop))
   (when enable-ocaml
     (let ((src (expand-file-name "opam-user-setup.el" emacs-config-directory)))
       (when (file-exists-p src)

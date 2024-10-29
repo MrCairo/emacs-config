@@ -7,12 +7,16 @@
 ;;
 ;;
 ;; DO NOT MODIFY this file directly as changes will be overwritten.
-;; The source this file is generated from is from "emacs-config.org"
+;; The source this file is generated from is from "emacs-config-elpa.org"
 
 ;;; Code:
 
 ;;; ##########################################################################
-(setq package-enable-at-startup nil)
+;;; Set high for initial startup
+(setq gc-cons-threshold (* 1024 1024 100))
+(setq gc-cons-percentage 0.3)
+
+(setq package-enable-at-startup t)
 
 ;; Process performance tuning
 
@@ -61,18 +65,16 @@
 
 ;;; ##########################################################################
 
-(add-to-list 'load-path (expand-file-name "lisp" user-emacs-directory))
+(let ( (lisp-dir (expand-file-name "lisp" user-emacs-directory))
+       (lisp-lang-dir (expand-file-name "lisp/lang" user-emacs-directory)) )
+  (when (file-directory-p lisp-dir)
+    (add-to-list 'load-path lisp-dir))
+  (when (file-directory-p lisp-lang-dir)
+    (add-to-list 'load-path lisp-lang-dir)))
 
 (let ((minver "29.1"))
   (when (version< emacs-version minver)
     (error "Your Emacs is too old -- this config requires v%s or higher" minver)))
-
-(let ((ver-need-vc "30.0"))
-  (when (version< emacs-version ver-need-vc)
-    ;; (unless (package-installed-p 'package-vc)
-    ;;   (package-vc-install "https://github.com/slotThe/vc-use-package"))
-    (message ">>> Loading local-package-vc.el")
-    (require 'local-package-vc)))
 
 (setq use-package-compute-statistics t
   use-package-verbose t
@@ -87,14 +89,11 @@
 ;;     gcmh-high-cons-threshold (* 100 1024 1024))      ; 100mb
 ;;   (gcmh-mode 1))
 
-;;; Set high for initial load.
-;; (setq gc-cons-threshold (* 1024 1024 100))
-(setq gc-cons-threshold 8000000) ;; Default
-(setq gc-cons-percentage 0.3)
-
 (add-hook 'emacs-startup-hook
   (lambda ()
-    ;; (setq gc-cons-percentage 0.1) ;; Default value for `gc-cons-percentage'
+    ;; Reset gc values to more-or-less defaul values after startup
+    (setq gc-cons-threshold 800000)
+    (setq gc-cons-percentage 0.1)
     (setq startup-time-message
       (format "Emacs read in %.2f seconds with %d garbage collections."
         (float-time (time-subtract after-init-time before-init-time))
@@ -131,6 +130,8 @@ defined path-separator."
     (t ;; default to something
       (setq exec-path '( "/usr/local/sbin" "/usr/local/bin"
                          "/usr/sbin" "/usr/bin"))))
+  (when (file-directory-p "/usr/local/go/bin")
+    (add-to-list 'exec-path "/usr/local/go/bin"))    
   (mifi/setup-path-from-exec-path))
 
 (when *is-a-mac*
@@ -138,10 +139,6 @@ defined path-separator."
     "/Applications/Firefox.app/Contents/MacOS/firefox")
   (setq browse-url-chrome-program
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"))
-
-;;; Fixup native-comp-eln-load-path directory
-(add-to-list 'native-comp-eln-load-path
-  (expand-file-name "eln-cache" user-emacs-directory))
 
 (add-hook 'before-init-hook #'mifi/setup-exec-path)
 

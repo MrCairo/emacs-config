@@ -1,0 +1,537 @@
+#+title: OCaml configuration file
+#+author: Mitch Fisher
+#+date: <2024-10-26 Sat>
+#+options: toc:nil h:4
+#+startup: showall
+#+visibility: folded
+#+property: header-args:emacs-lisp :tangle ./mifi-setup-ocaml.el :results silent :exports code :mkdirp yes
+
+* OCaml Language Configuration
+
+** Prologue
+#+begin_src emacs-lisp
+  ;;; mifi-setup-ocaml.el --- Configure OCaml dev environment -*- lexical-binding: t -*-
+  ;;; Commentary:
+  ;;;
+  ;;; This file is used to configure the OCaml environment for Emacs which
+  ;;; also includes checking for needed executables.
+
+  ;;; Code:
+#+end_src
+
+** References to external =defvars=
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (defvar enable-ocaml)
+
+#+end_src
+
+*** DAP Hydra Debug Functions
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (defun mifi/dap-end-ocaml-debug-session ()
+    "End the debug session and delete project buffers."
+    (interactive)
+    (dap-disconnect (dap--cur-session)))
+
+  (defun mifi/dap-delete-all-ocaml-debug-sessions ()
+    "End the debug session and delete project buffers and all breakpoints."
+    (interactive)
+    (dap-breakpoint-delete-all)
+    (mifi/dap-end-ocaml-debug-session))
+
+  (defun mifi/dap-begin-ocaml-debug-session ()
+    "Begin a debug session with several dap windows enabled."
+    (interactive)
+    (dap-ui-show-many-windows)
+    (dap-debug))
+
+#+end_src
+
+*** DAP Hydra Definition Function
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (defun mifi/define-ocaml-dap-hydra ()
+    (defhydra dap-ocaml-hydra (:color pink :hint nil :foreign-keys run)
+      "
+    ^Stepping^            ^Switch^                 ^Breakpoints^          ^Debug^                     ^Eval
+    ^^^^^^^^-----------------------------------------------------------------------------------------------------------------
+    _._: Next            _ss_: Session            _bb_: Toggle           _dd_: Debug                 _ee_: Eval
+    _/_: Step in         _st_: Thread             _bd_: Delete           _dr_: Debug recent          _er_: Eval region
+    _,_: Step out        _sf_: Stack frame        _ba_: Add              _dl_: Debug last            _es_: Eval thing at point
+    _c_: Continue        _su_: Up stack frame     _bc_: Set condition    _de_: Edit debug template   _ea_: Add expression.
+    _r_: Restart frame   _sd_: Down stack frame   _bh_: Set hit count    _ds_: Debug restart
+    _Q_: Disconnect      _sl_: List locals        _bl_: Set log message  _dx_: end session
+                         _sb_: List breakpoints                          _dX_: end all sessions
+                         _sS_: List sessions
+                         _sR_: Session Repl
+  "
+      ("n" dap-next)
+      ("i" dap-step-in)
+      ("o" dap-step-out)
+      ("." dap-next)
+      ("/" dap-step-in)
+      ("," dap-step-out)
+      ("c" dap-continue)
+      ("r" dap-restart-frame)
+      ("ss" dap-switch-session)
+      ("st" dap-switch-thread)
+      ("sf" dap-switch-stack-frame)
+      ("su" dap-up-stack-frame)
+      ("sd" dap-down-stack-frame)
+      ("sl" dap-ui-locals)
+      ("sb" dap-ui-breakpoints)
+      ("sR" dap-ui-repl)
+      ("sS" dap-ui-sessions)
+      ("bb" dap-breakpoint-toggle)
+      ("ba" dap-breakpoint-add)
+      ("bd" dap-breakpoint-delete)
+      ("bc" dap-breakpoint-condition)
+      ("bh" dap-breakpoint-hit-condition)
+      ("bl" dap-breakpoint-log-message)
+      ("dd" dap-debug)
+      ("dr" dap-debug-recent)
+      ("ds" dap-debug-restart)
+      ("dl" dap-debug-last)
+      ("de" dap-debug-edit-template)
+      ("ee" dap-eval)
+      ("ea" dap-ui-expressions-add)
+      ("er" dap-eval-region)
+      ("es" dap-eval-thing-at-point)
+      ("dx" mifi/dap-end-ocaml-debug-session)
+      ("dX" mifi/dap-delete-all-ocaml-debug-sessions)
+      ("x" nil "exit Hydra" :color yellow)
+      ("q" mifi/dap-end-ocaml-debug-session "quit" :color blue)
+      ("Q" mifi/dap-delete-all-ocaml-debug-sessions :color red)))
+
+#+end_src
+
+#+begin_src emacs-lisp
+
+  (when enable-ocaml
+    (mifi/define-ocaml-dap-hydra))
+
+#+end_src
+
+** OCaml ( [[https://ocaml.org][ocaml.org]] )
+
+An industrial-strength functional programming language with an emphasis on expressiveness and safety
+
+OCaml mixes power and pragmatism in a way that makes it ideal for building complex software systems. What makes OCaml special is that it occupies a sweet spot in programming language design. It provides a combination of efficiency, expressiveness, and practicality that is matched by no other language. That is in large part because OCaml is an elegant combination of language features that have been developed over the last 40 years. These include:
+
++ Generational garbage collection for automatic memory management.
++ First-class functions that can be passed around like ordinary values, as seen in JavaScript, Common Lisp, and C#.
++ Static type-checking to increase performance and reduce the number of runtime errors, as found in Java and C#.
++ Parametric polymorphism, which enables the construction of abstractions that work across different data types, similar to generics in Java and C# and templates in C++.
++ Good support for immutable programming, i.e., programming without making destructive updates to data structures. This is present in traditional functional languages like Scheme, and it's also found in distributed, big-data frameworks like Hadoop.
++ Type inference, so you don’t need to annotate every function parameter, return type, and variable. Instead, types are inferred based on how a value is used. Available in a limited form in C# with implicitly-typed local variables and in C++11 with its auto keyword.
++ Algebraic data types and pattern matching to define and manipulate complex data structures, also available in Scala and F#.
+
+*** HOWTO Install OPAM if necessary
+
+The OCaml package manager manually. This will fetch the latest version.
+
+#+begin_src bash
+
+  bash -c "sh <(curl -fsSL https://raw.githubusercontent.com/ocaml/opam/master/shell/install.sh) --version 2.2.0"
+
+#+end_src
+
+This is an easy way to install =opam= using ~brew~ but it may not be the most current. The shell script above is the best way to on non-windows systems.
+
+*** opam (environment)
+
+This package will automatically perform the equivalent of =eval $(opam env)= and set the current OPAM and PATH environment variables. The package determines the new environment based upon the presence of an =_opam= or =.opam= directory in the cwd. If there is no matching directory, the current OPAM environment is not changed.
+
+#+begin_src emacs-lisp
+
+  (let
+    ((installer "bash -c \"sh <(curl -fsSL https://raw.githubusercontent.com/ocaml/opam/master/shell/install.sh) --version 2.2.0\""))
+    (use-package opam
+      :ensure t
+      :when enable-ocaml
+      :demand t
+      :ensure-system-package (opam . installer)))
+
+  (defun opam-switch-prefix+relative-path (relative-path)
+    (let ((base (getenv "OPAM_SWITCH_PREFIX")))
+      (concat (concat base "/") relative-path)))
+
+#+end_src
+
+*** The .ocamlinit file
+
+This should be added/appended to anything in the existing ~.ocamlinit~ file.
+
+#+begin_src shell
+
+  sig=" ## Added by Emacs config for Ocaml "
+  count=$(grep -l "${sig}" ~/.ocamlinit)
+  if [ -z $count ]; then
+      printf "
+  (*${sig}*)
+  #require \"core.top\";;
+  #require \"ppx_jane\";;
+  open Base;;
+  (* ## End Emacs custom config *)
+  " >> ~/.ocamlinit
+  fi
+
+#+end_src
+
+#+RESULTS:
+
+*** HOWTO Install Merlin / Taureg
+
+Merlin is an editor service that provides advanced IDE features for OCaml.
+**Note**: when running =opam user-setup install -y= the resulting ~opam-user-setup.el~ file is specific to the current =opam switch= that is in effect. 
+
+#+begin_src shell
+
+  opam update -y             # (optional) check latests releases
+  opam install tuareg -y     # For Emacs only
+  opam install merlin -y     # Install merlin and it's dependencies
+  opam user-setup install -y # Emacs and VIM auto-configuration
+
+#+end_src
+
+*** Install Standard Libraries
+
+These are (mostly) the Jane Street libraries that ship with OCaml. They're very
+good and have become more-or-less the defacto standard.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package opam-std-libs
+    :when enable-ocaml
+    :ensure-system-package
+    ( ("~/.opam"                  . "opam init && opam install core utop base stdio --yes")
+      ("~/.opam/default/lib/core" . "opam install core --yes")
+      ("~/.opam/default/lib/utop" . "opam install utop --yes")))
+
+#+end_src
+
+*** HOWTO Install OCaml LSP Server
+
+This is not 100% necessary since Ocaml can use =merlin= directly instead of fronting with an LSP server. But, we install it since EGLOT makes use of it.
+
+#+begin_src shell
+
+  opam install ocaml-lsp-server -y
+
+#+end_src
+
+*** Code Formatter and Builder
+#+begin_src bash
+
+  opam install ocamlformat dune -y
+
+#+end_src
+
+*** Setup path to ~opam~ installed emacs lisp modules
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (defun mrf/set-opam-load-path ()
+    (let ((opam-share (ignore-errors (car (process-lines "opam" "var" "share")))))
+      (when (and (and opam-share (file-directory-p opam-share)) enable-ocaml)
+        (message "Updating load-path for OPAM to %s" (expand-file-name "emacs/site-lisp" opam-share))
+        (add-to-list 'load-path (expand-file-name "emacs/site-lisp" opam-share))
+        (autoload 'merlin-mode "merlin" nil t nil)
+        ;; Automatically start it in OCaml buffers
+        ;; (add-hook 'tuareg-mode-hook 'merlin-mode t)
+        (add-hook 'caml-mode-hook 'merlin-mode t)
+        ;; Use opam switch to lookup ocamlmerlin binary
+        (setq merlin-command 'opam)
+        ;; To easily change opam switches within a given Emacs session, you can
+        ;; install the minor mode https://github.com/ProofGeneral/opam-switch-mode
+        ;; and use one of its "OPSW" menus.
+        )))
+
+#+end_src
+
+*** Opam Emacs Configuration
+
+This puts a most of the installs mentioned above into a nice ~use-package~ form. This makes use of the ~opam-emacs-setup~ package in the ~lisp~ directory. It's just a stub but allows us to configure enacs using the =:ensure-system-package= option. This
+is specifc to a macOS or Linux OS.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package opam-emacs-setup
+    :init
+    (mrf/set-opam-load-path)
+    :ensure nil
+    :when enable-ocaml
+    :after opam-std-libs
+    :config
+    (add-to-list 'exec-path "~/.opam/default/bin"))
+
+#+end_src
+
+*** Configure Merlin / merlin-eldoc / merlin-company
+
+Merlin is an editor service that provides advanced IDE features for OCaml.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package merlin
+    :when enable-ocaml
+    :demand t
+    :ensure nil
+    :delight " 🪄"
+    :after opam-emacs-setup)
+
+  (use-package merlin-eldoc
+    :when enable-ocaml :defer t :after merlin :ensure t)
+
+  (use-package merlin-company
+    :when (and enable-ocaml (not (equal custom-ide 'custom-ide-lsp-bridge)))
+    :ensure nil
+    :defer t :after merlin company
+    :config
+    (add-hook 'merlin-mode-hook 'company-mode)
+    (with-eval-after-load 'company
+      (add-to-list 'company-backends 'merlin-company-backend)))
+
+#+end_src
+
+*** Dune
+
+Dune is a build system for OCaml (with support for Reason and Coq). It is not intended as a completely generic build system that’s able to build any project in any language. On the contrary, it makes lots of choices in order to encourage a consistent development style.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package dune
+    :ensure nil
+    :when enable-ocaml
+    :hook (dune-mode . opam-init)
+    :demand t
+    :ensure-system-package
+    (dune . "opam install dune --yes"))
+
+  (use-package dune-flymake
+    :when enable-ocaml
+    :after dune
+    :ensure nil
+    :defer t)
+
+  (use-package dune-watch
+    :when enable-ocaml
+    :after dune
+    :ensure nil
+    :defer t)
+
+#+end_src
+
+*** Configure Tuareg
+
+*Tuareg: an Emacs OCaml mode*
+
+This archive contains files to help editing OCaml code, to highlight important parts of the code, to run an OCaml REPL (also called toplevel), and to run the OCaml debugger within Emacs.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (defun mifi/tuareg-mode-hook ()
+    (interactive)
+    (merlin-mode t)
+    (opam-init)
+    (lsp-deferred)
+    (dap-mode)
+    (setq tuareg-mode-name "🐫")
+    (when (functionp 'prettify-symbols-mode)
+      (prettify-symbols-mode)))
+
+  (use-package tuareg
+    :when enable-ocaml
+    :init
+    :ensure nil
+    :demand t
+    ;; :after opam-emacs-setup merlin jsonrpc
+    :hook (tuareg-mode . mifi/tuareg-mode-hook)
+    :mode
+    ("\\.ml\\'" . mifi/tuareg-mode-hook)
+    ("\\.mli\\'" . tuareg-mode)
+    :custom
+    (tuareg-indent-align-with-first-arg t)
+    (compile-command "dune build ")
+    :config
+    (bind-keys :map tuareg-mode-map
+      ("C-c ," . dap-ocaml-hydra/body)))
+
+#+end_src
+
+**** tuareg-opam
+
+This module does many things but most important is that it updates the =exec-path= based upon the local opam environment. If the project contains an ~_opam~ directory, then this package will automatically update the exec-path. If the ~_opam~ directory is not present, the the default ("~/.opam/default") is used instead.
+
+#+begin_src emacs-lisp
+
+  ;; Does many things but also updates the exec-path to the local
+  ;; opam environment.
+  (use-package tuareg-opam
+    :when enable-ocaml
+    :ensure nil
+    :after tuareg)
+  
+#+end_src
+
+*** Load the opam-user-setup.el
+
+This file is created by the actual opam/ocaml installation and contains paths and other imports that are specific to the user login. It also includes hooks that will change the PATH to opam to the current projec t- similar to how the package 'pyvenv-auto' works.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (let
+    ((file (expand-file-name "opam-user-setup.el" emacs-config-directory)))
+    (when (and (file-exists-p file) (not (featurep 'opam-user-setup)))
+      (use-package opam-user-setup
+        :when enable-ocaml
+        :ensure nil
+        :after tuareg
+        :config
+        (setq-default tuareg-indent-align-with-first-arg t)
+        (setq-default compile-command "dune build ")
+        (add-hook 'tuareg-mode-hook #'mifi/tuareg-mode-hook))))
+
+#+end_src
+
+
+*** Other OCaml Related Packages and functions
+
+Here are some other packages that are useful when using OCaml.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package ocp-indent
+    :when enable-ocaml
+    :after opam-emacs-setup
+    :ensure nil
+    :ensure-system-package
+    ("~/.opam/default/bin/ocp-indent" . "opam install ocp-indent --yes"))
+
+  (use-package ocamlformat
+    :when enable-ocaml
+    :after ocp-indent
+    :ensure nil
+    :bind ("<f6>" . ocamlformat)
+    :ensure-system-package
+    ("~/.opam/default/lib/ocamlformat-lib" . "opam install ocamlformat --yes")
+    :custom (ocamlformat-enable 'enable-outside-detected-project))
+
+  (use-package utop
+    :when enable-ocaml
+    :after opam-user-setup
+    :ensure nil
+    :defer t
+    :custom
+    (utop-command "opam config exec utop -- -emacs"))
+
+  (use-package opam-switch-mode
+    :ensure t
+    :when enable-ocaml
+    :after opam-user-setup
+    :hook
+    (tuareg-mode . opam-switch-mode))
+
+#+end_src
+
+*** OCaml Tree-sitter Grammer
+#+begin_src emacs-lisp :tangle no
+  
+  (setq treesit-language-source-alist
+   '((ocaml "https://github.com/tree-sitter/tree-sitter-ocaml" "master" "ocaml/src")))
+
+#+end_src
+
+#+begin_src tuareg
+
+  open Printf;;
+
+  print_endline "Hello world!";;
+
+#+end_src
+
+
+#+begin_src tuareg
+
+  open Stdio;;
+  open List;;
+
+  let rec even_index_elements l =
+    match l with
+      _::b::t -> b :: even_index_elements t
+    | _ -> [];;
+
+  even_index_elements [1;2;1;4;1;5];;
+
+  let rec print_list = function
+      [] -> ()
+    | e::l -> print_int e ; print_string " " ; print_list l;;
+
+  let plain_list = [1;100;50;12];;
+
+  let rec reverse_list l =
+    match l with
+    | [] -> []
+    | h::t -> reverse_list t @ [h]
+
+  let make_palendrome l =
+    match l with
+    | [] -> []
+    | h::t -> h::t @ reverse_list l;;
+
+  print_endline "Print a Palendrome\n";;
+  print_list(make_palendrome plain_list);;
+
+  print_list (even_index_elements [1;2;1;4;1;5]);;
+
+#+end_src
+
+*** DAP Package for OCaml
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  ;; For Emacs >= 30.0 it is possible to use the VC command like this:
+  ;; :vc (:url "https://github.com/emacs-lsp/dap-mode"
+  ;;      :main-file "dap-ocaml.el")
+  ;;
+  (use-package dap-ocaml
+    :when enable-ocaml
+    :after (:all dap-mode opam-emacs-setup)
+    :ensure t
+    ;; :vc (:url "https://github.com/emacs-lsp/dap-mode" :main-file dap-ocaml)
+    :ensure (:package "dap-ocaml" :type git :host github :repo "emacs-lsp/dap-mode")
+    :config
+    (mifi/define-ocaml-dap-hydra)
+    :ensure-system-package
+    ((ocamllsp . "opam install earlybird --yes")))
+
+  (use-package dap-codelldb
+    :when enable-ocaml
+    :after dap-mode
+    :defer t
+    ;; :vc (:url "https://github.com/emacs-lsp/dap-mode" :main-file dap-codelldb) :ensure t)
+    :ensure (:package "dap-codelldb" :type git :host github :repo "emacs-lsp/dap-mode"))
+
+#+end_src
+
+** Epilogue
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (provide 'mifi-setup-ocaml)
+  ;;; mifi-setup-ocaml.el ends here.
+  
+#+end_src

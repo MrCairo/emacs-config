@@ -2,8 +2,8 @@
 #+author: Mitch Fisher
 #+date: 2024-05-11
 #+options: toc:nil h:4
-#+startup: showall
-#+visibility: folded
+#+startup: showeverything
+#+visibility: all
 #+property: header-args:emacs-lisp :tangle ./init.el :results silent :exports code :mkdirp yes
 #+modified-date: <2024-10-16 Wed>
 
@@ -105,7 +105,6 @@ So far, the following collections of options are included here:
        
 :end:
 
-
 * Early init file
 :properties:
 :custom_id: h:early-init-file
@@ -140,9 +139,11 @@ Standard fare and good practice.
 :custom_id: l:early-init-package-archives
 
 #+begin_src emacs-lisp :tangle "early-init.el" 
-    ;;; ##########################################################################
+  ;;; ##########################################################################
+  ;;; Set high for initial startup
+  (setq gc-cons-threshold (* 1024 1024 100))
+  (setq gc-cons-percentage 0.3)
 
-  (setq gc-cons-threshold 80000000) ;; original value * 100
   (setq package-enable-at-startup t)
 
   ;; Process performance tuning
@@ -198,18 +199,16 @@ Standard fare and good practice.
 #+begin_src emacs-lisp :tangle "early-init.el"
   ;;; ##########################################################################
 
-  (add-to-list 'load-path (expand-file-name "lisp" user-emacs-directory))
+  (let ( (lisp-dir (expand-file-name "lisp" user-emacs-directory))
+         (lisp-lang-dir (expand-file-name "lisp/lang" user-emacs-directory)) )
+    (when (file-directory-p lisp-dir)
+      (add-to-list 'load-path lisp-dir))
+    (when (file-directory-p lisp-lang-dir)
+      (add-to-list 'load-path lisp-lang-dir)))
 
   (let ((minver "29.1"))
     (when (version< emacs-version minver)
       (error "Your Emacs is too old -- this config requires v%s or higher" minver)))
-
-  (let ((ver-need-vc "30.0"))
-    (when (version< emacs-version ver-need-vc)
-      ;; (unless (package-installed-p 'package-vc)
-      ;;   (package-vc-install "https://github.com/slotThe/vc-use-package"))
-      (message ">>> Loading local-package-vc.el")
-      (require 'local-package-vc)))
 
 #+end_src
 :end:
@@ -245,14 +244,11 @@ Standard fare and good practice.
 
 #+begin_src emacs-lisp :tangle "early-init.el"
 
-  ;;; Set high for initial load.
-  (setq gc-cons-threshold (* 1024 1024 100))
-  (setq gc-cons-percentage 0.3)
-
   (add-hook 'emacs-startup-hook
     (lambda ()
-      (setq gc-cons-threshold 80000000) ;; original value * 100
-      (setq gc-cons-percentage 0.1) ;; Default value for `gc-cons-percentage'
+      ;; Reset gc values to more-or-less defaul values after startup
+      (setq gc-cons-threshold 800000)
+      (setq gc-cons-percentage 0.1)
       (setq startup-time-message
         (format "Emacs read in %.2f seconds with %d garbage collections."
           (float-time (time-subtract after-init-time before-init-time))
@@ -297,6 +293,8 @@ Because in macOS, Emacs could be started outside of a shell (like an application
       (t ;; default to something
         (setq exec-path '( "/usr/local/sbin" "/usr/local/bin"
                            "/usr/sbin" "/usr/bin"))))
+    (when (file-directory-p "/usr/local/go/bin")
+      (add-to-list 'exec-path "/usr/local/go/bin"))    
     (mifi/setup-path-from-exec-path))
 
   (when *is-a-mac*
@@ -373,6 +371,9 @@ These are the groups used by this Emacs config for customization.
   (defgroup mifi-config-theming nil
     "Custom theming list and list index values."
     :group 'mifi-config)
+
+  (defconst *is-a-mac* (eq system-type 'darwin))
+
 #+end_src
 
 ** File Locations and Variables
@@ -381,8 +382,7 @@ These are the groups used by this Emacs config for customization.
    ;;; ##########################################################################
 
   (defcustom custom-emacs-home
-    (expand-file-name
-      (format "emacs%d-home" emacs-major-version emacs-minor-version) "~/")
+    (expand-file-name "emacs-home" "~/")
     "The base directory to where emacs user-operation files are stored. This is
   in contrast to the `emacs-config-directory' where all the initialization and
   configuration of Emacs are stored."
@@ -552,7 +552,8 @@ These are features that basically have multiple-choice options instead of being 
     :type '(radio
              (const :tag "Vertico, Orderless, Consult, Embark completion system." comphand-vertico)
              (const :tag "Ivy, Counsel, Swiper completion systems" comphand-ivy)
-           (const :tag "Corfu, Orderless, Cape" comphand-corfu)
+             (const :tag "Helm" comphand-helm)
+             (const :tag "Corfu, Orderless, Cape" comphand-corfu)
              (const :tag "Built-in Ido" comp-hand-ido))
     :group 'mifi-config-features)
 
@@ -618,6 +619,7 @@ These are features that basically have multiple-choice options instead of being 
     :type '(radio
              (const :tag "Denote" custom-note-system-denote)
              (const :tag "Org-roam" custom-note-system-org-roam)
+             (const :tag "Org Journal" custom-note-system-org-journal)
              (const :tag "None" custom-note-system-none))
     :group 'mifi-config-features)
 
@@ -802,7 +804,9 @@ This package enables the ~:ensure-system-package~ within a ~use-package~ stateme
   ;; as 'undefined' even though this is a byte-compiled internal function. So,
   ;; instead of trying to find the issue, I'm just including it here as a
   ;; local package so that it works. Maybe one day I can remove it.
+  ;; (use-package recentf :ensure nil :demand t)
   (use-package recentf :ensure nil :demand t)
+
   ;; This package allows 'use-package' to support a 'use-system-package' option
   ;; which specifies the thing (library, executable, etc) that should exist
   ;; followed by the command used to install it. This allows for an expression
@@ -895,7 +899,7 @@ You can also use =M-x auto-package-update-now= to update right now!
   (use-package auto-package-update
     ;; :ensure (:fetcher github :repo "rranelli/auto-package-update.el")
     :ensure t
-    :demand t
+    :defer t
     :custom
     (auto-package-update-interval 7)
     (auto-package-update-prompt-before-update t)
@@ -955,8 +959,7 @@ This directory is expected to be in the ~emacs-config-direcory~ dir. This can be
   ;;; ##########################################################################
 
   (use-package f
-    :ensure t
-    :demand t
+    :ensure t :demand t
     :config
     (let ((epath (f-dirname
                  (expand-file-name invocation-name invocation-directory))))
@@ -1084,6 +1087,11 @@ Calls to mode functions that effect various Emacs behavior.
        try-complete-lisp-symbol-partially
        try-complete-lisp-symbol))
 
+  (defadvice save-buffers-kill-emacs (around no-query-kill-emacs activate)
+    "Prevent annoying \"Active processes exist\" query when you quit Emacs."
+    (cl-letf (((symbol-function #'process-list) (lambda ())))
+      ad-do-it))
+
 #+end_src
 
 ** Delight
@@ -1155,7 +1163,7 @@ These functions will save and restore Emacs framework. These are normally called
                   "(setq desktop-saved-frameset %S)"
                   desktop-saved-frameset)))))
 
-  (add-hook 'kill-emacs-hook 'mifi/save-desktop-frameset)
+  (add-hook 'kill-emacs-hook 'mifi/save-desktop-frameset -100)
 
   ;;; ##########################################################################
 
@@ -1290,6 +1298,21 @@ The JSON-RPC protocol is used to communicate with many different types of server
 
 #+end_src
 
+** Async
+~async.el~ is a module for doing asynchronous processing in Emacs. Some async applications are provided as well with this package:
+
++ Dired-async
++ smtp-mail-async
++ async-bytecomp
++ async-package
+  
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package async
+    :ensure t)
+
+#+end_src
 ** Simple-httpd
 A simple Emacs web server.
 
@@ -1330,7 +1353,7 @@ Dumb Jump is an Emacs "jump to definition" package with support for 50+ programm
 #+begin_src emacs-lisp :tangle no
   ;;; ##########################################################################
 
-  (use-package xref )
+  (use-package xref :ensure t :defer t)
   (use-package dumb-jump
     :after xref
     :config
@@ -1361,6 +1384,7 @@ This package displays ElDoc documentations in a childframe. The childframe is se
 
   (use-package eldoc-box
     :delight DocBox
+    :ensure t
     :hook (after-init . mifi/setup-hooks-for-eldoc))
 
 #+end_src
@@ -1376,10 +1400,6 @@ The Hydra is vanquished once Hercules, any binding that isn't the Hydra's head, 
 
   (use-package hydra
     :ensure t)
-    ;; :vc (:url "https://github.com/abo-abo/hydra" :ignored-files ("lv.el")))
-    ;; :ensure (:repo "abo-abo/hydra" :fetcher github
-    ;;           :files (:defaults (:exclude "lv.el"))))
-
 
 #+end_src
 
@@ -1434,6 +1454,7 @@ We use [[https://github.com/joostkremers/visual-fill-column][visual-fill-column]
 
   (use-package visual-fill-column
     :ensure nil ;; Should be installed in the local lisp dir.
+    :defer t
     :after org)
 
   (use-package writeroom-mode
@@ -1582,8 +1603,6 @@ ace-window]] is a package for selecting a window to switch to. Like =other-windo
 
   (use-package ace-window
     :ensure t
-    ;; :vc (:url "https://github.com/abo-abo/ace-window")
-    ;;:ensure (:repo "abo-abo/ace-window" :fetcher github)
     :bind ("M-o" . ace-window))
 
 #+end_src
@@ -1597,6 +1616,7 @@ Window numbers for Emacs: Navigate your windows and frames using numbers. This i
   ;;; Window Number
 
   (use-package winum
+    :ensure t
     :config (winum-mode))
 
 #+end_src
@@ -2141,6 +2161,60 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
 
 #+end_src
 
+*** Helm
+
+Helm is an Emacs framework for incremental completions and narrowing selections. It provides an easy-to-use API for developers wishing to build their own Helm applications in Emacs, powerful search tools and dozens of already built-in commands providing completion to almost everything. It is a must-have for anyone using Emacs as a main work environment. Helm has been widely adopted by many Emacs power-users.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package helm
+    :when (equal completion-handler 'comphand-helm)
+    :after async
+    :ensure t
+    :bind
+    ("M-x"   . helm-M-x)
+    ("M-s o" . helm-occur)
+    ([remap find-file] . helm-find-files)
+    ([remap switch-to-buffer] . helm-mini)
+    :custom
+    ;; open helm buffer inside current window, not occupy whole other window
+    (helm-split-window-in-side-p t)
+    ;; move to end or beginning of source when reaching top or bottom of source.
+    (helm-move-to-line-cycle-in-source t)
+    ;; search for library in `require' and `declare-function' sexp.
+    (helm-ff-search-library-in-sexp t)
+    ;; scroll 8 lines other window using M-<next>/M-<prior>
+    (helm-scroll-amount 8)
+    (helm-ff-file-name-history-use-recentf t)
+    (helm-echo-input-in-header-line t)
+    (helm-autoresize-max-height 0)
+    (helm-autoresize-min-height 20)
+    :config
+    (global-set-key (kbd "C-c h") 'helm-command-prefix)
+    (when (executable-find "curl")
+      (setq helm-google-suggest-use-curl-p t))
+    (helm-autoresize-mode 1)
+    (helm-mode 1))
+
+#+end_src
+
+**** helm wikipedia
+#+begin_src emacs-lisp
+
+  (use-package helm-wikipedia
+    :after helm
+    :ensure t
+    :bind
+    ("C-c h w" . helm-wikipedia-lookup)
+    :custom
+    (helm-wikipedia-summary-url
+      "https://fr.wikipedia.org/w/api.php?action=query&format=json&prop=extracts&titles=%s&exintro=1&explaintext=1&redirects=1")
+    (helm-wikipedia-suggest-url
+      "https://fr.wikipedia.org/w/api.php?action=opensearch&search=%s"))
+
+#+end_src
+
 *** Marginalia
 
 Marginalia are marks or annotations placed at the margin of the page of a book or in this case helpful colorful annotations placed at the margin of the minibuffer for your completion candidates. Marginalia can only add annotations to the completion candidates. It cannot modify the appearance of the candidates themselves, which are shown unaltered as supplied by the original command.
@@ -2152,6 +2226,7 @@ Marginalia are marks or annotations placed at the margin of the page of a book o
     :when (or (equal completion-handler 'comphand-vertico)
             (equal completion-handler 'comphand-corfu))
     :ensure t
+    :defer t
     ;; :commands marginalia-mode
     :custom
     (marginalia-max-relative-age 60)
@@ -2185,6 +2260,7 @@ Consult provides search and navigation commands based on the Emacs completion fu
     :when (equal completion-handler 'comphand-vertico)
     :after vertico
     :ensure t
+    :defer t
     :bind
     ([remap switch-to-buffer] . consult-buffer)
     ([remap switch-to-buffer-other-window] . consult-buffer-other-window)
@@ -2380,6 +2456,7 @@ The =eterm-256color= package enhances the output of =term-mode= to enable handli
   ;;; ##########################################################################
 
   (use-package eterm-256color
+    :ensure t
     :hook (term-mode . eterm-256color-mode))
 
 #+end_src
@@ -2537,10 +2614,12 @@ the buffer editable directly to rename them! Press =Z Z= to confirm renaming or
                 dired-listing-switches "-al --group-directories-first")))
 
   (use-package all-the-icons-dired
+    :ensure t
     :after dired
     :hook (dired-mode . all-the-icons-dired-mode))
 
   (use-package dired-open
+    :ensure t
     :commands (dired dired-jump)
     :config
     ;; Doesn't work as expected!
@@ -2549,6 +2628,7 @@ the buffer editable directly to rename them! Press =Z Z= to confirm renaming or
                                    ("mkv" . "mpv"))))
 
   (use-package dired-hide-dotfiles
+    :ensure t
     :after dired-mode
     :hook (dired-mode . dired-hide-dotfiles-mode))
 
@@ -2765,6 +2845,7 @@ Virtical Split comparison of two files selected from the dired window.
   ;;; ##########################################################################
 
   (use-package treemacs-projectile
+    :ensure t
     :when (equal custom-project-handler 'custom-project-projectile)
     :after treemacs projectile)
 
@@ -2775,6 +2856,7 @@ Virtical Split comparison of two files selected from the dired window.
   ;;; ##########################################################################
 
   (use-package treemacs-icons-dired
+    :ensure t
     :after treemacs
     :hook (dired-mode . treemacs-icons-dired-enable-once))
 
@@ -2791,6 +2873,7 @@ Virtical Split comparison of two files selected from the dired window.
 
   (use-package treemacs-persp ;;treemacs-perspective if you use perspective.el vs. persp-mode
     ;;:ensure (:files ("src/extra/treemacs-persp.el" "treemacs-persp-pkg.el"):host github :repo "Alexander-Miller/treemacs")
+    :ensure t
     :after (:any treemacs persp-mode) ;;or perspective vs. persp-mode
     :config (treemacs-set-scope-type 'Perspectives))
 
@@ -2802,6 +2885,7 @@ Virtical Split comparison of two files selected from the dired window.
   ;;; ##########################################################################
 
   (use-package treemacs-tab-bar ;;treemacs-tab-bar if you use tab-bar-mode
+    :ensure t
     :after treemacs
     :config (treemacs-set-scope-type 'Tabs))
 
@@ -2813,6 +2897,7 @@ Virtical Split comparison of two files selected from the dired window.
   ;;; ##########################################################################
 
   (use-package treemacs-all-the-icons
+    :ensure t
     :after treemacs
     :when (display-graphic-p))
 
@@ -3737,6 +3822,9 @@ This section contains the basic configuration for =org-mode= plus the configurat
 
   (use-package org
     :preface
+    (defun mifi/org-capture ()
+      (interactive)
+      (org-capture nil "jj"))
     (mifi/org-theme-override-values)
     (add-to-list 'auto-mode-alist '("\\.org\\'" . org-mode))
     :commands (org-capture org-agenda)
@@ -3744,13 +3832,16 @@ This section contains the basic configuration for =org-mode= plus the configurat
     :defer t
     :hook (org-mode . mifi/org-mode-setup)
     :custom
+    (org-directory (concat working-files-directory "OrgFiles"))
+    (org-default-notes-file (concat working-files-directory "OrgFiles/notes.org"))
     (org-startup-indented t)
     (org-pretty-entities t)
     (org-use-sub-superscripts "{}")
     (org-hide-emphasis-markers t)
     (org-startup-with-inline-images t)
     (org-image-actual-width '(300))
-    :bind (:map org-mode-map
+    :bind (("C-c o" . mifi/org-capture)
+          :map org-mode-map
             ("C-c e" . org-edit-src-code))
     :config
     (setq org-hide-emphasis-markers nil)
@@ -3774,9 +3865,7 @@ This section contains the basic configuration for =org-mode= plus the configurat
     (mifi/org-setup-capture-templates)
     (mifi/org-font-setup)
     (mifi/org-setup-todos)
-    (yas-global-mode t)
-    (define-key global-map (kbd "C-c j")
-      (lambda () (interactive) (org-capture nil "jj"))))
+    (yas-global-mode t))
 
 #+end_src
 
@@ -3909,20 +3998,39 @@ Note that org-modern is a full replacement for both org-superstar and org-bullet
     (global-org-modern-mode))
 
 #+end_src
+** Org Journal
+:org-journal:
+=org-journal= maintains a set of files, depending on the value of =org-journal-file-type=, a file represents a day, week, month or year. When  =org-journal-file-type= is set to ~'daily~, each file represent a day. In case  =org-journal-file-type= is set to 'weekly, a file represents a week, etc. Convenient bindings allow the creation of journal records in the current daily, weekly, monthly or yearly file and search within all records or specified time intervals. All records can be browsed and searched from the Emacs Calendar for convenience. All entries in a specified TODO state will be carried over to the next day, see =org-journal-carryover-items=. Optionally, the journal entry can be encrypted, so can the file, see =org-journal-enable-encryption= and =org-journal-encrypt-journal=, respectively.
 
-*** Org-transclusion
+Every journal entry must have a =CREATED= property when using yearly, monthly and weekly journal files. This property is added by =org-journal-new-entry= automatically.
+:end:
 
-Org-transclusion lets you insert a copy of text content via a file link or ID link within an Org file. It lets you have the same content present in different buffers at the same time without copy-and-pasting it. Edit the source of the content, and you can refresh the transcluded copies to the up-to-date state. Org-transclusion keeps your files clear of the transcluded copies, leaving only the links to the original 
-
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   ;;; ##########################################################################
 
-  (use-package org-transclusion
-    :after org
-    :config
-    (define-key global-map (kbd "<f12>") #'org-transclusion-add)
-    (define-key global-map (kbd "C-n t") #'org-transclusion-mode))
-
+  (when (equal custom-note-system 'custom-note-system-org-journal)
+    (use-package org-journal
+      :ensure t
+      :after org
+      :preface
+      (defun org-journal-file-header-func (time)
+        "Custom function to create journal header."
+        (concat (pcase org-journal-file-type
+                  (`daily "#+TITLE: Daily Journal\n#+STARTUP: showeverything")
+                  (`weekly "#+TITLE: Weekly Journal\n#+STARTUP: folded")
+                  (`monthly "#+TITLE: Monthly Journal\n#+STARTUP: folded")
+                  (`yearly "#+TITLE: Yearly Journal\n#+STARTUP: folded"))))
+      :init
+      (setq org-journal-prefix-key "C-c j ")
+      (setq org-journal-dir (expand-file-name "journal" working-files-directory ))
+      (setq org-journal-date-format "%A, %d %B %Y")
+      (setq org-journal-file-header 'org-journal-file-header-func)  
+      :bind (("C-c j n" . org-journal-new-entry)
+              ("C-c j f" . find-file-other-window)
+              ("C-c j s" . org-journal-schedule-view) )
+      :config
+      (message ">>> Configured org-journal."))
+  )
 #+end_src
 
 ** Org-mode Roam
@@ -3997,32 +4105,28 @@ Org Roam solves these problems by making it easy to create topic-focused Org Fil
 *** Org-roam dailies
 #+begin_src emacs-lisp
 
-  (use-package org-roam-dailies
-    :when (equal custom-note-system 'custom-note-system-org-roam)
-    ;; :vc  ( :url "https://github.com/org-roam/org-roam"
-    ;; 	 :main-file "extensions/org-roam-dailies.el")
-    :ensure t
-    :after org-roam
-    :init
-    (which-key-add-key-based-replacements "C-c n d" "org-roam-dailies")
-    ;; :ensure ( :package "org-roam-dailies" :source "MELPA" :protocol https :inherit t :depth 1
-    ;;           :fetcher github :repo "org-roam/org-roam" :files ("extensions/*"))
-    :bind-keymap
-    ("C-c n d" . org-roam-dailies-map)
-    :bind (:map org-roam-dailies-map
-  	  ("." . org-roam-dailies-goto-date)
-            ("Y" . org-roam-dailies-capture-yesterday)
-            ("T" . org-roam-dailies-capture-tomorrow))
-    :config
-    (which-key-add-key-based-replacements
-      "C-c n d" "org-roam-dailies"
-      "C-c n d ." "goto-date"
-      "C-c n d Y" "capture-yesterday"
-      "C-c n d T" "capture-tomorrow"
-      "C-c n d n" "capture-today"
-      "C-c n d d" "goto-today"
-      "C-c n d t" "goto-tomorrow"
-      "C-c n d y" "goto-yesterday"))
+  (when (equal custom-note-system 'custom-note-system-org-roam)
+    (use-package org-roam-dailies
+      :ensure t
+      :after org-roam
+      :init
+      (which-key-add-key-based-replacements "C-c n d" "org-roam-dailies")
+      :bind-keymap
+      ("C-c n d" . org-roam-dailies-map)
+      :bind (:map org-roam-dailies-map
+              ("." . org-roam-dailies-goto-date)
+              ("Y" . org-roam-dailies-capture-yesterday)
+              ("T" . org-roam-dailies-capture-tomorrow))
+      :config
+      (which-key-add-key-based-replacements
+        "C-c n d" "org-roam-dailies"
+        "C-c n d ." "goto-date"
+        "C-c n d Y" "capture-yesterday"
+        "C-c n d T" "capture-tomorrow"
+        "C-c n d n" "capture-today"
+        "C-c n d d" "goto-today"
+        "C-c n d t" "goto-tomorrow"
+        "C-c n d y" "goto-yesterday")))
 
 #+end_src
 
@@ -4317,6 +4421,20 @@ enerally enough.
 
 #+end_src
 
+** Gnus
+#+begin_src emacs-lisp
+
+  (use-package gnus
+    :disabled
+    :ensure nil
+    :defer t
+    :config
+    (setq user-full-name '"MrCairo")
+    (setq user-mail-address '"mr.cairo@invalidname.com")
+    (setq gnus-select-method '(nntp "news.eternal-september.org")))
+
+#+end_src
+
 * Integrated Development Environments
 
 The following are configured for Python development and provide an <<<IDE>>> type experience. It's worth noting that Eglot/LSP can be configured for other languages. The others are Python specific. Use the =configure= system to select which one is used (=Mrf Custom Selection=). I like to keep several different IDE systems available since each has it's advantages and I like to switch between them on occasion.
@@ -4371,7 +4489,7 @@ The following are configured for Python development and provide an <<<IDE>>> typ
     :defer t
     :hook
     (lisp-mode . eglot-ensure)
-    (tuareg-mode . eglot-ensure)
+    ;; (tuareg-mode . eglot-ensure)
     :config
     (flymake-mode 0)
     (add-to-list 'major-mode-remap-alist '(python-mode . python-ts-mode))
@@ -4409,6 +4527,7 @@ Client for Language Server Protocol (v3.14). lsp-mode aims to provide IDE-like e
   (use-package lsp-mode
     :when (or (equal custom-ide 'custom-ide-lsp) (equal custom-ide 'custom-ide-eglot))
     :commands (lsp lsp-deferred)
+    :ensure t
     :hook (lsp-mode . mifi/lsp-mode-setup)
     :init
     (setq lsp-keymap-prefix "C-c l")  ;; Or 'C-l', 's-l'
@@ -4723,6 +4842,7 @@ If a tree-sitter grammer is available and installed, use it instead of the corre
   ;;; ##########################################################################
 
   (use-package treesit-auto
+    :ensure t
     :demand t
     :config
     (global-treesit-auto-mode))
@@ -4736,7 +4856,11 @@ If a tree-sitter grammer is available and installed, use it instead of the corre
 #+begin_src emacs-lisp
   ;;; ##########################################################################
 
-  (use-package magit :after git-commit :ensure t)
+  (use-package transient :ensure t)
+  (use-package magit
+    :after transient
+    :ensure t :defer t
+    :command magit-status)
 
   ;; NOTE: Make sure to configure a GitHub token before using this package!
   ;; - https://magit.vc/manual/forge/Token-Creation.html#Token-Creation
@@ -4753,11 +4877,20 @@ If a tree-sitter grammer is available and installed, use it instead of the corre
 
 This is the Python setup for development under Emacs.
 
+#+begin_src emacs-lisp
+
+  (use-package mifi-setup-python
+    :when enable-python
+    :ensure nil)
+
+#+end_src
+
+
 *** Important
 
 Before any work can begin in python, make sure that the right packages are installed.
 
-#+begin_src shell :results output silent
+#+begin_src shell :results output silent :tangle no
 
   pip3 install --upgrade pip
   pip3 install "python-lsp-server[all]"
@@ -4777,7 +4910,7 @@ In addition to that, it is important that =autopep8=, which is a script, can rea
 
 The following are keymaps that are used by by the custom-ide and for python-mode
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   ;;; ##########################################################################
 
   (defun mifi/set-custom-ide-python-keymaps ()
@@ -4829,7 +4962,7 @@ The following are keymaps that are used by by the custom-ide and for python-mode
 
 These functions are used during python intialization or file loading. This is where Python IDE functionality, linting and debugging setup begins.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   ;;; ##########################################################################
 
   (defun mifi/load-python-file-hook ()
@@ -4879,7 +5012,7 @@ These functions are used during python intialization or file loading. This is wh
 
 This is the primary Python setup that is triggered by the first load of the Python mode and then any time a file is loaded.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   ;;; ##########################################################################
 
   ;; Use built-in python language mode.
@@ -4905,7 +5038,7 @@ This is the primary Python setup that is triggered by the first load of the Pyth
 
 autopep8 automatically formats Python code to conform to the `PEP 8` style guide. It uses the pycodestyle_ utility to determine what parts of the code needs to be formatted. autopep8 is capable of fixing most of the formatting issues_ that can be reported by pycodestyle. Refer to the [[IMPORTANT][IMPORTANT]] section above for possible issues when autopep8 is installed.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   ;;; ##########################################################################
 
   ;; Using when instead of :when so that the package doesn't get loaded.
@@ -4921,7 +5054,7 @@ autopep8 automatically formats Python code to conform to the `PEP 8` style guide
 *** Python Keybinding
 **** Helpful Macros
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   ;;; ##########################################################################
 
   ;; This is a helpful macro that is used to put double quotes around a word.
@@ -4947,7 +5080,7 @@ autopep8 automatically formats Python code to conform to the `PEP 8` style guide
 
 We use Pyvenv-auto is a package that automatically changes to the Python virtual environment based upon the project's directory. pyvenv-auto looks at the root director of the project for a =.venv= or =venv= (and a few others)
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   ;;; ##########################################################################
 
   ;; Using when instead of :when so that the package doesn't get loaded.
@@ -4963,7 +5096,7 @@ We use Pyvenv-auto is a package that automatically changes to the Python virtual
 
 #Pydoc, the Python documentation navigation package
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   ;;; ##########################################################################
   ;; Using when instead of :when so that the package doesn't get loaded.
   (when enable-python
@@ -5374,11 +5507,12 @@ This is a basic configuration for the TypeScript language so that =.ts= files ac
   ;;; ##########################################################################
 
   (when enable-ts
-    (use-package typescript-mode
+    (use-package typescript-ts-mode
+      :ensure nil
       :defer t
       :mode "\\.ts\\'"
       :hook
-      (typescript-mode . lsp-deferred)
+      (typescript-ts-mode . lsp-deferred)
       (js2-mode . lsp-deferred)
       :config
       (setq typescript-indent-level 4)
@@ -5447,20 +5581,18 @@ RGBDS is a compiler that has been around quite a long time (since 1997). It supp
 
   (when enable-gb-dev
     (use-package z80-mode
-      :when enable-gb-dev
-      :vc (:url "https://github.com/SuperDisk/z80-mode"))
-      ;; :ensure (:host github :repo "SuperDisk/z80-mode"))
+      :ensure nil) ;; should have been installed in 'lisp' subdir.
+      ;; :vc (:url "https://github.com/SuperDisk/z80-mode"))
 
     (use-package mwim
-      :when enable-gb-dev
-      :vc (:url "https://github.com/alezost/mwim"))
-      ;; :ensure (:host github :repo "alezost/mwim.el"))
+      :ensure t)
+      ;; :vc (:url "https://github.com/alezost/mwim"))
 
     (use-package rgbds-mode
-      :when enable-gb-dev
       :after mwim
-      :vc (:url "https://github.com/japanoise/rgbds-mode")))
-      ;; :ensure (:host github :repo "japanoise/rgbds-mode")))
+      :ensure nil) ;; should have been installed in 'lisp' subdir.
+      ;; :vc (:url "https://github.com/japanoise/rgbds-mode")))
+    )
 
 #+end_src
 
@@ -5601,6 +5733,7 @@ Make sure that =gopls= and =dlv= are installed. gopls is the Go! (or golang) lan
     (add-hook 'before-save-hook #'eglot-format-buffer -10 t))
 
   (use-package go-mode
+    :ensure t
     :defer t
     :mode ("\\.go\\'" . go-mode)
     :custom
@@ -5661,30 +5794,27 @@ Swift is very popular for iOS and macOS development but server-side Swift, which
 #+begin_src emacs-lisp :tangle no
   ;;; ##########################################################################
 
-  (use-package swift-mode
+  (use-package swift-ts-mode
+    :ensure t
     :defer t
-    :mode ("\\.swift\\'" . swift-mode))
+    :mode ("\\.swift\\'" . swift-ts-mode))
 
   (use-package swift-helpful
     :defer t
     :after swift-mode
-    :vc ( :url "https://github.com/danielmartin/swift-helpful"
-  	:main-file swift-helpful
-  	:lisp-dir ("swift-info" "target")))
-    ;; :ensure (:files ("*.el" "swift-info/*.info"
-    ;;                   ("images" "swift-info/images/*.png") "swift-helpful-pkg.el")
-    ;;           :host github
-    ;;          :repo "danielmartin/swift-helpful"))
+    :ensure t)
+    ;; :vc ( :url "https://github.com/danielmartin/swift-helpful"
+    ;; 	:main-file swift-helpful
+    ;; 	:lisp-dir ("swift-info" "target")))
 
   (use-package swift-playground-mode
+    :ensure nil ;; Should be in local 'lisp' dir.
     :defer t
     :after swift-mode
-    :vc (:url "https://gitlab.com/michael.sanders")
-    ;; :ensure ( :package "swift-playground-mode"
-    ;;         :repo "https://gitlab.com/michael.sanders/swift-playground-mode.git")
     :init
     (autoload 'swift-playground-global-mode "swift-playground-mode" nil t)
     (add-hook 'swift-mode-hook #'swift-playground-global-mode))
+    ;; :vc (:url "https://gitlab.com/michael.sanders")
 
 #+end_src
 
@@ -5729,22 +5859,56 @@ The Debug Adapter Protocol makes it possible to implement a generic debugger for
   ;;; Debug Adapter Protocol
   (use-package dap-mode
     :when (equal debug-adapter 'debug-adapter-dap-mode)
+    :ensure t
     :defer t
-    :after hydra
     ;; Uncomment the config below if you want all UI panes to be hidden by default!
     ;; :custom
     ;; (lsp-enable-dap-auto-configure nil)
-    :commands dap-debug
+    :commands (dap-debug dap-mode dap-ui-mode)
     :custom
     (dap-auto-configure-features '(sessions locals breakpoints expressions repl controls tooltip))
     :config
     ;; (require 'dap-lldb)
     ;; (require 'dap-gdb-lldb)
-    (define-dap-hydra)
-    (bind-keys :map prog-mode-map
-      ("C-c ." . dap-hydra/body))
+    ;; (define-dap-hydra)
+    ;; (bind-keys :map prog-mode-map
+    ;;   ("C-c ." . dap-hydra/body))
     (dap-ui-controls-mode)
     (dap-ui-mode 1))
+
+#+end_src
+
+**** DAP Python Templates                                       :Python:Rust:
+
+#+begin_src emacs-lisp :tangle no
+  ;;; ##########################################################################
+
+  (defun mifi/register-dap-python-templates ()
+    ;; (with-eval-after-load 'dap-lldb
+    ;;   (dap-register-debug-template
+    ;;     "Rust::LLDB Run Configuration"
+    ;;     (list :type "lldb"
+    ;;       :request "launch"
+    ;;       :name "LLDB::Run"
+    ;;       :gdbpath "rust-lldb"
+    ;;       :target nil
+    ;;       :cwd nil)))
+    (dap-register-debug-template "Python :: Run file from project directory"
+      (list :type "python"
+        :args ""
+        :cwd nil
+        :module nil
+        :program nil
+        :request "launch"))
+      
+    (dap-register-debug-template "Python :: Run file (buffer)"
+      (list :type "python"
+        :args ""
+        :cwd nil
+        :module nil
+        :program nil
+        :request "launch"
+        :name "Python :: Run file (buffer)")))
 
 #+end_src
 
@@ -5759,37 +5923,34 @@ The Debug Adapter Protocol makes it possible to implement a generic debugger for
   (use-package dap-ocaml
     :when enable-ocaml
     :after (:all dap-mode opam-emacs-setup)
-    :ensure t
-    :vc (:url "https://github.com/emacs-lsp/dap-mode" :main-file dap-ocaml)
-    ;; :ensure (:package "dap-ocaml" :type git :host github :repo "emacs-lsp/dap-mode")
+    :ensure nil
     :ensure-system-package
     ((ocamllsp . "opam install earlybird --yes")))
 
   (use-package dap-codelldb
     :when enable-ocaml
     :after dap-mode
-    :defer t
-    :vc (:url "https://github.com/emacs-lsp/dap-mode" :main-file dap-codelldb) :ensure t)
-    ;; :ensure (:package "dap-codelldb" :type git :host github :repo "emacs-lsp/dap-mode"))
+    :ensure nil
+    :defer t)
 
 #+end_src
 
 **** DAP Package for Python :Python:
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   ;;; ##########################################################################
   ;;; DAP for Python
 
-  (when enable-python
-    (use-package dap-python
-      :vc (:url "https://github.com/emacs-lsp/dap-mode" :main-file dap-python)
-      ;; :ensure (:package "dap-python" :type git :host github :repo "emacs-lsp/dap-mode")
-      :defer t
-      :when (equal debug-adapter 'debug-adapter-dap-mode)
-      :after dap-mode
-      :config
-      (setq dap-python-executable "python3") ;; Otherwise it looks for 'python' else error.
-      (setq dap-python-debugger 'debugpy)))
+  (use-package dap-python
+    :when enable-python
+    :ensure nil
+    ;; :vc (:url "https://github.com/emacs-lsp/dap-mode" :main-file dap-python)
+    :when (equal debug-adapter 'debug-adapter-dap-mode)
+    :after dap-mode
+    :config
+    (mifi/register-dap-python-templates)
+    (setq dap-python-executable "python3") ;; Otherwise it looks for 'python' else error.
+    (setq dap-python-debugger 'debugpy))
 
 #+end_src
 
@@ -5802,12 +5963,9 @@ Something that is needed for Rust and Go debugging.
 
   (use-package dap-lldb
     :when (equal debug-adapter 'debug-adapter-dap-mode)
+    :ensure nil
     :defer t
     :after dap-mode
-    :vc (:url "https://github.com/emacs-lsp/dap-mode" :main-file dap-lldb)
-    ;; :ensure ( :package "dap-lldb" :source nil :protocol https
-    ;;           :inherit t :depth 1 :type git
-    ;;           :host github :repo "emacs-lsp/dap-mode")
     :custom
     (dap-lldb-debug-program "~/Developer/command-line-unix/llvm/lldb-build/bin/lldb-dap"))
     ;; :config
@@ -5822,10 +5980,7 @@ Something that is needed for Rust and Go debugging.
 
   (use-package dap-gdb-lldb
     :when (equal debug-adapter 'debug-adapter-dap-mode)
-    :vc (:url "https://github.com/emacs-lsp/dap-mode" :main-file dap-gdb-lldb) :ensure t
-    ;; :ensure ( :package "dap-gdb-lldb" :source nil :protocol https
-    ;;           :inherit t :depth 1 :type git :host github
-    ;;           :repo "emacs-lsp/dap-mode")
+    :ensure nil
     :defer t
     :after dap-lldb
     :config
@@ -5833,50 +5988,11 @@ Something that is needed for Rust and Go debugging.
 
   (use-package dap-cpptools
     :when (equal debug-adapter 'debug-adapter-dap-mode)
+    :ensure nil
     :defer t
-    :after dap-mode
-    :vc (:url "https://github.com/emacs-lsp/dap-mode" :main-file dap-cpptools) :ensure t)
-    ;; :ensure ( :package "dap-cpptools" :source nil :protocol https
-    ;;           :inherit t :depth 1 :type git :host github
-    ;;           :repo "emacs-lsp/dap-mode"))
+    :after dap-mode)
   ;; :config
   ;; (dap-cpptools-setup))
-
-#+end_src
-
-**** DAP Templates For Various Languages :Python:Rust:
-
-#+begin_src emacs-lisp :tangle no
-  ;;; ##########################################################################
-
-  (when enable-python
-    ;; (with-eval-after-load 'dap-lldb
-    ;;   (dap-register-debug-template
-    ;;     "Rust::LLDB Run Configuration"
-    ;;     (list :type "lldb"
-    ;;       :request "launch"
-    ;;       :name "LLDB::Run"
-    ;;       :gdbpath "rust-lldb"
-    ;;       :target nil
-    ;;       :cwd nil)))
-
-    (with-eval-after-load 'dap-python
-      (dap-register-debug-template "Python :: Run file from project directory"
-        (list :type "python"
-        :args ""
-        :cwd nil
-        :module nil
-        :program nil
-        :request "launch"))
-      
-      (dap-register-debug-template "Python :: Run file (buffer)"
-        (list :type "python"
-        :args ""
-        :cwd nil
-        :module nil
-        :program nil
-        :request "launch"
-        :name "Python :: Run file (buffer)"))))
 
 #+end_src
 
@@ -5885,7 +6001,7 @@ Something that is needed for Rust and Go debugging.
 Below are all the necessary functions and definitions for Hydra use under DAP.
 
 ***** DAP Hydra Debug Functions :Python:
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   ;;; ##########################################################################
 
   (defun mifi/dap-end-debug-session ()
@@ -5912,7 +6028,7 @@ Below are all the necessary functions and definitions for Hydra use under DAP.
 
 ***** DAP Hydra Definition Function
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   ;;; ##########################################################################
 
   (defun define-dap-hydra ()
@@ -6099,7 +6215,7 @@ A tree plugin like NerdTree for Vim
   ;;; ##########################################################################
 
   (use-package diff-hl
-    :after track-changes
+    :ensure t
     :config
     (global-diff-hl-mode))
 
@@ -6110,6 +6226,7 @@ A tree plugin like NerdTree for Vim
   ;;; ##########################################################################
 
   (use-package pulsar
+    :ensure t
     :config
     (pulsar-global-mode)
     :custom
@@ -6128,7 +6245,7 @@ This minor mode sets background color to strings that match color names, e.g. #0
   ;;; ##########################################################################
 
   (use-package rainbow-mode
-    
+    :ensure t
     :hook (prog-mode . (lambda () (rainbow-mode t))))
 
 #+end_src
@@ -6157,6 +6274,7 @@ Designate any buffer to “popup” status, and it will stay out of your way. Di
   ;;; ##########################################################################
 
   (use-package popper
+    :ensure t :defer t
     :bind (("C-`"   . popper-toggle)
             ("M-`"   . popper-cycle)
             ("C-M-`" . popper-toggle-type))
@@ -6206,7 +6324,7 @@ It's important to note that ~multimarkdown~ is set as the ~markdown-command~. Th
   ;;   (use-package web-server ))
 
   (use-package markdown-mode
-    ;;:defer t
+    :defer t :ensure t
     :mode (("README\\.md\\'" . gfm-mode)
            ("\\.md\\'" . markdown-mode)
            ("\\.markdown\\'" . markdown-mode))
@@ -6257,13 +6375,12 @@ Markdown preview in emacs features:
     :ensure t)
 
   (use-package impatient-mode
-    :ensure t
+    :ensure t :defer t
     :config
     (imp-set-user-filter #'markdown-html)
     :hook (elpaca-after-init . httpd-start))
 
 #+end_src
-
 
 ** GRIP Mode
 
@@ -6274,6 +6391,7 @@ Instant Github-flavored Markdown/Org preview using Grip (GitHub Readme Instant P
 
   ;; Use keybindings
   (use-package grip-mode
+    :ensure t :defer t
     :bind (:map markdown-mode-command-map
             ("g" . grip-mode)))
 
@@ -6532,6 +6650,8 @@ These are the hools that update the context-aware menu triggered by various stat
     "Backup Emacs initialization files for recovery. If old files exist, they are
   backed up as tilde (~) files. Also, if ocaml is enabled, byte (re)compile the
   opam-user-setup.el so that upon next startup, it can be loaded quickly."
+    (when (featurep 'simple-httpd)
+      (httpd-stop))
     (when enable-ocaml
       (let ((src (expand-file-name "opam-user-setup.el" emacs-config-directory)))
         (when (file-exists-p src)
