@@ -14,6 +14,79 @@
 (defvar debug-adapter)
 (defvar enable-python)
 (defvar python-executable (locate-file "python3" exec-path))
+;;; ...........................................................................
+
+;;;
+;;; The following `defvar` and `declare-function` statements are to JUST get
+;;; rid of byte-compilation warnings - a pet peeve of mine.
+;;;
+(defvar dap-next)
+(defvar dap-step-in)
+(defvar dap-step-out)
+(defvar dap-next)
+(defvar dap-step-in)
+(defvar dap-step-out)
+(defvar dap-continue)
+(defvar dap-restart-frame)
+(defvar dap-switch-session)
+(defvar dap-switch-thread)
+(defvar dap-switch-stack-frame)
+(defvar dap-up-stack-frame)
+(defvar dap-down-stack-frame)
+(defvar dap-ui-locals)
+(defvar dap-ui-breakpoints)
+(defvar dap-ui-repl)
+(defvar dap-ui-sessions)
+(defvar dap-breakpoint-toggle)
+(defvar dap-breakpoint-add)
+(defvar dap-breakpoint-delete)
+(defvar dap-breakpoint-condition)
+(defvar dap-breakpoint-hit-condition)
+(defvar dap-breakpoint-log-message)
+(defvar dap-debug)
+(defvar dap-debug-recent)
+(defvar dap-debug-restart)
+(defvar dap-debug-last)
+(defvar dap-debug-edit-template)
+(defvar dap-eval)
+(defvar dap-ui-expressions-add)
+(defvar dap-eval-region)
+(defvar dap-eval-thing-at-point)
+
+(delcare-function dap-next "dap-mode" ())
+(delcare-function dap-step-in "dap-mode" ())
+(delcare-function dap-step-out "dap-mode" ())
+(delcare-function dap-next "dap-mode" ())
+(delcare-function dap-step-in "dap-mode" ())
+(delcare-function dap-step-out "dap-mode" ())
+(delcare-function dap-continue "dap-mode" ())
+(delcare-function dap-restart-frame "dap-mode" ())
+(delcare-function dap-switch-session "dap-mode" ())
+(delcare-function dap-switch-thread "dap-mode" ())
+(delcare-function dap-switch-stack-frame "dap-mode" ())
+(delcare-function dap-up-stack-frame "dap-mode" ())
+(delcare-function dap-down-stack-frame "dap-mode" ())
+(delcare-function dap-ui-locals "dap-mode" ())
+(delcare-function dap-ui-breakpoints "dap-mode" ())
+(delcare-function dap-ui-repl "dap-mode" ())
+(delcare-function dap-ui-sessions "dap-mode" ())
+(delcare-function dap-breakpoint-toggle "dap-mode" ())
+(delcare-function dap-breakpoint-add "dap-mode" ())
+(delcare-function dap-breakpoint-delete "dap-mode" ())
+(delcare-function dap-breakpoint-condition "dap-mode" ())
+(delcare-function dap-breakpoint-hit-condition "dap-mode" ())
+(delcare-function dap-breakpoint-log-message "dap-mode" ())
+(delcare-function dap-debug "dap-mode" ())
+(delcare-function dap-debug-recent "dap-mode" ())
+(delcare-function dap-debug-restart "dap-mode" ())
+(delcare-function dap-debug-last "dap-mode" ())
+(delcare-function dap-debug-edit-template "dap-mode" ())
+(delcare-function dap-eval "dap-mode" ())
+(delcare-function dap-ui-expressions-add "dap-mode" ())
+(delcare-function dap-eval-region "dap-mode" ())
+(delcare-function dap-eval-thing-at-point "dap-mode" ())
+;;;
+;;; ...........................................................................
 
 ;;; ##########################################################################
 
@@ -83,17 +156,17 @@
       (unless (featurep 'dap-mode) (dap-mode 1)) ;; Load if not loaded.
       (define-python-dap-hydra)
       (bind-keys :map python-mode-map
-	("C-c ." . dap-python-hydra/body)))))
+      ("C-c ." . dap-python-hydra/body)))))
 
 (defun mifi/setup-python-custom-ide ()
   (cond
     ((equal custom-ide 'custom-ide-eglot)
       (message ">>> eglot-ensure")
       (when (boundp 'eglot-current-server)
-	(let ((server (eglot-current-server)))
-      	  (when server
-      	    (message "<<< Shutting down current EGLOT server before restart.")
-      	    (eglot-shutdown server))))
+      (let ((server (eglot-current-server)))
+        	(when server
+        	  (message "<<< Shutting down current EGLOT server before restart.")
+        	  (eglot-shutdown server))))
       (eglot-ensure))
     ((equal custom-ide 'custom-ide-lsp)
       (message ">>> lsp-deferred")
@@ -218,7 +291,7 @@
       :module nil
       :program nil
       :request "launch"))
-    
+
   (dap-register-debug-template "Python :: Run file (buffer)"
     (list :type "python"
       :args ""
@@ -254,7 +327,7 @@
   "End the debug session and delete project Python buffers and all breakpoints."
   (interactive)
   (dap-breakpoint-delete-all)
-  (mifi/dap-end-debug-session))
+  (mifi/dap-end-python-debug-session))
 
 (defun mifi/dap-begin-python-debug-session ()
   "Begin a debug session with several dap windows enabled."

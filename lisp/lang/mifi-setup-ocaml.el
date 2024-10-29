@@ -272,9 +272,7 @@
 (use-package dap-ocaml
   :when enable-ocaml
   :after (:all dap-mode opam-emacs-setup)
-  :ensure t
-  ;; :vc (:url "https://github.com/emacs-lsp/dap-mode" :main-file dap-ocaml)
-  :ensure (:package "dap-ocaml" :type git :host github :repo "emacs-lsp/dap-mode")
+  :ensure nil  ;; Should be part of dap-mode
   :config
   (mifi/define-ocaml-dap-hydra)
   :ensure-system-package
@@ -284,8 +282,7 @@
   :when enable-ocaml
   :after dap-mode
   :defer t
-  ;; :vc (:url "https://github.com/emacs-lsp/dap-mode" :main-file dap-codelldb) :ensure t)
-  :ensure (:package "dap-codelldb" :type git :host github :repo "emacs-lsp/dap-mode"))
+  :ensure nil)
 
 ;;; ##########################################################################
 

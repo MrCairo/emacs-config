@@ -1261,6 +1261,7 @@ The JSON-RPC protocol is used to communicate with many different types of server
   ;;; ##########################################################################
 
   (use-package jsonrpc
+    :defer t
     :ensure t)
     ;; :config
     ;; For some odd reason, it is possible that jsonrpc will try to load a
@@ -1399,6 +1400,8 @@ The Hydra is vanquished once Hercules, any binding that isn't the Hydra's head, 
   ;;; ##########################################################################
 
   (use-package hydra
+    :defer t
+    :command defhydra
     :ensure t)
 
 #+end_src
@@ -1981,6 +1984,7 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
     :unless (equal custom-ide 'custom-ide-lsp-bridge)
     ;; :after tree-sitter
     :ensure t
+    :defer t
     :delight company-mode
     :config (mifi/company-config)
     :custom
@@ -4885,7 +4889,6 @@ This is the Python setup for development under Emacs.
 
 #+end_src
 
-
 *** Important
 
 Before any work can begin in python, make sure that the right packages are installed.
@@ -4905,209 +4908,6 @@ In addition to that, it is important that =autopep8=, which is a script, can rea
 *Note:* If this python path doesn't exist, you will see the very annoying message:
 
      ~file-missing "Doing vfork" "No such file or directory"~
-
-*** Specialized python-mode Keymaps
-
-The following are keymaps that are used by by the custom-ide and for python-mode
-
-#+begin_src emacs-lisp :tangle no
-  ;;; ##########################################################################
-
-  (defun mifi/set-custom-ide-python-keymaps ()
-    (cond
-      ((equal custom-ide 'custom-ide-lsp)
-        (bind-keys :map python-mode-map
-          ("C-c g r" . lsp-find-references)
-          ("C-c g g" . xref-find-definitions)
-          ("C-c g G" . xref-find-definitions-other-window)
-          ("C-c g ?" . eldoc-doc-buffer)))
-      ((equal custom-ide 'custom-ide-eglot)
-        (bind-keys :map python-mode-map
-          ("C-c g i" . eglot-find-implementation)
-          ("C-c g r" . xref-find-references)
-          ("C-c g D" . xref-find-definitions-other-window)
-          ("C-c g g" . xref-find-definitions)
-          ("C-c g n" . xref-find-references-and-replace)
-          ("C-c g ?" . eldoc-doc-buffer)))
-      ((equal custom-ide 'custom-ide-elpy)
-        (elpy-enable)
-        (bind-keys :map python-mode-map
-          ("C-c g a" . elpy-goto-assignment)
-          ("C-c g A" . elpy-goto-definition-other-window)
-          ("C-c g g" . elpy-goto-definition)
-          ("C-c g ?" . elpy-doc)))
-      ((equal custom-ide 'custom-ide-lsp-bridge)
-        (bind-keys :map python-mode-map
-          ("C-c g a" . lsp-bridge-find-reference)
-          ("C-c g A" . lsp-bridge-find-def-other-window)
-          ("C-c g g" . lsp-bridge-find-def)
-          ("C-c g i" . lsp-bridge-find-impl)
-          ("C-c g n" . lsp-bridge-rename)
-          ("C-c g ?" . lsp-bridge-popup-documentation)))
-      ((equal custom-ide 'custom-ide-anaconda)
-        (bind-keys :map python-mode-map
-          ("C-c g a" . anaconda-mode-find-assignments)
-          ("C-c g A" . anaconda-mode-find-assignments-other-window)
-          ("C-c g r" . anaconda-mode-find-references)
-          ("C-c g R" . anaconda-mode-find-references-other-window)
-          ("C-c g g" . anaconda-mode-find-definitions)
-          ("C-c g G" . anaconda-mode-find-definitions-other-window)
-          ("C-c g ?" . anaconda-mode-show-doc)))
-      ))
-
-#+end_src
-
-*** Standard setup
-***** Python mode support functions                                 :Python:
-
-These functions are used during python intialization or file loading. This is where Python IDE functionality, linting and debugging setup begins.
-
-#+begin_src emacs-lisp :tangle no
-  ;;; ##########################################################################
-
-  (defun mifi/load-python-file-hook ()
-    (python-mode)
-    (flymake-mode 0)
-    (when (equal custom-ide 'custom-ide-anaconda)
-      (anaconda-mode 1))
-    (message ">>> mifi/load-python-file-hook")
-    (setq highlight-indentation-mode -1)
-    (setq display-fill-column-indicator-mode t))
-
-  (defun mifi/before-save ()
-    "Force the check of the current python file being saved."
-    (when (eq major-mode 'python-mode) ;; Python Only
-      (flycheck-mode 0)
-      (flycheck-mode t)
-      (delete-trailing-whitespace)))
-
-  ;; This function should only be called ONCE during python-mode startup.
-  (defun mifi/enable-python-features ()
-    (message ">>> mifi/enable-python-features")
-    ;; _____________________________
-    (cond
-      ((equal debug-adapter 'debug-adapter-dap-mode)
-        (unless (featurep 'dap-mode) (dap-mode)) ;; Load if not loaded.
-        (define-dap-hydra)))
-    ;;___________________________
-    ;; check for which custom-ide
-    (cond
-      ((equal custom-ide 'custom-ide-eglot)
-        (eglot-ensure))
-      ((equal custom-ide 'custom-ide-lsp)
-        (lsp-deferred))))
-
-  (defun mifi/python-mode-triggered ()
-    ;; (eldoc-box-hover-at-point-mode t) ;; Using Mitch Key for this
-    (mifi/enable-python-features)
-    (mifi/set-custom-ide-python-keymaps)
-    (unless (featurep 'yasnippet)
-      (yas-global-mode t))
-    (add-hook 'before-save-hook 'mifi/before-save)
-    (set-fill-column 80))
-
-#+end_src
-
-***** Python mode initialization                                    :Python:
-
-This is the primary Python setup that is triggered by the first load of the Python mode and then any time a file is loaded.
-
-#+begin_src emacs-lisp :tangle no
-  ;;; ##########################################################################
-
-  ;; Use built-in python language mode.
-  (use-package python-mode
-    :when enable-python
-    :ensure t
-    :mode ("\\.py\\'" . mifi/load-python-file-hook)
-    :hook (python-mode . mifi/python-mode-triggered)
-    :config
-    (if (boundp 'python-shell-completion-native-disabled-interpreters)
-      (add-to-list 'python-shell-completion-native-disabled-interpreters "python3")
-      (setq python-shell-completion-native-disabled-interpreters '("python3"))))
-
-  (when enable-python
-    (use-package blacken
-      :ensure t
-      :when enable-python
-      :after python)) ;Format Python file upon save.
-
-#+end_src
-
-*** Auto-pep 8
-
-autopep8 automatically formats Python code to conform to the `PEP 8` style guide. It uses the pycodestyle_ utility to determine what parts of the code needs to be formatted. autopep8 is capable of fixing most of the formatting issues_ that can be reported by pycodestyle. Refer to the [[IMPORTANT][IMPORTANT]] section above for possible issues when autopep8 is installed.
-
-#+begin_src emacs-lisp :tangle no
-  ;;; ##########################################################################
-
-  ;; Using when instead of :when so that the package doesn't get loaded.
-  (when enable-python
-    (use-package py-autopep8
-      :ensure t
-      ;; :vc (:url "https://github.com/emacsmirror/py-autopep8.git")
-      :after python
-      :hook ((python-mode . py-autopep8-mode))))
-
-#+end_src
-
-*** Python Keybinding
-**** Helpful Macros
-
-#+begin_src emacs-lisp :tangle no
-  ;;; ##########################################################################
-
-  ;; This is a helpful macro that is used to put double quotes around a word.
-  (defalias 'quote-word
-    (kmacro "\" M-d \" <left> C-y"))
-
-  (defalias 'quote-region
-    (kmacro "C-w \" \" <left> C-y <right>"))
-
-  (defalias 'reformat-src-block
-    (kmacro "C-s b e g i n _ s r c SPC e m a c s - l i s p <return> <down> C-c ' C-x h C-c ] C-x h M-x u n t a b <return> C-c ' C-s e n d _ s r c <return> <down>"))
-
-  (when enable-python
-    (eval-after-load "python"
-      #'(bind-keys :map python-mode-map
-        ("C-c C-q" . quote-region)
-        ("C-c q"   . quote-word)
-        ("C-c |"   . display-fill-column-indicator-mode))))
-
-#+end_src
-
-*** Python Virtual Environment Support
-
-We use Pyvenv-auto is a package that automatically changes to the Python virtual environment based upon the project's directory. pyvenv-auto looks at the root director of the project for a =.venv= or =venv= (and a few others)
-
-#+begin_src emacs-lisp :tangle no
-  ;;; ##########################################################################
-
-  ;; Using when instead of :when so that the package doesn't get loaded.
-  (when enable-python
-    (use-package pyvenv-auto
-      :ensure t
-      :after python
-      :hook (python-mode . pyvenv-auto-run)))
-
-#+end_src
-
-*** Pydoc
-
-#Pydoc, the Python documentation navigation package
-
-#+begin_src emacs-lisp :tangle no
-  ;;; ##########################################################################
-  ;; Using when instead of :when so that the package doesn't get loaded.
-  (when enable-python
-    (use-package pydoc
-      ;;:ensure (:host github :repo "statmobile/pydoc")
-      :after python
-      :custom
-      (pydoc-python-command "python3")
-      (pydoc-pip-version-command "pip3 --version")))
-
-#+end_src
 
 ** OCaml ( [[https://ocaml.org][ocaml.org]] )
 
@@ -5135,11 +4935,19 @@ The OCaml package manager manually. This will fetch the latest version.
 
 This is an easy way to install =opam= using ~brew~ but it may not be the most current. The shell script above is the best way to on non-windows systems.
 
+#+begin_src emacs-lisp
+
+  (use-package mifi-setup-ocaml
+    :ensure nil
+    :when enable-ocaml)
+  
+#+end_src
+
 *** opam (environment)
 
 This package will automatically perform the equivalent of =eval $(opam env)= and set the current OPAM and PATH environment variables. The package determines the new environment based upon the presence of an =_opam= or =.opam= directory in the cwd. If there is no matching directory, the current OPAM environment is not changed.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 
   (let
     ((installer "bash -c \"sh <(curl -fsSL https://raw.githubusercontent.com/ocaml/opam/master/shell/install.sh) --version 2.2.0\""))
@@ -5159,7 +4967,7 @@ This package will automatically perform the equivalent of =eval $(opam env)= and
 
 This should be added/appended to anything in the existing ~.ocamlinit~ file.
 
-#+begin_src shell
+#+begin_src shell :tangle no
 
   sig=" ## Added by Emacs config for Ocaml "
   count=$(grep -l "${sig}" ~/.ocamlinit)
@@ -5182,7 +4990,7 @@ This should be added/appended to anything in the existing ~.ocamlinit~ file.
 Merlin is an editor service that provides advanced IDE features for OCaml.
 **Note**: when running =opam user-setup install -y= the resulting ~opam-user-setup.el~ file is specific to the current =opam switch= that is in effect. 
 
-#+begin_src shell
+#+begin_src shell :tangle no
 
   opam update -y             # (optional) check latests releases
   opam install tuareg -y     # For Emacs only
@@ -5196,7 +5004,7 @@ Merlin is an editor service that provides advanced IDE features for OCaml.
 These are (mostly) the Jane Street libraries that ship with OCaml. They're very
 good and have become more-or-less the defacto standard.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   ;;; ##########################################################################
 
   (use-package opam-std-libs
@@ -5212,14 +5020,14 @@ good and have become more-or-less the defacto standard.
 
 This is not 100% necessary since Ocaml can use =merlin= directly instead of fronting with an LSP server. But, we install it since EGLOT makes use of it.
 
-#+begin_src shell
+#+begin_src shell :tangle no
 
   opam install ocaml-lsp-server -y
 
 #+end_src
 
 *** Code Formatter and Builder
-#+begin_src bash
+#+begin_src bash :tangle no
 
   opam install ocamlformat dune -y
 
@@ -5227,7 +5035,7 @@ This is not 100% necessary since Ocaml can use =merlin= directly instead of fron
 
 *** Setup path to ~opam~ installed emacs lisp modules
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   ;;; ##########################################################################
 
   (defun mrf/set-opam-load-path ()
@@ -5253,7 +5061,7 @@ This is not 100% necessary since Ocaml can use =merlin= directly instead of fron
 This puts a most of the installs mentioned above into a nice ~use-package~ form. This makes use of the ~opam-emacs-setup~ package in the ~lisp~ directory. It's just a stub but allows us to configure enacs using the =:ensure-system-package= option. This
 is specifc to a macOS or Linux OS.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   ;;; ##########################################################################
 
   (use-package opam-emacs-setup
@@ -5271,7 +5079,7 @@ is specifc to a macOS or Linux OS.
 
 Merlin is an editor service that provides advanced IDE features for OCaml.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   ;;; ##########################################################################
 
   (use-package merlin
@@ -5299,7 +5107,7 @@ Merlin is an editor service that provides advanced IDE features for OCaml.
 
 Dune is a build system for OCaml (with support for Reason and Coq). It is not intended as a completely generic build system that’s able to build any project in any language. On the contrary, it makes lots of choices in order to encourage a consistent development style.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 
   (use-package dune
     :ensure nil
@@ -5329,7 +5137,7 @@ Dune is a build system for OCaml (with support for Reason and Coq). It is not in
 
 This archive contains files to help editing OCaml code, to highlight important parts of the code, to run an OCaml REPL (also called toplevel), and to run the OCaml debugger within Emacs.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   ;;; ##########################################################################
 
   (defun mifi/tuareg-mode-hook ()
@@ -5364,7 +5172,7 @@ This archive contains files to help editing OCaml code, to highlight important p
 
 This module does many things but most important is that it updates the =exec-path= based upon the local opam environment. If the project contains an ~_opam~ directory, then this package will automatically update the exec-path. If the ~_opam~ directory is not present, the the default ("~/.opam/default") is used instead.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 
   ;; Does many things but also updates the exec-path to the local
   ;; opam environment.
@@ -5379,7 +5187,7 @@ This module does many things but most important is that it updates the =exec-pat
 
 This file is created by the actual opam/ocaml installation and contains paths and other imports that are specific to the user login. It also includes hooks that will change the PATH to opam to the current projec t- similar to how the package 'pyvenv-auto' works.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   ;;; ##########################################################################
 
   (let
@@ -5401,7 +5209,7 @@ This file is created by the actual opam/ocaml installation and contains paths an
 
 Here are some other packages that are useful when using OCaml.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   ;;; ##########################################################################
 
   (use-package ocp-indent
@@ -5518,8 +5326,8 @@ This is a basic configuration for the TypeScript language so that =.ts= files ac
       (setq typescript-indent-level 4)
       (cond
         ((equal debug-adapter 'debug-adapter-dap-mode)
-        (bind-keys :map typescript-mode-map
-            ("C-c ." . dap-hydra/body))
+        ;; (bind-keys :map typescript-mode-map
+        ;;     ("C-c ." . dap-hydra/body))
         (dap-node-setup)))))
 
 #+end_src
@@ -5913,7 +5721,7 @@ The Debug Adapter Protocol makes it possible to implement a generic debugger for
 #+end_src
 
 **** DAP Package for OCaml
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   ;;; ##########################################################################
 
   ;; For Emacs >= 30.0 it is possible to use the VC command like this:
