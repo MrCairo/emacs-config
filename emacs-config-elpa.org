@@ -2376,15 +2376,31 @@ Embark makes it easy to choose a command to run based on what is near point, bot
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
+  ;; Taken from:
+  ;; https://erick.navarro.io/blog/switching-from-helm-to-vertico-and-friends
+  ;;
+  (defun mifi/grep-edit-results ()
+    "Export results using `embark-export' and activate `wgrep'.
+  This only runs for ripgrep results"
+    (interactive)
+    (when (cl-search "Ripgrep" (buffer-string))
+      ;; we use `run-at-time' to ensure all of these steps
+      ;; will be executed in order
+      (run-at-time 0 nil #'embark-export)
+      (run-at-time 0 nil #'wgrep-change-to-wgrep-mode))
+      ;; Don't be evil
+      ;; (run-at-time 0 nil #'evil-normal-state)))
+    )
 
   (use-package embark
     :when (equal completion-handler 'comphand-vertico)
     :ensure t
     :defer t
     :bind
-    (("C-." . embark-act)         ;; pick some comfortable binding
+    ( ("C-." . embark-act)         ;; pick some comfortable binding
       ("C-;" . embark-dwim)        ;; good alternative: M-.
-      ("C-h B" . embark-bindings)) ;; alternative for `describe-bindings'
+      ("C-h B" . embark-bindings)  ;; alternative for `describe-bindings'
+      ("C-c C-e" . mifi/grep-edit-results))
     :init
     ;; Optionally replace the key help with a completing-read interface
     (setq prefix-help-command #'embark-prefix-help-command)
@@ -2397,13 +2413,14 @@ Embark makes it easy to choose a command to run based on what is near point, bot
 
     ;; (add-hook 'eldoc-documentation-functions #'embark-eldoc-first-target)
     ;; (setq eldoc-documentation-strategy #'eldoc-documentation-compose-eagerly)
-
     :config
     ;; Hide the mode line of the Embark live/completions buffers
     (add-to-list 'display-buffer-alist
       '("\\`\\*Embark Collect \\(Live\\|Completions\\)\\*"
          nil
-         (window-parameters (mode-line-format . none)))))
+         (window-parameters (mode-line-format . none))))
+    :ensure-system-package
+    ((rg . "brew install ripgrep")))
 
   ;; Consult users will also want the embark-consult package.
   (use-package embark-consult
