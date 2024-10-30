@@ -1486,15 +1486,16 @@ This used to be httpd.el but there are already several of these out there alread
 
 Dumb Jump is an Emacs "jump to definition" package with support for 50+ programming languages that favors "just working". This means minimal -- and ideally zero -- configuration with absolutely no stored indexes (TAGS) or persistent background processes.
 
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   ;;; ##########################################################################
 
-  (use-package xref )
+  (use-package xref :ensure nil)
   (use-package dumb-jump
     :after xref
     :config
+    (setq xref-show-definitions-function #'xref-show-definitions-completing-read)
     (add-hook 'xref-backend-functions #'dumb-jump-xref-activate))
-
+  
 #+end_src
 
 ** Eldoc

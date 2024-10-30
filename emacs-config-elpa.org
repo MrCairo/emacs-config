@@ -1194,7 +1194,7 @@ This local package defines some commonly used registers. Registers need to be lo
     "Define some common registers."
     (setq register-preview-delay 0) ;; Show registers ASAP
     (set-register ?o (cons 'file (concat emacs-config-directory "emacs-config-elpa.org")))
-    (set-register ?O (cons 'file (concat emacs-config-directory "emacs-config.org")))
+    (set-register ?O (cons 'file (concat emacs-config-directory "emacs-config-elpaca.org")))
     (set-register ?G '(file . "~/Developer/game-dev/GB_asm"))
     (set-register ?S (cons 'file (concat emacs-config-directory "org-files/important-scripts.org"))))
 
@@ -1349,13 +1349,14 @@ This used to be httpd.el but there are already several of these out there alread
 
 Dumb Jump is an Emacs "jump to definition" package with support for 50+ programming languages that favors "just working". This means minimal -- and ideally zero -- configuration with absolutely no stored indexes (TAGS) or persistent background processes.
 
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   ;;; ##########################################################################
 
-  (use-package xref :ensure t :defer t)
+  (use-package xref :ensure nil)
   (use-package dumb-jump
     :after xref
     :config
+    (setq xref-show-definitions-function #'xref-show-definitions-completing-read)
     (add-hook 'xref-backend-functions #'dumb-jump-xref-activate))
 
 #+end_src
@@ -6116,7 +6117,8 @@ These are the hools that update the context-aware menu triggered by various stat
           (byte-compile-file src))))
     (mifi/backup-file "early-init.el")
     (mifi/backup-file "init.el")
-    (mifi/backup-file "emacs-config.org"))
+    (mifi/backup-file "emacs-config-elpaca.org")
+    (mifi/backup-file "emacs-config-elpa.org"))
 
   (add-hook 'kill-emacs-hook #'mifi/when-exiting-emacs)
 
