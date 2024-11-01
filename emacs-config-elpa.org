@@ -216,6 +216,19 @@ Standard fare and good practice.
 
 #+begin_src emacs-lisp :tangle "early-init.el" 
 
+  (unless (package-installed-p 'use-package)
+    (package-refresh-contents)
+    (package-install 'use-package))
+
+  (use-package use-package-ensure-system-package :ensure t)
+
+  ;; For some reason, the function recentf-expand-file-name has been showing up
+  ;; as 'undefined' even though this is a byte-compiled internal function. So,
+  ;; instead of trying to find the issue, I'm just including it here as a
+  ;; local package so that it works. Maybe one day I can remove it.
+  ;; (use-package recentf :ensure nil :demand t)
+  (use-package recentf :ensure nil :demand t)
+
   (setq use-package-compute-statistics t
     use-package-verbose t
     use-package-always-ensure nil
@@ -223,7 +236,9 @@ Standard fare and good practice.
     use-package-always-defer nil)
 
 #+end_src
+
 :end:
+
 ** Garbage Collection
 :properties:
 
@@ -340,9 +355,111 @@ This is the standard format of a =lisp= header that should appear for all =lisp=
 #+end_src
 :end:
 
+** Package Manager
+
+Contrary to what some users might think, =use-package= is not a package
+manager. To download and use packages that are not available in package sources,
+I use [[https://github.com/raxod502/straight.el][straight]]. The snippet below takes care of installing =straight=.
+
+#+begin_src emacs-lisp
+  ;; Bootstrap straight
+  (defvar bootstrap-version)
+  (let ((bootstrap-file
+         (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
+        (bootstrap-version 5))
+    (unless (file-exists-p bootstrap-file)
+      (with-current-buffer
+          (url-retrieve-synchronously
+           "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
+           'silent 'inhibit-cookies)
+        (goto-char (point-max))
+        (eval-print-last-sexp)))
+    (load bootstrap-file nil 'nomessage))
+
+  ;; Integrates `straight' directly into the `use-package' package through the
+  ;; `:straight' expression.
+  (straight-use-package 'use-package)
+#+end_src
+
+** Better Defaults
+
+These are global variables that effect the behavior of Emacs in general. These values represent a better set of defaults than the standard, vanilla values.
+
+#+begin_src emacs-lisp
+
+  (setq-default
+    ad-redefinition-action 'accept                   ; Silence warnings for redefinition
+    backup-inhibited t                               ; diabled backup (no ~ tilde files)
+    cursor-in-non-selected-windows nil               ; Hide the cursor in inactive windows
+    display-time-default-load-average nil            ; Don't display load average
+    fill-column 80                                   ; Set width for automatic line breaks
+    help-window-select t                             ; Focus new help windows when opened
+    history-length 30                                ; Reasonable number of items
+    indent-tabs-mode nil                             ; Prefer spaces over tabs
+    inhibit-startup-screen t                         ; Disable start-up screen
+    kill-ring-max 128                                ; Maximum length of kill ring
+    lisp-indent-offset '2                            ; Emacs list tab size
+    load-prefer-newer t                              ; Prefer the newest version of a file
+    mark-ring-max 128                                ; Maximum length of mark ring
+    read-process-output-max (* 1024 1024)            ; Increase the amount of data reads from the process
+    scroll-conservatively most-positive-fixnum       ; Always scroll by one line
+    select-enable-clipboard t                        ; Merge system's and Emacs' clipboard
+    tab-width 4                                      ; Set width for tabs
+    truncate-lines 1                                 ; Long lines of text do not wrap
+    truncate-partial-width-windows 1                 ; truncate lines in partial-width windows
+    user-full-name "Mitchell Fisher"                 ; Set the full name of the current user
+    user-mail-address "Trafalgar42@gmail.com"        ; Set the email address of the current user
+    vc-follow-symlinks t                             ; Always follow the symlinks
+    view-read-only t                                 ; Always open read-only buffers in view-mode
+    visible-bell t)                                  ; Set up the visible bell
+  (column-number-mode 1)                             ; Show the column number
+  (fset 'yes-or-no-p 'y-or-n-p)                      ; Replace yes/no prompts with y/n
+  ;; (global-hl-line-mode)                              ; Hightlight current line
+  (set-default-coding-systems 'utf-8)                ; Default to utf-8 encoding
+  (show-paren-mode 1)                                ; Show the parent
+  ;; Rebind C-z/C-. to act like vim's repeat previous command ( . )
+  (unbind-key "C-z")
+  (bind-key "C-." 'repeat)
+  (bind-key "C-z" 'repeat-complex-command)
+
+
+#+end_src
+
+
+#+begin_src emacs-lisp :tangle no
+
+  ;;; ##########################################################################
+
+  (setq-default
+    auto-save-default nil     ;; disable auto save
+    dired-dwim-target t       ;; try to guess target directory
+    frame-inhibit-implied-resize t
+    frame-resize-pixelwise t
+    frame-title-format '("%b")
+    global-auto-revert-mode 1 ;; Refresh buffer if file has changed
+    global-eldoc-mode t       ;; Enabled in all buffers
+    sentence-end-double-space nil
+    truncate-lines 1          ;; long lines of text do not wrap
+    truncate-partial-width-windows 1 ;; truncate lines in partial-width windows
+    window-resize-pixelwise t
+    window-resize-pixelwise t ;; enable smooth resizing
+    ;; Triggers project for directories with any of the following files:
+    global-auto-revert-non-file-buffers t
+    project-vc-extra-root-markers '(".dir-locals.el"
+                                     "requirements.txt"
+                                     "Gemfile"
+                                     "package.json"))
+
+  ;; Since there used to be a supported dape mode, we force the
+  ;; existing configuration to the only option, dap-mode since
+  ;; dape used to be supported. This resets any previous value.
+  (setq-default debug-adapter 'debug-adapter-dap-mode)
+
+#+end_src
+
 * Customizable Values
 
-Variables that define the operational behavior 
+Variables that define the operational behavior of this Emacs installation. These can be accessed via the built-in Customize menus.
 
 ** Customization groups
 These are the groups used by this Emacs config for customization.
@@ -582,16 +699,12 @@ These are features that basically have multiple-choice options instead of being 
   (LSP). Eglot provides infrastructure and a set of commands for enriching the
   source code editing capabilities of Emacs via LSP. Eglot itself is
   completely language-agnostic, but it can support any programming language
-  for which there is a language server and an Emacs major mode.
-
-  Anaconda-mode is another IDE for Python very much like Elpy. It is not as
-  configurable but has a host of great feaures that just work."
+  for which there is a language server and an Emacs major mode."
     :type '(radio
              (const :tag "Elpy: Emacs Lisp Python Environment" custom-ide-elpy)
              (const :tag "Emacs Polyglot (Eglot)" custom-ide-eglot)
              (const :tag "Language Server Protocol (LSP)" custom-ide-lsp)
-             (const :tag "LSP Bridge (standalone)" custom-ide-lsp-bridge)
-             (const :tag "Python Anaconda-mode for Emacs" custom-ide-anaconda))
+             (const :tag "LSP Bridge (standalone)" custom-ide-lsp-bridge))
     :group 'mifi-config-features)
 
   (defcustom custom-project-handler 'custom-project-project-el
@@ -664,12 +777,12 @@ This is a curated selection of themes that I personally like. Most of them are d
     :type 'natnum)
 
   ;;; Font related
-  (defcustom default-font-family "Courier New"
+  (defcustom default-font-family "Source Code Pro"
     "The font family used as the default font."
     :type 'string
     :group 'mifi-config-fonts)
 
-  (defcustom mono-spaced-font-family "Monaco"
+  (defcustom mono-spaced-font-family "Source Code Pro"
     "The font family used as the mono-spaced font."
     :type 'string
     :group 'mifi-config-fonts)
@@ -775,9 +888,9 @@ Look for a proportional font that is available on the OS. If the actual default 
       (let* ((monospace-font
                (cond
                  ((x-list-fonts mono-spaced-font-family) mono-spaced-font-family)
+                 ((x-list-fonts "Source Code Pro")   "Source Code Pro")
                  ((x-list-fonts "Fira Code Retina")  "Fira Code Retina")
                  ((x-list-fonts "Fira Code")         "Fira Code")
-                 ((x-list-fonts "Source Code Pro")   "Source Code Pro")
                  ((x-list-fonts "Ubuntu Monospaced") "Ubuntu Monospaced")
                  ((x-family-fonts "Monospaced")      "Monospaced")
                  (nil (warn "Cannot find a monospaced Font.  Install Source Code Pro.")))))
@@ -793,43 +906,6 @@ Look for a proportional font that is available on the OS. If the actual default 
 * General Configuration
 
 Setup initial paths, global values and settings, and Emacs working directories.
-
-** use-package-ensure-system-packages
-This package enables the ~:ensure-system-package~ within a ~use-package~ statement that allows the enforcement that system binaries (or files) exist alongside the actual ~use-package~ declaration. 
-
-#+begin_src emacs-lisp
-
-  ;; For some reason, the function recentf-expand-file-name has been showing up
-  ;; as 'undefined' even though this is a byte-compiled internal function. So,
-  ;; instead of trying to find the issue, I'm just including it here as a
-  ;; local package so that it works. Maybe one day I can remove it.
-  ;; (use-package recentf :ensure nil :demand t)
-  (use-package recentf :ensure nil :demand t)
-
-  ;; This package allows 'use-package' to support a 'use-system-package' option
-  ;; which specifies the thing (library, executable, etc) that should exist
-  ;; followed by the command used to install it. This allows for an expression
-  ;; like (ruby . "brew install ruby") which tests for the presence of ruby and
-  ;; if it can't be found (on the path) then 'brew install ruby' will be run to
-  ;; install it.
-  ;; NOTE: This option, while very powerful, will increase the Emacs startup time
-  ;; because of the overhead in checking for commands. Use it with discretion.
-  (use-package use-package-ensure-system-package :ensure t :demand t)
-
-#+end_src
-
-**** Example
-
-So, if there is need to ensure that, for example, ~ruby-lint~ was installed the inclusion of the value.
-
-#+begin_src emacs-lisp :tangle no
-  ;; This is an example and shouldn't be included in the init.el file.
-  (use-package enh-ruby-mode
-    :ensure-system-package (ruby-lint . "gem install ruby-lint"))
-
-#+end_src
-
-This will check for the binary ~ruby-lint~ in the current PATH and if not found the command ~"gem install ruby-lint"~ would be called to install ~ruby-lint~.
 
 ** Emacs/User Config Directory
 
@@ -993,53 +1069,6 @@ The =site-lisp= directory in the ~emacs-config-directory~ can hold local (site) 
 
 #+end_src
 
-** Better Defaults
-
-These are global variables that effect the behavior of Emacs in general. These values represent a better set of defaults than the standard, vanilla values.
-
-#+begin_src emacs-lisp
-
-  ;;; ##########################################################################
-
-  (setq-default
-    window-resize-pixelwise t ;; enable smooth resizing
-    window-resize-pixelwise t
-    frame-inhibit-implied-resize t
-    frame-resize-pixelwise t
-    frame-title-format '("%b")
-    dired-dwim-target t       ;; try to guess target directory
-    use-short-answers t
-    truncate-partial-width-windows 1 ;; truncate lines in partial-width windows
-    backup-inhibited t        ;; disable backup (No ~ tilde files)
-    auto-save-default nil     ;; disable auto save
-    global-auto-revert-mode 1 ;; Refresh buffer if file has changed
-    global-eldoc-mode t       ;; Enabled in all buffers
-    history-length 25         ;; Reasonable buffer length
-    inhibit-startup-message t ;; Hide the startup message
-    inhibit-startup-screent t
-    lisp-indent-offset '2     ;; emacs lisp tab size
-    visible-bell t            ;; Set up the visible bell
-    truncate-lines 1          ;; long lines of text do not wrap
-    sentence-end-double-space nil
-    fill-column 79            ;; Default line limit for fills
-    ;; Triggers project for directories with any of the following files:
-    global-auto-revert-non-file-buffers t
-    project-vc-extra-root-markers '(".dir-locals.el"
-                                     "requirements.txt"
-                                     "Gemfile"
-                                     "package.json"))
-
-  ;; Rebind C-z/C-. to act like vim's repeat previous command ( . )
-  (unbind-key "C-z")
-  (bind-key "C-." 'repeat)
-  (bind-key "C-z" 'repeat-complex-command)
-  ;; Since there used to be a supported dape mode, we force the
-  ;; existing configuration to the only option, dap-mode since
-  ;; dape used to be supported. This resets any previous value.
-  (setq-default debug-adapter 'debug-adapter-dap-mode)
-
-#+end_src
-
 ** Save History
 
 Keeps a persistent history file across Emacs restarts. It's also saved into the ~user-emacs-directory~ so it's not tied to a specific Emacs installation directory.
@@ -1085,6 +1114,11 @@ Calls to mode functions that effect various Emacs behavior.
        try-expand-dabbrev-from-kill
        try-complete-lisp-symbol-partially
        try-complete-lisp-symbol))
+  
+  (setq-default project-vc-extra-root-markers '( ".dir-locals.el"
+                                                 "requirements.txt"
+                                                 "Gemfile"
+                                                 "package.json" ))
 
   (defadvice save-buffers-kill-emacs (around no-query-kill-emacs activate)
     "Prevent annoying \"Active processes exist\" query when you quit Emacs."
@@ -1233,6 +1267,67 @@ Handle the case of starting the Emacs server when Emacs is started as a foregrou
 
   (when (fboundp 'pixel-scroll-precision-mode)
     (pixel-scroll-precision-mode))
+
+#+end_src
+
+** Mac Specific
+
+This function is called after Elpaca has initialized and, if this machine is a Macintosh, will setup the mack keyboard keys.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (defun mifi/set-mac-modifier-keys ()
+    (interactive)
+    ;; Macintosh specific configurations.
+    (when *is-a-mac*
+      (setq mac-command-modifier   'meta
+        mac-option-modifier        'super
+        mac-control-modifier       'control
+        mac-right-command-modifier 'meta
+        mac-right-control-modifier 'hyper)))
+
+  (add-hook 'after-init-hook #'mifi/set-mac-modifier-keys)
+
+#+end_src
+
+** Global key-binding
+
+These are key-bindings that are done at a global level.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (defun mifi/setup-global-keybindings ()
+    (interactive)
+    (bind-key "C-c ]" 'indent-region prog-mode-map)
+    (bind-key "C-c }" 'indent-region prog-mode-map) 
+    (bind-key "C-x C-j" 'dired-jump)
+
+    ;;
+    ;; A little better than just the typical "C-x o"
+    ;; windmove is a built-in Emacs package.
+    ;;
+    (global-set-key (kbd "C-c <left>")  'windmove-left)
+    (global-set-key (kbd "C-c <right>") 'windmove-right)
+    (global-set-key (kbd "C-c <up>")    'windmove-up)
+    (global-set-key (kbd "C-c <down>")  'windmove-down)
+
+    ;;
+    ;; Ctl-mouse to adjust/scale fonts will be disabled.
+    ;; I personally like this since it was all to easy to accidentally
+    ;; change the size of the font.
+    ;;
+    (global-unset-key (kbd "C-<mouse-4>"))
+    (global-unset-key (kbd "C-<mouse-5>"))
+    (global-unset-key (kbd "C-<wheel-down>"))
+    (global-unset-key (kbd "C-<wheel-up>")))
+
+  (use-package evil-nerd-commenter
+    :ensure t
+    :bind ("M-/" . evilnc-comment-or-uncomment-lines))
+
+  (add-hook 'emacs-startup-hook #'mifi/setup-global-keybindings)
 
 #+end_src
 
@@ -1401,8 +1496,142 @@ The Hydra is vanquished once Hercules, any binding that isn't the Hydra's head, 
   (use-package hydra
     :defer t
     :commands defhydra
+    :bind (("C-c c" . hydra-clock/body)
+           ("C-c m" . hydra-magit/body)
+           ("C-c r" . hydra-registers/body)
+           ("C-c t" . hydra-themes-and-fonts/body))
     :ensure t)
+#+end_src
 
+*** Hydra major mode
+
+#+begin_src emacs-lisp
+  (use-package major-mode-hydra
+    :after hydra
+    :preface
+    (defun with-alltheicon (icon str &optional height v-adjust face)
+      "Display an icon from all-the-icon."
+      (s-concat (all-the-icons-alltheicon icon :v-adjust (or v-adjust 0) :height (or height 1) :face face) " " str))
+
+    (defun with-faicon (icon str &optional height v-adjust face)
+      "Display an icon from Font Awesome icon."
+      (s-concat (all-the-icons-faicon icon ':v-adjust (or v-adjust 0) :height (or height 1) :face face) " " str))
+
+    (defun with-fileicon (icon str &optional height v-adjust face)
+      "Display an icon from the Atom File Icons package."
+      (s-concat (all-the-icons-fileicon icon :v-adjust (or v-adjust 0) :height (or height 1) :face face) " " str))
+
+    (defun with-octicon (icon str &optional height v-adjust face)
+      "Display an icon from the GitHub Octicons."
+      (s-concat (all-the-icons-octicon icon :v-adjust (or v-adjust 0) :height (or height 1) :face face) " " str))
+    :config
+    (mifi/hydra-clock)
+    (mifi/hydra-combine)
+    (mifi/hydra-themes-and-fonts)
+    (mifi/hydra-magit)
+    (mifi/hydra-registers))
+
+#+end_src
+
+*** Hydra / Clock
+
+Group clock commands
+
+#+begin_src emacs-lisp
+
+  (defun mifi/hydra-clock ()
+    (pretty-hydra-define hydra-clock
+      (:hint nil :color teal :quit-key "q" :title (with-faicon "clock-o" "Clock" 1 -0.05))
+      ("Action"
+        (("c" org-clock-cancel "cancel")
+          ("d" org-clock-display "display")
+          ("e" org-clock-modify-effort-estimate "effort")
+          ("i" org-clock-in "in")
+          ("j" org-clock-goto "jump")
+          ("o" org-clock-out "out")
+          ("p" org-pomodoro "pomodoro")
+          ("r" org-clock-report "report")))))
+
+#+end_src
+
+*** Hydra / Magit
+
+Group Magit commands.
+
+#+begin_src emacs-lisp
+
+  (defun mifi/hydra-magit ()
+    (pretty-hydra-define hydra-magit
+      (:hint nil :color teal :quit-key "q" :title (with-octicon "mark-github" "Magit" 1 -0.05))
+      ("Action"
+        (("b" magit-blame "blame")
+          ("c" magit-clone "clone")
+          ("i" magit-init "init")
+          ("l" magit-log-buffer-file "commit log (current file)")
+          ("L" magit-log-current "commit log (project)")
+          ("s" magit-status "status"))))  )
+
+#+end_src
+
+*** Hydra / Registers
+
+Group Common Register commands.
+
+#+begin_src emacs-lisp
+
+  (defun mifi/hydra-registers ()
+    (pretty-hydra-define hydra-registers
+      (:hint nil :color teal :quit-key "q" :title (with-faicon "thumb-tack" "Registers" 1 -0.05))
+      ("Action"
+        ( ("o" (jump-to-register ?o) "macs-config-elpa.org")
+          ("O" (jump-to-register ?O) "emacs-config-elpaca.org")
+          ("S" (jump-to-register ?S) "Scripts")
+          ("G" (jump-to-register ?G) "GameBoy Asm Root")))
+      ))
+
+#+end_src
+
+*** Hydra / Themes and Fonts
+
+Group Theme commands.
+
+#+begin_src emacs-lisp
+
+  (defun mifi/hydra-themes-and-fonts ()
+    (pretty-hydra-define hydra-themes-and-fonts
+      (:hint nil :color teal :quit-key "q" :title (with-faicon "puzzle-piece" "Themes and Fonts" 1 -0.05))
+      ("Action"
+        ( ("+" next-theme "Next theme")
+          ("-" previous-theme "Previous Theme")
+          ("=" which-theme "Display Current Theme")
+          ("S" use-small-display-font "Small Font with resize")
+          ("M" use-medium-display-font "Medium Font with resize")
+          ("L" use-large-display-font "Large Font with resize")
+          ("X" use-x-large-display-font "X-Large Font with resize")
+          ("s" (use-small-display-font t) "Small Font without resize")
+          ("m" (use-medium-display-font t) "Medium Font without resize")
+          ("l" (use-large-display-font t) "Large Font without resize")
+          ("x" (use-x-large-display-font t) "X-Large Font without resize")) )))
+
+#+end_src
+
+*** Hydra / Combine
+
+Combination of groups
+
+#+begin_src emacs-lisp
+
+  (defun mifi/hydra-combine ()
+    (pretty-hydra-define hydra-combine
+      (:hint nil :color teal :quit-key "q" :title (with-faicon "thumb-tack" "Combine" 1 -0.05))
+      ("Action"
+        ( ("m" hydra-magit/body "Magit menu")
+          ("t" hydra-themes-and-fonts/body "Themes and Fonts menu") ))
+      ))
+#+end_src
+
+#+begin_src emacs-lisp
+    ;;; ^^^ ;;;
 #+end_src
 
 ** Multiple-cursors
@@ -1459,9 +1688,32 @@ We use [[https://github.com/joostkremers/visual-fill-column][visual-fill-column]
     :defer t
     :after org)
 
+#+end_src
+
+** Writeroom mode
+writeroom-mode is a minor mode for Emacs that implements a distraction-free writing mode similar to the famous Writeroom editor for OS X.  By default, writeroom-mode does the following things:
+
++ activate fullscreen
++ disable transparency
++ disable the menu bar
++ disable the tool bar
++ disable the scroll bar
++ enable a bottom window divider of 1 pixel
++ maximise the current window (i.e., delete all other windows in the frame)
++ place the fringes outside the margins
++ disable the mode line
++ add window margins to the current buffer so that the text is 80 characters wide
+
+The last three effects are buffer-local. The other effects apply to the current frame. Because writeroom-mode is a minor mode, this isn't entirely on the up and up, since minor modes aren't supposed to have such global effects. But writeroom-mode is meant for distraction-free writing, so these effects do make sense.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
   (use-package writeroom-mode
     :ensure t
     :defer t
+    :init
+    (setq writeroom-width visual-fill-column-width)
     :after visual-fill-column)
 
 #+end_src
@@ -1480,67 +1732,6 @@ This package provides commands for increasing or decreasing the default font siz
   (use-package default-text-scale
     :ensure t
     :hook (after-init . default-text-scale-mode))
-
-#+end_src
-
-** Mac Specific
-
-This function is called after Elpaca has initialized and, if this machine is a Macintosh, will setup the mack keyboard keys.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (defun mifi/set-mac-modifier-keys ()
-    (interactive)
-    ;; Macintosh specific configurations.
-    (when *is-a-mac*
-      (setq mac-command-modifier   'meta
-        mac-option-modifier        'super
-        mac-control-modifier       'control
-        mac-right-command-modifier 'meta
-        mac-right-control-modifier 'hyper)))
-
-  (add-hook 'after-init-hook #'mifi/set-mac-modifier-keys)
-
-#+end_src
-
-** Global key-binding
-
-These are key-bindings that are done at a global level.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (defun mifi/setup-global-keybindings ()
-    (interactive)
-    (bind-key "C-c ]" 'indent-region prog-mode-map)
-    (bind-key "C-c }" 'indent-region prog-mode-map) 
-    (bind-key "C-x C-j" 'dired-jump)
-
-    ;;
-    ;; A little better than just the typical "C-x o"
-    ;; windmove is a built-in Emacs package.
-    ;;
-    (global-set-key (kbd "C-c <left>")  'windmove-left)
-    (global-set-key (kbd "C-c <right>") 'windmove-right)
-    (global-set-key (kbd "C-c <up>")    'windmove-up)
-    (global-set-key (kbd "C-c <down>")  'windmove-down)
-
-    ;;
-    ;; Ctl-mouse to adjust/scale fonts will be disabled.
-    ;; I personally like this since it was all to easy to accidentally
-    ;; change the size of the font.
-    ;;
-    (global-unset-key (kbd "C-<mouse-4>"))
-    (global-unset-key (kbd "C-<mouse-5>"))
-    (global-unset-key (kbd "C-<wheel-down>"))
-    (global-unset-key (kbd "C-<wheel-up>")))
-
-  (use-package evil-nerd-commenter
-    :ensure t
-    :bind ("M-/" . evilnc-comment-or-uncomment-lines))
-
-  (add-hook 'emacs-startup-hook #'mifi/setup-global-keybindings)
 
 #+end_src
 
@@ -1577,7 +1768,6 @@ These are useful snippets of code that are commonly used in various languages. Y
 Collections of more yasnippet snippets for various languages.
 
 #+begin_src emacs-lisp
-  ;;; ##########################################################################
 
   (use-package yasnippet-snippets
     :ensure t
@@ -1625,6 +1815,7 @@ Window numbers for Emacs: Navigate your windows and frames using numbers. This i
 
 ** winner-mode
 #+begin_src emacs-lisp
+  ;;; ##########################################################################
 
   (use-package init-windows ;; From purcell
     :ensure nil
@@ -1633,21 +1824,43 @@ Window numbers for Emacs: Navigate your windows and frames using numbers. This i
 
 #+end_src
 
-** Dashboard
+** Jinx
 
-<<<Dashboard>>> is an extensible Emacs startup screen showing you what’s most important.
+Jinx is a fast just-in-time spell-checker for Emacs. Jinx highlights misspelled words in the text of the visible portion of the buffer. For efficiency, Jinx highlights misspellings lazily, recognizes window boundaries and text folding, if any. For example, when unfolding or scrolling, only the newly visible part of the text is checked if it has not been checked before. Each misspelling can be corrected from a list of dictionary words presented as a completion menu.
 
-*** Value of dashboard-startup-banner can be:
-**** =nil= to display no banner
-**** ='official= which displays the official emacs logo
-**** ='logo= which displays an alternative emacs logo
-**** =1, 2 or 3= which displays one of the text banners
-**** ~"path/to/your/image.gif"~,
+*Important* Jinx requires the library ~libenchant~ or ~enchant~ installed. This can be done via the [[https://github.com/AbiWord/enchant][enchant github]] site, through ~brew~ on macOS or the package management system of the OS.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package jinx
+    :ensure t
+    :bind ( ("C-c C-$" . jinx-correct)
+            ("C-x C-$" . jinx-languages))
+    :hook (emacs-startup . global-jinx-mode)
+    :config
+    (dolist (hook '(text-mode-hook prog-mode-hook org-mode-hook))
+            (add-hook hook #'jinx-mode)))
+
+
+#+end_src
+
+
+* Dashboard
+
+Dashboard is an extensible Emacs startup screen showing you what’s most important.
+
+** Value of dashboard-startup-banner can be:
+*** =nil= to display no banner
+*** ='official= which displays the official emacs logo
+*** ='logo= which displays an alternative emacs logo
+*** =1, 2 or 3= which displays one of the text banners
+*** ~"path/to/your/image.gif"~,
 ~"path/to/your/image.png"~ or
 ~"path/to/your/text.txt"~  which displays whatever gif/image/text you would prefer
-**** a cons of '("path/to/your/image.png" . "path/to/your/text.txt")
+*** a cons of '("path/to/your/image.png" . "path/to/your/text.txt")
 
-*** Dashboard Setup
+** Dashboard Setup
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
@@ -1675,29 +1888,6 @@ Window numbers for Emacs: Navigate your windows and frames using numbers. This i
       (setq dashboard-projects-backend 'projectile))
     (setq dashboard-startup-banner (expand-file-name "Emacs-modern-is-sexy-v1.png" user-emacs-directory))
     (dashboard-setup-startup-hook))
-
-#+end_src
-
-** Jinx
-
-Jinx is a fast just-in-time spell-checker for Emacs. Jinx highlights misspelled words in the text of the visible portion of the buffer. For efficiency, Jinx highlights misspellings lazily, recognizes window boundaries and text folding, if any. For example, when unfolding or scrolling, only the newly visible part of the text is checked if it has not been checked before. Each misspelling can be corrected from a list of dictionary words presented as a completion menu.
-
-*Important* Jinx requires the library ~libenchant~ or ~enchant~ installed. This can be done via the [[https://github.com/AbiWord/enchant][enchant github]] site, through ~brew~ on macOS or the package management system of the OS.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package jinx
-    ;; :vc (:url "https://github.com/minad/jinx")
-    ;; :ensure (:host github :repo "minad/jinx")
-    ;;:hook (emacs-startup . global-jinx-mode)
-    :ensure t
-    :bind (("C-c C-$" . jinx-correct)
-            ("C-x C-$" . jinx-languages))
-    :config
-    (dolist (hook '(text-mode-hook prog-mode-hook org-mode-hook))
-      (add-hook hook #'jinx-mode)))
-
 
 #+end_src
 
@@ -1744,7 +1934,7 @@ Vundo displays the undo history as a tree and lets you move in the tree to go ba
 Instead of treating undo/redo as a linear sequence of changes, undo-tree-mode treats undo history as a branching tree of changes, similar to the way Vim handles it. This makes it substantially easier to undo and redo any change, while preserving the entire history of past states. The undo-tree visualizer is particularly helpful in complex cases. An added side bonus is that undo history can in some cases be stored more efficiently, allowing more changes to accumulate before Emacs starts discarding history. Undo history can be saved persistently across sessions with Emacs 24.3 and later. It also sports various other nifty features: storing and restoring past buffer states in registers, a diff view of the changes that will be made by undoing, and probably more besides.
 
 #+begin_src emacs-lisp
-  ;;; ##########################################################################
+  ;;; vvv ;;;
 
   (defun mifi/undo-tree-hook ()
     (set-frame-width (selected-frame) 20))
@@ -1754,8 +1944,6 @@ Instead of treating undo/redo as a linear sequence of changes, undo-tree-mode tr
     (let ((split-height-threshold nil)
            (split-width-threshold 0))
       (apply original-function args)))
-
-  ;;; ##########################################################################
 
   ;;
   ;; Sometimes, when behind a firewall, the undo-tree package triggers elpaca
@@ -1785,6 +1973,7 @@ Instead of treating undo/redo as a linear sequence of changes, undo-tree-mode tr
         ("C-g" . undo-tree-visualizer-abort))
       (setq undo-tree-auto-save-history nil)))
 
+  ;;; ^^^ ;;;
 #+end_src
 
 ** Completion Handlers
@@ -1875,7 +2064,7 @@ Ivy-rich provides rich transformers for commands from ivy and counsel.
 Ivy-yasnippet lets you preview yasnippet snippets with ivy.
 
 #+begin_src emacs-lisp
-  ;;; ##########################################################################
+  ;;; vvv ;;;
 
   (use-package ivy-rich
     :when (equal completion-handler 'comphand-ivy)
@@ -1888,7 +2077,6 @@ Ivy-yasnippet lets you preview yasnippet snippets with ivy.
   (use-package ivy-yasnippet
     :when (equal completion-handler 'comphand-ivy)
     :after (:any yasnippet ivy))
-  ;; :ensure (:host github :repo "mkcms/ivy-yasnippet"))
 
 #+end_src
 
@@ -1897,7 +2085,6 @@ Ivy-yasnippet lets you preview yasnippet snippets with ivy.
 Swiper is an alternative to isearch that uses Ivy to show an overview of all matches.
 
 #+begin_src emacs-lisp
-  ;;; ##########################################################################
 
   (use-package swiper
     :when (equal completion-handler 'comphand-ivy)
@@ -1910,7 +2097,6 @@ Swiper is an alternative to isearch that uses Ivy to show an overview of all mat
 ~ivy-mode~ ensures that any Emacs command using completing-read-function uses ivy for completion. Counsel takes this further, providing versions of common Emacs commands that are customised to make the best use of Ivy. For example, ~counsel-find-file~ has some additional keybindings. Pressing =DEL= will move you to the parent directory.
 
 #+begin_src emacs-lisp :results output silent
-  ;;; ##########################################################################
 
   (use-package counsel
     :when (equal completion-handler 'comphand-ivy)
@@ -1942,7 +2128,6 @@ Swiper is an alternative to isearch that uses Ivy to show an overview of all mat
 ~prescient.el~ is a library which sorts and filters lists of candidates, such as appear when you use a package like =Ivy= or =Company=.
 
 #+begin_src emacs-lisp
-  ;;; ##########################################################################
 
   (use-package ivy-prescient
     :when (equal completion-handler 'comphand-ivy)
@@ -1953,6 +2138,7 @@ Swiper is an alternative to isearch that uses Ivy to show an overview of all mat
     (ivy-prescient-mode t)
     (ivy-prescient-enable-filtering t))
 
+  ;;; ^^^ ;;;
 #+end_src
 
 *** Company Mode
@@ -1962,7 +2148,7 @@ Swiper is an alternative to isearch that uses Ivy to show an overview of all mat
 We also use [[https://github.com/sebastiencs/company-box][company-box]] to further enhance the look of the completions with icons and better overall presentation.
 
 #+begin_src emacs-lisp
-    ;;; ##########################################################################
+  ;;; ##########################################################################
 
   ;; Don't use lsp-bridge with company as lsp-bridge already provides the same
   ;; features. They actually collide.
@@ -1999,8 +2185,7 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
 **** Company Packages
 
 #+begin_src emacs-lisp
-  ;;; ##########################################################################
-
+  ;;; vvv ;;;
   ;; (require 'company-box)
   ;; (add-hook 'company-mode-hook 'company-box-mode)
 
@@ -2012,6 +2197,10 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
     ;; :vc (:url "https://github.com/sebastiencs/company-box.git")
     :hook (company-mode . company-box-mode))
 
+#+end_src
+
+#+begin_src emacs-lisp
+
   (use-package company-jedi
     :when  (equal custom-ide 'custom-ide-elpy)
     :after (:all python company)
@@ -2021,16 +2210,8 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
       (add-to-list 'company-backends 'company-jedi))
     (add-hook 'python-mode-hook 'my/company-jedi-python-mode-hook))
 
-  (use-package company-anaconda
-    :when (equal custom-ide 'custom-ide-anaconda)
-    :after (:all anaconda company)
-    :hook (python-mode . anaconda-mode)
-    :config
-    (eval-after-load "company"
-      '(add-to-list 'company-backends 'company-anaconda)))
-
-#+end_src
-
+  #+end_src
+  
 *** Corfu
 
 <<<Corfu>>> enhances in-buffer completion with a small completion popup. The current candidates are shown in a popup below or above the point. The candidates can be selected by moving up and down. Corfu is the minimalistic in-buffer completion counterpart of the Vertico minibuffer UI.
@@ -2162,58 +2343,45 @@ We also use [[https://github.com/sebastiencs/company-box][company-box]] to furth
 
 #+end_src
 
-*** Helm
-
-Helm is an Emacs framework for incremental completions and narrowing selections. It provides an easy-to-use API for developers wishing to build their own Helm applications in Emacs, powerful search tools and dozens of already built-in commands providing completion to almost everything. It is a must-have for anyone using Emacs as a main work environment. Helm has been widely adopted by many Emacs power-users.
+**** Vertico support packages
 
 #+begin_src emacs-lisp
-  ;;; ##########################################################################
+  ;;; vvv ;;;
 
-  (use-package helm
-    :when (equal completion-handler 'comphand-helm)
-    :after async
+  (use-package vertico-prescient
+    :when (equal completion-handler 'comphand-vertico)
     :ensure t
-    :bind
-    ("M-x"   . helm-M-x)
-    ("M-s o" . helm-occur)
-    ([remap find-file] . helm-find-files)
-    ([remap switch-to-buffer] . helm-mini)
-    :init
-    ;; open helm buffer inside current window, not occupy whole other window
-    (setq helm-split-window-inside-p t)
-    ;; move to end or beginning of source when reaching top or bottom of source.
-    (setq helm-move-to-line-cycle-in-source t)
-    ;; search for library in `require' and `declare-function' sexp.
-    (setq helm-ff-search-library-in-sexp t)
-    ;; scroll 8 lines other window using M-<next>/M-<prior>
-    (setq helm-scroll-amount 8)
-    (setq helm-ff-file-name-history-use-recentf t)
-    (setq helm-echo-input-in-header-line t)
-    ;; (setq helm-autoresize-max-height 0)
-    ;; (setq helm-autoresize-min-height 20)
-    :config
-    (global-set-key (kbd "C-c h") 'helm-command-prefix)
-    (when (executable-find "curl")
-      (setq helm-google-suggest-use-curl-p t))
-    (helm-autoresize-mode 1)
-    (helm-mode 1))
+    :after (vertico prescient)
+    :config (vertico-prescient-mode t))
 
 #+end_src
 
-**** helm wikipedia
+vertico-posframe is an vertico extension, which lets vertico use posframe to show its candidate menu.
+
 #+begin_src emacs-lisp
 
-  (use-package helm-wikipedia
-    :after helm
+  (use-package vertico-posframe
+    :when (equal completion-handler 'comphand-vertico)
     :ensure t
-    :bind
-    ("C-c h w" . helm-wikipedia-lookup)
+    :after vertico
     :custom
-    (helm-wikipedia-summary-url
-      "https://fr.wikipedia.org/w/api.php?action=query&format=json&prop=extracts&titles=%s&exintro=1&explaintext=1&redirects=1")
-    (helm-wikipedia-suggest-url
-      "https://fr.wikipedia.org/w/api.php?action=opensearch&search=%s"))
+    (setq vertico-multiform-commands
+      '((consult-line
+          posframe
+          (vertico-posframe-poshandler . posframe-poshandler-frame-top-center)
+          (vertico-posframe-border-width . 10)
+          ;; NOTE: This is useful when emacs is used in both in X and
+          ;; terminal, for posframe do not work well in terminal, so
+          ;; vertico-buffer-mode will be used as fallback at the
+          ;; moment.
+          (vertico-posframe-fallback-mode . vertico-buffer-mode))
+         (t posframe)))
+    (vertico-multiform-mode 1)
+    (setq vertico-posframe-parameters
+      '((left-fringe . 8)
+         (right-fringe . 8))))
 
+  ;;; ^^^ ;;;
 #+end_src
 
 *** Marginalia
@@ -2309,68 +2477,6 @@ Consult provides search and navigation commands based on the Emacs completion fu
 
 #+end_src
 
-**** Vertico support packages
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package vertico-prescient
-    :when (equal completion-handler 'comphand-vertico)
-    :ensure t
-    :after (vertico prescient)
-    :config (vertico-prescient-mode t))
-
-#+end_src
-
-vertico-posframe is an vertico extension, which lets vertico use posframe to show its candidate menu.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package vertico-posframe
-    :when (equal completion-handler 'comphand-vertico)
-    :ensure t
-    :after vertico
-    :custom
-    (setq vertico-multiform-commands
-      '((consult-line
-          posframe
-          (vertico-posframe-poshandler . posframe-poshandler-frame-top-center)
-          (vertico-posframe-border-width . 10)
-          ;; NOTE: This is useful when emacs is used in both in X and
-          ;; terminal, for posframe do not work well in terminal, so
-          ;; vertico-buffer-mode will be used as fallback at the
-          ;; moment.
-          (vertico-posframe-fallback-mode . vertico-buffer-mode))
-         (t posframe)))
-    (vertico-multiform-mode 1)
-    (setq vertico-posframe-parameters
-      '((left-fringe . 8)
-         (right-fringe . 8))))
-
-#+end_src
-
-*** Built-In (Ido)
-
-Enable the IDO handler everywhere.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  ;; This has to be evaluated at the end of the init since it's possible that the
-  ;; completion-handler variable will not yet be defined at this point in the
-  ;; init phase usi\ng elpaca.
-
-  (add-hook 'after-init-hook
-    (lambda ()
-      (use-package ido
-        :when (equal completion-handler 'comp-hand-ido)
-        :ensure nil
-        :config
-        (ido-everywhere t))))
-
-#+end_src
-
 *** Embark
 
 Embark makes it easy to choose a command to run based on what is near point, both during a minibuffer completion session (in a way familiar to Helm or Counsel users) and in normal buffers. Bind the command embark-act to a key and it acts like prefix-key for a keymap of actions (commands) relevant to the target around point. With point on an URL in a buffer you can open the URL in a browser or eww or download the file it points to. If while switching buffers you spot an old one, you can kill it right there and continue to select another. Embark comes preconfigured with over a hundred actions for common types of targets such as files, buffers, identifiers, s-expressions, sentences; and it is easy to add more actions and more target types. Embark can also collect all the candidates in a minibuffer to an occur-like buffer or export them to a buffer in a major-mode specific to the type of candidates, such as dired for a set of files, ibuffer for a set of buffers, or customize for a set of variables.
@@ -2432,6 +2538,82 @@ Embark makes it easy to choose a command to run based on what is near point, bot
     (embark-collect-mode . consult-preview-at-point-mode))
 
 #+end_src
+
+*** Helm
+
+Helm is an Emacs framework for incremental completions and narrowing selections. It provides an easy-to-use API for developers wishing to build their own Helm applications in Emacs, powerful search tools and dozens of already built-in commands providing completion to almost everything. It is a must-have for anyone using Emacs as a main work environment. Helm has been widely adopted by many Emacs power-users.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package helm
+    :when (equal completion-handler 'comphand-helm)
+    :after async
+    :ensure t
+    :bind
+    ("M-x"   . helm-M-x)
+    ("M-s o" . helm-occur)
+    ([remap find-file] . helm-find-files)
+    ([remap switch-to-buffer] . helm-mini)
+    :init
+    ;; open helm buffer inside current window, not occupy whole other window
+    (setq helm-split-window-inside-p t)
+    ;; move to end or beginning of source when reaching top or bottom of source.
+    (setq helm-move-to-line-cycle-in-source t)
+    ;; search for library in `require' and `declare-function' sexp.
+    (setq helm-ff-search-library-in-sexp t)
+    ;; scroll 8 lines other window using M-<next>/M-<prior>
+    (setq helm-scroll-amount 8)
+    (setq helm-ff-file-name-history-use-recentf t)
+    (setq helm-echo-input-in-header-line t)
+    ;; (setq helm-autoresize-max-height 0)
+    ;; (setq helm-autoresize-min-height 20)
+    :config
+    (global-set-key (kbd "C-c h") 'helm-command-prefix)
+    (when (executable-find "curl")
+      (setq helm-google-suggest-use-curl-p t))
+    (helm-autoresize-mode 1)
+    (helm-mode 1))
+
+#+end_src
+
+**** helm wikipedia
+#+begin_src emacs-lisp
+
+  (use-package helm-wikipedia
+    :after helm
+    :ensure t
+    :bind
+    ("C-c h w" . helm-wikipedia-lookup)
+    :custom
+    (helm-wikipedia-summary-url
+      "https://fr.wikipedia.org/w/api.php?action=query&format=json&prop=extracts&titles=%s&exintro=1&explaintext=1&redirects=1")
+    (helm-wikipedia-suggest-url
+      "https://fr.wikipedia.org/w/api.php?action=opensearch&search=%s"))
+
+#+end_src
+
+*** Built-In (Ido)
+
+Enable the IDO handler everywhere.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  ;; This has to be evaluated at the end of the init since it's possible that the
+  ;; completion-handler variable will not yet be defined at this point in the
+  ;; init phase usi\ng elpaca.
+
+  (add-hook 'after-init-hook
+    (lambda ()
+      (use-package ido
+        :when (equal completion-handler 'comp-hand-ido)
+        :ensure nil
+        :config
+        (ido-everywhere t))))
+
+#+end_src
+
 
 ** Terminals
 *** term-mode
@@ -2564,7 +2746,7 @@ For more thoughts on Eshell, check out these articles by Pierre Neidhardt:
 
 Dired is a built-in file manager for Emacs that does some pretty amazing things! Here are some key bindings you should try out:
 
-**** Key Bindings
+**** Key Binding Instructions
 ***** Navigation
 *Emacs* / *Evil*
 - =n= / =j= - next line
@@ -2619,7 +2801,7 @@ the buffer editable directly to rename them! Press =Z Z= to confirm renaming or
 - =S= - Create a symbolic link to this file
 - =L= - Load an Emacs Lisp file into Emacs
   
-**** Configuration
+**** Use =gls= for dired on macOS
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
@@ -2631,48 +2813,88 @@ the buffer editable directly to rename them! Press =Z Z= to confirm renaming or
                 ;; Needed to fix an issue on Mac which causes dired to fail
                 dired-listing-switches "-al --group-directories-first")))
 
-  (use-package all-the-icons-dired
-    :ensure t
-    :after dired
-    :hook (dired-mode . all-the-icons-dired-mode))
+  #+end_src
 
-  (use-package dired-open
-    :ensure t
-    :commands (dired dired-jump)
-    :config
-    ;; Doesn't work as expected!
-    ;;(add-to-list 'dired-open-functions #'dired-open-xdg t)
-    (setq dired-open-extensions '(("png" . "feh")
-                                   ("mkv" . "mpv"))))
+**** All the icons - Dired
 
-  (use-package dired-hide-dotfiles
-    :ensure t
-    :after dired-mode
-    :hook (dired-mode . dired-hide-dotfiles-mode))
+To know the type of file at a glance, [[https://github.com/jtbm37/all-the-icons-dired][all-the-icons-dired]] integrates icons
+directly into =dired=.
+
+  #+begin_src emacs-lisp
+    (use-package all-the-icons-dired
+      :after dired
+      :when (display-graphic-p)
+      :hook (dired-mode . all-the-icons-dired-mode))
+    #+end_src
+
+
+**** Files to open eternally
+
+By default, =dired= opens files in plain text. This behavior is sometimes
+undesirable. Hopefully, [[https://github.com/Fuco1/dired-hacks/blob/master/dired-open.el][dired-open]] can be used to informs =dired= that certain
+desired file extensions must be opened with external packages to GNU Emacs.
+
+    #+begin_src emacs-lisp
+    (use-package dired-open
+      :ensure t
+      :commands (dired dired-jump)
+      :config
+      ;; Doesn't work as expected!
+      ;;(add-to-list 'dired-open-functions #'dired-open-xdg t)
+      (setq dired-open-extensions '(("png" . "feh")
+                                     ("mkv" . "mpv"))))
+#+end_src
+
+**** Hide dot files
+
+It is sometimes convenient to hide dotfiles. With [[https://github.com/mattiasb/dired-hide-dotfiles][dired-hide-dotfiles]] this
+becomes possible.
+
+#+begin_src emacs-lisp
+    (use-package dired-hide-dotfiles
+      :ensure t
+      :after dired-mode
+      :hook (dired-mode . dired-hide-dotfiles-mode))
 
 #+end_src
 
-**** Better =dired= and Single Window
+**** Tab to open subdirs
 
-Dired, by default, opens up multiple windows - one for each directory. It would be nice to be able to limit =dired= to use just a single window. dired+ does just that and much more.
+I like being able to =<TAB>= on a folder and see its contents, without me getting
+into it. [[https://github.com/Fuco1/dired-hacks/blob/master/dired-subtree.el][dired-subtree]] allows this behavior.
 
 #+begin_src emacs-lisp
-  ;;; ##########################################################################
-  ;;  Extensions to Dired.
-  ;;
-  ;;  This file extends functionalities provided by standard GNU Emacs
-  ;;  files `dired.el', `dired-aux.el', and `dired-x.el'.
-  ;;
-  ;;  Key bindings changed.  Menus redefined.  `diredp-mouse-3-menu'
-  ;;  popup menu added.  New commands.  Some commands enhanced.
-  ;;
-  ;;  All of the new functions, variables, and faces defined here have
-  ;;  the prefix `diredp-' (for Dired Plus) in their names.  
-  (use-package dired+
-    :ensure nil
-    :config
-    (diredp-toggle-find-file-reuse-dir 1))
+  (use-package dired-subtree
+    :after dired
+    :ensure t
+    :bind (:map dired-mode-map
+                ("<tab>" . dired-subtree-toggle)))
+#+end_src
 
+**** Large number of files handling
+
+Finally, to manage folders with a large number of files, it may be useful to
+filter with [[https://github.com/Fuco1/dired-hacks/blob/master/dired-narrow.el][dired-narrow]]
+
+#+begin_src emacs-lisp
+  (use-package dired-narrow
+    :ensure nil
+    :bind (("C-c C-n" . dired-narrow)
+           ("C-c C-f" . dired-narrow-fuzzy)))
+#+end_src
+
+**** Single Window
+
+This package provides a way to reuse the current dired buffer to visit another directory (rather than creating a new buffer for the new directory). Optionally, it allows the user to specify a name that all such buffers will have, regardless of the directory they point to.
+
+#+begin_src emacs-lisp
+  (use-package dired-single
+    (dired-single :type git :host github :repo "emacsattic/dired-single")
+    :after dired
+    :bind (:map dired-mode-map
+                ([remap dired-find-file] . dired-single-buffer)
+                ([remap dired-up-directory] . dired-single-up-directory)
+                ("M-DEL" . dired-prev-subdir)))
 #+end_src
 
 **** Special ediff with dired
@@ -2739,14 +2961,13 @@ Virtical Split comparison of two files selected from the dired window.
   ;;; ##########################################################################
 
   (use-package dired
-    ;;   ;; local package hint for elpaca
     :ensure nil
     :no-require t
     :bind (:map dired-mode-map
           ("=" . mifi/dired-ediff-marked-files)))
 
   (use-package ediff
-    ;;  ;; local package hint for elpaca
+    :ensure nil
     :no-require t
     :custom
     (ediff-diff-options "-w")
@@ -2759,10 +2980,9 @@ Virtical Split comparison of two files selected from the dired window.
 
 #+end_src
 
-
 *** Treemacs
 
-<<<Treemacs>>> is a file and project explorer similar to NeoTree or vim’s NerdTree, but largely inspired by the Project Explorer in Eclipse. It shows the file system outlines of your projects in a simple tree layout allowing quick navigation and exploration, while also possessing basic file management utilities.
+Treemacs is a file and project explorer similar to NeoTree or vim’s NerdTree, but largely inspired by the Project Explorer in Eclipse. It shows the file system outlines of your projects in a simple tree layout allowing quick navigation and exploration, while also possessing basic file management utilities.
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
@@ -2966,7 +3186,7 @@ function when a theme becomes disabled (via the ~disable-theme~ function) and
 represents the theme that has become disabled.
 
 #+begin_src emacs-lisp
-  ;;; ##########################################################################
+  ;;; vvv ;;;
 
   (defun mifi/cycle-theme-selector (&rest theme)
     "Cycle the `theme-selector' by 1, resetting to 0 if beyond array bounds."
@@ -2997,7 +3217,6 @@ This function simply loads the theme from the theme-list indexed by the ~theme-s
 This function is used to reset spacious-padding-mode if it is loaded and active. Reset is performed by turning spacious-padding off and then restoring it to it's original state. The reason for this is that spacious-padding can sometimes get confused and have weird spacing when font-sizes changes - like after a theme switch or display-font change.
 
 #+begin_src emacs-lisp
-  ;;; ##########################################################################
 
   (defun mifi/reset-if-spacious-padding-mode ()
     (interactive)
@@ -3014,7 +3233,6 @@ This function is used to reset spacious-padding-mode if it is loaded and active.
 This function loads the theme from the =theme-list= indexed by =theme-selector=. Once the theme is loaded, the variable ~theme-did-load~ is set to t, or nil if the theme failed to load.
 
 #+begin_src emacs-lisp
-  ;;; ##########################################################################
 
   (defun mifi/load-theme-from-selector (&optional step)
     "Load the theme in `theme-list' indexed by `theme-selector'."
@@ -3039,7 +3257,6 @@ This function loads the theme from the =theme-list= indexed by =theme-selector=.
 *** Theme selection helper functions.
 
 #+begin_src emacs-lisp
-  ;;; ##########################################################################
 
   (defun mifi/print-custom-theme-name ()
     "Print the current loaded theme from the `theme-list' on the modeline."
@@ -3075,7 +3292,6 @@ This function loads the theme from the =theme-list= indexed by =theme-selector=.
 *** Theme Override Values
 
 #+begin_src emacs-lisp
-  ;;; ##########################################################################
 
   (defun mifi/org-theme-override-values ()
     (defface org-block-begin-line
@@ -3093,8 +3309,6 @@ This function loads the theme from the =theme-list= indexed by =theme-selector=.
     (defface org-modern-horizontal-rule
       '((t (:strike-through "green" :weight bold)))
       "Face used for the Horizontal like (-----)"))
-
-  ;;; ##########################################################################
 
   (defun mifi/customize-modus-theme ()
     (when (featurep 'org)
@@ -3127,7 +3341,6 @@ Color Theming (or just <<<theming>>>) is a curated list of theming packages.
 *Note:* If new themes are added in the ~theme-list~ custom variable then they must be included here along with any customizations.
 
 #+begin_src emacs-lisp
-  ;;; ##########################################################################
 
   (add-to-list 'custom-theme-load-path (expand-file-name "Themes" custom-docs-directory))
   (add-to-list 'custom-theme-load-path (expand-file-name "lisp" emacs-config-directory))
@@ -3150,7 +3363,6 @@ Color Theming (or just <<<theming>>>) is a curated list of theming packages.
 This includes the theme to use in both graphical and non-graphical.
 
 #+begin_src emacs-lisp
-  ;;; ##########################################################################
   ;; (add-hook 'emacs-startup-hook #'(mifi/load-theme-from-selector))
   ;; (mifi/load-theme-from-selector)
   ;; For terminal mode we choose Material theme
@@ -3174,6 +3386,7 @@ This includes the theme to use in both graphical and non-graphical.
               (mifi/load-theme-from-selector))))
         )))
 
+  ;;; ^^^ ;;;
 #+end_src
 
 ** Frame and Font Setup
@@ -3220,7 +3433,7 @@ It's nice to know that Emacs is somewhat working. To help this along, we set the
 A better version of variable-pitch mode. This keeps certain faces (defined in mixed-pitch-fixed-pitch-faces) fixed-pitch.
 
 #+begin_src emacs-lisp
-  ;;; ##########################################################################
+  ;;; vvv ;;;
 
   (use-package mixed-pitch
     :defer t
@@ -3236,7 +3449,6 @@ A better version of variable-pitch mode. This keeps certain faces (defined in mi
 *** Functions to set the frame size
 
 #+begin_src emacs-lisp
-  ;;; ##########################################################################
   ;; Functions to set the frame size
 
   (defun mifi/frame-recenter (&optional frame)
@@ -3290,8 +3502,6 @@ A better version of variable-pitch mode. This keeps certain faces (defined in mi
 *** Default fonts and sizes
 
 #+begin_src emacs-lisp
-  ;;; ##########################################################################
-
   ;; Default fonts
 
   (defun mifi/update-face-attribute ()
@@ -3336,7 +3546,6 @@ A better version of variable-pitch mode. This keeps certain faces (defined in mi
 The functions in the list =after-setting-font-hook= are called whenever the frame's font changes. In order to save this value, we capture it and store it in the =custom-default-font-size= custom variable. This variable is saved whenver Emacs exists. Then, when Emacs is started again, the default and fixed-pitch font height values are set to =custom-default-font-size=. The variable pitch font is computed as ~(+ custom-default-font-size 20)~
 
 #+begin_src emacs-lisp
-  ;;; ##########################################################################
 
   (defun mifi/default-font-height-change ()
     (setq-default custom-default-font-size (face-attribute 'default :height))
@@ -3353,7 +3562,6 @@ The functions in the list =after-setting-font-hook= are called whenever the fram
 This little function toggles between a larger font size and the default font size.
 
 #+begin_src emacs-lisp
-  ;;; ##########################################################################
   ;; Frame font selection
 
   (defvar mifi/font-size-slot 1)
@@ -3388,7 +3596,6 @@ This little function toggles between a larger font size and the default font siz
 Some key kindings to switch to different screen resolutions.
 
 #+begin_src emacs-lisp
-  ;;; ##########################################################################
   ;; Some alternate keys below....
 
   (defun mifi/set-recenter-keys ()
@@ -3414,7 +3621,6 @@ Some key kindings to switch to different screen resolutions.
 These functions are used to configure the main frame font size. Based upon a monitor's size, it may be necessary to make the font larger or smaller.
 
 #+begin_src emacs-lisp
-  ;;; ##########################################################################
   ;; Frame support functions
 
   (defun mifi/set-frame-font (slot)
@@ -3435,7 +3641,6 @@ These functions are used to configure the main frame font size. Based upon a mon
 This is for things like Org mode
 
 #+begin_src emacs-lisp
-  ;;; ##########################################################################
 
   (defun mifi/update-other-modes-font ()
     "This updates/calls functions to update mode font sizes."
@@ -3449,7 +3654,6 @@ This is for things like Org mode
 These functions resize the font to some pre-defined values and will optiononally resize and recenter the window. (see =mifi-config= defcustom variables for the pre-defined font sizes and font families).
 
 #+begin_src emacs-lisp
-  ;;; ##########################################################################
 
   (defun use-small-display-font (&optional force-recenter)
     (interactive)
@@ -3490,7 +3694,6 @@ These functions resize the font to some pre-defined values and will optiononally
 Apply saved font/window-size early in the startup process.
 
 #+begin_src emacs-lisp
-  ;;; ##########################################################################
   ;; This is done so that the Emacs window is sized early in the init phase along with the default font size.
   ;; Startup works without this but it's nice to see the window expand early...
   (when (display-graphic-p)
@@ -3508,7 +3711,6 @@ Apply saved font/window-size early in the startup process.
 This package provides a global minor mode to increase the spacing/padding of Emacs windows and frames. The idea is to make editing and reading feel more comfortable.
 
 #+begin_src emacs-lisp
-  ;;; ##########################################################################
 
   (use-package spacious-padding
     :ensure t
@@ -3531,6 +3733,8 @@ This package provides a global minor mode to increase the spacing/padding of Ema
   ;; (setq spacious-padding-subtle-mode-line
   ;;       `( :mode-line-active 'default
   ;;          :mode-line-inactive vertical-border))
+
+  ;;; ^^^ ;;;
 #+end_src
 
 * Productivity
@@ -4674,7 +4878,10 @@ Advantages of lsp-bridge:
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
-
+  ;;;
+  ;;; Make sure that the following are part of the Python environment:
+  ;;; pip3 install epc orjson sexpdata six setuptools paramiko rapidfuzz watchdog
+  ;;;
   (use-package lsp-bridge
     :disabled
     :when (equal custom-ide 'custom-ide-lsp-bridge)
@@ -4688,38 +4895,7 @@ Advantages of lsp-bridge:
 
 #+end_src
 
-*** Anaconda-mode :deprecation_warning:
-
-Anaconda-mode provides Code navigation, documentation lookup and completion for Python. *Note* To use this package, you need to install =setuptools=
-
-Personally, I have not used this mode a lot lately so, right now, I consider this mode for deprecation in this configuration
-
-#+begin_src example
-
-  pip3 install setuptools
-  
-#+end_src
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package anaconda-mode
-    :after (:any which-key company)
-    :when (equal custom-ide 'custom-ide-anaconda)
-    :bind (:map python-mode-map
-            ("C-c g o" . anaconda-mode-find-definitions-other-frame)
-            ("C-c g g" . anaconda-mode-find-definitions)
-            ("C-c C-x" . next-error))
-    :config
-    (when (featurep 'company)
-      (bind-keys :map anaconda-mode-map
-        ("<tab>" . company-indent-or-complete-common)))
-    (use-package pyvenv-auto :after python :hook (python-mode . pyvenv-auto-run))
-    :hook (python-mode . anaconda-eldoc-mode))
-
-#+end_src
-
-*** ELPY :Python:
+*** ELPY                                                             :Python:
 
 Elpy is an Emacs package to bring powerful Python editing to Emacs. It combines and configures a number of other packages, both written in Emacs Lisp as well as Python. Elpy is fully documented at [[https://elpy.readthedocs.io/en/latest/index.html][read the docs]].
 
@@ -5919,21 +6095,16 @@ This is a set of keymaps that do the same things as the popup menu. Both are her
         (bind-keys :map map
           ("M-RET $" . jinx-correct)
           ("M-RET ?" . eldoc-box-help-at-point)
+          ("M-RET /" . hydra-combine/body)
           ("M-RET M s" . markdown-preview-mode)
           ("M-RET M e" . markdown-preview-cleanup)
           ("M-RET S e" . eshell)
           ("M-RET S i" . ielm)
           ("M-RET S v" . vterm-other-window)
-          ("M-RET v s" . use-small-display-font)
-          ("M-RET v m" . use-medium-display-font)
-          ("M-RET v l" . use-large-display-font)
-          ("M-RET v x" . use-x-large-display-font)
-          ("M-RET v 1" . use-small-display-font-t)
-          ("M-RET v 2" . use-medium-display-font-t)
-          ("M-RET v 3" . use-large-display-font-t)
-          ("M-RET v 4" . use-x-large-display-font-t)
-  	("M-RET w <right>" . which-key-setup-side-window-right-bottom)
-  	("M-RET w <down>" . which-key-setup-side-window-bottom)
+          ("M-RET v" . hydra-themes-and-fonts/body)
+          ("M-RET W" . writeroom-mode)
+          ("M-RET w <right>" . which-key-setup-side-window-right-bottom)
+          ("M-RET w <down>" . which-key-setup-side-window-bottom)
           ("M-RET =" . next-theme)
           ("M-RET -" . previous-theme)
           ("M-RET _" . which-theme)
@@ -5943,7 +6114,7 @@ This is a set of keymaps that do the same things as the popup menu. Both are her
           ("M-RET f" . mifi/set-fill-column-interactively)
           ("M-RET p" . pulsar-pulse-line)
           ("M-RET r" . repeat-mode)
-          ("M-RET j" . mifi/jump-to-register)
+          ("M-RET j" . hydra-registers/body) ;; mifi/jump-to-register)
           ("M-RET |" . global-display-fill-column-indicator-mode)
           ("M-RET C-g" . keyboard-quit))
         map)

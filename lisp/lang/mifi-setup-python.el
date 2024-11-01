@@ -50,15 +50,6 @@
         ("C-c g i" . lsp-bridge-find-impl)
         ("C-c g n" . lsp-bridge-rename)
         ("C-c g ?" . lsp-bridge-popup-documentation)))
-    ((equal custom-ide 'custom-ide-anaconda)
-      (bind-keys :map python-mode-map
-        ("C-c g a" . anaconda-mode-find-assignments)
-        ("C-c g A" . anaconda-mode-find-assignments-other-window)
-        ("C-c g r" . anaconda-mode-find-references)
-        ("C-c g R" . anaconda-mode-find-references-other-window)
-        ("C-c g g" . anaconda-mode-find-definitions)
-        ("C-c g G" . anaconda-mode-find-definitions-other-window)
-        ("C-c g ?" . anaconda-mode-show-doc)))
     ))
 
 ;;; ##########################################################################
@@ -66,8 +57,6 @@
 (defun mifi/load-python-file-hook ()
   (python-mode)
   (flymake-mode 0)
-  (when (equal custom-ide 'custom-ide-anaconda)
-    (anaconda-mode 1))
   (message ">>> mifi/load-python-file-hook")
   (setq highlight-indentation-mode -1)
   (setq display-fill-column-indicator-mode t))
@@ -85,14 +74,14 @@
       (unless (featurep 'dap-mode) (dap-mode 1)) ;; Load if not loaded.
       (define-python-dap-hydra)
       (bind-keys :map python-mode-map
-      ("C-c ." . dap-python-hydra/body)))))
+  ("C-c ." . dap-python-hydra/body)))))
 
 (defun mifi/setup-python-custom-ide ()
   (cond
     ((equal custom-ide 'custom-ide-eglot)
       (message ">>> eglot-ensure")
       (when (boundp 'eglot-current-server)
-      (let ((server (eglot-current-server)))
+  (let ((server (eglot-current-server)))
         	(when server
         	  (message "<<< Shutting down current EGLOT server before restart.")
         	  (eglot-shutdown server))))
@@ -146,6 +135,8 @@
           ("C-c C-q" . quote-region)
           ("C-c q"   . quote-word)
           ("C-c |"   . display-fill-column-indicator-mode))
+  :ensure-system-package
+  ( (autoflake . "pip3 install autoflake") )
   :config
   (if (boundp 'python-shell-completion-native-disabled-interpreters)
     (add-to-list 'python-shell-completion-native-disabled-interpreters python-executable)

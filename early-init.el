@@ -75,6 +75,19 @@
   (when (version< emacs-version minver)
     (error "Your Emacs is too old -- this config requires v%s or higher" minver)))
 
+(unless (package-installed-p 'use-package)
+  (package-refresh-contents)
+  (package-install 'use-package))
+
+(use-package use-package-ensure-system-package :ensure t)
+
+;; For some reason, the function recentf-expand-file-name has been showing up
+;; as 'undefined' even though this is a byte-compiled internal function. So,
+;; instead of trying to find the issue, I'm just including it here as a
+;; local package so that it works. Maybe one day I can remove it.
+;; (use-package recentf :ensure nil :demand t)
+(use-package recentf :ensure nil :demand t)
+
 (setq use-package-compute-statistics t
   use-package-verbose t
   use-package-always-ensure nil

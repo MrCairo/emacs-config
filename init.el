@@ -12,6 +12,59 @@
 ;; (setq debug-on-error t)
 ;;
 
+;; Bootstrap straight
+(defvar bootstrap-version)
+(let ((bootstrap-file
+       (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
+      (bootstrap-version 5))
+  (unless (file-exists-p bootstrap-file)
+    (with-current-buffer
+        (url-retrieve-synchronously
+         "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
+         'silent 'inhibit-cookies)
+      (goto-char (point-max))
+      (eval-print-last-sexp)))
+  (load bootstrap-file nil 'nomessage))
+
+;; Integrates `straight' directly into the `use-package' package through the
+;; `:straight' expression.
+(straight-use-package 'use-package)
+
+(setq-default
+  ad-redefinition-action 'accept                   ; Silence warnings for redefinition
+  backup-inhibited t                               ; diabled backup (no ~ tilde files)
+  cursor-in-non-selected-windows nil               ; Hide the cursor in inactive windows
+  display-time-default-load-average nil            ; Don't display load average
+  fill-column 80                                   ; Set width for automatic line breaks
+  help-window-select t                             ; Focus new help windows when opened
+  history-length 30                                ; Reasonable number of items
+  indent-tabs-mode nil                             ; Prefer spaces over tabs
+  inhibit-startup-screen t                         ; Disable start-up screen
+  kill-ring-max 128                                ; Maximum length of kill ring
+  lisp-indent-offset '2                            ; Emacs list tab size
+  load-prefer-newer t                              ; Prefer the newest version of a file
+  mark-ring-max 128                                ; Maximum length of mark ring
+  read-process-output-max (* 1024 1024)            ; Increase the amount of data reads from the process
+  scroll-conservatively most-positive-fixnum       ; Always scroll by one line
+  select-enable-clipboard t                        ; Merge system's and Emacs' clipboard
+  tab-width 4                                      ; Set width for tabs
+  truncate-lines 1                                 ; Long lines of text do not wrap
+  truncate-partial-width-windows 1                 ; truncate lines in partial-width windows
+  user-full-name "Mitchell Fisher"                 ; Set the full name of the current user
+  user-mail-address "Trafalgar42@gmail.com"        ; Set the email address of the current user
+  vc-follow-symlinks t                             ; Always follow the symlinks
+  view-read-only t                                 ; Always open read-only buffers in view-mode
+  visible-bell t)                                  ; Set up the visible bell
+(column-number-mode 1)                             ; Show the column number
+(fset 'yes-or-no-p 'y-or-n-p)                      ; Replace yes/no prompts with y/n
+;; (global-hl-line-mode)                              ; Hightlight current line
+(set-default-coding-systems 'utf-8)                ; Default to utf-8 encoding
+(show-paren-mode 1)                                ; Show the parent
+;; Rebind C-z/C-. to act like vim's repeat previous command ( . )
+(unbind-key "C-z")
+(bind-key "C-." 'repeat)
+(bind-key "C-z" 'repeat-complex-command)
+
 ;;; ##########################################################################
 ;;; Define my customization groups
 
@@ -227,16 +280,12 @@ Eglot/LSP Eglot is the Emacs client for the Language Server Protocol
 (LSP). Eglot provides infrastructure and a set of commands for enriching the
 source code editing capabilities of Emacs via LSP. Eglot itself is
 completely language-agnostic, but it can support any programming language
-for which there is a language server and an Emacs major mode.
-
-Anaconda-mode is another IDE for Python very much like Elpy. It is not as
-configurable but has a host of great feaures that just work."
+for which there is a language server and an Emacs major mode."
   :type '(radio
            (const :tag "Elpy: Emacs Lisp Python Environment" custom-ide-elpy)
            (const :tag "Emacs Polyglot (Eglot)" custom-ide-eglot)
            (const :tag "Language Server Protocol (LSP)" custom-ide-lsp)
-           (const :tag "LSP Bridge (standalone)" custom-ide-lsp-bridge)
-           (const :tag "Python Anaconda-mode for Emacs" custom-ide-anaconda))
+           (const :tag "LSP Bridge (standalone)" custom-ide-lsp-bridge))
   :group 'mifi-config-features)
 
 (defcustom custom-project-handler 'custom-project-project-el
@@ -300,12 +349,12 @@ If additional themes are added, they must be previously installed."
   :type 'natnum)
 
 ;;; Font related
-(defcustom default-font-family "Courier New"
+(defcustom default-font-family "Source Code Pro"
   "The font family used as the default font."
   :type 'string
   :group 'mifi-config-fonts)
 
-(defcustom mono-spaced-font-family "Monaco"
+(defcustom mono-spaced-font-family "Source Code Pro"
   "The font family used as the mono-spaced font."
   :type 'string
   :group 'mifi-config-fonts)
@@ -397,35 +446,18 @@ font size is computed + 20 of this value."
     (let* ((monospace-font
              (cond
                ((x-list-fonts mono-spaced-font-family) mono-spaced-font-family)
+               ((x-list-fonts "Source Code Pro")   "Source Code Pro")
                ((x-list-fonts "Fira Code Retina")  "Fira Code Retina")
                ((x-list-fonts "Fira Code")         "Fira Code")
-               ((x-list-fonts "Source Code Pro")   "Source Code Pro")
                ((x-list-fonts "Ubuntu Monospaced") "Ubuntu Monospaced")
                ((x-family-fonts "Monospaced")      "Monospaced")
                (nil (warn "Cannot find a monospaced Font.  Install Source Code Pro.")))))
       (if monospace-font
-      (when (not (equal monospace-font variable-pitch-font-family))
+  (when (not (equal monospace-font variable-pitch-font-family))
           (setq mono-spaced-font-family monospace-font)
           (setq default-font-family monospace-font))
-      (message "---- Can't find a monospace font to use.")))
+  (message "---- Can't find a monospace font to use.")))
     (message (format ">>> monospace font is %s" mono-spaced-font-family))))
-
-;; For some reason, the function recentf-expand-file-name has been showing up
-;; as 'undefined' even though this is a byte-compiled internal function. So,
-;; instead of trying to find the issue, I'm just including it here as a
-;; local package so that it works. Maybe one day I can remove it.
-;; (use-package recentf :ensure nil :demand t)
-(use-package recentf :ensure nil :demand t)
-
-;; This package allows 'use-package' to support a 'use-system-package' option
-;; which specifies the thing (library, executable, etc) that should exist
-;; followed by the command used to install it. This allows for an expression
-;; like (ruby . "brew install ruby") which tests for the presence of ruby and
-;; if it can't be found (on the path) then 'brew install ruby' will be run to
-;; install it.
-;; NOTE: This option, while very powerful, will increase the Emacs startup time
-;; because of the overhead in checking for commands. Use it with discretion.
-(use-package use-package-ensure-system-package :ensure t :demand t)
 
 ;;; ##########################################################################
 
@@ -553,45 +585,6 @@ font size is computed + 20 of this value."
 
 ;;; ##########################################################################
 
-(setq-default
-  window-resize-pixelwise t ;; enable smooth resizing
-  window-resize-pixelwise t
-  frame-inhibit-implied-resize t
-  frame-resize-pixelwise t
-  frame-title-format '("%b")
-  dired-dwim-target t       ;; try to guess target directory
-  use-short-answers t
-  truncate-partial-width-windows 1 ;; truncate lines in partial-width windows
-  backup-inhibited t        ;; disable backup (No ~ tilde files)
-  auto-save-default nil     ;; disable auto save
-  global-auto-revert-mode 1 ;; Refresh buffer if file has changed
-  global-eldoc-mode t       ;; Enabled in all buffers
-  history-length 25         ;; Reasonable buffer length
-  inhibit-startup-message t ;; Hide the startup message
-  inhibit-startup-screent t
-  lisp-indent-offset '2     ;; emacs lisp tab size
-  visible-bell t            ;; Set up the visible bell
-  truncate-lines 1          ;; long lines of text do not wrap
-  sentence-end-double-space nil
-  fill-column 79            ;; Default line limit for fills
-  ;; Triggers project for directories with any of the following files:
-  global-auto-revert-non-file-buffers t
-  project-vc-extra-root-markers '(".dir-locals.el"
-                                   "requirements.txt"
-                                   "Gemfile"
-                                   "package.json"))
-
-;; Rebind C-z/C-. to act like vim's repeat previous command ( . )
-(unbind-key "C-z")
-(bind-key "C-." 'repeat)
-(bind-key "C-z" 'repeat-complex-command)
-;; Since there used to be a supported dape mode, we force the
-;; existing configuration to the only option, dap-mode since
-;; dape used to be supported. This resets any previous value.
-(setq-default debug-adapter 'debug-adapter-dap-mode)
-
-;;; ##########################################################################
-
 (setq savehist-file (expand-file-name "savehist" user-emacs-directory))
 (savehist-mode t)
 (setq history-length 150)
@@ -623,6 +616,11 @@ font size is computed + 20 of this value."
      try-expand-dabbrev-from-kill
      try-complete-lisp-symbol-partially
      try-complete-lisp-symbol))
+
+(setq-default project-vc-extra-root-markers '( ".dir-locals.el"
+                                               "requirements.txt"
+                                               "Gemfile"
+                                               "package.json" ))
 
 (defadvice save-buffers-kill-emacs (around no-query-kill-emacs activate)
   "Prevent annoying \"Active processes exist\" query when you quit Emacs."
@@ -705,7 +703,7 @@ font size is computed + 20 of this value."
   "Define some common registers."
   (setq register-preview-delay 0) ;; Show registers ASAP
   (set-register ?o (cons 'file (concat emacs-config-directory "emacs-config-elpa.org")))
-  (set-register ?O (cons 'file (concat emacs-config-directory "emacs-config.org")))
+  (set-register ?O (cons 'file (concat emacs-config-directory "emacs-config-elpaca.org")))
   (set-register ?G '(file . "~/Developer/game-dev/GB_asm"))
   (set-register ?S (cons 'file (concat emacs-config-directory "org-files/important-scripts.org"))))
 
@@ -731,99 +729,6 @@ font size is computed + 20 of this value."
 
 (when (fboundp 'pixel-scroll-precision-mode)
   (pixel-scroll-precision-mode))
-
-(use-package system-packages :ensure t)
-
-;;; ##########################################################################
-
-(use-package jsonrpc
-  :defer t
-  :ensure t)
-  ;; :config
-  ;; For some odd reason, it is possible that jsonrpc will try to load a
-  ;; theme. (jsonrpc/lisp/custom.el:1362). If our theme hasn't been loaded
-  ;; yet, go ahead and try. This could prevent a startup without the theme
-  ;; properly loaded.
-  ;; (unless theme-did-load
-  ;;   (mifi/load-theme-from-selector)))
-
-;;; ##########################################################################
-
-(use-package async
-  :ensure t)
-
-;; All kept in local /lisp directory.
-;; (use-package web-server-status-codes )
-;; (use-package simple-httpd )
-;; (use-package web-server )
-
-;;; ##########################################################################
-
-(use-package helpful
-  :ensure t
-  ;; :commands (helpful-callable helpful-variable helpful-command helpful-key helpful-function)
-  :config
-  (bind-keys
-    ([remap describe-command] . helpful-command)
-    ([remap describe-function] . helpful-function)
-    ([remap describe-variable] . helpful-variable)
-    ([remap describe-key] . helpful-key)))
-
-;;; ##########################################################################
-
-(defun mifi/setup-hooks-for-eldoc ()
-  (interactive)
-  (add-hook 'emacs-lisp-mode-hook 'eldoc-mode)
-  (add-hook 'lisp-interaction-mode-hook 'eldoc-mode)
-  (add-hook 'ielm-mode-hook 'eldoc-mode)
-  ;; Eldoc will try to load/unload a theme which can cause issues with our
-  ;; theme loading mechanism. Our theme could fail to load because of this.
-  ;; So, to get our themes loading properly, load it here if not already
-  ;; loaded.
-  (unless theme-did-load
-    (mifi/load-theme-from-selector)))
-
-(use-package eldoc)
-
-(use-package eldoc-box
-  :delight DocBox
-  :ensure t
-  :hook (after-init . mifi/setup-hooks-for-eldoc))
-
-;;; ##########################################################################
-
-(use-package hydra
-  :defer t
-  :commands defhydra
-  :ensure t)
-
-;;; ##########################################################################
-
-(use-package multiple-cursors
-  :ensure t
-  :bind (("C-S-c C-S-c" . mc/edit-lines)
-          ("C->" . mc/mark-next-like-this)
-          ("C-<" . mc/mark-previous-like-this)
-          ("C-c C-<" . mc/mark-all-like-this)))
-
-;;; ##########################################################################
-
-(use-package visual-fill-column
-  :ensure nil ;; Should be installed in the local lisp dir.
-  :defer t
-  :after org)
-
-(use-package writeroom-mode
-  :ensure t
-  :defer t
-  :after visual-fill-column)
-
-;;; ##########################################################################
-;;; Default keys are C-M-= or C-M--
-
-(use-package default-text-scale
-  :ensure t
-  :hook (after-init . default-text-scale-mode))
 
 ;;; ##########################################################################
 
@@ -872,6 +777,201 @@ font size is computed + 20 of this value."
 
 (add-hook 'emacs-startup-hook #'mifi/setup-global-keybindings)
 
+(use-package system-packages :ensure t)
+
+;;; ##########################################################################
+
+(use-package jsonrpc
+  :defer t
+  :ensure t)
+  ;; :config
+  ;; For some odd reason, it is possible that jsonrpc will try to load a
+  ;; theme. (jsonrpc/lisp/custom.el:1362). If our theme hasn't been loaded
+  ;; yet, go ahead and try. This could prevent a startup without the theme
+  ;; properly loaded.
+  ;; (unless theme-did-load
+  ;;   (mifi/load-theme-from-selector)))
+
+;;; ##########################################################################
+
+(use-package async
+  :ensure t)
+
+;; All kept in local /lisp directory.
+;; (use-package web-server-status-codes )
+;; (use-package simple-httpd )
+;; (use-package web-server )
+
+;;; ##########################################################################
+
+(use-package helpful
+  :ensure t
+  ;; :commands (helpful-callable helpful-variable helpful-command helpful-key helpful-function)
+  :config
+  (bind-keys
+    ([remap describe-command] . helpful-command)
+    ([remap describe-function] . helpful-function)
+    ([remap describe-variable] . helpful-variable)
+    ([remap describe-key] . helpful-key)))
+
+;;; ##########################################################################
+
+(use-package xref :ensure nil)
+(use-package dumb-jump
+  :after xref
+  :config
+  (setq xref-show-definitions-function #'xref-show-definitions-completing-read)
+  (add-hook 'xref-backend-functions #'dumb-jump-xref-activate))
+
+;;; ##########################################################################
+
+(defun mifi/setup-hooks-for-eldoc ()
+  (interactive)
+  (add-hook 'emacs-lisp-mode-hook 'eldoc-mode)
+  (add-hook 'lisp-interaction-mode-hook 'eldoc-mode)
+  (add-hook 'ielm-mode-hook 'eldoc-mode)
+  ;; Eldoc will try to load/unload a theme which can cause issues with our
+  ;; theme loading mechanism. Our theme could fail to load because of this.
+  ;; So, to get our themes loading properly, load it here if not already
+  ;; loaded.
+  (unless theme-did-load
+    (mifi/load-theme-from-selector)))
+
+(use-package eldoc)
+
+(use-package eldoc-box
+  :delight DocBox
+  :ensure t
+  :hook (after-init . mifi/setup-hooks-for-eldoc))
+
+;;; ##########################################################################
+
+(use-package hydra
+  :defer t
+  :commands defhydra
+  :bind (("C-c c" . hydra-clock/body)
+         ("C-c m" . hydra-magit/body)
+         ("C-c r" . hydra-registers/body)
+         ("C-c t" . hydra-themes-and-fonts/body))
+  :ensure t)
+
+(use-package major-mode-hydra
+  :after hydra
+  :preface
+  (defun with-alltheicon (icon str &optional height v-adjust face)
+    "Display an icon from all-the-icon."
+    (s-concat (all-the-icons-alltheicon icon :v-adjust (or v-adjust 0) :height (or height 1) :face face) " " str))
+
+  (defun with-faicon (icon str &optional height v-adjust face)
+    "Display an icon from Font Awesome icon."
+    (s-concat (all-the-icons-faicon icon ':v-adjust (or v-adjust 0) :height (or height 1) :face face) " " str))
+
+  (defun with-fileicon (icon str &optional height v-adjust face)
+    "Display an icon from the Atom File Icons package."
+    (s-concat (all-the-icons-fileicon icon :v-adjust (or v-adjust 0) :height (or height 1) :face face) " " str))
+
+  (defun with-octicon (icon str &optional height v-adjust face)
+    "Display an icon from the GitHub Octicons."
+    (s-concat (all-the-icons-octicon icon :v-adjust (or v-adjust 0) :height (or height 1) :face face) " " str))
+  :config
+  (mifi/hydra-clock)
+  (mifi/hydra-combine)
+  (mifi/hydra-themes-and-fonts)
+  (mifi/hydra-magit)
+  (mifi/hydra-registers))
+
+(defun mifi/hydra-clock ()
+  (pretty-hydra-define hydra-clock
+    (:hint nil :color teal :quit-key "q" :title (with-faicon "clock-o" "Clock" 1 -0.05))
+    ("Action"
+      (("c" org-clock-cancel "cancel")
+        ("d" org-clock-display "display")
+        ("e" org-clock-modify-effort-estimate "effort")
+        ("i" org-clock-in "in")
+        ("j" org-clock-goto "jump")
+        ("o" org-clock-out "out")
+        ("p" org-pomodoro "pomodoro")
+        ("r" org-clock-report "report")))))
+
+(defun mifi/hydra-magit ()
+  (pretty-hydra-define hydra-magit
+    (:hint nil :color teal :quit-key "q" :title (with-octicon "mark-github" "Magit" 1 -0.05))
+    ("Action"
+      (("b" magit-blame "blame")
+        ("c" magit-clone "clone")
+        ("i" magit-init "init")
+        ("l" magit-log-buffer-file "commit log (current file)")
+        ("L" magit-log-current "commit log (project)")
+        ("s" magit-status "status"))))  )
+
+(defun mifi/hydra-registers ()
+  (pretty-hydra-define hydra-registers
+    (:hint nil :color teal :quit-key "q" :title (with-faicon "thumb-tack" "Registers" 1 -0.05))
+    ("Action"
+      ( ("o" (jump-to-register ?o) "macs-config-elpa.org")
+        ("O" (jump-to-register ?O) "emacs-config-elpaca.org")
+        ("S" (jump-to-register ?S) "Scripts")
+        ("G" (jump-to-register ?G) "GameBoy Asm Root")))
+    ))
+
+(defun mifi/hydra-themes-and-fonts ()
+  (pretty-hydra-define hydra-themes-and-fonts
+    (:hint nil :color teal :quit-key "q" :title (with-faicon "puzzle-piece" "Themes and Fonts" 1 -0.05))
+    ("Action"
+      ( ("+" next-theme "Next theme")
+        ("-" previous-theme "Previous Theme")
+        ("=" which-theme "Display Current Theme")
+        ("S" use-small-display-font "Small Font with resize")
+        ("M" use-medium-display-font "Medium Font with resize")
+        ("L" use-large-display-font "Large Font with resize")
+        ("X" use-x-large-display-font "X-Large Font with resize")
+        ("s" (use-small-display-font t) "Small Font without resize")
+        ("m" (use-medium-display-font t) "Medium Font without resize")
+        ("l" (use-large-display-font t) "Large Font without resize")
+        ("x" (use-x-large-display-font t) "X-Large Font without resize")) )))
+
+(defun mifi/hydra-combine ()
+  (pretty-hydra-define hydra-combine
+    (:hint nil :color teal :quit-key "q" :title (with-faicon "thumb-tack" "Combine" 1 -0.05))
+    ("Action"
+      ( ("m" hydra-magit/body "Magit menu")
+        ("t" hydra-themes-and-fonts/body "Themes and Fonts menu") ))
+    ))
+
+;;; ^^^ ;;;
+
+;;; ##########################################################################
+
+(use-package multiple-cursors
+  :ensure t
+  :bind (("C-S-c C-S-c" . mc/edit-lines)
+          ("C->" . mc/mark-next-like-this)
+          ("C-<" . mc/mark-previous-like-this)
+          ("C-c C-<" . mc/mark-all-like-this)))
+
+;;; ##########################################################################
+
+(use-package visual-fill-column
+  :ensure nil ;; Should be installed in the local lisp dir.
+  :defer t
+  :after org)
+
+;;; ##########################################################################
+
+(use-package writeroom-mode
+  :ensure t
+  :defer t
+  :init
+  (setq writeroom-width visual-fill-column-width)
+  :after visual-fill-column)
+
+;;; ##########################################################################
+;;; Default keys are C-M-= or C-M--
+
+(use-package default-text-scale
+  :ensure t
+  :hook (after-init . default-text-scale-mode))
+
 ;;; ##########################################################################
 ;; YASnippets
 
@@ -892,8 +992,6 @@ font size is computed + 20 of this value."
   (defun help/yas-after-exit-snippet-hook-fn ()
     (prettify-symbols-mode))
   (add-hook 'yas-after-exit-snippet-hook #'help/yas-after-exit-snippet-hook-fn))
-
-;;; ##########################################################################
 
 (use-package yasnippet-snippets
   :ensure t
@@ -916,10 +1014,23 @@ font size is computed + 20 of this value."
   :ensure t
   :config (winum-mode))
 
+;;; ##########################################################################
+
 (use-package init-windows ;; From purcell
   :ensure nil
   :demand t
   :hook (after-init . winner-mode))
+
+;;; ##########################################################################
+
+(use-package jinx
+  :ensure t
+  :bind ( ("C-c C-$" . jinx-correct)
+          ("C-x C-$" . jinx-languages))
+  :hook (emacs-startup . global-jinx-mode)
+  :config
+  (dolist (hook '(text-mode-hook prog-mode-hook org-mode-hook))
+          (add-hook hook #'jinx-mode)))
 
 ;;; ##########################################################################
 
@@ -948,19 +1059,6 @@ font size is computed + 20 of this value."
   (dashboard-setup-startup-hook))
 
 ;;; ##########################################################################
-
-(use-package jinx
-  ;; :vc (:url "https://github.com/minad/jinx")
-  ;; :ensure (:host github :repo "minad/jinx")
-  ;;:hook (emacs-startup . global-jinx-mode)
-  :ensure t
-  :bind (("C-c C-$" . jinx-correct)
-          ("C-x C-$" . jinx-languages))
-  :config
-  (dolist (hook '(text-mode-hook prog-mode-hook org-mode-hook))
-    (add-hook hook #'jinx-mode)))
-
-;;; ##########################################################################
 ;; These are packages located in the site-lisp or lisp directories in the
 ;; 'emacs-config-directory'
 
@@ -978,7 +1076,7 @@ font size is computed + 20 of this value."
   (set-face-attribute 'vundo-default nil :family "Symbola")
   (setq vundo-glyph-alist vundo-unicode-symbols))
 
-;;; ##########################################################################
+;;; vvv ;;;
 
 (defun mifi/undo-tree-hook ()
   (set-frame-width (selected-frame) 20))
@@ -988,8 +1086,6 @@ font size is computed + 20 of this value."
   (let ((split-height-threshold nil)
          (split-width-threshold 0))
     (apply original-function args)))
-
-;;; ##########################################################################
 
 ;;
 ;; Sometimes, when behind a firewall, the undo-tree package triggers elpaca
@@ -1018,6 +1114,8 @@ font size is computed + 20 of this value."
       ("RET" . undo-tree-visualizer-quit)
       ("C-g" . undo-tree-visualizer-abort))
     (setq undo-tree-auto-save-history nil)))
+
+;;; ^^^ ;;;
 
 ;;; ##########################################################################
 
@@ -1070,7 +1168,7 @@ font size is computed + 20 of this value."
   (add-to-list 'ivy-highlight-functions-alist
     '(orderless-ivy-re-builder . orderless-ivy-highlight)))
 
-;;; ##########################################################################
+;;; vvv ;;;
 
 (use-package ivy-rich
   :when (equal completion-handler 'comphand-ivy)
@@ -1083,15 +1181,10 @@ font size is computed + 20 of this value."
 (use-package ivy-yasnippet
   :when (equal completion-handler 'comphand-ivy)
   :after (:any yasnippet ivy))
-;; :ensure (:host github :repo "mkcms/ivy-yasnippet"))
-
-;;; ##########################################################################
 
 (use-package swiper
   :when (equal completion-handler 'comphand-ivy)
   :after ivy)
-
-;;; ##########################################################################
 
 (use-package counsel
   :when (equal completion-handler 'comphand-ivy)
@@ -1116,8 +1209,6 @@ font size is computed + 20 of this value."
     (setq counsel-describe-variable-function #'helpful-variable))
   (counsel-mode 1))
 
-;;; ##########################################################################
-
 (use-package ivy-prescient
   :when (equal completion-handler 'comphand-ivy)
   :after (ivy prescient)
@@ -1126,6 +1217,8 @@ font size is computed + 20 of this value."
   (prescient-persist-mode t)
   (ivy-prescient-mode t)
   (ivy-prescient-enable-filtering t))
+
+;;; ^^^ ;;;
 
 ;;; ##########################################################################
 
@@ -1159,8 +1252,7 @@ font size is computed + 20 of this value."
 ;; :config
 ;; (add-to-list 'company-backends 'company-yasnippet))
 
-;;; ##########################################################################
-
+;;; vvv ;;;
 ;; (require 'company-box)
 ;; (add-hook 'company-mode-hook 'company-box-mode)
 
@@ -1180,14 +1272,6 @@ font size is computed + 20 of this value."
   (defun my/company-jedi-python-mode-hook ()
     (add-to-list 'company-backends 'company-jedi))
   (add-hook 'python-mode-hook 'my/company-jedi-python-mode-hook))
-
-(use-package company-anaconda
-  :when (equal custom-ide 'custom-ide-anaconda)
-  :after (:all anaconda company)
-  :hook (python-mode . anaconda-mode)
-  :config
-  (eval-after-load "company"
-    '(add-to-list 'company-backends 'company-anaconda)))
 
 ;;; ##########################################################################
 
@@ -1296,47 +1380,36 @@ font size is computed + 20 of this value."
           ;; Make sure vertico state is saved
           (minibuffer-setup . vertico-repeat-save)))
 
-;;; ##########################################################################
+;;; vvv ;;;
 
-(use-package helm
-  :when (equal completion-handler 'comphand-helm)
-  :after async
+(use-package vertico-prescient
+  :when (equal completion-handler 'comphand-vertico)
   :ensure t
-  :bind
-  ("M-x"   . helm-M-x)
-  ("M-s o" . helm-occur)
-  ([remap find-file] . helm-find-files)
-  ([remap switch-to-buffer] . helm-mini)
-  :init
-  ;; open helm buffer inside current window, not occupy whole other window
-  (setq helm-split-window-inside-p t)
-  ;; move to end or beginning of source when reaching top or bottom of source.
-  (setq helm-move-to-line-cycle-in-source t)
-  ;; search for library in `require' and `declare-function' sexp.
-  (setq helm-ff-search-library-in-sexp t)
-  ;; scroll 8 lines other window using M-<next>/M-<prior>
-  (setq helm-scroll-amount 8)
-  (setq helm-ff-file-name-history-use-recentf t)
-  (setq helm-echo-input-in-header-line t)
-  ;; (setq helm-autoresize-max-height 0)
-  ;; (setq helm-autoresize-min-height 20)
-  :config
-  (global-set-key (kbd "C-c h") 'helm-command-prefix)
-  (when (executable-find "curl")
-    (setq helm-google-suggest-use-curl-p t))
-  (helm-autoresize-mode 1)
-  (helm-mode 1))
+  :after (vertico prescient)
+  :config (vertico-prescient-mode t))
 
-(use-package helm-wikipedia
-  :after helm
+(use-package vertico-posframe
+  :when (equal completion-handler 'comphand-vertico)
   :ensure t
-  :bind
-  ("C-c h w" . helm-wikipedia-lookup)
+  :after vertico
   :custom
-  (helm-wikipedia-summary-url
-    "https://fr.wikipedia.org/w/api.php?action=query&format=json&prop=extracts&titles=%s&exintro=1&explaintext=1&redirects=1")
-  (helm-wikipedia-suggest-url
-    "https://fr.wikipedia.org/w/api.php?action=opensearch&search=%s"))
+  (setq vertico-multiform-commands
+    '((consult-line
+        posframe
+        (vertico-posframe-poshandler . posframe-poshandler-frame-top-center)
+        (vertico-posframe-border-width . 10)
+        ;; NOTE: This is useful when emacs is used in both in X and
+        ;; terminal, for posframe do not work well in terminal, so
+        ;; vertico-buffer-mode will be used as fallback at the
+        ;; moment.
+        (vertico-posframe-fallback-mode . vertico-buffer-mode))
+       (t posframe)))
+  (vertico-multiform-mode 1)
+  (setq vertico-posframe-parameters
+    '((left-fringe . 8)
+       (right-fringe . 8))))
+
+;;; ^^^ ;;;
 
 ;;; ##########################################################################
 
@@ -1413,51 +1486,6 @@ font size is computed + 20 of this value."
        consult--source-recent-file)))
 
 ;;; ##########################################################################
-
-(use-package vertico-prescient
-  :when (equal completion-handler 'comphand-vertico)
-  :ensure t
-  :after (vertico prescient)
-  :config (vertico-prescient-mode t))
-
-;;; ##########################################################################
-
-(use-package vertico-posframe
-  :when (equal completion-handler 'comphand-vertico)
-  :ensure t
-  :after vertico
-  :custom
-  (setq vertico-multiform-commands
-    '((consult-line
-        posframe
-        (vertico-posframe-poshandler . posframe-poshandler-frame-top-center)
-        (vertico-posframe-border-width . 10)
-        ;; NOTE: This is useful when emacs is used in both in X and
-        ;; terminal, for posframe do not work well in terminal, so
-        ;; vertico-buffer-mode will be used as fallback at the
-        ;; moment.
-        (vertico-posframe-fallback-mode . vertico-buffer-mode))
-       (t posframe)))
-  (vertico-multiform-mode 1)
-  (setq vertico-posframe-parameters
-    '((left-fringe . 8)
-       (right-fringe . 8))))
-
-;;; ##########################################################################
-
-;; This has to be evaluated at the end of the init since it's possible that the
-;; completion-handler variable will not yet be defined at this point in the
-;; init phase usi\ng elpaca.
-
-(add-hook 'after-init-hook
-  (lambda ()
-    (use-package ido
-      :when (equal completion-handler 'comp-hand-ido)
-      :ensure nil
-      :config
-      (ido-everywhere t))))
-
-;;; ##########################################################################
 ;; Taken from:
 ;; https://erick.navarro.io/blog/switching-from-helm-to-vertico-and-friends
 ;;
@@ -1511,6 +1539,62 @@ This only runs for ripgrep results"
   :ensure t
   :hook
   (embark-collect-mode . consult-preview-at-point-mode))
+
+;;; ##########################################################################
+
+(use-package helm
+  :when (equal completion-handler 'comphand-helm)
+  :after async
+  :ensure t
+  :bind
+  ("M-x"   . helm-M-x)
+  ("M-s o" . helm-occur)
+  ([remap find-file] . helm-find-files)
+  ([remap switch-to-buffer] . helm-mini)
+  :init
+  ;; open helm buffer inside current window, not occupy whole other window
+  (setq helm-split-window-inside-p t)
+  ;; move to end or beginning of source when reaching top or bottom of source.
+  (setq helm-move-to-line-cycle-in-source t)
+  ;; search for library in `require' and `declare-function' sexp.
+  (setq helm-ff-search-library-in-sexp t)
+  ;; scroll 8 lines other window using M-<next>/M-<prior>
+  (setq helm-scroll-amount 8)
+  (setq helm-ff-file-name-history-use-recentf t)
+  (setq helm-echo-input-in-header-line t)
+  ;; (setq helm-autoresize-max-height 0)
+  ;; (setq helm-autoresize-min-height 20)
+  :config
+  (global-set-key (kbd "C-c h") 'helm-command-prefix)
+  (when (executable-find "curl")
+    (setq helm-google-suggest-use-curl-p t))
+  (helm-autoresize-mode 1)
+  (helm-mode 1))
+
+(use-package helm-wikipedia
+  :after helm
+  :ensure t
+  :bind
+  ("C-c h w" . helm-wikipedia-lookup)
+  :custom
+  (helm-wikipedia-summary-url
+    "https://fr.wikipedia.org/w/api.php?action=query&format=json&prop=extracts&titles=%s&exintro=1&explaintext=1&redirects=1")
+  (helm-wikipedia-suggest-url
+    "https://fr.wikipedia.org/w/api.php?action=opensearch&search=%s"))
+
+;;; ##########################################################################
+
+;; This has to be evaluated at the end of the init since it's possible that the
+;; completion-handler variable will not yet be defined at this point in the
+;; init phase usi\ng elpaca.
+
+(add-hook 'after-init-hook
+  (lambda ()
+    (use-package ido
+      :when (equal completion-handler 'comp-hand-ido)
+      :ensure nil
+      :config
+      (ido-everywhere t))))
 
 ;;; ##########################################################################
 
@@ -1578,8 +1662,8 @@ This only runs for ripgrep results"
               dired-listing-switches "-al --group-directories-first")))
 
 (use-package all-the-icons-dired
-  :ensure t
   :after dired
+  :when (display-graphic-p)
   :hook (dired-mode . all-the-icons-dired-mode))
 
 (use-package dired-open
@@ -1596,21 +1680,24 @@ This only runs for ripgrep results"
   :after dired-mode
   :hook (dired-mode . dired-hide-dotfiles-mode))
 
-;;; ##########################################################################
-;;  Extensions to Dired.
-;;
-;;  This file extends functionalities provided by standard GNU Emacs
-;;  files `dired.el', `dired-aux.el', and `dired-x.el'.
-;;
-;;  Key bindings changed.  Menus redefined.  `diredp-mouse-3-menu'
-;;  popup menu added.  New commands.  Some commands enhanced.
-;;
-;;  All of the new functions, variables, and faces defined here have
-;;  the prefix `diredp-' (for Dired Plus) in their names.  
-(use-package dired+
+(use-package dired-subtree
+  :after dired
+  :ensure t
+  :bind (:map dired-mode-map
+              ("<tab>" . dired-subtree-toggle)))
+
+(use-package dired-narrow
   :ensure nil
-  :config
-  (diredp-toggle-find-file-reuse-dir 1))
+  :bind (("C-c C-n" . dired-narrow)
+         ("C-c C-f" . dired-narrow-fuzzy)))
+
+(use-package dired-single
+  (dired-single :type git :host github :repo "emacsattic/dired-single")
+  :after dired
+  :bind (:map dired-mode-map
+              ([remap dired-find-file] . dired-single-buffer)
+              ([remap dired-up-directory] . dired-single-up-directory)
+              ("M-DEL" . dired-prev-subdir)))
 
 ;;; ##########################################################################
 
@@ -1658,14 +1745,13 @@ This only runs for ripgrep results"
 ;;; ##########################################################################
 
 (use-package dired
-  ;;   ;; local package hint for elpaca
   :ensure nil
   :no-require t
   :bind (:map dired-mode-map
         ("=" . mifi/dired-ediff-marked-files)))
 
 (use-package ediff
-  ;;  ;; local package hint for elpaca
+  :ensure nil
   :no-require t
   :custom
   (ediff-diff-options "-w")
@@ -1828,7 +1914,7 @@ This only runs for ripgrep results"
 (add-to-list 'savehist-additional-variables 'theme-selector)
 (add-to-list 'savehist-additional-variables 'custom-default-mono-font-size)
 
-;;; ##########################################################################
+;;; vvv ;;;
 
 (defun mifi/cycle-theme-selector (&rest theme)
   "Cycle the `theme-selector' by 1, resetting to 0 if beyond array bounds."
@@ -1848,8 +1934,6 @@ This only runs for ripgrep results"
 ;; `mifi/load-theme-from-selector' function.
 (add-hook 'disable-theme-functions #'mifi/cycle-theme-selector)
 
-;;; ##########################################################################
-
 (defun mifi/reset-if-spacious-padding-mode ()
   (interactive)
   (when-let ((spm? (featurep 'spacious-padding))
@@ -1857,8 +1941,6 @@ This only runs for ripgrep results"
     (spacious-padding-mode 0)
     (run-with-timer 0.2 nil
       (lambda (on-off) (spacious-padding-mode on-off)) spm-on-off)))
-
-;;; ##########################################################################
 
 (defun mifi/load-theme-from-selector (&optional step)
   "Load the theme in `theme-list' indexed by `theme-selector'."
@@ -1877,8 +1959,6 @@ This only runs for ripgrep results"
     (mifi/org-font-setup))
   (mifi/reset-if-spacious-padding-mode)
   (set-face-foreground 'line-number "SkyBlue4"))
-
-;;; ##########################################################################
 
 (defun mifi/print-custom-theme-name ()
   "Print the current loaded theme from the `theme-list' on the modeline."
@@ -1909,8 +1989,6 @@ This only runs for ripgrep results"
   ;; Message current theme
   ("M-RET _" . which-theme))
 
-;;; ##########################################################################
-
 (defun mifi/org-theme-override-values ()
   (defface org-block-begin-line
     '((t (:underline "#1D2C39" :foreground "SlateGray" :background "#1D2C39")))
@@ -1927,8 +2005,6 @@ This only runs for ripgrep results"
   (defface org-modern-horizontal-rule
     '((t (:strike-through "green" :weight bold)))
     "Face used for the Horizontal like (-----)"))
-
-;;; ##########################################################################
 
 (defun mifi/customize-modus-theme ()
   (when (featurep 'org)
@@ -1953,8 +2029,6 @@ This only runs for ripgrep results"
 ;;(add-hook 'org-load-hook 'mifi/customize-ef-theme)
 (add-hook 'after-init-hook 'mifi/customize-ef-theme)
 
-;;; ##########################################################################
-
 (add-to-list 'custom-theme-load-path (expand-file-name "Themes" custom-docs-directory))
 (add-to-list 'custom-theme-load-path (expand-file-name "lisp" emacs-config-directory))
 
@@ -1969,7 +2043,6 @@ This only runs for ripgrep results"
 (use-package darktooth-theme :ensure t)
 (use-package zenburn-theme :defer t :ensure t)
 
-;;; ##########################################################################
 ;; (add-hook 'emacs-startup-hook #'(mifi/load-theme-from-selector))
 ;; (mifi/load-theme-from-selector)
 ;; For terminal mode we choose Material theme
@@ -1992,6 +2065,8 @@ This only runs for ripgrep results"
           (unless theme-did-load
             (mifi/load-theme-from-selector))))
       )))
+
+;;; ^^^ ;;;
 
 ;;; ##########################################################################
 
@@ -2023,7 +2098,7 @@ This only runs for ripgrep results"
 
 (setq frame-resize-pixelwise t)
 
-;;; ##########################################################################
+;;; vvv ;;;
 
 (use-package mixed-pitch
   :defer t
@@ -2034,7 +2109,6 @@ This only runs for ripgrep results"
   (dolist (face '(org-date org-priority org-special-keyword org-tag))
     (add-to-list 'mixed-pitch-fixed-pitch-faces face)))
 
-;;; ##########################################################################
 ;; Functions to set the frame size
 
 (defun mifi/frame-recenter (&optional frame)
@@ -2083,8 +2157,6 @@ This only runs for ripgrep results"
   (add-to-list 'default-frame-alist '(fullscreen . maximized))
   (unless enable-frameset-restore (mifi/frame-recenter)))
 
-;;; ##########################################################################
-
 ;; Default fonts
 
 (defun mifi/update-face-attribute ()
@@ -2122,8 +2194,6 @@ This only runs for ripgrep results"
           (mifi/frame-recenter)))
       )))
 
-;;; ##########################################################################
-
 (defun mifi/default-font-height-change ()
   (setq-default custom-default-font-size (face-attribute 'default :height))
   (mifi/update-face-attribute)
@@ -2131,7 +2201,6 @@ This only runs for ripgrep results"
 
 (add-hook 'after-setting-font-hook 'mifi/default-font-height-change)
 
-;;; ##########################################################################
 ;; Frame font selection
 
 (defvar mifi/font-size-slot 1)
@@ -2159,7 +2228,6 @@ This only runs for ripgrep results"
         mifi/default-variable-font-size (+ custom-default-font-size 20))
       (mifi/update-face-attribute))))
 
-;;; ##########################################################################
 ;; Some alternate keys below....
 
 (defun mifi/set-recenter-keys ()
@@ -2178,7 +2246,6 @@ This only runs for ripgrep results"
       "C-S-c 3" "recenter-with-large-font"
       "C-S-c 4" "recenter-with-x-large-font")))
 
-;;; ##########################################################################
 ;; Frame support functions
 
 (defun mifi/set-frame-font (slot)
@@ -2192,14 +2259,10 @@ This only runs for ripgrep results"
     ;;else
     (unless enable-frameset-restore (mifi/frame-recenter))))
 
-;;; ##########################################################################
-
 (defun mifi/update-other-modes-font ()
   "This updates/calls functions to update mode font sizes."
   (when (featurep 'org)
     (mifi/org-font-setup)))
-
-;;; ##########################################################################
 
 (defun use-small-display-font (&optional force-recenter)
   (interactive)
@@ -2233,7 +2296,6 @@ This only runs for ripgrep results"
   (mifi/should-recenter force-recenter))
 (defun use-x-large-display-font-t () (interactive) (use-x-large-display-font t))
 
-;;; ##########################################################################
 ;; This is done so that the Emacs window is sized early in the init phase along with the default font size.
 ;; Startup works without this but it's nice to see the window expand early...
 (when (display-graphic-p)
@@ -2244,8 +2306,6 @@ This only runs for ripgrep results"
         (unless (daemonp)
           (unless enable-frameset-restore (mifi/frame-recenter))))
       )))
-
-;;; ##########################################################################
 
 (use-package spacious-padding
   :ensure t
@@ -2268,6 +2328,8 @@ This only runs for ripgrep results"
 ;; (setq spacious-padding-subtle-mode-line
 ;;       `( :mode-line-active 'default
 ;;          :mode-line-inactive vertical-border))
+
+;;; ^^^ ;;;
 
 ;;; ##########################################################################
 
@@ -3122,7 +3184,10 @@ capture was not aborted."
   (setq-default lsp-rust-analyzer-display-reborrow-hints nil))
 
 ;;; ##########################################################################
-
+;;;
+;;; Make sure that the following are part of the Python environment:
+;;; pip3 install epc orjson sexpdata six setuptools paramiko rapidfuzz watchdog
+;;;
 (use-package lsp-bridge
   :disabled
   :when (equal custom-ide 'custom-ide-lsp-bridge)
@@ -3133,22 +3198,6 @@ capture was not aborted."
   (lsp-bridge-python-lsp-server "pylsp")
   :config
   (global-lsp-bridge-mode))
-
-;;; ##########################################################################
-
-(use-package anaconda-mode
-  :after (:any which-key company)
-  :when (equal custom-ide 'custom-ide-anaconda)
-  :bind (:map python-mode-map
-          ("C-c g o" . anaconda-mode-find-definitions-other-frame)
-          ("C-c g g" . anaconda-mode-find-definitions)
-          ("C-c C-x" . next-error))
-  :config
-  (when (featurep 'company)
-    (bind-keys :map anaconda-mode-map
-      ("<tab>" . company-indent-or-complete-common)))
-  (use-package pyvenv-auto :after python :hook (python-mode . pyvenv-auto-run))
-  :hook (python-mode . anaconda-eldoc-mode))
 
 ;;; ##########################################################################
 
@@ -3755,21 +3804,16 @@ capture was not aborted."
       (bind-keys :map map
         ("M-RET $" . jinx-correct)
         ("M-RET ?" . eldoc-box-help-at-point)
+        ("M-RET /" . hydra-combine/body)
         ("M-RET M s" . markdown-preview-mode)
         ("M-RET M e" . markdown-preview-cleanup)
         ("M-RET S e" . eshell)
         ("M-RET S i" . ielm)
         ("M-RET S v" . vterm-other-window)
-        ("M-RET v s" . use-small-display-font)
-        ("M-RET v m" . use-medium-display-font)
-        ("M-RET v l" . use-large-display-font)
-        ("M-RET v x" . use-x-large-display-font)
-        ("M-RET v 1" . use-small-display-font-t)
-        ("M-RET v 2" . use-medium-display-font-t)
-        ("M-RET v 3" . use-large-display-font-t)
-        ("M-RET v 4" . use-x-large-display-font-t)
-      ("M-RET w <right>" . which-key-setup-side-window-right-bottom)
-      ("M-RET w <down>" . which-key-setup-side-window-bottom)
+        ("M-RET v" . hydra-themes-and-fonts/body)
+        ("M-RET W" . writeroom-mode)
+        ("M-RET w <right>" . which-key-setup-side-window-right-bottom)
+        ("M-RET w <down>" . which-key-setup-side-window-bottom)
         ("M-RET =" . next-theme)
         ("M-RET -" . previous-theme)
         ("M-RET _" . which-theme)
@@ -3779,7 +3823,7 @@ capture was not aborted."
         ("M-RET f" . mifi/set-fill-column-interactively)
         ("M-RET p" . pulsar-pulse-line)
         ("M-RET r" . repeat-mode)
-        ("M-RET j" . mifi/jump-to-register)
+        ("M-RET j" . hydra-registers/body) ;; mifi/jump-to-register)
         ("M-RET |" . global-display-fill-column-indicator-mode)
         ("M-RET C-g" . keyboard-quit))
       map)
@@ -3811,7 +3855,7 @@ capture was not aborted."
         ((equal major-mode 'python-mode)
           (bind-keys :map map
             ("M-RET P" . 'pydoc-at-point)))
-      ((equal major-mode 'tuareg-mode)
+  ((equal major-mode 'tuareg-mode)
   	(bind-keys :map map
   	  ("M-RET c m" . tuarg-browse-manual)))
         (t   ;; Default 
@@ -3920,7 +3964,8 @@ opam-user-setup.el so that upon next startup, it can be loaded quickly."
         (byte-compile-file src))))
   (mifi/backup-file "early-init.el")
   (mifi/backup-file "init.el")
-  (mifi/backup-file "emacs-config.org"))
+  (mifi/backup-file "emacs-config-elpaca.org")
+  (mifi/backup-file "emacs-config-elpa.org"))
 
 (add-hook 'kill-emacs-hook #'mifi/when-exiting-emacs)
 
