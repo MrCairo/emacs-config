@@ -12,24 +12,6 @@
 ;; (setq debug-on-error t)
 ;;
 
-;; Bootstrap straight
-(defvar bootstrap-version)
-(let ((bootstrap-file
-       (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
-      (bootstrap-version 5))
-  (unless (file-exists-p bootstrap-file)
-    (with-current-buffer
-        (url-retrieve-synchronously
-         "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
-         'silent 'inhibit-cookies)
-      (goto-char (point-max))
-      (eval-print-last-sexp)))
-  (load bootstrap-file nil 'nomessage))
-
-;; Integrates `straight' directly into the `use-package' package through the
-;; `:straight' expression.
-(straight-use-package 'use-package)
-
 (setq-default
   ad-redefinition-action 'accept                   ; Silence warnings for redefinition
   backup-inhibited t                               ; diabled backup (no ~ tilde files)
@@ -62,8 +44,7 @@
 (show-paren-mode 1)                                ; Show the parent
 ;; Rebind C-z/C-. to act like vim's repeat previous command ( . )
 (unbind-key "C-z")
-(bind-key "C-." 'repeat)
-(bind-key "C-z" 'repeat-complex-command)
+(bind-key "C-z" 'repeat)
 
 ;;; ##########################################################################
 ;;; Define my customization groups
@@ -122,9 +103,9 @@ become `emacs-config-directory'."
   :group 'mifi-config)
 
 (defcustom custom-org-fill-column 120
-  "The fill column width for Org mode text.
-     Note that the text is also centered on the screen so that should
-     be taken into consideration when providing a width."
+  "The fill column width for Org mode text. Note that the text is also centered
+on the screen so that should be taken into consideration when providing a
+width."
   :type 'natnum
   :group 'mifi-config)
 
@@ -359,9 +340,25 @@ If additional themes are added, they must be previously installed."
   :type 'string
   :group 'mifi-config-fonts)
 
-(defcustom variable-pitch-font-family "Helvetica"
+(defcustom variable-pitch-font-family "JetBrains Mono"
   "The font family used as the default proportional font."
   :type 'string
+  :group 'mifi-config-fonts)
+
+(defcustom variable-pitch-font-weight 'light
+  "The 'suggested' weight of the variable-pitch-font. The reason that it is
+suggested is that the font family may not support one of the weight values
+listed below."
+  :type '(radio
+           (const :tag "ultra-bold" ultra-bold)
+           (const :tag "extra-bold" extra-bold)
+           (const :tag "bold" bold)
+           (const :tag "semi-bold" semi-bold)
+           (const :tag "normal" normal)
+           (const :tag "semi-light" semi-light)
+           (const :tag "light" light)
+           (const :tag "extra-light" extra-light)
+           (const :tag "ultra-light" ultra-light))
   :group 'mifi-config-fonts)
 
 (defcustom small-mono-font-size 150
@@ -461,6 +458,11 @@ font size is computed + 20 of this value."
 
 ;;; ##########################################################################
 
+(use-package f
+  :ensure t :demand t)
+
+;;; ##########################################################################
+
 ;;; Set a variable that represents the actual emacs configuration directory.
 ;;; This is being done so that the user-emacs-directory which normally points
 ;;; to the .emacs.d directory can be re-assigned so that customized files don't
@@ -556,11 +558,9 @@ font size is computed + 20 of this value."
 
 ;;; ##########################################################################
 
-(use-package f
-  :ensure t :demand t
-  :config
-  (let ((epath (f-dirname
+(let ((epath (f-dirname
                (expand-file-name invocation-name invocation-directory))))
+  (when (file-directory-p (format "%s/bin" epath))
     (add-to-list 'exec-path (format "%s:%s/bin" epath epath))
     (mifi/setup-path-from-exec-path)))
 
@@ -653,7 +653,6 @@ font size is computed + 20 of this value."
 
 ;;; ##########################################################################
 
-;; Used to highlight matching delimiters '( { [ ] } )
 (use-package paren
   :ensure nil
   :custom
@@ -666,6 +665,7 @@ font size is computed + 20 of this value."
   (show-paren-mode 1))
 
 ;;; ##########################################################################
+
 
 (defun mifi/save-desktop-frameset ()
   (unless (or (daemonp)
@@ -699,16 +699,25 @@ font size is computed + 20 of this value."
               (spacious-padding-mode 1))))
         (use-medium-display-font t)))))
 
+(defun mifi/setup-helpful-aliases ()
+  "Define some helpful aliases."
+  (defalias 'visibility-folded
+    (kmacro "# + v i s i b i l i t y : SPC f o l d e d <return>")))
+
 (defun mifi/setup-common-registers ()
   "Define some common registers."
   (setq register-preview-delay 0) ;; Show registers ASAP
-  (set-register ?o (cons 'file (concat emacs-config-directory "emacs-config-elpa.org")))
-  (set-register ?O (cons 'file (concat emacs-config-directory "emacs-config-elpaca.org")))
+  (setq reg-elpa '?c
+        reg-elpaca '?C)
+  (set-register reg-elpa (cons 'file (concat emacs-config-directory "emacs-config-elpa.org")))
+  (set-register reg-elpaca (cons 'file (concat emacs-config-directory "emacs-config-elpaca.org")))
   (set-register ?G '(file . "~/Developer/game-dev/GB_asm"))
   (set-register ?S (cons 'file (concat emacs-config-directory "org-files/important-scripts.org"))))
 
 (add-hook 'after-init-hook
-  (lambda () (mifi/setup-common-registers)))
+  (lambda ()
+    (mifi/setup-helpful-aliases)
+    (mifi/setup-common-registers)))
 
 ;;; ##########################################################################
 ;;
@@ -856,6 +865,7 @@ font size is computed + 20 of this value."
   :ensure t)
 
 (use-package major-mode-hydra
+  :ensure t
   :after hydra
   :preface
   (defun with-alltheicon (icon str &optional height v-adjust face)
@@ -884,7 +894,7 @@ font size is computed + 20 of this value."
   (pretty-hydra-define hydra-clock
     (:hint nil :color teal :quit-key "q" :title (with-faicon "clock-o" "Clock" 1 -0.05))
     ("Action"
-      (("c" org-clock-cancel "cancel")
+      ( ("c" org-clock-cancel "cancel")
         ("d" org-clock-display "display")
         ("e" org-clock-modify-effort-estimate "effort")
         ("i" org-clock-in "in")
@@ -897,7 +907,7 @@ font size is computed + 20 of this value."
   (pretty-hydra-define hydra-magit
     (:hint nil :color teal :quit-key "q" :title (with-octicon "mark-github" "Magit" 1 -0.05))
     ("Action"
-      (("b" magit-blame "blame")
+      ( ("b" magit-blame "blame")
         ("c" magit-clone "clone")
         ("i" magit-init "init")
         ("l" magit-log-buffer-file "commit log (current file)")
@@ -908,8 +918,8 @@ font size is computed + 20 of this value."
   (pretty-hydra-define hydra-registers
     (:hint nil :color teal :quit-key "q" :title (with-faicon "thumb-tack" "Registers" 1 -0.05))
     ("Action"
-      ( ("o" (jump-to-register ?o) "macs-config-elpa.org")
-        ("O" (jump-to-register ?O) "emacs-config-elpaca.org")
+      ( ("o" (jump-to-register reg-elpa) "open emacs-config-elpa.org")
+        ("O" (jump-to-register reg-elpaca) "open emacs-config-elpaca.org")
         ("S" (jump-to-register ?S) "Scripts")
         ("G" (jump-to-register ?G) "GameBoy Asm Root")))
     ))
@@ -1057,10 +1067,6 @@ font size is computed + 20 of this value."
     (setq dashboard-projects-backend 'projectile))
   (setq dashboard-startup-banner (expand-file-name "Emacs-modern-is-sexy-v1.png" user-emacs-directory))
   (dashboard-setup-startup-hook))
-
-;;; ##########################################################################
-;; These are packages located in the site-lisp or lisp directories in the
-;; 'emacs-config-directory'
 
 ;;; ##########################################################################
 
@@ -1692,7 +1698,7 @@ This only runs for ripgrep results"
          ("C-c C-f" . dired-narrow-fuzzy)))
 
 (use-package dired-single
-  (dired-single :type git :host github :repo "emacsattic/dired-single")
+  :ensure nil ;; Package installed in local 'lisp' directory
   :after dired
   :bind (:map dired-mode-map
               ([remap dired-find-file] . dired-single-buffer)
@@ -2178,7 +2184,7 @@ This only runs for ripgrep results"
   (set-face-attribute 'variable-pitch nil
     :family variable-pitch-font-family
     :height (+ custom-default-font-size 20)
-    :weight 'medium))
+    :weight variable-pitch-font-weight))
 
 ;; This is done so that the Emacs window is sized early in the init phase along
 ;; with the default font size. Startup works without this but it's nice to see

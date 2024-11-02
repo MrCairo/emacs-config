@@ -2,7 +2,7 @@
 #+author: Mitch Fisher
 #+date: 2024-05-11
 #+options: toc:nil h:4
-#+startup: showeverything
+#+startup: showall
 #+visibility: all
 #+property: header-args:emacs-lisp :tangle ./init.el :results silent :exports code :mkdirp yes
 #+modified-date: <2024-10-16 Wed>
@@ -20,6 +20,8 @@ While I'm trying to make a config that appeals to other people, most of what you
 So far, the following collections of options are included here:
 
 :Features:
+#+visibility: folded
+
 - Landing Screen Options ::
   + Dashboard
   + IELM (Integrated Emacs Lisp Mode)
@@ -45,7 +47,6 @@ So far, the following collections of options are included here:
   + Stand-alone LSP
   + Merlin / Tuareg for OCaml
   + LSP Bridge (experimental)
-  + Anaconda-mode for Python
     
 - Project Options
   + Projectile
@@ -60,7 +61,7 @@ So far, the following collections of options are included here:
   + Golden Ratio
   + Embark
   + Customizable Menu (MmM)
-:END:
+:end:
 
 --------------------------------------------------------------------------------
 
@@ -87,7 +88,8 @@ So far, the following collections of options are included here:
 ** Tried Ideas
   Some of the ideas that keep coming back and then leaving. It's worth while to keep a record of the ideas that have/were implemented at one point along with an outcome.
 
-:properties:
+:Tried-ideas:
+#+visibility: folded
 
   1. Going between using ~elpaca~ or ~straight~ and just using plain Emacs ~use-package~.
      * I like the performancs of ~elpaca~ but I've sometimes run into issues when it fails to install packages where plain ~use-package~ would not fail. =:ensure= with a repo doesn't always help either.
@@ -106,15 +108,14 @@ So far, the following collections of options are included here:
 :end:
 
 * Early init file
-:properties:
-:custom_id: h:early-init-file
-:end:
+#+custom_id: h:early-init-file
 
 This is where all of the settings/setup goes for the ~early-init.el~ file.
 
 ** Lispy Header for early-init.el
-:properties:
-:custom_id: l:lisp-header-for-early-init
+:lispy-header:
+#+custom_id: l:lisp-header-for-early-init
+#+visibility: folded
 
 Standard fare and good practice.
 
@@ -135,25 +136,17 @@ Standard fare and good practice.
 #+end_src
 :end:
 ** Package archives
-:properties:
-:custom_id: l:early-init-package-archives
+:archives:
+#+custom_id: l:early-init-package-archives
+#+visibility: folded
 
 #+begin_src emacs-lisp :tangle "early-init.el" 
   ;;; ##########################################################################
-  ;;; Set high for initial startup
-  (setq gc-cons-threshold (* 1024 1024 100))
-  (setq gc-cons-percentage 0.3)
-
-  (setq package-enable-at-startup t)
-
-  ;; Process performance tuning
-
-  (setq read-process-output-max (* 64 1024))
-  (setq process-adaptive-read-buffering nil)
-
   (setq package-vc-register-as-project nil) ; Emacs 30
   (add-hook 'package-menu-mode-hook #'hl-line-mode)
 
+  (setq package-enable-at-startup t)
+  
   ;; This allows for a set of PROXY variables/settings to be loaded before
   ;; we actually begin the load.
   (let
@@ -194,6 +187,7 @@ Standard fare and good practice.
 :end:
 ** Version check and early init stuff
 :properties:
+#+visibility: folded
 
 #+begin_src emacs-lisp :tangle "early-init.el"
   ;;; ##########################################################################
@@ -229,40 +223,41 @@ Standard fare and good practice.
   ;; (use-package recentf :ensure nil :demand t)
   (use-package recentf :ensure nil :demand t)
 
+  ;;
+  ;; For use-package-always-ensure to t If the 'elpa' directory is missing.
+  ;; It's a simple way to more intelligently determine if packages should
+  ;; more aggressively be required. The good thing is that the user doesn't
+  ;; have to manually change the value just for a clean install.
+  ;;
+  (if (file-directory-p (expand-file-name "elpa" user-emacs-directory))
+    (setq use-package-always-ensure nil)
+    (setq use-package-always-ensure t))
+
   (setq use-package-compute-statistics t
     use-package-verbose t
-    use-package-always-ensure nil
     use-package-always-demand nil
     use-package-always-defer nil)
 
 #+end_src
 
 :end:
-
-** Garbage Collection
-:properties:
-
-#+begin_src emacs-lisp :tangle "early-init.el" 
-
-  ;; (use-package gcmh
-  ;;   :delight gcmh-mode
-  ;;   :config
-  ;;   (setq gcmh-idle-delay 5
-  ;;     gcmh-high-cons-threshold (* 100 1024 1024))      ; 100mb
-  ;;   (gcmh-mode 1))
-
-#+end_src
-:end:
-** Calculate startup time and restore gc-cons-percentage
-:properties:
+** GC and Performance Tuning
+:gc-and-tuning:
+#+visibility: folded
 
 #+begin_src emacs-lisp :tangle "early-init.el"
+  ;;; ##########################################################################
+  ;;; Set high for initial startup
+  (setq gc-cons-threshold (* 1024 1024 100))
+  (setq gc-cons-percentage 0.3)
+
+  ;; Process performance tuning
+
+  (setq read-process-output-max (* 64 1024))
+  (setq process-adaptive-read-buffering nil)
 
   (add-hook 'emacs-startup-hook
     (lambda ()
-      ;; Reset gc values to more-or-less defaul values after startup
-      (setq gc-cons-threshold 800000)
-      (setq gc-cons-percentage 0.1)
       (setq startup-time-message
         (format "Emacs read in %.2f seconds with %d garbage collections."
           (float-time (time-subtract after-init-time before-init-time))
@@ -271,8 +266,9 @@ Standard fare and good practice.
 
 #+end_src
 :end:
-** Establish PATH
+** Establish PATHs
 :properties:
+#+visibility: folded
 
 Because in macOS, Emacs could be started outside of a shell (like an application on the Dock), this code is used to migrate the <current user's shell path to Emacs ~exec-path~.
 
@@ -354,14 +350,15 @@ This is the standard format of a =lisp= header that should appear for all =lisp=
 
 #+end_src
 :end:
-
 ** Package Manager
+:properties:
+#+visibility: folded
 
 Contrary to what some users might think, =use-package= is not a package
 manager. To download and use packages that are not available in package sources,
 I use [[https://github.com/raxod502/straight.el][straight]]. The snippet below takes care of installing =straight=.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   ;; Bootstrap straight
   (defvar bootstrap-version)
   (let ((bootstrap-file
@@ -380,8 +377,10 @@ I use [[https://github.com/raxod502/straight.el][straight]]. The snippet below t
   ;; `:straight' expression.
   (straight-use-package 'use-package)
 #+end_src
-
+:end:
 ** Better Defaults
+:properties:
+#+visibility: folded
 
 These are global variables that effect the behavior of Emacs in general. These values represent a better set of defaults than the standard, vanilla values.
 
@@ -412,6 +411,7 @@ These are global variables that effect the behavior of Emacs in general. These v
     vc-follow-symlinks t                             ; Always follow the symlinks
     view-read-only t                                 ; Always open read-only buffers in view-mode
     visible-bell t)                                  ; Set up the visible bell
+  
   (column-number-mode 1)                             ; Show the column number
   (fset 'yes-or-no-p 'y-or-n-p)                      ; Replace yes/no prompts with y/n
   ;; (global-hl-line-mode)                              ; Hightlight current line
@@ -419,12 +419,9 @@ These are global variables that effect the behavior of Emacs in general. These v
   (show-paren-mode 1)                                ; Show the parent
   ;; Rebind C-z/C-. to act like vim's repeat previous command ( . )
   (unbind-key "C-z")
-  (bind-key "C-." 'repeat)
-  (bind-key "C-z" 'repeat-complex-command)
-
+  (bind-key "C-z" 'repeat)
 
 #+end_src
-
 
 #+begin_src emacs-lisp :tangle no
 
@@ -435,7 +432,6 @@ These are global variables that effect the behavior of Emacs in general. These v
     dired-dwim-target t       ;; try to guess target directory
     frame-inhibit-implied-resize t
     frame-resize-pixelwise t
-    frame-title-format '("%b")
     global-auto-revert-mode 1 ;; Refresh buffer if file has changed
     global-eldoc-mode t       ;; Enabled in all buffers
     sentence-end-double-space nil
@@ -456,13 +452,16 @@ These are global variables that effect the behavior of Emacs in general. These v
   (setq-default debug-adapter 'debug-adapter-dap-mode)
 
 #+end_src
-
+:end:
 * Customizable Values
 
 Variables that define the operational behavior of this Emacs installation. These can be accessed via the built-in Customize menus.
 
 ** Customization groups
 These are the groups used by this Emacs config for customization.
+
+:MiFi-Groups:
+#+visibility: 
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
@@ -491,9 +490,12 @@ These are the groups used by this Emacs config for customization.
   (defconst *is-a-mac* (eq system-type 'darwin))
 
 #+end_src
+:END:
 
 ** File Locations and Variables
-:properties:
+:MiFi-directories:
+#+visibility: folded
+
 #+begin_src emacs-lisp
    ;;; ##########################################################################
 
@@ -526,18 +528,30 @@ These are the groups used by this Emacs config for customization.
     :type 'string
     :group 'mifi-config)
 
-  (defcustom custom-org-fill-column 120
-    "The fill column width for Org mode text.
-       Note that the text is also centered on the screen so that should
-       be taken into consideration when providing a width."
-    :type 'natnum
-    :group 'mifi-config)
+  #+end_src
+:end:
 
+:MiFi-config-values:
+#+visibility: folded
+
+#+begin_src emacs-lisp
+
+    (defcustom custom-org-fill-column 120
+      "The fill column width for Org mode text. Note that the text is also centered
+    on the screen so that should be taken into consideration when providing a
+    width."
+      :type 'natnum
+      :group 'mifi-config)
+    
 #+end_src
 :end:
+
 ** Custom Package Toggles
-:properties:
+
 Thes values toggle the availability of specific packages. These options are not grouped together as can be done with the =mifi-config-features= group so are all separate values.
+
+:MiFi-feature-toggles:
+#+visibility: folded
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
@@ -603,9 +617,13 @@ Thes values toggle the availability of specific packages. These options are not 
 
 #+end_src
 :end:
+
 ** Feature selections
-:properties:
+
 These are features that basically have multiple-choice options instead of being a typical binary t or nil.
+
+:MiFi-feature-selection:
+#+visibility: folded
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
@@ -736,12 +754,13 @@ These are features that basically have multiple-choice options instead of being 
     :group 'mifi-config-features)
 
 #+end_src
-
-#+INLCLUDE: org-incl/project.el src org
 :end:
 ** Theme Specific Values
 
 This is a curated selection of themes that I personally like. Most of them are dark mode but there are a few light versions. New themes can be added here or done via the =customize= interface. If a new theme is added to this list, it's important to ensure that the theme is actually included (see [[Color Theming][Color Theming]] section)
+
+:MiFi-Theming:
+#+visibility: folded
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
@@ -787,9 +806,25 @@ This is a curated selection of themes that I personally like. Most of them are d
     :type 'string
     :group 'mifi-config-fonts)
 
-  (defcustom variable-pitch-font-family "Helvetica"
+  (defcustom variable-pitch-font-family "JetBrains Mono"
     "The font family used as the default proportional font."
     :type 'string
+    :group 'mifi-config-fonts)
+
+  (defcustom variable-pitch-font-weight 'light
+    "The 'suggested' weight of the variable-pitch-font. The reason that it is
+  suggested is that the font family may not support one of the weight values
+  listed below."
+    :type '(radio
+             (const :tag "ultra-bold" ultra-bold)
+             (const :tag "extra-bold" extra-bold)
+             (const :tag "bold" bold)
+             (const :tag "semi-bold" semi-bold)
+             (const :tag "normal" normal)
+             (const :tag "semi-light" semi-light)
+             (const :tag "light" light)
+             (const :tag "extra-light" extra-light)
+             (const :tag "ultra-light" ultra-light))
     :group 'mifi-config-fonts)
 
   (defcustom small-mono-font-size 150
@@ -846,10 +881,14 @@ This is a curated selection of themes that I personally like. Most of them are d
     "Set to true if the last Theme was loaded.")
 
 #+end_src
+:end:
 
 *** Verify Default variable-pitch Font
 
 Look for a proportional font that is available on the OS. If the actual default font isn't available, find another that will work instead.
+
+:MiFi-validate-prop-font-func:
+#+visibility: folded
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
@@ -875,10 +914,14 @@ Look for a proportional font that is available on the OS. If the actual default 
       (message (format ">>> variable-pitch font is %s" variable-pitch-font-family))))
 
 #+end_src
+:end:
 
 *** Verify Default monospace / default font
 
 Look for a proportional font that is available on the OS. If the actual default font isn't available, find another that will work instead.
+
+:MiFi-validate-mono-font-func:
+#+visibility: folded
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
@@ -902,6 +945,7 @@ Look for a proportional font that is available on the OS. If the actual default 
       (message (format ">>> monospace font is %s" mono-spaced-font-family))))
   
 #+end_src
+:end:
 
 * General Configuration
 
@@ -911,7 +955,23 @@ Setup initial paths, global values and settings, and Emacs working directories.
 
 By default, the =user-emacs-directory= points to the .emacs.d* directory from which the =init.el= is used when Emacs starts. What this means is that any package that writes to this directory will be writing files to this initialization directory. Since we want to keep this directory clean, we set this directory to something external. A new variable, =emacs-config-directory= is set to now point to the starting Emacs condfiguration directory.
 
+*** F
+
+This is the excellent 'F' package. This is a more "friendly/modern" API for working with files and directories in Emacs.
+
+#+begin_src emacs-lisp
+
+    ;;; ##########################################################################
+
+  (use-package f
+    :ensure t :demand t)
+
+#+end_src
+
 *** Dirs
+:Emacs-directories:
+#+visibility: folded
+
 #+begin_src emacs-lisp
   ;;; ##########################################################################
 
@@ -960,12 +1020,16 @@ By default, the =user-emacs-directory= points to the .emacs.d* directory from wh
   (mifi/validate-monospace-font)
 
 #+end_src
+:end:
 
 ** Automatic Package Updates
 
 The auto-package-update package helps us keep our Emacs packages up to date! It will prompt you after a certain number of days either at startup or at a specific time of day to remind you to update your packages.
 
 You can also use =M-x auto-package-update-now= to update right now!
+
+:auto-package-update:
+#+visibility: folded
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
@@ -984,10 +1048,14 @@ You can also use =M-x auto-package-update-now= to update right now!
     (auto-package-update-at-time "09:00"))
 
 #+end_src
+:end:
 
 ** Which Key
 
 [[Https://github.com/justbur/emacs-which-key][which-key]] is a useful UI panel that appears when you start pressing any key binding in Emacs to offer you all possible completions for the prefix. For example, if you press =C-c= (hold control and press the letter =c=), a panel will appear at the bottom of the frame displaying all of the bindings under that prefix and which command they run. This is very useful for learning the possible key bindings in the mode of your current buffer.
+
+:which-key-config:
+#+visibility: folded
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
@@ -1025,19 +1093,21 @@ You can also use =M-x auto-package-update-now= to update right now!
     (add-hook 'after-init-hook #'mifi/after-which-key))
 
 #+end_src
+:end:
 
 ** Additional Search Paths
 
 This directory is expected to be in the ~emacs-config-direcory~ dir. This can be used to store custom lisp (or non-elpa/melpa) files that can'tbe found by =require.el= or =straight-use-package=.
 
+:additional-search-paths:
+#+visibility: folded
+
 #+begin_src emacs-lisp
   ;;; ##########################################################################
 
-  (use-package f
-    :ensure t :demand t
-    :config
-    (let ((epath (f-dirname
+  (let ((epath (f-dirname
                  (expand-file-name invocation-name invocation-directory))))
+    (when (file-directory-p (format "%s/bin" epath))
       (add-to-list 'exec-path (format "%s:%s/bin" epath epath))
       (mifi/setup-path-from-exec-path)))
 
@@ -1046,10 +1116,14 @@ This directory is expected to be in the ~emacs-config-direcory~ dir. This can be
   (add-to-list 'custom-theme-load-path (expand-file-name "Themes" custom-docs-directory))
 
 #+end_src
+:end:
 
 *** Add site-lisp entries to load-path
 
 The =site-lisp= directory in the ~emacs-config-directory~ can hold local (site) specific packages that are not available through the standard package archives.
+
+:include-site-lisp:
+#+visibility: folded
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
@@ -1068,10 +1142,14 @@ The =site-lisp= directory in the ~emacs-config-directory~ can hold local (site) 
             load-path)))))
 
 #+end_src
+:end:
 
 ** Save History
 
 Keeps a persistent history file across Emacs restarts. It's also saved into the ~user-emacs-directory~ so it's not tied to a specific Emacs installation directory.
+
+:save-history:
+#+visibility: folded
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
@@ -1087,10 +1165,13 @@ Keeps a persistent history file across Emacs restarts. It's also saved into the 
        regexp-search-ring))
 
 #+end_src
+:end:
 
 ** Better Modes
 
 Calls to mode functions that effect various Emacs behavior.
+:better-modes:
+#+visibility: folded
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
@@ -1126,10 +1207,14 @@ Calls to mode functions that effect various Emacs behavior.
       ad-do-it))
 
 #+end_src
+:end:
 
 ** Delight
 
 Delight enables you to customise the mode names displayed in the mode line. It's different from =diminish= in that this can be configured to work with both major and minor modes.
+
+:delight-config:
+#+visibility: folded
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
@@ -1157,13 +1242,18 @@ Delight enables you to customise the mode names displayed in the mode line. It's
     :config (mifi/delight-config))
 
 #+end_src
+:END:
 
-*** Configure 'paren' mode
+** Configure 'paren' mode
+
+This package is used to highlight matching delimters '( { [ < > ] } )
+
+:paren-mode-config:
+#+visibility: folded
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
 
-  ;; Used to highlight matching delimiters '( { [ ] } )
   (use-package paren
     :ensure nil
     :custom
@@ -1176,14 +1266,19 @@ Delight enables you to customise the mode names displayed in the mode line. It's
     (show-paren-mode 1))
 
 #+end_src
+:END:
 
 ** Save / Restore Frameset
 
 These functions will save and restore Emacs framework. These are normally called when starting and exiting Emacs.
 
+:save-restore-frameset:
+#+visibility: folded
+
 #+begin_src emacs-lisp
   ;;; ##########################################################################
 
+  
   (defun mifi/save-desktop-frameset ()
     (unless (or (daemonp)
               (not enable-frameset-restore)
@@ -1217,23 +1312,41 @@ These functions will save and restore Emacs framework. These are normally called
           (use-medium-display-font t)))))
 
 #+end_src
+:END:
 
-** Some Common Registers
+** Some Helpful Registers and Aliases
 
 This local package defines some commonly used registers. Registers need to be loaded after the initial happens hence the call to initialize the registers via a hook.
+
+#+begin_src emacs-lisp
+
+  (defun mifi/setup-helpful-aliases ()
+    "Define some helpful aliases."
+    (defalias 'visibility-folded
+      (kmacro "# + v i s i b i l i t y : SPC f o l d e d <return>")))
+
+#+end_src
 
 #+begin_src emacs-lisp
 
   (defun mifi/setup-common-registers ()
     "Define some common registers."
     (setq register-preview-delay 0) ;; Show registers ASAP
-    (set-register ?o (cons 'file (concat emacs-config-directory "emacs-config-elpa.org")))
-    (set-register ?O (cons 'file (concat emacs-config-directory "emacs-config-elpaca.org")))
+    (setq reg-elpa '?c
+          reg-elpaca '?C)
+    (set-register reg-elpa (cons 'file (concat emacs-config-directory "emacs-config-elpa.org")))
+    (set-register reg-elpaca (cons 'file (concat emacs-config-directory "emacs-config-elpaca.org")))
     (set-register ?G '(file . "~/Developer/game-dev/GB_asm"))
     (set-register ?S (cons 'file (concat emacs-config-directory "org-files/important-scripts.org"))))
 
-  (add-hook 'after-init-hook
-    (lambda () (mifi/setup-common-registers)))
+  #+end_src
+  
+  #+begin_src emacs-lisp
+
+    (add-hook 'after-init-hook
+      (lambda ()
+        (mifi/setup-helpful-aliases)
+        (mifi/setup-common-registers)))
 
 #+end_src
 
@@ -1330,6 +1443,7 @@ These are key-bindings that are done at a global level.
   (add-hook 'emacs-startup-hook #'mifi/setup-global-keybindings)
 
 #+end_src
+
 
 * Universal Packages
 
@@ -1507,6 +1621,7 @@ The Hydra is vanquished once Hercules, any binding that isn't the Hydra's head, 
 
 #+begin_src emacs-lisp
   (use-package major-mode-hydra
+    :ensure t
     :after hydra
     :preface
     (defun with-alltheicon (icon str &optional height v-adjust face)
@@ -1543,7 +1658,7 @@ Group clock commands
     (pretty-hydra-define hydra-clock
       (:hint nil :color teal :quit-key "q" :title (with-faicon "clock-o" "Clock" 1 -0.05))
       ("Action"
-        (("c" org-clock-cancel "cancel")
+        ( ("c" org-clock-cancel "cancel")
           ("d" org-clock-display "display")
           ("e" org-clock-modify-effort-estimate "effort")
           ("i" org-clock-in "in")
@@ -1564,7 +1679,7 @@ Group Magit commands.
     (pretty-hydra-define hydra-magit
       (:hint nil :color teal :quit-key "q" :title (with-octicon "mark-github" "Magit" 1 -0.05))
       ("Action"
-        (("b" magit-blame "blame")
+        ( ("b" magit-blame "blame")
           ("c" magit-clone "clone")
           ("i" magit-init "init")
           ("l" magit-log-buffer-file "commit log (current file)")
@@ -1583,8 +1698,8 @@ Group Common Register commands.
     (pretty-hydra-define hydra-registers
       (:hint nil :color teal :quit-key "q" :title (with-faicon "thumb-tack" "Registers" 1 -0.05))
       ("Action"
-        ( ("o" (jump-to-register ?o) "macs-config-elpa.org")
-          ("O" (jump-to-register ?O) "emacs-config-elpaca.org")
+        ( ("o" (jump-to-register reg-elpa) "open emacs-config-elpa.org")
+          ("O" (jump-to-register reg-elpaca) "open emacs-config-elpaca.org")
           ("S" (jump-to-register ?S) "Scripts")
           ("G" (jump-to-register ?G) "GameBoy Asm Root")))
       ))
@@ -1888,18 +2003,6 @@ Dashboard is an extensible Emacs startup screen showing you what’s most import
       (setq dashboard-projects-backend 'projectile))
     (setq dashboard-startup-banner (expand-file-name "Emacs-modern-is-sexy-v1.png" user-emacs-directory))
     (dashboard-setup-startup-hook))
-
-#+end_src
-
-** Local packages
-
-These are packages located in the ~"lisp"~ directory within the emacs-config-directory. This is a dedicated area to use in order to load/configure these packages if so desired. Not required, just a convenience.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-  ;; These are packages located in the site-lisp or lisp directories in the
-  ;; 'emacs-config-directory'
-
 
 #+end_src
 
@@ -2747,7 +2850,10 @@ For more thoughts on Eshell, check out these articles by Pierre Neidhardt:
 Dired is a built-in file manager for Emacs that does some pretty amazing things! Here are some key bindings you should try out:
 
 **** Key Binding Instructions
-***** Navigation
+:properties:
+#+visibility: folded
+
++ ***** Navigation
 *Emacs* / *Evil*
 - =n= / =j= - next line
 - =p= / =k= - previous line
@@ -2760,7 +2866,7 @@ Dired is a built-in file manager for Emacs that does some pretty amazing things!
 - =g= / =g r= Refresh the buffer with =revert-buffer= after changing
   configuration (and after filesystem changes!)
 
-***** Marking files
++ ***** Marking files
 - =m= - Marks a file
 - =u= - Unmarks a file
 - =U= - Unmarks all files in buffer
@@ -2771,7 +2877,7 @@ Dired is a built-in file manager for Emacs that does some pretty amazing things!
   back)
 - Many operations can be done on a single file if there are no active marks!
 
-***** Copying and Renaming files
++ ***** Copying and Renaming files
 - =C= - Copy marked files (or if no files are marked, the current file)
 - Copying single and multiple files
 - =U= - Unmark all files in buffer
@@ -2782,25 +2888,26 @@ Dired is a built-in file manager for Emacs that does some pretty amazing things!
 the buffer editable directly to rename them! Press =Z Z= to confirm renaming or
 =Z Q= to abort.
 
-***** Deleting files
++ ***** Deleting files
 - =D= - Delete marked file
 - =d= - Mark file for deletion
 - =x= - Execute deletion for marks
 - =delete-by-moving-to-trash= - Move to trash instead of deleting permanently
 
-***** Creating and extracting archives
++ ***** Creating and extracting archives
 - =Z= - Compress or uncompress a file or folder to (=.tar.gz=)
 - =c= - Compress selection to a specific file
 - =dired-compress-files-alist= - Bind compression commands to file extension
 
-***** Other common operations
++ ***** Other common operations
 - =T= - Touch (change timestamp)
 - =M= - Change file mode
 - =O= - Change file owner
 - =G= - Change file group
 - =S= - Create a symbolic link to this file
 - =L= - Load an Emacs Lisp file into Emacs
-  
+:end:
+
 **** Use =gls= for dired on macOS
 
 #+begin_src emacs-lisp
@@ -2889,7 +2996,7 @@ This package provides a way to reuse the current dired buffer to visit another d
 
 #+begin_src emacs-lisp
   (use-package dired-single
-    (dired-single :type git :host github :repo "emacsattic/dired-single")
+    :ensure nil ;; Package installed in local 'lisp' directory
     :after dired
     :bind (:map dired-mode-map
                 ([remap dired-find-file] . dired-single-buffer)
@@ -3337,7 +3444,7 @@ This function loads the theme from the =theme-list= indexed by =theme-selector=.
 
 *** Color Theming
 
-Color Theming (or just <<<theming>>>) is a curated list of theming packages.
+Color Theming (or just theming) is a curated list of theming packages.
 *Note:* If new themes are added in the ~theme-list~ custom variable then they must be included here along with any customizations.
 
 #+begin_src emacs-lisp
@@ -3523,7 +3630,7 @@ A better version of variable-pitch mode. This keeps certain faces (defined in mi
     (set-face-attribute 'variable-pitch nil
       :family variable-pitch-font-family
       :height (+ custom-default-font-size 20)
-      :weight 'medium))
+      :weight variable-pitch-font-weight))
 
   ;; This is done so that the Emacs window is sized early in the init phase along
   ;; with the default font size. Startup works without this but it's nice to see
@@ -3541,7 +3648,7 @@ A better version of variable-pitch mode. This keeps certain faces (defined in mi
 
 #+end_src
 
-*** Track Slected Front Size
+*** Track Selected Front Size
 
 The functions in the list =after-setting-font-hook= are called whenever the frame's font changes. In order to save this value, we capture it and store it in the =custom-default-font-size= custom variable. This variable is saved whenver Emacs exists. Then, when Emacs is started again, the default and fixed-pitch font height values are set to =custom-default-font-size=. The variable pitch font is computed as ~(+ custom-default-font-size 20)~
 
@@ -6363,4 +6470,3 @@ This is normally installed as part of the ocaml / Merlin setup. This is added he
 # Local Variables:
 # jinx-local-words: "Elpaca Flycheck Treesit el init"
 # End:
-

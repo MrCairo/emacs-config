@@ -12,19 +12,10 @@
 ;;; Code:
 
 ;;; ##########################################################################
-;;; Set high for initial startup
-(setq gc-cons-threshold (* 1024 1024 100))
-(setq gc-cons-percentage 0.3)
-
-(setq package-enable-at-startup t)
-
-;; Process performance tuning
-
-(setq read-process-output-max (* 64 1024))
-(setq process-adaptive-read-buffering nil)
-
 (setq package-vc-register-as-project nil) ; Emacs 30
 (add-hook 'package-menu-mode-hook #'hl-line-mode)
+
+(setq package-enable-at-startup t)
 
 ;; This allows for a set of PROXY variables/settings to be loaded before
 ;; we actually begin the load.
@@ -88,24 +79,33 @@
 ;; (use-package recentf :ensure nil :demand t)
 (use-package recentf :ensure nil :demand t)
 
+;;
+;; For use-package-always-ensure to t If the 'elpa' directory is missing.
+;; It's a simple way to more intelligently determine if packages should
+;; more aggressively be required. The good thing is that the user doesn't
+;; have to manually change the value just for a clean install.
+;;
+(if (file-directory-p (expand-file-name "elpa" user-emacs-directory))
+  (setq use-package-always-ensure nil)
+  (setq use-package-always-ensure t))
+
 (setq use-package-compute-statistics t
   use-package-verbose t
-  use-package-always-ensure nil
   use-package-always-demand nil
   use-package-always-defer nil)
 
-;; (use-package gcmh
-;;   :delight gcmh-mode
-;;   :config
-;;   (setq gcmh-idle-delay 5
-;;     gcmh-high-cons-threshold (* 100 1024 1024))      ; 100mb
-;;   (gcmh-mode 1))
+;;; ##########################################################################
+;;; Set high for initial startup
+(setq gc-cons-threshold (* 1024 1024 100))
+(setq gc-cons-percentage 0.3)
+
+;; Process performance tuning
+
+(setq read-process-output-max (* 64 1024))
+(setq process-adaptive-read-buffering nil)
 
 (add-hook 'emacs-startup-hook
   (lambda ()
-    ;; Reset gc values to more-or-less defaul values after startup
-    (setq gc-cons-threshold 800000)
-    (setq gc-cons-percentage 0.1)
     (setq startup-time-message
       (format "Emacs read in %.2f seconds with %d garbage collections."
         (float-time (time-subtract after-init-time before-init-time))
