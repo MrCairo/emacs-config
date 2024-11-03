@@ -938,14 +938,14 @@ font size is computed + 20 of this value."
       ( ("+" next-theme "Next theme")
         ("-" previous-theme "Previous Theme")
         ("=" which-theme "Display Current Theme")
-        ("S" use-small-display-font "Small Font with resize")
-        ("M" use-medium-display-font "Medium Font with resize")
-        ("L" use-large-display-font "Large Font with resize")
-        ("X" use-x-large-display-font "X-Large Font with resize")
-        ("s" (use-small-display-font t) "Small Font without resize")
-        ("m" (use-medium-display-font t) "Medium Font without resize")
-        ("l" (use-large-display-font t) "Large Font without resize")
-        ("x" (use-x-large-display-font t) "X-Large Font without resize")) )))
+        ("S" use-small-display-font "Small Font without resize")
+        ("M" use-medium-display-font "Medium Font without resize")
+        ("L" use-large-display-font "Large Font without resize")
+        ("X" use-x-large-display-font "X-Large Font without resize")
+        ("s" (use-small-display-font t) "Small Font with resize")
+        ("m" (use-medium-display-font t) "Medium Font with resize")
+        ("l" (use-large-display-font t) "Large Font with resize")
+        ("x" (use-x-large-display-font t) "X-Large Font with resize")) )))
 
 (defun mifi/hydra-combine ()
   (pretty-hydra-define hydra-combine
@@ -956,38 +956,6 @@ font size is computed + 20 of this value."
     ))
 
 ;;; ^^^ ;;;
-
-;;; ##########################################################################
-
-(use-package multiple-cursors
-  :ensure t
-  :bind (("C-S-c C-S-c" . mc/edit-lines)
-          ("C->" . mc/mark-next-like-this)
-          ("C-<" . mc/mark-previous-like-this)
-          ("C-c C-<" . mc/mark-all-like-this)))
-
-;;; ##########################################################################
-
-(use-package visual-fill-column
-  :ensure nil ;; Should be installed in the local lisp dir.
-  :defer t
-  :after org)
-
-;;; ##########################################################################
-
-(use-package writeroom-mode
-  :ensure t
-  :defer t
-  :init
-  (setq writeroom-width visual-fill-column-width)
-  :after visual-fill-column)
-
-;;; ##########################################################################
-;;; Default keys are C-M-= or C-M--
-
-(use-package default-text-scale
-  :ensure t
-  :hook (after-init . default-text-scale-mode))
 
 ;;; ##########################################################################
 ;; YASnippets
@@ -1013,30 +981,6 @@ font size is computed + 20 of this value."
 (use-package yasnippet-snippets
   :ensure t
   :after yasnippet)
-
-;;; ##########################################################################
-
-(use-package all-the-icons :ensure t)
-
-;;; ##########################################################################
-
-(use-package ace-window
-  :ensure t
-  :bind ("M-o" . ace-window))
-
-;;; ##########################################################################
-;;; Window Number
-
-(use-package winum
-  :ensure t
-  :config (winum-mode))
-
-;;; ##########################################################################
-
-(use-package init-windows ;; From purcell
-  :ensure nil
-  :demand t
-  :hook (after-init . winner-mode))
 
 ;;; ##########################################################################
 
@@ -1908,178 +1852,20 @@ This only runs for ripgrep results"
 
 ;;; ##########################################################################
 
-;;
-;; 1. The function `mifi/load-theme-from-selector' is called from the
-;;    "C-= =" Keybinding (just search for it).
-;;
-;; 2. Once the new theme is loaded via the `theme-selector', the previous
-;;    theme is unloaded (or disabled) the function(s) defined in the
-;;    `disable-theme-functions' hook are called (defined in the load-theme.el
-;;    package).
-;;
-;; 3. The function `mifi/cycle-theme-selector' is called by the hook. This
-;;    function increments the theme-selector by 1, cycling the value to 0
-;;    if beyond the `theme-list' bounds.
-;;
-(setq-default loaded-theme (nth theme-selector theme-list))
-(add-to-list 'savehist-additional-variables 'loaded-theme)
-(add-to-list 'savehist-additional-variables 'custom-default-font-size)
-(add-to-list 'savehist-additional-variables 'theme-selector)
-(add-to-list 'savehist-additional-variables 'custom-default-mono-font-size)
+(use-package ace-window
+  :ensure t
+  :bind ("M-o" . ace-window))
 
-;;; vvv ;;;
+;;; ##########################################################################
 
-(defun mifi/cycle-theme-selector (&rest theme)
-  "Cycle the `theme-selector' by 1, resetting to 0 if beyond array bounds."
-  (interactive)
-  (when (not (eq theme-cycle-step nil))
-    (let ((step theme-cycle-step) (result 0))
-      (when step
-        (setq result (+ step theme-selector))
-        (when (< result 0)
-          (setq result (- (length theme-list) 1)))
-        (when (> result (- (length theme-list) 1))
-          (setq result 0)))
-      (setq-default theme-selector result))))
+(use-package all-the-icons :ensure t)
 
-;; This is used to trigger the cycling of the theme-selector
-;; It is called when a theme is disabled. The theme is disabled from the
-;; `mifi/load-theme-from-selector' function.
-(add-hook 'disable-theme-functions #'mifi/cycle-theme-selector)
+;;; ##########################################################################
+;;; Default keys are C-M-= or C-M--
 
-(defun mifi/reset-if-spacious-padding-mode ()
-  (interactive)
-  (when-let ((spm? (featurep 'spacious-padding))
-            (spm-on-off (default-value 'spacious-padding-mode)))
-    (spacious-padding-mode 0)
-    (run-with-timer 0.2 nil
-      (lambda (on-off) (spacious-padding-mode on-off)) spm-on-off)))
-
-(defun mifi/load-theme-from-selector (&optional step)
-  "Load the theme in `theme-list' indexed by `theme-selector'."
-  (interactive)
-  ;; Save value of spacious-padding-mode
-  (setq theme-cycle-step nil)
-  (cond
-    ((or (eq step nil) (eq step 0)) (setq theme-cycle-step 0))
-    ((> step 0) (setq theme-cycle-step 1))
-    ((< step 0) (setq theme-cycle-step -1)))
-  (when loaded-theme
-    (disable-theme (intern loaded-theme)))
-  (setq loaded-theme (nth theme-selector theme-list))
-  (setq theme-did-load (load-theme (intern loaded-theme) t))
-  (when (featurep 'org)
-    (mifi/org-font-setup))
-  (mifi/reset-if-spacious-padding-mode)
-  (set-face-foreground 'line-number "SkyBlue4"))
-
-(defun mifi/print-custom-theme-name ()
-  "Print the current loaded theme from the `theme-list' on the modeline."
-  (interactive)
-  (message (format "Custom theme is %S" loaded-theme)))
-
-;; Quick Helper Functions
-(defun next-theme ()
-  "Go to the next theme in the list."
-  (interactive)
-  (mifi/load-theme-from-selector 1))
-
-(defun previous-theme ()
-  "Go to the next theme in the list."
-  (interactive)
-  (mifi/load-theme-from-selector -1))
-
-(defun which-theme ()
-  "Go to the next theme in the list."
-  (interactive)
-  (mifi/print-custom-theme-name))
-
-(bind-keys
-  ;; Go to NEXT theme
-  ("M-RET =" . next-theme)
-  ;; Go to PREVIOUS theme
-  ("M-RET -" . previous-theme)
-  ;; Message current theme
-  ("M-RET _" . which-theme))
-
-(defun mifi/org-theme-override-values ()
-  (defface org-block-begin-line
-    '((t (:underline "#1D2C39" :foreground "SlateGray" :background "#1D2C39")))
-    "Face used for the line delimiting the begin of source blocks.")
-
-  (defface org-block
-    '((t (:background "#242635" :extend t :font "Avenir Next")))
-    "Face used for the source block background.")
-
-  (defface org-block-end-line
-    '((t (:overline "#1D2C39" :foreground "SlateGray" :background "#1D2C39")))
-    "Face used for the line delimiting the end of source blocks.")
-
-  (defface org-modern-horizontal-rule
-    '((t (:strike-through "green" :weight bold)))
-    "Face used for the Horizontal like (-----)"))
-
-(defun mifi/customize-modus-theme ()
-  (when (featurep 'org)
-    (mifi/org-font-setup))
-  (setq modus-themes-common-palette-overrides
-    '((bg-mode-line-active bg-blue-intense)
-       (fg-mode-line-active fg-main)
-       (border-mode-line-active blue-intense))))
-
-(add-hook 'after-init-hook 'mifi/customize-modus-theme)
-
-(defun mifi/customize-ef-theme ()
-  (defface ef-themes-fixed-pitch
-    '((t (:background "#242635" :extend t :font "Courier New")))
-    "Face used for the source block background.")
-  (when (featurep 'org)
-    (mifi/org-font-setup))
-  (setq ef-themes-common-palette-override
-    '( (bg-mode-line bg-blue-intense)
-       (fg-mode-line fg-main)
-       (border-mode-line-active blue-intense))))
-;;(add-hook 'org-load-hook 'mifi/customize-ef-theme)
-(add-hook 'after-init-hook 'mifi/customize-ef-theme)
-
-(add-to-list 'custom-theme-load-path (expand-file-name "Themes" custom-docs-directory))
-(add-to-list 'custom-theme-load-path (expand-file-name "lisp" emacs-config-directory))
-
-(mifi/org-theme-override-values)
-(use-package tron-legacy-theme :defer t :ensure t)
-(use-package ef-themes :init (mifi/customize-ef-theme) :defer t :ensure t)
-(use-package modus-themes :init (mifi/customize-modus-theme) :defer t :ensure t)
-(use-package material-theme :defer t :ensure t)
-(use-package color-theme-modern :defer t :ensure t)
-(use-package color-theme-sanityinc-tomorrow :defer t :ensure t)
-;; Can't defer darktooth since we need the base theme to always load
-(use-package darktooth-theme :ensure t)
-(use-package zenburn-theme :defer t :ensure t)
-
-;; (add-hook 'emacs-startup-hook #'(mifi/load-theme-from-selector))
-;; (mifi/load-theme-from-selector)
-;; For terminal mode we choose Material theme
-
-(defun mifi/load-terminal-theme ()
-  (load-theme (intern default-terminal-theme) t))
-
-(unless (display-graphic-p)
-  (add-hook 'after-init-hook 'mifi/load-terminal-theme)
-  ;;else
-  (progn
-    (if (not after-init-time)
-      (add-hook 'after-init-hook
-        (lambda ()
-          (unless theme-did-load
-            (mifi/load-theme-from-selector))))
-      ;; else
-      (add-hook 'window-setup-hook
-        (lambda ()
-          (unless theme-did-load
-            (mifi/load-theme-from-selector))))
-      )))
-
-;;; ^^^ ;;;
+(use-package default-text-scale
+  :ensure t
+  :hook (after-init . default-text-scale-mode))
 
 ;;; ##########################################################################
 
@@ -2343,6 +2129,220 @@ This only runs for ripgrep results"
 ;;          :mode-line-inactive vertical-border))
 
 ;;; ^^^ ;;;
+
+;;; ##########################################################################
+
+;;
+;; 1. The function `mifi/load-theme-from-selector' is called from the
+;;    "C-= =" Keybinding (just search for it).
+;;
+;; 2. Once the new theme is loaded via the `theme-selector', the previous
+;;    theme is unloaded (or disabled) the function(s) defined in the
+;;    `disable-theme-functions' hook are called (defined in the load-theme.el
+;;    package).
+;;
+;; 3. The function `mifi/cycle-theme-selector' is called by the hook. This
+;;    function increments the theme-selector by 1, cycling the value to 0
+;;    if beyond the `theme-list' bounds.
+;;
+(setq-default loaded-theme (nth theme-selector theme-list))
+(add-to-list 'savehist-additional-variables 'loaded-theme)
+(add-to-list 'savehist-additional-variables 'custom-default-font-size)
+(add-to-list 'savehist-additional-variables 'theme-selector)
+(add-to-list 'savehist-additional-variables 'custom-default-mono-font-size)
+
+;;; vvv ;;;
+
+(defun mifi/cycle-theme-selector (&rest theme)
+  "Cycle the `theme-selector' by 1, resetting to 0 if beyond array bounds."
+  (interactive)
+  (when (not (eq theme-cycle-step nil))
+    (let ((step theme-cycle-step) (result 0))
+      (when step
+        (setq result (+ step theme-selector))
+        (when (< result 0)
+          (setq result (- (length theme-list) 1)))
+        (when (> result (- (length theme-list) 1))
+          (setq result 0)))
+      (setq-default theme-selector result))))
+
+;; This is used to trigger the cycling of the theme-selector
+;; It is called when a theme is disabled. The theme is disabled from the
+;; `mifi/load-theme-from-selector' function.
+(add-hook 'disable-theme-functions #'mifi/cycle-theme-selector)
+
+(defun mifi/reset-if-spacious-padding-mode ()
+  (interactive)
+  (when-let ((spm? (featurep 'spacious-padding))
+            (spm-on-off (default-value 'spacious-padding-mode)))
+    (spacious-padding-mode 0)
+    (run-with-timer 0.2 nil
+      (lambda (on-off) (spacious-padding-mode on-off)) spm-on-off)))
+
+(defun mifi/load-theme-from-selector (&optional step)
+  "Load the theme in `theme-list' indexed by `theme-selector'."
+  (interactive)
+  ;; Save value of spacious-padding-mode
+  (setq theme-cycle-step nil)
+  (cond
+    ((or (eq step nil) (eq step 0)) (setq theme-cycle-step 0))
+    ((> step 0) (setq theme-cycle-step 1))
+    ((< step 0) (setq theme-cycle-step -1)))
+  (when loaded-theme
+    (disable-theme (intern loaded-theme)))
+  (setq loaded-theme (nth theme-selector theme-list))
+  (setq theme-did-load (load-theme (intern loaded-theme) t))
+  (when (featurep 'org)
+    (mifi/org-font-setup))
+  (mifi/reset-if-spacious-padding-mode)
+  (set-face-foreground 'line-number "SkyBlue4"))
+
+(defun mifi/print-custom-theme-name ()
+  "Print the current loaded theme from the `theme-list' on the modeline."
+  (interactive)
+  (message (format "Custom theme is %S" loaded-theme)))
+
+;; Quick Helper Functions
+(defun next-theme ()
+  "Go to the next theme in the list."
+  (interactive)
+  (mifi/load-theme-from-selector 1))
+
+(defun previous-theme ()
+  "Go to the next theme in the list."
+  (interactive)
+  (mifi/load-theme-from-selector -1))
+
+(defun which-theme ()
+  "Go to the next theme in the list."
+  (interactive)
+  (mifi/print-custom-theme-name))
+
+(bind-keys
+  ;; Go to NEXT theme
+  ("M-RET =" . next-theme)
+  ;; Go to PREVIOUS theme
+  ("M-RET -" . previous-theme)
+  ;; Message current theme
+  ("M-RET _" . which-theme))
+
+(defun mifi/org-theme-override-values ()
+  (defface org-block-begin-line
+    '((t (:underline "#1D2C39" :foreground "SlateGray" :background "#1D2C39")))
+    "Face used for the line delimiting the begin of source blocks.")
+
+  (defface org-block
+    '((t (:background "#242635" :extend t :font "Avenir Next")))
+    "Face used for the source block background.")
+
+  (defface org-block-end-line
+    '((t (:overline "#1D2C39" :foreground "SlateGray" :background "#1D2C39")))
+    "Face used for the line delimiting the end of source blocks.")
+
+  (defface org-modern-horizontal-rule
+    '((t (:strike-through "green" :weight bold)))
+    "Face used for the Horizontal like (-----)"))
+
+(defun mifi/customize-modus-theme ()
+  (when (featurep 'org)
+    (mifi/org-font-setup))
+  (setq modus-themes-common-palette-overrides
+    '((bg-mode-line-active bg-blue-intense)
+       (fg-mode-line-active fg-main)
+       (border-mode-line-active blue-intense))))
+
+(add-hook 'after-init-hook 'mifi/customize-modus-theme)
+
+(defun mifi/customize-ef-theme ()
+  (defface ef-themes-fixed-pitch
+    '((t (:background "#242635" :extend t :font "Courier New")))
+    "Face used for the source block background.")
+  (when (featurep 'org)
+    (mifi/org-font-setup))
+  (setq ef-themes-common-palette-override
+    '( (bg-mode-line bg-blue-intense)
+       (fg-mode-line fg-main)
+       (border-mode-line-active blue-intense))))
+;;(add-hook 'org-load-hook 'mifi/customize-ef-theme)
+(add-hook 'after-init-hook 'mifi/customize-ef-theme)
+
+(add-to-list 'custom-theme-load-path (expand-file-name "Themes" custom-docs-directory))
+(add-to-list 'custom-theme-load-path (expand-file-name "lisp" emacs-config-directory))
+
+(mifi/org-theme-override-values)
+(use-package tron-legacy-theme :defer t :ensure t)
+(use-package ef-themes :init (mifi/customize-ef-theme) :defer t :ensure t)
+(use-package modus-themes :init (mifi/customize-modus-theme) :defer t :ensure t)
+(use-package material-theme :defer t :ensure t)
+(use-package color-theme-modern :defer t :ensure t)
+(use-package color-theme-sanityinc-tomorrow :defer t :ensure t)
+;; Can't defer darktooth since we need the base theme to always load
+(use-package darktooth-theme :ensure t)
+(use-package zenburn-theme :defer t :ensure t)
+
+;; (add-hook 'emacs-startup-hook #'(mifi/load-theme-from-selector))
+;; (mifi/load-theme-from-selector)
+;; For terminal mode we choose Material theme
+
+(defun mifi/load-terminal-theme ()
+  (load-theme (intern default-terminal-theme) t))
+
+(unless (display-graphic-p)
+  (add-hook 'after-init-hook 'mifi/load-terminal-theme)
+  ;;else
+  (progn
+    (if (not after-init-time)
+      (add-hook 'after-init-hook
+        (lambda ()
+          (unless theme-did-load
+            (mifi/load-theme-from-selector))))
+      ;; else
+      (add-hook 'window-setup-hook
+        (lambda ()
+          (unless theme-did-load
+            (mifi/load-theme-from-selector))))
+      )))
+
+;;; ^^^ ;;;
+
+;;; ##########################################################################
+
+(use-package multiple-cursors
+  :ensure t
+  :bind (("C-S-c C-S-c" . mc/edit-lines)
+          ("C->" . mc/mark-next-like-this)
+          ("C-<" . mc/mark-previous-like-this)
+          ("C-c C-<" . mc/mark-all-like-this)))
+
+;;; ##########################################################################
+
+(use-package visual-fill-column
+  :ensure nil ;; Should be installed in the local lisp dir.
+  :defer t
+  :after org)
+
+;;; ##########################################################################
+
+(use-package init-windows ;; From purcell
+  :ensure nil
+  :demand t
+  :hook (after-init . winner-mode))
+
+;;; ##########################################################################
+;;; Window Number
+
+(use-package winum
+  :ensure t
+  :config (winum-mode))
+
+;;; ##########################################################################
+
+(use-package writeroom-mode
+  :ensure t
+  :defer t
+  :init
+  (setq writeroom-width visual-fill-column-width)
+  :after visual-fill-column)
 
 ;;; ##########################################################################
 

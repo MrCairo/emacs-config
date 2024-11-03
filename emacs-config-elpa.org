@@ -1,7 +1,7 @@
-#+title: Mitch's Emacs Configuration Using Standard package.el
+#+title: Mitch's Emacs Configuration Using Standard use-package
 #+author: Mitch Fisher
 #+date: 2024-05-11
-#+options: toc:4 h:4
+#+options: toc:2 h:4
 #+startup: showall
 #+visibility: all
 #+property: header-args:emacs-lisp :tangle ./init.el :results silent :exports code :mkdirp yes
@@ -9,19 +9,13 @@
 
 * Table Of Contents
 :PROPERTIES:
-:TOC:      :include all :ignore this
+:TOC:      :include all :ignore this :depth 2
 :End:
 
 :CONTENTS:
 - [[#synopsis][Synopsis]]
   - [[#tried-ideas][Tried Ideas]]
   - [[#early-init-file][Early init file]]
-    - [[#lispy-header-for-early-initel][Lispy Header for early-init.el]]
-    - [[#package-archives][Package archives]]
-    - [[#add-lisp-lisplang-to-load-path][Add lisp, lisp/lang to load-path]]
-    - [[#configure-use-package][Configure use-package]]
-    - [[#gc-and-performance-tuning][GC and Performance Tuning]]
-    - [[#set-executable-paths][Set executable PATHs]]
 - [[#package-management][Package Management]]
   - [[#lispy-header][Lispy Header]]
   - [[#package-manager][Package Manager]]
@@ -31,18 +25,13 @@
   - [[#custom-feature-toggles][Custom Feature Toggles]]
   - [[#custom-feature-choices][Custom Feature Choices]]
   - [[#theme-options][Theme Options]]
-    - [[#verify-default-variable-pitch-font][Verify Default variable-pitch Font]]
-    - [[#verify-default-mono-space-font][Verify Default mono-space font]]
 - [[#general-configuration][General Configuration]]
   - [[#create-toc][Create TOC]]
   - [[#better-defaults][Better Defaults]]
   - [[#emacsuser-config-directory][Emacs/User Config Directory]]
-    - [[#files-api][Files API]]
-    - [[#dirs][Dirs]]
   - [[#automatic-package-updates][Automatic Package Updates]]
   - [[#which-key][Which Key]]
   - [[#additional-search-paths][Additional Search Paths]]
-    - [[#add-site-lisp-directories-to-load-path][Add site-lisp directories to load-path]]
   - [[#save-history][Save History]]
   - [[#better-modes][Better Modes]]
   - [[#delight][Delight]]
@@ -62,186 +51,48 @@
   - [[#dumb-jump][Dumb Jump]]
   - [[#eldoc][Eldoc]]
   - [[#hydra][Hydra]]
-    - [[#hydra-major-mode][Hydra major mode]]
-    - [[#hydra--clock][Hydra / Clock]]
-    - [[#hydra--magit][Hydra / Magit]]
-    - [[#hydra--registers][Hydra / Registers]]
-    - [[#hydra--themes-and-fonts][Hydra / Themes and Fonts]]
-    - [[#hydra--combine][Hydra / Combine]]
-  - [[#multiple-cursors][Multiple-cursors]]
   - [[#anzu][Anzu]]
-  - [[#visual-fill][Visual Fill]]
-  - [[#writeroom-mode][Writeroom mode]]
-  - [[#default-text-scale][Default Text Scale]]
   - [[#yasnippet][YASnippet]]
-    - [[#yasnippet-snippets][Yasnippet Snippets]]
-  - [[#all-the-icons][All-the-icons]]
-  - [[#ace-window][Ace Window]]
-  - [[#winum][Winum]]
-  - [[#winner-mode][winner-mode]]
   - [[#jinx][Jinx]]
 - [[#dashboard][Dashboard]]
   - [[#value-of-dashboard-startup-banner-can-be][Value of dashboard-startup-banner can be:]]
-    - [[#nil-to-display-no-banner][nil to display no banner]]
-    - [[#official-which-displays-the-official-emacs-logo]['official which displays the official emacs logo]]
-    - [[#logo-which-displays-an-alternative-emacs-logo]['logo which displays an alternative emacs logo]]
-    - [[#1-2-or-3-which-displays-one-of-the-text-banners][1, 2 or 3 which displays one of the text banners]]
-    - [[#pathtoyourimagegif]["path/to/your/image.gif",]]
-    - [[#a-cons-of-pathtoyourimagepng--pathtoyourtexttxt][a cons of '("path/to/your/image.png" . "path/to/your/text.txt")]]
   - [[#dashboard-setup][Dashboard Setup]]
 - [[#operational-systems][Operational Systems]]
   - [[#undo-handlers][Undo Handlers]]
-    - [[#vundo-visual-undo][Vundo (visual undo)]]
-    - [[#undo-tree][Undo Tree]]
   - [[#completion-handlers][Completion Handlers]]
-    - [[#prescient][Prescient]]
-    - [[#orderless][Orderless]]
-    - [[#ivy-mode][IVY Mode]]
-      - [[#ivy-rich-and-ivy-yasnippet][Ivy-rich and ivy-yasnippet]]
-      - [[#swiper][Swiper]]
-      - [[#counsel][Counsel]]
-      - [[#ivy-prescient][Ivy Prescient]]
-    - [[#company-mode][Company Mode]]
-      - [[#company-packages][Company Packages]]
-    - [[#corfu][Corfu]]
-      - [[#cape-configuration][Cape Configuration]]
-      - [[#corfu-prescient][Corfu-prescient]]
-    - [[#vertico][Vertico]]
-      - [[#vertico-support-packages][Vertico support packages]]
-    - [[#marginalia][Marginalia]]
-      - [[#icons-for-marginalia][Icons for Marginalia]]
-    - [[#consult][Consult]]
-    - [[#embark][Embark]]
-    - [[#helm][Helm]]
-      - [[#helm-wikipedia][helm wikipedia]]
-    - [[#built-in-ido][Built-In (Ido)]]
   - [[#terminals][Terminals]]
-    - [[#term-mode][term-mode]]
-    - [[#better-term-mode-colors][Better term-mode colors]]
-    - [[#vterm][vterm]]
-    - [[#shell-mode][shell-mode]]
-    - [[#eshell][Eshell]]
   - [[#file-management][File Management]]
-    - [[#dired][Dired]]
-      - [[#key-binding-instructions][Key Binding Instructions]]
-      - [[#use-gls-for-dired-on-macos][Use gls for dired on macOS]]
-      - [[#all-the-icons---dired][All the icons - Dired]]
-      - [[#files-to-open-eternally][Files to open eternally]]
-      - [[#hide-dot-files][Hide dot files]]
-      - [[#tab-to-open-subdirs][Tab to open subdirs]]
-      - [[#large-number-of-files-handling][Large number of files handling]]
-      - [[#single-window][Single Window]]
-      - [[#special-ediff-with-dired][Special ediff with dired]]
-        - [[#supporting-functions][Supporting Functions]]
-        - [[#customized-variables][Customized Variables]]
-        - [[#dired-and-ediff-configuration][Dired and ediff configuration]]
-    - [[#treemacs][Treemacs]]
-      - [[#treemacs-projectile][Treemacs Projectile]]
-      - [[#treemacs-dired][Treemacs dired]]
-      - [[#treemacs-persp][Treemacs Persp]]
-      - [[#treemacs-tab-bar][Treemacs tab-bar]]
-      - [[#treemacs-all-the-icons][Treemacs all-the-icons]]
-- [[#visuals][Visuals]]
-  - [[#theme-list-and-selection][Theme List and Selection]]
-    - [[#cycle-theme-function][Cycle Theme Function]]
-    - [[#load-theme-function][Load Theme Function]]
-      - [[#reset-spacious-padding][Reset spacious-padding]]
-      - [[#load-theme-from-selector][Load Theme From Selector]]
-    - [[#theme-selection-helper-functions][Theme selection helper functions.]]
-    - [[#theme-override-values][Theme Override Values]]
-    - [[#color-theming][Color Theming]]
-    - [[#selected-theme][Selected theme]]
+- [[#visual][Visual]]
+  - [[#ace-window][Ace Window]]
+  - [[#all-the-icons][All-the-icons]]
+  - [[#default-text-scale][Default Text Scale]]
   - [[#frame-and-font-setup][Frame and Font Setup]]
-    - [[#define-the-various-font-size-constants][Define the various font size constants]]
-    - [[#mixed-pitch][mixed-pitch]]
-    - [[#functions-to-set-the-frame-size][Functions to set the frame size]]
-    - [[#default-fonts-and-sizes][Default fonts and sizes]]
-    - [[#track-selected-front-size][Track Selected Front Size]]
-    - [[#handle-higher-rez-monitor][Handle higher-rez monitor.]]
-      - [[#frame-font-selection][Frame font selection]]
-        - [[#resolution-key-bindings][Resolution Key Bindings]]
-        - [[#frame-support-functions][Frame support functions]]
-        - [[#update-other-mode-fonts-if-needed][Update other mode fonts if needed]]
-        - [[#select-display-font-and-optionally-recenter][Select Display Font and optionally Recenter]]
-        - [[#early-display-resize][Early Display Resize]]
-    - [[#window-mode-line-more-padding][Window, mode-line, +more padding]]
+  - [[#theme-list-and-selection][Theme List and Selection]]
+  - [[#multiple-cursors][Multiple-cursors]]
+  - [[#visual-fill][Visual Fill]]
+  - [[#winner-mode][winner-mode]]
+  - [[#winum][Winum]]
+  - [[#writeroom-mode][Writeroom mode]]
 - [[#productivity][Productivity]]
   - [[#org-mode][Org Mode]]
-    - [[#font-setup][Font setup]]
-    - [[#org-setup][Org Setup]]
-      - [[#setup-org-agenda][Setup org-agenda]]
-      - [[#the-capture-templates-function][The capture-templates function]]
-      - [[#org-todos][Org-Todos]]
-      - [[#user-customized-faces][User customized faces]]
-    - [[#the-main-org-package][The main 'Org' package]]
-    - [[#export-code][Export Code]]
-    - [[#structure-templates][Structure Templates]]
-    - [[#org-olivetti-mode][Org Olivetti mode]]
-    - [[#org-modern][Org Modern]]
   - [[#org-journal][Org Journal]]
   - [[#org-roam][Org Roam]]
-    - [[#main-org-roam-configuration][Main org-roam configuration]]
-    - [[#org-roam-dailies][Org-roam dailies]]
-    - [[#org-agenda-from-roam-notes][Org Agenda from Roam Notes]]
-    - [[#selecting-from-a-list-of-notes][Selecting from a list of notes]]
-    - [[#keep-an-inbox-of-notes-and-tasks][Keep an inbox of notes and tasks]]
-    - [[#capture-a-task][Capture a task]]
-    - [[#org-roam-todo][Org-roam Todo]]
   - [[#denote][Denote]]
-    - [[#denote-keymap][Denote Keymap]]
-    - [[#denote-configuration][Denote Configuration]]
   - [[#projectile][Projectile]]
   - [[#projectel][Project.el]]
   - [[#gnus][Gnus]]
 - [[#integrated-development-environments][Integrated Development Environments]]
   - [[#code-completion-and-handling][Code Completion and Handling]]
-    - [[#eglot][EGlot]]
-      - [[#eglot-setup][Eglot Setup]]
-    - [[#language-server-protocol-lsp-mode][Language Server Protocol (lsp-mode)]]
-      - [[#lsp-ui][LSP UI]]
-      - [[#lsp-treemacs-integration][LSP Treemacs integration]]
-      - [[#lsp-mode-hook-function][LSP mode hook function]]
-      - [[#lsp-configuration-for-rust][LSP configuration for Rust]]
-    - [[#lsp-bridge][LSP Bridge]]
-    - [[#elpy][ELPY]]
 - [[#language-integration][Language Integration]]
   - [[#language-support-packages][Language Support Packages]]
-    - [[#flycheck][Flycheck]]
-    - [[#tree-sitter][Tree-sitter]]
-      - [[#tree-sitter-support-functions][Tree-sitter-support functions]]
-      - [[#the-main-tree-sitter-setup][The main Tree-sitter setup]]
-      - [[#treesit-auto][Treesit-auto]]
-    - [[#magit][Magit]]
   - [[#python][Python]]
   - [[#ocaml][OCaml]]
-    - [[#howto-install-opam-if-necessary][HOWTO Install OPAM if necessary]]
   - [[#javascript-based-languages][JavaScript based languages]]
-    - [[#typescript][Typescript]]
-    - [[#nodejs][NodeJS]]
-    - [[#js2-mode][JS2-Mode]]
   - [[#gameboy-development][GameBoy Development]]
   - [[#rust][Rust]]
-    - [[#rust-prerequisites][Rust Prerequisites]]
-    - [[#rustic-package-configuration][Rustic package configuration]]
-    - [[#rust-mode-configuration][Rust-mode configuration]]
-    - [[#cargo-and-cargotoml-packages][Cargo and Cargo.toml packages]]
-    - [[#cargo-mode-configuration][Cargo-mode configuration]]
   - [[#golang][Golang]]
-    - [[#main-go-mode-config][Main go-mode config]]
-    - [[#go-eldoc-config][go-eldoc config]]
-    - [[#go-guru-config][go-guru config]]
   - [[#other-languages][Other Languages]]
-    - [[#swift][Swift]]
-    - [[#lisp][Lisp]]
   - [[#debug-support][Debug Support]]
-    - [[#debug-adapter-protocol][Debug Adapter Protocol]]
-      - [[#dap-python-templates][DAP Python Templates]]
-      - [[#dap-package-for-ocaml][DAP Package for OCaml]]
-      - [[#dap-package-for-python][DAP Package for Python]]
-      - [[#dap-setup-for-rust-and-go][DAP Setup for Rust and Go]]
-      - [[#dap-hydra][DAP Hydra]]
-        - [[#dap-hydra-debug-functions][DAP Hydra Debug Functions]]
-        - [[#dap-hydra-definition-function][DAP Hydra Definition Function]]
 - [[#miscellaneous][Miscellaneous]]
   - [[#thesaurus][Thesaurus]]
   - [[#solair-mode][Solair mode]]
@@ -255,15 +106,8 @@
   - [[#lisp-hightlighter][Lisp Hightlighter]]
   - [[#popper][Popper]]
   - [[#markdown-mode][Markdown Mode]]
-    - [[#markdown-preview-mode][Markdown Preview Mode]]
-    - [[#impatient-mode][Impatient Mode]]
   - [[#grip-mode][GRIP Mode]]
   - [[#mifis-minor-mode][MiFi's Minor Mode]]
-    - [[#helper-functions][Helper Functions]]
-    - [[#standard-keymaps][Standard Keymaps]]
-    - [[#context-aware-keys-and-descriptions][Context-Aware Keys and Descriptions]]
-    - [[#key-description-overrides][Key Description Overrides]]
-    - [[#hooks][Hooks]]
   - [[#initial-scratch-buffer-message][Initial scratch buffer message]]
   - [[#exiting-and-cleanup][Exiting And Cleanup]]
 - [[#lastly][Lastly]]
@@ -1176,6 +1020,10 @@ Look for a proportional font that is available on the OS. If the actual default 
 #+end_src
 
 * General Configuration
+:properties:
+:custom_id: customized-values
+:visibility: folded
+:end:
 
 Setup initial paths, global values and settings, and Emacs working directories.
 
@@ -2140,14 +1988,14 @@ Group Theme commands.
         ( ("+" next-theme "Next theme")
           ("-" previous-theme "Previous Theme")
           ("=" which-theme "Display Current Theme")
-          ("S" use-small-display-font "Small Font with resize")
-          ("M" use-medium-display-font "Medium Font with resize")
-          ("L" use-large-display-font "Large Font with resize")
-          ("X" use-x-large-display-font "X-Large Font with resize")
-          ("s" (use-small-display-font t) "Small Font without resize")
-          ("m" (use-medium-display-font t) "Medium Font without resize")
-          ("l" (use-large-display-font t) "Large Font without resize")
-          ("x" (use-x-large-display-font t) "X-Large Font without resize")) )))
+          ("S" use-small-display-font "Small Font without resize")
+          ("M" use-medium-display-font "Medium Font without resize")
+          ("L" use-large-display-font "Large Font without resize")
+          ("X" use-x-large-display-font "X-Large Font without resize")
+          ("s" (use-small-display-font t) "Small Font with resize")
+          ("m" (use-medium-display-font t) "Medium Font with resize")
+          ("l" (use-large-display-font t) "Large Font with resize")
+          ("x" (use-x-large-display-font t) "X-Large Font with resize")) )))
 
 #+end_src
 
@@ -2173,27 +2021,6 @@ Combination of groups
 #+begin_src emacs-lisp
     ;;; ^^^ ;;;
 #+end_src
-
-** Multiple-cursors
-:properties:
-:custom_id: multiple-cursors
-:visibility: folded
-:end:
-
-Multiple cursors for Emacs. This is some pretty crazy functionality, so yes, there are kinks. Don't be afraid though.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package multiple-cursors
-    :ensure t
-    :bind (("C-S-c C-S-c" . mc/edit-lines)
-            ("C->" . mc/mark-next-like-this)
-            ("C-<" . mc/mark-previous-like-this)
-            ("C-c C-<" . mc/mark-all-like-this)))
-
-#+end_src
-
 ** Anzu
 :properties:
 :custom_id: anzu
@@ -2221,78 +2048,6 @@ anzu.el is an Emacs port of anzu.vim. anzu.el provides a minor mode which displa
       [remap isearch-query-replace]  #'anzu-isearch-query-replace)
     (define-key isearch-mode-map
       [remap isearch-query-replace-regexp] #'anzu-isearch-query-replace-regexp))
-
-#+end_src
-
-** Visual Fill
-:properties:
-:custom_id: visual-fill
-:visibility: folded
-:end:
-
-We use [[https://github.com/joostkremers/visual-fill-column][visual-fill-column]] to center =org-mode= buffers for a more pleasing writing experience as it centers the contents of the buffer horizontally to seem more like you are editing a document. This is really a matter of personal preference so you can remove the block below if you don't like the behavior.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package visual-fill-column
-    :ensure nil ;; Should be installed in the local lisp dir.
-    :defer t
-    :after org)
-
-#+end_src
-
-** Writeroom mode
-:properties:
-:custom_id: writeroom-mode
-:visibility: folded
-:end:
-
-writeroom-mode is a minor mode for Emacs that implements a distraction-free writing mode similar to the famous Writeroom editor for OS X.  By default, writeroom-mode does the following things:
-
-+ activate fullscreen
-+ disable transparency
-+ disable the menu bar
-+ disable the tool bar
-+ disable the scroll bar
-+ enable a bottom window divider of 1 pixel
-+ maximise the current window (i.e., delete all other windows in the frame)
-+ place the fringes outside the margins
-+ disable the mode line
-+ add window margins to the current buffer so that the text is 80 characters wide
-
-The last three effects are buffer-local. The other effects apply to the current frame. Because writeroom-mode is a minor mode, this isn't entirely on the up and up, since minor modes aren't supposed to have such global effects. But writeroom-mode is meant for distraction-free writing, so these effects do make sense.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package writeroom-mode
-    :ensure t
-    :defer t
-    :init
-    (setq writeroom-width visual-fill-column-width)
-    :after visual-fill-column)
-
-#+end_src
-
-** Default Text Scale
-:properties:
-:custom_id: default-text-scale
-:visibility: folded
-:end:
-
-This package provides commands for increasing or decreasing the default font size in all GUI Emacs frames -- it is like an Emacs-wide version of text-scale-mode.
-
-+ It works by adjusting the height of the default face in the user theme, which is always combined with any other loaded themes.
-+ It's handy for quickly adjusting the font size for readability or impromptu screen-sharing.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-  ;;; Default keys are C-M-= or C-M--
-
-  (use-package default-text-scale
-    :ensure t
-    :hook (after-init . default-text-scale-mode))
 
 #+end_src
 
@@ -2341,72 +2096,6 @@ Collections of more yasnippet snippets for various languages.
   (use-package yasnippet-snippets
     :ensure t
     :after yasnippet)
-
-#+end_src
-
-** All-the-icons
-:properties:
-:custom_id: all-the-icons
-:visibility: folded
-:end:
-
-This package is a utility for using and formatting various Icon fonts within Emacs.  Icon Fonts allow you to propertize and format icons the same way you would normal text.  This enables things such as better scaling of and anti aliasing of the icons.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package all-the-icons :ensure t)
-
-#+end_src
-
-** Ace Window
-:properties:
-:custom_id: ace-window
-:visibility: folded
-:end:
-
-[[https://github.com/abo-abo/ace-window][ace-window]] is a package for selecting a window to switch to. Like =other-window= but better!
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package ace-window
-    :ensure t
-    :bind ("M-o" . ace-window))
-
-#+end_src
-
-** Winum
-:properties:
-:custom_id: winum
-:visibility: folded
-:end:
-
-Window numbers for Emacs: Navigate your windows and frames using numbers. This is not only handy but used by Treemacs to select the Treemacs panel with the keyboard.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-  ;;; Window Number
-
-  (use-package winum
-    :ensure t
-    :config (winum-mode))
-
-#+end_src
-
-** winner-mode
-:properties:
-:custom_id: winner-mode
-:visibility: folded
-:end:
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package init-windows ;; From purcell
-    :ensure nil
-    :demand t
-    :hook (after-init . winner-mode))
 
 #+end_src
 
@@ -3940,294 +3629,66 @@ Treemacs is a file and project explorer similar to NeoTree or vim’s NerdTree, 
 
 #+end_src
 
-* Visuals
+* Visual
 :properties:
-:custom_id: visuals
+:custom_id: visual
 :visibility: folded
 :end:
 
-These packages and functions are used to select from a list of curated themes and also to handle frame size changes.
+These packages and functions are used to select from a list of curated themes and also to handle frame size changes. In addition to themes, packages that are visually oriented (like writeroom) are also included.
 
-** Theme List and Selection
+** Ace Window
 :properties:
-:custom_id: theme-list-and-selection
+:custom_id: ace-window
 :visibility: folded
 :end:
 
-This bit of code contains a list of themes that I like personally and then allows them to be switched between themselves. The index of ~theme-selector~ is what is set in order to access a theme via the ~mifi/load-theme-from-selector()~ function.
+[[https://github.com/abo-abo/ace-window][ace-window]] is a package for selecting a window to switch to. Like =other-window= but better!
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
 
-  ;;
-  ;; 1. The function `mifi/load-theme-from-selector' is called from the
-  ;;    "C-= =" Keybinding (just search for it).
-  ;;
-  ;; 2. Once the new theme is loaded via the `theme-selector', the previous
-  ;;    theme is unloaded (or disabled) the function(s) defined in the
-  ;;    `disable-theme-functions' hook are called (defined in the load-theme.el
-  ;;    package).
-  ;;
-  ;; 3. The function `mifi/cycle-theme-selector' is called by the hook. This
-  ;;    function increments the theme-selector by 1, cycling the value to 0
-  ;;    if beyond the `theme-list' bounds.
-  ;;
-  (setq-default loaded-theme (nth theme-selector theme-list))
-  (add-to-list 'savehist-additional-variables 'loaded-theme)
-  (add-to-list 'savehist-additional-variables 'custom-default-font-size)
-  (add-to-list 'savehist-additional-variables 'theme-selector)
-  (add-to-list 'savehist-additional-variables 'custom-default-mono-font-size)
+  (use-package ace-window
+    :ensure t
+    :bind ("M-o" . ace-window))
 
 #+end_src
 
-*** Cycle Theme Function
+** All-the-icons
 :properties:
-:custom_id: cycle-theme-function
+:custom_id: all-the-icons
 :visibility: folded
 :end:
 
-This is the main function that allows cycling (up or down) through the list of
-themes defined in the ~theme-list~. This function is normally called by the
-~disable-theme-functions~ hook. Before calling this function, set the variable
-~theme-cycle-step~ to either a 1 or -1 depending upon which direction in the
-~theme-list~ array to select the next element from. The resulting index will
-cycle to the end or the beginning of the list if the computed index goes beyond
-element 0 or the length of ~theme-list~. The parameter theme is passed to this
-function when a theme becomes disabled (via the ~disable-theme~ function) and
-represents the theme that has become disabled.
+This package is a utility for using and formatting various Icon fonts within Emacs.  Icon Fonts allow you to propertize and format icons the same way you would normal text.  This enables things such as better scaling of and anti aliasing of the icons.
 
 #+begin_src emacs-lisp
-  ;;; vvv ;;;
+  ;;; ##########################################################################
 
-  (defun mifi/cycle-theme-selector (&rest theme)
-    "Cycle the `theme-selector' by 1, resetting to 0 if beyond array bounds."
-    (interactive)
-    (when (not (eq theme-cycle-step nil))
-      (let ((step theme-cycle-step) (result 0))
-        (when step
-          (setq result (+ step theme-selector))
-          (when (< result 0)
-            (setq result (- (length theme-list) 1)))
-          (when (> result (- (length theme-list) 1))
-            (setq result 0)))
-        (setq-default theme-selector result))))
-
-  ;; This is used to trigger the cycling of the theme-selector
-  ;; It is called when a theme is disabled. The theme is disabled from the
-  ;; `mifi/load-theme-from-selector' function.
-  (add-hook 'disable-theme-functions #'mifi/cycle-theme-selector)
+  (use-package all-the-icons :ensure t)
 
 #+end_src
 
-*** Load Theme Function
+** Default Text Scale
 :properties:
-:custom_id: load-theme-functions
+:custom_id: default-text-scale
 :visibility: folded
 :end:
 
-This function simply loads the theme from the theme-list indexed by the ~theme-selector~ variable. Note the advice for ~load-theme~ that deactivates the current theme before activating the new theme. This is done to reset all the colors, a clean slate, before the new theme is activated.
+This package provides commands for increasing or decreasing the default font size in all GUI Emacs frames -- it is like an Emacs-wide version of text-scale-mode.
 
-**** Reset spacious-padding
-:properties:
-:custom_id: reset-spacious-padding
-:visibility: folded
-:end:
-
-This function is used to reset spacious-padding-mode if it is loaded and active. Reset is performed by turning spacious-padding off and then restoring it to it's original state. The reason for this is that spacious-padding can sometimes get confused and have weird spacing when font-sizes changes - like after a theme switch or display-font change.
++ It works by adjusting the height of the default face in the user theme, which is always combined with any other loaded themes.
++ It's handy for quickly adjusting the font size for readability or impromptu screen-sharing.
 
 #+begin_src emacs-lisp
+  ;;; ##########################################################################
+  ;;; Default keys are C-M-= or C-M--
 
-  (defun mifi/reset-if-spacious-padding-mode ()
-    (interactive)
-    (when-let ((spm? (featurep 'spacious-padding))
-              (spm-on-off (default-value 'spacious-padding-mode)))
-      (spacious-padding-mode 0)
-      (run-with-timer 0.2 nil
-        (lambda (on-off) (spacious-padding-mode on-off)) spm-on-off)))
-  
-#+end_src
-
-**** Load Theme From Selector
-:properties:
-:custom_id: load-theme-from-selector
-:visibility: folded
-:end:
-
-This function loads the theme from the =theme-list= indexed by =theme-selector=. Once the theme is loaded, the variable ~theme-did-load~ is set to t, or nil if the theme failed to load.
-
-#+begin_src emacs-lisp
-
-  (defun mifi/load-theme-from-selector (&optional step)
-    "Load the theme in `theme-list' indexed by `theme-selector'."
-    (interactive)
-    ;; Save value of spacious-padding-mode
-    (setq theme-cycle-step nil)
-    (cond
-      ((or (eq step nil) (eq step 0)) (setq theme-cycle-step 0))
-      ((> step 0) (setq theme-cycle-step 1))
-      ((< step 0) (setq theme-cycle-step -1)))
-    (when loaded-theme
-      (disable-theme (intern loaded-theme)))
-    (setq loaded-theme (nth theme-selector theme-list))
-    (setq theme-did-load (load-theme (intern loaded-theme) t))
-    (when (featurep 'org)
-      (mifi/org-font-setup))
-    (mifi/reset-if-spacious-padding-mode)
-    (set-face-foreground 'line-number "SkyBlue4"))
-  
-#+end_src
-
-*** Theme selection helper functions.
-:properties:
-:custom_id: theme-selection-helper-functions
-:visibility: folded
-:end:
-
-#+begin_src emacs-lisp
-
-  (defun mifi/print-custom-theme-name ()
-    "Print the current loaded theme from the `theme-list' on the modeline."
-    (interactive)
-    (message (format "Custom theme is %S" loaded-theme)))
-
-  ;; Quick Helper Functions
-  (defun next-theme ()
-    "Go to the next theme in the list."
-    (interactive)
-    (mifi/load-theme-from-selector 1))
-
-  (defun previous-theme ()
-    "Go to the next theme in the list."
-    (interactive)
-    (mifi/load-theme-from-selector -1))
-
-  (defun which-theme ()
-    "Go to the next theme in the list."
-    (interactive)
-    (mifi/print-custom-theme-name))
-
-  (bind-keys
-    ;; Go to NEXT theme
-    ("M-RET =" . next-theme)
-    ;; Go to PREVIOUS theme
-    ("M-RET -" . previous-theme)
-    ;; Message current theme
-    ("M-RET _" . which-theme))
+  (use-package default-text-scale
+    :ensure t
+    :hook (after-init . default-text-scale-mode))
 
 #+end_src
-
-*** Theme Override Values
-:properties:
-:custom_id: theme-override-values
-:visibility: folded
-:end:
-
-#+begin_src emacs-lisp
-
-  (defun mifi/org-theme-override-values ()
-    (defface org-block-begin-line
-      '((t (:underline "#1D2C39" :foreground "SlateGray" :background "#1D2C39")))
-      "Face used for the line delimiting the begin of source blocks.")
-
-    (defface org-block
-      '((t (:background "#242635" :extend t :font "Avenir Next")))
-      "Face used for the source block background.")
-
-    (defface org-block-end-line
-      '((t (:overline "#1D2C39" :foreground "SlateGray" :background "#1D2C39")))
-      "Face used for the line delimiting the end of source blocks.")
-
-    (defface org-modern-horizontal-rule
-      '((t (:strike-through "green" :weight bold)))
-      "Face used for the Horizontal like (-----)"))
-
-  (defun mifi/customize-modus-theme ()
-    (when (featurep 'org)
-      (mifi/org-font-setup))
-    (setq modus-themes-common-palette-overrides
-      '((bg-mode-line-active bg-blue-intense)
-         (fg-mode-line-active fg-main)
-         (border-mode-line-active blue-intense))))
-
-  (add-hook 'after-init-hook 'mifi/customize-modus-theme)
-
-  (defun mifi/customize-ef-theme ()
-    (defface ef-themes-fixed-pitch
-      '((t (:background "#242635" :extend t :font "Courier New")))
-      "Face used for the source block background.")
-    (when (featurep 'org)
-      (mifi/org-font-setup))
-    (setq ef-themes-common-palette-override
-      '( (bg-mode-line bg-blue-intense)
-         (fg-mode-line fg-main)
-         (border-mode-line-active blue-intense))))
-  ;;(add-hook 'org-load-hook 'mifi/customize-ef-theme)
-  (add-hook 'after-init-hook 'mifi/customize-ef-theme)
-
-#+end_src
-
-*** Color Theming
-:properties:
-:custom_id: color-theming
-:visibility: folded
-:end:
-
-Color Theming (or just theming) is a curated list of theming packages.
-*Note:* If new themes are added in the ~theme-list~ custom variable then they must be included here along with any customizations.
-
-#+begin_src emacs-lisp
-
-  (add-to-list 'custom-theme-load-path (expand-file-name "Themes" custom-docs-directory))
-  (add-to-list 'custom-theme-load-path (expand-file-name "lisp" emacs-config-directory))
-
-  (mifi/org-theme-override-values)
-  (use-package tron-legacy-theme :defer t :ensure t)
-  (use-package ef-themes :init (mifi/customize-ef-theme) :defer t :ensure t)
-  (use-package modus-themes :init (mifi/customize-modus-theme) :defer t :ensure t)
-  (use-package material-theme :defer t :ensure t)
-  (use-package color-theme-modern :defer t :ensure t)
-  (use-package color-theme-sanityinc-tomorrow :defer t :ensure t)
-  ;; Can't defer darktooth since we need the base theme to always load
-  (use-package darktooth-theme :ensure t)
-  (use-package zenburn-theme :defer t :ensure t)
-
-#+end_src
-
-*** Selected theme
-:properties:
-:custom_id: selected-theme
-:visibility: folded
-:end:
-
-This includes the theme to use in both graphical and non-graphical.
-
-#+begin_src emacs-lisp
-  ;; (add-hook 'emacs-startup-hook #'(mifi/load-theme-from-selector))
-  ;; (mifi/load-theme-from-selector)
-  ;; For terminal mode we choose Material theme
-
-  (defun mifi/load-terminal-theme ()
-    (load-theme (intern default-terminal-theme) t))
-
-  (unless (display-graphic-p)
-    (add-hook 'after-init-hook 'mifi/load-terminal-theme)
-    ;;else
-    (progn
-      (if (not after-init-time)
-        (add-hook 'after-init-hook
-          (lambda ()
-            (unless theme-did-load
-              (mifi/load-theme-from-selector))))
-        ;; else
-        (add-hook 'window-setup-hook
-          (lambda ()
-            (unless theme-did-load
-              (mifi/load-theme-from-selector))))
-        )))
-
-  ;;; ^^^ ;;;
-#+end_src
-
 ** Frame and Font Setup
 :properties:
 :custom_id: frame-and-font-setup
@@ -4627,6 +4088,390 @@ This package provides a global minor mode to increase the spacing/padding of Ema
   ;;          :mode-line-inactive vertical-border))
 
   ;;; ^^^ ;;;
+#+end_src
+
+** Theme List and Selection
+:properties:
+:custom_id: theme-list-and-selection
+:visibility: folded
+:end:
+
+This bit of code contains a list of themes that I like personally and then allows them to be switched between themselves. The index of ~theme-selector~ is what is set in order to access a theme via the ~mifi/load-theme-from-selector()~ function.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  ;;
+  ;; 1. The function `mifi/load-theme-from-selector' is called from the
+  ;;    "C-= =" Keybinding (just search for it).
+  ;;
+  ;; 2. Once the new theme is loaded via the `theme-selector', the previous
+  ;;    theme is unloaded (or disabled) the function(s) defined in the
+  ;;    `disable-theme-functions' hook are called (defined in the load-theme.el
+  ;;    package).
+  ;;
+  ;; 3. The function `mifi/cycle-theme-selector' is called by the hook. This
+  ;;    function increments the theme-selector by 1, cycling the value to 0
+  ;;    if beyond the `theme-list' bounds.
+  ;;
+  (setq-default loaded-theme (nth theme-selector theme-list))
+  (add-to-list 'savehist-additional-variables 'loaded-theme)
+  (add-to-list 'savehist-additional-variables 'custom-default-font-size)
+  (add-to-list 'savehist-additional-variables 'theme-selector)
+  (add-to-list 'savehist-additional-variables 'custom-default-mono-font-size)
+
+#+end_src
+
+*** Cycle Theme Function
+:properties:
+:custom_id: cycle-theme-function
+:visibility: folded
+:end:
+
+This is the main function that allows cycling (up or down) through the list of
+themes defined in the ~theme-list~. This function is normally called by the
+~disable-theme-functions~ hook. Before calling this function, set the variable
+~theme-cycle-step~ to either a 1 or -1 depending upon which direction in the
+~theme-list~ array to select the next element from. The resulting index will
+cycle to the end or the beginning of the list if the computed index goes beyond
+element 0 or the length of ~theme-list~. The parameter theme is passed to this
+function when a theme becomes disabled (via the ~disable-theme~ function) and
+represents the theme that has become disabled.
+
+#+begin_src emacs-lisp
+  ;;; vvv ;;;
+
+  (defun mifi/cycle-theme-selector (&rest theme)
+    "Cycle the `theme-selector' by 1, resetting to 0 if beyond array bounds."
+    (interactive)
+    (when (not (eq theme-cycle-step nil))
+      (let ((step theme-cycle-step) (result 0))
+        (when step
+          (setq result (+ step theme-selector))
+          (when (< result 0)
+            (setq result (- (length theme-list) 1)))
+          (when (> result (- (length theme-list) 1))
+            (setq result 0)))
+        (setq-default theme-selector result))))
+
+  ;; This is used to trigger the cycling of the theme-selector
+  ;; It is called when a theme is disabled. The theme is disabled from the
+  ;; `mifi/load-theme-from-selector' function.
+  (add-hook 'disable-theme-functions #'mifi/cycle-theme-selector)
+
+#+end_src
+
+*** Load Theme Function
+:properties:
+:custom_id: load-theme-functions
+:visibility: folded
+:end:
+
+This function simply loads the theme from the theme-list indexed by the ~theme-selector~ variable. Note the advice for ~load-theme~ that deactivates the current theme before activating the new theme. This is done to reset all the colors, a clean slate, before the new theme is activated.
+
+**** Reset spacious-padding
+:properties:
+:custom_id: reset-spacious-padding
+:visibility: folded
+:end:
+
+This function is used to reset spacious-padding-mode if it is loaded and active. Reset is performed by turning spacious-padding off and then restoring it to it's original state. The reason for this is that spacious-padding can sometimes get confused and have weird spacing when font-sizes changes - like after a theme switch or display-font change.
+
+#+begin_src emacs-lisp
+
+  (defun mifi/reset-if-spacious-padding-mode ()
+    (interactive)
+    (when-let ((spm? (featurep 'spacious-padding))
+              (spm-on-off (default-value 'spacious-padding-mode)))
+      (spacious-padding-mode 0)
+      (run-with-timer 0.2 nil
+        (lambda (on-off) (spacious-padding-mode on-off)) spm-on-off)))
+  
+#+end_src
+
+**** Load Theme From Selector
+:properties:
+:custom_id: load-theme-from-selector
+:visibility: folded
+:end:
+
+This function loads the theme from the =theme-list= indexed by =theme-selector=. Once the theme is loaded, the variable ~theme-did-load~ is set to t, or nil if the theme failed to load.
+
+#+begin_src emacs-lisp
+
+  (defun mifi/load-theme-from-selector (&optional step)
+    "Load the theme in `theme-list' indexed by `theme-selector'."
+    (interactive)
+    ;; Save value of spacious-padding-mode
+    (setq theme-cycle-step nil)
+    (cond
+      ((or (eq step nil) (eq step 0)) (setq theme-cycle-step 0))
+      ((> step 0) (setq theme-cycle-step 1))
+      ((< step 0) (setq theme-cycle-step -1)))
+    (when loaded-theme
+      (disable-theme (intern loaded-theme)))
+    (setq loaded-theme (nth theme-selector theme-list))
+    (setq theme-did-load (load-theme (intern loaded-theme) t))
+    (when (featurep 'org)
+      (mifi/org-font-setup))
+    (mifi/reset-if-spacious-padding-mode)
+    (set-face-foreground 'line-number "SkyBlue4"))
+  
+#+end_src
+
+*** Theme selection helper functions.
+:properties:
+:custom_id: theme-selection-helper-functions
+:visibility: folded
+:end:
+
+#+begin_src emacs-lisp
+
+  (defun mifi/print-custom-theme-name ()
+    "Print the current loaded theme from the `theme-list' on the modeline."
+    (interactive)
+    (message (format "Custom theme is %S" loaded-theme)))
+
+  ;; Quick Helper Functions
+  (defun next-theme ()
+    "Go to the next theme in the list."
+    (interactive)
+    (mifi/load-theme-from-selector 1))
+
+  (defun previous-theme ()
+    "Go to the next theme in the list."
+    (interactive)
+    (mifi/load-theme-from-selector -1))
+
+  (defun which-theme ()
+    "Go to the next theme in the list."
+    (interactive)
+    (mifi/print-custom-theme-name))
+
+  (bind-keys
+    ;; Go to NEXT theme
+    ("M-RET =" . next-theme)
+    ;; Go to PREVIOUS theme
+    ("M-RET -" . previous-theme)
+    ;; Message current theme
+    ("M-RET _" . which-theme))
+
+#+end_src
+
+*** Theme Override Values
+:properties:
+:custom_id: theme-override-values
+:visibility: folded
+:end:
+
+#+begin_src emacs-lisp
+
+  (defun mifi/org-theme-override-values ()
+    (defface org-block-begin-line
+      '((t (:underline "#1D2C39" :foreground "SlateGray" :background "#1D2C39")))
+      "Face used for the line delimiting the begin of source blocks.")
+
+    (defface org-block
+      '((t (:background "#242635" :extend t :font "Avenir Next")))
+      "Face used for the source block background.")
+
+    (defface org-block-end-line
+      '((t (:overline "#1D2C39" :foreground "SlateGray" :background "#1D2C39")))
+      "Face used for the line delimiting the end of source blocks.")
+
+    (defface org-modern-horizontal-rule
+      '((t (:strike-through "green" :weight bold)))
+      "Face used for the Horizontal like (-----)"))
+
+  (defun mifi/customize-modus-theme ()
+    (when (featurep 'org)
+      (mifi/org-font-setup))
+    (setq modus-themes-common-palette-overrides
+      '((bg-mode-line-active bg-blue-intense)
+         (fg-mode-line-active fg-main)
+         (border-mode-line-active blue-intense))))
+
+  (add-hook 'after-init-hook 'mifi/customize-modus-theme)
+
+  (defun mifi/customize-ef-theme ()
+    (defface ef-themes-fixed-pitch
+      '((t (:background "#242635" :extend t :font "Courier New")))
+      "Face used for the source block background.")
+    (when (featurep 'org)
+      (mifi/org-font-setup))
+    (setq ef-themes-common-palette-override
+      '( (bg-mode-line bg-blue-intense)
+         (fg-mode-line fg-main)
+         (border-mode-line-active blue-intense))))
+  ;;(add-hook 'org-load-hook 'mifi/customize-ef-theme)
+  (add-hook 'after-init-hook 'mifi/customize-ef-theme)
+
+#+end_src
+
+*** Color Theming
+:properties:
+:custom_id: color-theming
+:visibility: folded
+:end:
+
+Color Theming (or just theming) is a curated list of theming packages.
+*Note:* If new themes are added in the ~theme-list~ custom variable then they must be included here along with any customizations.
+
+#+begin_src emacs-lisp
+
+  (add-to-list 'custom-theme-load-path (expand-file-name "Themes" custom-docs-directory))
+  (add-to-list 'custom-theme-load-path (expand-file-name "lisp" emacs-config-directory))
+
+  (mifi/org-theme-override-values)
+  (use-package tron-legacy-theme :defer t :ensure t)
+  (use-package ef-themes :init (mifi/customize-ef-theme) :defer t :ensure t)
+  (use-package modus-themes :init (mifi/customize-modus-theme) :defer t :ensure t)
+  (use-package material-theme :defer t :ensure t)
+  (use-package color-theme-modern :defer t :ensure t)
+  (use-package color-theme-sanityinc-tomorrow :defer t :ensure t)
+  ;; Can't defer darktooth since we need the base theme to always load
+  (use-package darktooth-theme :ensure t)
+  (use-package zenburn-theme :defer t :ensure t)
+
+#+end_src
+
+*** Selected theme
+:properties:
+:custom_id: selected-theme
+:visibility: folded
+:end:
+
+This includes the theme to use in both graphical and non-graphical.
+
+#+begin_src emacs-lisp
+  ;; (add-hook 'emacs-startup-hook #'(mifi/load-theme-from-selector))
+  ;; (mifi/load-theme-from-selector)
+  ;; For terminal mode we choose Material theme
+
+  (defun mifi/load-terminal-theme ()
+    (load-theme (intern default-terminal-theme) t))
+
+  (unless (display-graphic-p)
+    (add-hook 'after-init-hook 'mifi/load-terminal-theme)
+    ;;else
+    (progn
+      (if (not after-init-time)
+        (add-hook 'after-init-hook
+          (lambda ()
+            (unless theme-did-load
+              (mifi/load-theme-from-selector))))
+        ;; else
+        (add-hook 'window-setup-hook
+          (lambda ()
+            (unless theme-did-load
+              (mifi/load-theme-from-selector))))
+        )))
+
+  ;;; ^^^ ;;;
+#+end_src
+
+** Multiple-cursors
+:properties:
+:custom_id: multiple-cursors
+:visibility: folded
+:end:
+
+Multiple cursors for Emacs. This is some pretty crazy functionality, so yes, there are kinks. Don't be afraid though.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package multiple-cursors
+    :ensure t
+    :bind (("C-S-c C-S-c" . mc/edit-lines)
+            ("C->" . mc/mark-next-like-this)
+            ("C-<" . mc/mark-previous-like-this)
+            ("C-c C-<" . mc/mark-all-like-this)))
+
+#+end_src
+
+** Visual Fill
+:properties:
+:custom_id: visual-fill
+:visibility: folded
+:end:
+
+We use [[https://github.com/joostkremers/visual-fill-column][visual-fill-column]] to center =org-mode= buffers for a more pleasing writing experience as it centers the contents of the buffer horizontally to seem more like you are editing a document. This is really a matter of personal preference so you can remove the block below if you don't like the behavior.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package visual-fill-column
+    :ensure nil ;; Should be installed in the local lisp dir.
+    :defer t
+    :after org)
+
+#+end_src
+
+** winner-mode
+:properties:
+:custom_id: winner-mode
+:visibility: folded
+:end:
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package init-windows ;; From purcell
+    :ensure nil
+    :demand t
+    :hook (after-init . winner-mode))
+
+#+end_src
+** Winum
+:properties:
+:custom_id: winum
+:visibility: folded
+:end:
+
+Window numbers for Emacs: Navigate your windows and frames using numbers. This is not only handy but used by Treemacs to select the Treemacs panel with the keyboard.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+  ;;; Window Number
+
+  (use-package winum
+    :ensure t
+    :config (winum-mode))
+
+#+end_src
+
+** Writeroom mode
+:properties:
+:custom_id: writeroom-mode
+:visibility: folded
+:end:
+
+writeroom-mode is a minor mode for Emacs that implements a distraction-free writing mode similar to the famous Writeroom editor for OS X.  By default, writeroom-mode does the following things:
+
++ activate fullscreen
++ disable transparency
++ disable the menu bar
++ disable the tool bar
++ disable the scroll bar
++ enable a bottom window divider of 1 pixel
++ maximise the current window (i.e., delete all other windows in the frame)
++ place the fringes outside the margins
++ disable the mode line
++ add window margins to the current buffer so that the text is 80 characters wide
+
+The last three effects are buffer-local. The other effects apply to the current frame. Because writeroom-mode is a minor mode, this isn't entirely on the up and up, since minor modes aren't supposed to have such global effects. But writeroom-mode is meant for distraction-free writing, so these effects do make sense.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package writeroom-mode
+    :ensure t
+    :defer t
+    :init
+    (setq writeroom-width visual-fill-column-width)
+    :after visual-fill-column)
+
 #+end_src
 
 * Productivity
@@ -5998,7 +5843,6 @@ C-c C-c evaluates the current python script (or region if something is selected)
     :after python elpy)
 
 #+end_src
-
 
 * Language Integration
 :properties:
