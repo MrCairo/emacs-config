@@ -19,41 +19,43 @@
 - [[#package-management][Package Management]]
   - [[#lispy-header][Lispy Header]]
   - [[#package-manager][Package Manager]]
+  - [[#automatic-package-updates][Automatic Package Updates]]
 - [[#customized-values][Customized Values]]
   - [[#customization-groups][Customization groups]]
   - [[#file-locations-and-variables][File Locations and Variables]]
   - [[#custom-feature-toggles][Custom Feature Toggles]]
   - [[#custom-feature-choices][Custom Feature Choices]]
   - [[#theme-options][Theme Options]]
-- [[#general-configuration][General Configuration]]
+- [[#default-behavior][Default Behavior]]
+  - [[#landing-page][Landing Page]]
   - [[#create-toc][Create TOC]]
   - [[#better-defaults][Better Defaults]]
   - [[#emacsuser-config-directory][Emacs/User Config Directory]]
-  - [[#automatic-package-updates][Automatic Package Updates]]
-  - [[#which-key][Which Key]]
   - [[#additional-search-paths][Additional Search Paths]]
   - [[#save-history][Save History]]
   - [[#better-modes][Better Modes]]
   - [[#delight][Delight]]
-  - [[#configure-paren-mode][Configure `paren` mode]]
-  - [[#save--restore-frameset][Save / Restore Frameset]]
+  - [[#paren-mode-behavior][`paren` mode behavior]]
   - [[#some-helpful-registers-and-aliases][Some Helpful Registers and Aliases]]
-  - [[#landing-page][Landing Page]]
   - [[#emacs-in-server-mode][Emacs in server mode]]
   - [[#mac-specific][Mac Specific]]
+  - [[#mifis-minor-mode][MiFi's Minor Mode]]
+  - [[#initial-scratch-buffer-message][Initial scratch buffer message]]
+  - [[#exiting-and-cleanup][Exiting And Cleanup]]
   - [[#global-key-binding][Global key-binding]]
 - [[#universal-packages][Universal Packages]]
-  - [[#json-rpc][JSON-RPC]]
-  - [[#auto-complete][Auto-complete]]
+  - [[#anzu][Anzu]]
   - [[#async][Async]]
-  - [[#simple-httpd][Simple-httpd]]
-  - [[#helpful-help-commands][Helpful Help Commands]]
+  - [[#auto-complete][Auto-complete]]
   - [[#dumb-jump][Dumb Jump]]
   - [[#eldoc][Eldoc]]
+  - [[#helpful-help-commands][Helpful Help Commands]]
   - [[#hydra][Hydra]]
-  - [[#anzu][Anzu]]
-  - [[#yasnippet][YASnippet]]
   - [[#jinx][Jinx]]
+  - [[#json-rpc][JSON-RPC]]
+  - [[#simple-httpd][Simple-httpd]]
+  - [[#which-key][Which Key]]
+  - [[#yasnippet][YASnippet]]
 - [[#dashboard][Dashboard]]
   - [[#value-of-dashboard-startup-banner-can-be][Value of dashboard-startup-banner can be:]]
   - [[#dashboard-setup][Dashboard Setup]]
@@ -62,17 +64,26 @@
   - [[#completion-handlers][Completion Handlers]]
   - [[#terminals][Terminals]]
   - [[#file-management][File Management]]
-- [[#visual][Visual]]
+- [[#window-management][Window Management]]
   - [[#ace-window][Ace Window]]
-  - [[#all-the-icons][All-the-icons]]
-  - [[#default-text-scale][Default Text Scale]]
-  - [[#frame-and-font-setup][Frame and Font Setup]]
-  - [[#theme-list-and-selection][Theme List and Selection]]
-  - [[#multiple-cursors][Multiple-cursors]]
-  - [[#visual-fill][Visual Fill]]
+  - [[#popper][Popper]]
+  - [[#swap-buffers][Swap Buffers]]
+  - [[#writeroom-mode][Writeroom mode]]
   - [[#winner-mode][winner-mode]]
   - [[#winum][Winum]]
-  - [[#writeroom-mode][Writeroom mode]]
+- [[#visuals][Visuals]]
+  - [[#all-the-icons][All-the-icons]]
+  - [[#default-text-scale][Default Text Scale]]
+  - [[#diff-hl][Diff HL]]
+  - [[#frame-and-font-setup][Frame and Font Setup]]
+  - [[#theme-list-and-selection][Theme List and Selection]]
+  - [[#lisp-hightlighter][Lisp Hightlighter]]
+  - [[#multiple-cursors][Multiple-cursors]]
+  - [[#pulsar][Pulsar]]
+  - [[#rainbow-mode][Rainbow-mode]]
+  - [[#save--restore-frameset][Save / Restore Frameset]]
+  - [[#solair-mode][Solair mode]]
+  - [[#visual-fill][Visual Fill]]
 - [[#productivity][Productivity]]
   - [[#org-mode][Org Mode]]
   - [[#org-journal][Org Journal]]
@@ -95,21 +106,11 @@
   - [[#debug-support][Debug Support]]
 - [[#miscellaneous][Miscellaneous]]
   - [[#thesaurus][Thesaurus]]
-  - [[#solair-mode][Solair mode]]
   - [[#golden-ratio][Golden Ratio]]
-  - [[#swap-buffers][Swap Buffers]]
   - [[#neotree][Neotree]]
   - [[#centaur-tabs][Centaur Tabs]]
-  - [[#diff-hl][Diff HL]]
-  - [[#pulsar][Pulsar]]
-  - [[#rainbow-mode][Rainbow-mode]]
-  - [[#lisp-hightlighter][Lisp Hightlighter]]
-  - [[#popper][Popper]]
   - [[#markdown-mode][Markdown Mode]]
   - [[#grip-mode][GRIP Mode]]
-  - [[#mifis-minor-mode][MiFi's Minor Mode]]
-  - [[#initial-scratch-buffer-message][Initial scratch buffer message]]
-  - [[#exiting-and-cleanup][Exiting And Cleanup]]
 - [[#lastly][Lastly]]
   - [[#ignore-line-number-mode][Ignore Line Number Mode]]
   - [[#supress-common-warnings][Supress common warnings]]
@@ -517,6 +518,35 @@ NOTE: For now, this is disabled since it's unused.
   ;; Integrates `straight' directly into the `use-package' package through the
   ;; `:straight' expression.
   (straight-use-package 'use-package)
+#+end_src
+
+** Automatic Package Updates
+:properties:
+:custom_id: automatic-package-updates
+:visibility: folded
+:end:
+
+The auto-package-update package helps us keep our Emacs packages up to date! It will prompt you after a certain number of days either at startup or at a specific time of day to remind you to update your packages.
+
+You can also use =M-x auto-package-update-now= to update right now!
+
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+  ;;; Automatic Package Updates
+
+  (use-package auto-package-update
+    ;; :ensure (:fetcher github :repo "rranelli/auto-package-update.el")
+    :ensure t
+    :defer t
+    :custom
+    (auto-package-update-interval 7)
+    (auto-package-update-prompt-before-update t)
+    (auto-package-update-hide-results t)
+    :config
+    (auto-package-update-maybe)
+    (auto-package-update-at-time "09:00"))
+
 #+end_src
 
 * Customized Values
@@ -984,7 +1014,7 @@ Look for a proportional font that is available on the OS. If the actual default 
         (when (not (equal variable-pitch-font variable-pitch-font-family))
             (setq variable-pitch-font-family variable-pitch-font))
         (message "---- Can't find a variable-pitch font to use.")))
-      (message (format ">>> variable-pitch font is %s" variable-pitch-font-family))))
+      (message (format "=== variable-pitch font is %s" variable-pitch-font-family))))
 
 #+end_src
 
@@ -1015,23 +1045,45 @@ Look for a proportional font that is available on the OS. If the actual default 
             (setq mono-spaced-font-family monospace-font)
             (setq default-font-family monospace-font))
   	(message "---- Can't find a monospace font to use.")))
-      (message (format ">>> monospace font is %s" mono-spaced-font-family))))
+      (message (format "=== monospace font is %s" mono-spaced-font-family))))
   
 #+end_src
 
-* General Configuration
+* Default Behavior
 :properties:
-:custom_id: customized-values
+:custom_id: default-behavior
 :visibility: folded
 :end:
 
 Setup initial paths, global values and settings, and Emacs working directories.
+
+** Landing Page
+:properties:
+:custom_id: landing-page
+:visibility: folded
+:end:
+
+Since we are adding to the LIFO list of things to run _after_ elpaca is done initializing, the first entry in the list is the last thing run. Updating and switching to the landing page should be done after everything else is done initializing. This way, things like the *Messages* buffer won't be displayed instead of the landing page.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+  ;;
+  ;; This list is processed as a LIFO queue. This entry _should_ be made to be
+  ;; the first so it executes last.
+  (add-hook 'after-init-hook
+    (lambda ()
+      (mifi/config-landing)
+      (mifi/set-recenter-keys)))
+
+#+end_src
 
 ** Create TOC
 
 #+begin_src emacs-lisp
 
   (use-package org-make-toc
+    :after org
+    :defer t
     :ensure t)
 
 #+end_src
@@ -1179,7 +1231,7 @@ This is the excellent 'F' package. This is a more "friendly/modern" API for work
   ;;; additional Emacs files, like themes or specialized moduls. This is
   ;;; where emacs-config files are backed up to. Of course, any document that the
   ;;; user wants to associate with an Emacs installation can be stored here.
-  (message ">>> working-files-dir = %s" working-files-directory)
+  (message "=== working-files-dir = %s" working-files-directory)
   (make-directory working-files-directory t)
 
   ;;; user-emacs-directory always ends in a "/" so we need to make the
@@ -1200,80 +1252,6 @@ This is the excellent 'F' package. This is a more "friendly/modern" API for work
   ;; to correct them.
   (mifi/validate-variable-pitch-font)
   (mifi/validate-monospace-font)
-
-#+end_src
-
-** Automatic Package Updates
-:properties:
-:custom_id: automatic-package-updates
-:visibility: folded
-:end:
-
-The auto-package-update package helps us keep our Emacs packages up to date! It will prompt you after a certain number of days either at startup or at a specific time of day to remind you to update your packages.
-
-You can also use =M-x auto-package-update-now= to update right now!
-
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-  ;;; Automatic Package Updates
-
-  (use-package auto-package-update
-    ;; :ensure (:fetcher github :repo "rranelli/auto-package-update.el")
-    :ensure t
-    :defer t
-    :custom
-    (auto-package-update-interval 7)
-    (auto-package-update-prompt-before-update t)
-    (auto-package-update-hide-results t)
-    :config
-    (auto-package-update-maybe)
-    (auto-package-update-at-time "09:00"))
-
-#+end_src
-
-** Which Key
-:properties:
-:custom_id: which-key
-:visibility: folded
-:end:
-
-[[Https://github.com/justbur/emacs-which-key][which-key]] is a useful UI panel that appears when you start pressing any key binding in Emacs to offer you all possible completions for the prefix. For example, if you press =C-c= (hold control and press the letter =c=), a panel will appear at the bottom of the frame displaying all of the bindings under that prefix and which command they run. This is very useful for learning the possible key bindings in the mode of your current buffer.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (defun mifi/after-which-key ()
-    (interactive)
-    (which-key-mode 1)
-    (add-to-list 'savehist-additional-variables 'which-key-side-window-location)
-    (which-key-add-key-based-replacements
-      "M-RET |" "display-fill-column"
-      "M-RET ?" "help-at-point")
-    (mmm-keys-minor-mode 1)
-    (when (featurep 'prog-mode)
-      (which-key-add-key-based-replacements
-        "C-c g r" "find-symbol-reference"
-        "C-c g o" "find-defitions-other-window"
-        "C-c g g" "find-defitions"
-        "C-c g ?" "eldoc-definition"))
-    (mifi/set-recenter-keys))
-
-  (use-package which-key
-    ;; :ensure (:wait t)
-    :ensure t
-    :demand t
-    :commands which-key-mode
-    :delight which-key-mode
-    :custom
-    (which-key-popup-type 'side-window)
-    (which-key-preserve-window-configuration t)
-    (which-key-idle-delay 1,0)
-    (which-key-prefix-prefix "✪ ")
-    ;; (which-key-sort-order 'which-key-key-order-alpha)
-    (which-key-min-display-lines 3)
-    :config
-    (add-hook 'after-init-hook #'mifi/after-which-key))
 
 #+end_src
 
@@ -1432,9 +1410,9 @@ Delight enables you to customize the mode names displayed in the mode line. It's
 
 #+end_src
 
-** Configure `paren` mode
+** `paren` mode behavior
 :properties:
-:custom_id: configure-paren-mode
+:custom_id: paren-mode-behavior
 :visibility: folded
 :end:
 
@@ -1453,52 +1431,6 @@ This package is used to highlight matching delimters '( { [ < > ] } )
     show-paren-context-when-offscreen t
     :config
     (show-paren-mode 1))
-
-#+end_src
-
-** Save / Restore Frameset
-:properties:
-:custom_id: save-restore-frameset
-:visibility: folded
-:end:
-
-These functions will save and restore Emacs framework. These are normally called when starting and exiting Emacs.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  
-  (defun mifi/save-desktop-frameset ()
-    (unless (or (daemonp)
-              (not enable-frameset-restore)
-              (not (display-graphic-p)))
-      (desktop-save-mode 0)
-      (desktop-save-frameset)
-      (with-temp-file (expand-file-name "saved-frameset.el" user-emacs-directory)
-        (insert (format
-                  "(setq desktop-saved-frameset %S)"
-                  desktop-saved-frameset)))))
-
-  (add-hook 'kill-emacs-hook 'mifi/save-desktop-frameset -100)
-
-  ;;; ##########################################################################
-
-  (defun mifi/restore-desktop-frameset ()
-    (unless (or (daemonp)
-              (not enable-frameset-restore)
-              (not (display-graphic-p)))
-      (let
-        ((file (expand-file-name "saved-frameset.el" user-emacs-directory)))
-        (desktop-save-mode 0)
-        (if (file-exists-p file)
-          (progn
-            (load file)
-            (desktop-restore-frameset)
-            (when (featurep 'spacious-padding)
-              (when spacious-padding-mode
-                (spacious-padding-mode 0)
-                (spacious-padding-mode 1))))
-          (use-medium-display-font t)))))
 
 #+end_src
 
@@ -1539,26 +1471,6 @@ This local package defines some commonly used registers. Registers need to be lo
       (lambda ()
         (mifi/setup-helpful-aliases)
         (mifi/setup-common-registers)))
-
-#+end_src
-
-** Landing Page
-:properties:
-:custom_id: landing-page
-:visibility: folded
-:end:
-
-Since we are adding to the LIFO list of things to run _after_ elpaca is done initializing, the first entry in the list is the last thing run. Updating and switching to the landing page should be done after everything else is done initializing. This way, things like the *Messages* buffer won't be displayed instead of the landing page.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-  ;;
-  ;; This list is processed as a LIFO queue. This entry _should_ be made to be
-  ;; the first so it executes last.
-  (add-hook 'after-init-hook
-    (lambda ()
-      (mifi/config-landing)
-      (mifi/set-recenter-keys)))
 
 #+end_src
 
@@ -1609,6 +1521,300 @@ This function is called after Elpaca has initialized and, if this machine is a M
 
 #+end_src
 
+** MiFi's Minor Mode
+:properties:
+:custom_id: mifi-minor-mode
+:visibility: folded
+:end:
+
+Mitch's minor mode (or MmM) just defines frequently used hot-keys. It works well when =which-key= is active.
+
+*** Helper Functions
+:properties:
+:custom_id: helper-functions
+:visibility: folded
+:end:
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (defadvice custom-buffer-create (before my-advice-custom-buffer-create)
+    "Exit the current Customize buffer before creating a new one, unless there are modified widgets."
+    (if (eq major-mode 'Custom-mode)
+        (let ((custom-buffer-done-kill t)
+              (custom-buffer-modified nil))
+          (mapc (lambda (widget)
+                  (and (not custom-buffer-modified)
+                       (eq (widget-get widget :custom-state) 'modified)
+                       (setq custom-buffer-modified t)))
+                custom-options)
+          (if (not custom-buffer-modified)
+              (Custom-buffer-done)))))
+
+  (defun mifi/set-fill-column-interactively (num)
+    "Asks for the fill column."
+    (interactive "nfill-column: ")
+    (set-fill-column num))
+
+  (defun mifi/set-org-fill-column-interactively (num)
+    "Asks for the fill column for Org mode."
+    (interactive "norg-fill-column: ")
+    (setq custom-org-fill-column num)
+    (mifi/org-mode-visual-fill)
+    (redraw-display))
+
+  (defun mifi/jump-to-register ()
+    "Asks for a register to jump to."
+    (interactive)
+    (call-interactively 'jump-to-register))
+
+  (defun mifi/customize-mifi ()
+    "Opens up the customize section for all of the MiFi options."
+    (interactive)
+    (ad-activate 'custom-buffer-create)
+    (customize-apropos "mifi-config"))
+
+#+end_src
+
+*** Standard Keymaps
+:properties:
+:custom_id: standard-keymaps
+:visibility: folded
+:end:
+
+This is a set of keymaps that do the same things as the popup menu. Both are here for convenience. *Note* that the ~mmm-menu~ is called with either a ="C-c RET RET"= or simply a ="C-c C-<return>"=.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (defun mifi/define-mmm-minor-mode-map ()
+    (defvar mmm-keys-minor-mode-map
+      (let ((map (make-sparse-keymap)))
+        (bind-keys :map map
+          ("M-RET $" . jinx-correct)
+          ("M-RET ?" . eldoc-box-help-at-point)
+          ("M-RET /" . hydra-combine/body)
+          ("M-RET M s" . markdown-preview-mode)
+          ("M-RET M e" . markdown-preview-cleanup)
+          ("M-RET S e" . eshell)
+          ("M-RET S i" . ielm)
+          ("M-RET S v" . vterm-other-window)
+          ("M-RET v" . hydra-themes-and-fonts/body)
+          ("M-RET W" . writeroom-mode)
+          ("M-RET w <right>" . which-key-setup-side-window-right-bottom)
+          ("M-RET w <down>" . which-key-setup-side-window-bottom)
+          ("M-RET =" . next-theme)
+          ("M-RET -" . previous-theme)
+          ("M-RET _" . which-theme)
+          ("M-RET M-c" . mifi/customize-mifi)
+          ("M-RET d" . dashboard-open)
+          ("M-RET e" . treemacs) ;; e for Explore
+          ("M-RET f" . mifi/set-fill-column-interactively)
+          ("M-RET p" . pulsar-pulse-line)
+          ("M-RET r" . repeat-mode)
+          ("M-RET j" . hydra-registers/body) ;; mifi/jump-to-register)
+          ("M-RET |" . global-display-fill-column-indicator-mode)
+          ("M-RET C-g" . keyboard-quit))
+        map)
+      "mmm-keys-minor-mode keymap.")
+
+    (define-minor-mode mmm-keys-minor-mode
+      "A minor mode so that my key settings override annoying major modes."
+      :init-value t
+      :lighter " MmM"))
+
+  (mifi/define-mmm-minor-mode-map)
+
+#+end_src
+
+*** Context-Aware Keys and Descriptions
+:properties:
+:custom_id: context-aware-keys-and-descriptions
+:visibility: folded
+:end:
+
+For those menus that would normally show up as either =prefix= or =lambda=, given them a better description via the which-key replacement function. This is run via the ~which-key-inhibit-display-hook~ hook which is run just before the which-key popup is shown. Plus, some keys are mode specific and will only appear when that major mode is active.
+
+#+begin_src emacs-lisp :results output silent
+  ;;; ##########################################################################
+
+  (defun mifi/mmm-handle-context-keys (&optional winframe)
+    "Enable or Disable keys based upon featurep context."
+    (when winframe
+      (let ((map mmm-keys-minor-mode-map))
+        (when enable-thesaurus
+          (bind-keys :map map
+            ("M-RET t t" . mw-thesaurus-lookup-dwim)))
+        (cond
+          ((equal major-mode 'org-mode)
+            (bind-keys :map map
+              ("M-RET M-RET" . org-insert-heading)
+              ("M-RET o f" . mifi/set-org-fill-column-interactively)
+              ("M-RET o c" . mifi/toggle-org-centering)
+              ("M-RET o r" . org-mode-restart)
+              ("M-RET o l" . org-toggle-link-display)))
+          ((equal major-mode 'python-mode)
+            (bind-keys :map map
+              ("M-RET P" . 'pydoc-at-point)))
+    ((equal major-mode 'tuareg-mode)
+      (bind-keys :map map
+        ("M-RET c m" . tuarg-browse-manual)))
+          (t   ;; Default 
+            (unbind-key "M-RET o f" map)
+            (unbind-key "M-RET o c" map)
+            (unbind-key "M-RET o l" map)
+            (unbind-key "M-RET P ?" map)
+            (unbind-key "M-RET c m" map)
+            (unbind-key "M-RET M-RET" map)))))
+
+    ;; Override default menu text with better things
+    (which-key-add-key-based-replacements
+      "M-RET t t" "thesaurus-at-point"
+      "M-RET o" "org-menu"
+      "M-RET c" "ocaml-menu"
+      "M-RET o c" "toggle-org-centering"
+      "M-RET o f" "set-org-fill-column"))
+
+#+end_src
+
+*** Key Description Overrides
+:properties:
+:custom_id: key-description-overrides
+:visibility: folded
+:end:
+
+Sometimes, the descriptions that which-key provide are not what we want. So, for cases like this, these description replacemens are used.
+
+What's also important with this function is that it calls the ~mifi/mmm-handle-context-keys~ function which updates the context aware keys.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (defun mifi/mmm-update-menu (&optional winframe)
+    (interactive)
+    (mifi/mmm-handle-context-keys nil)
+    (which-key-add-key-based-replacements
+      "M-RET w" "which-key-position"
+      "M-RET w <right>" "which-key-on-right"
+      "M-RET w <down>" "which-key-on-bottom"
+      "M-RET M" "markdown-preview"
+      "M-RET S" "shells"
+      "M-RET P" "python-menu"
+      "M-RET e" "treemacs-toggle"
+      "M-RET t" "Thesaurus"
+      "M-RET f" "set-fill-column"
+      "M-RET j" "jump-to-register"
+      "M-RET v" "font-size"
+      "M-RET C-g" "Exit menu"
+      "M-RET" "Mitch's Menu"))
+
+#+end_src
+
+*** Hooks
+:properties:
+:custom_id: hooks
+:visibility: folded
+:end:
+
+These are the hools that update the context-aware menu triggered by various state changes of Emacs buffers and windows.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  ;; Check the keys when:
+  ;; - the whick-key menu is displayed
+  (add-hook 'after-init-hook
+    (lambda ()
+      (add-hook 'which-key-inhibit-display-hook 'mifi/mmm-update-menu)
+      ;; - the user updates/changes the buffer - like loading a file
+      ;;   (but not switching to a new buffer)
+      (add-hook 'window-buffer-change-functions 'mifi/mmm-handle-context-keys)
+      ;; - the user switches windows
+      (add-hook 'window-selection-change-functions 'mifi/mmm-handle-context-keys)
+      ;; (add-hook 'which-key-mode-hook #'mifi/after-which-key)
+      (mifi/after-which-key)
+      (mifi/define-mmm-minor-mode-map)
+      (mifi/set-recenter-keys)))
+
+#+end_src
+
+** Initial *scratch* buffer message
+:properties:
+:custom_id: initial-scratch-buffer-message
+:visibility: folded
+:end:
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (defun mifi/config-landing ()
+    (cond
+      ((equal default-landing-mode 'landing-mode-dashboard)
+        (dashboard-open))
+      ((equal default-landing-mode 'landing-mode-scratch)
+        (switch-to-buffer "*scratch*")
+        (erase-buffer)
+        (beginning-of-buffer)
+        (insert (concat 
+                ";; 'Tis but a scratch! A scratch? Your arm's off! - No, it isn't!\n"
+                (format ";; Happy hacking, %s! %s" user-login-name
+                  "Press M-RET (Meta-RET) to open the MiFi Menu\n")))
+        (end-of-buffer))
+      ((equal default-landing-mode 'landing-mode-ielm)
+        (ielm))
+      ((equal default-landing-mode 'landing-mode-eshell)
+        (eshell))))
+
+#+end_src
+
+** Exiting And Cleanup
+:properties:
+:custom_id: existing-and-cleanup
+:visibility: folded
+:end:
+
++ Also, opam-user-setup Compiled (OCaml)
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (defun mifi/backup-file (file)
+    "Backup the file from the configuration directory into the
+  backup directory. If a file already exists in the backup directory, the old
+  file is renamed with a ~ at the end before the new file is copied. If Emacs
+  is running in server mode, then don't backup the files when the emacsclient
+  exits."
+    (unless (server-running-p)
+      (let ((backdir (format "%s/config-backup" working-files-directory)))
+        (make-directory backdir t)
+        ;; --------------------------------------------------
+        (when (file-exists-p (format "%s/%s" backdir file))
+        (copy-file
+          (expand-file-name file backdir)
+          (expand-file-name (format "%s~" file) backdir) t))
+        (when (file-exists-p (format "%s/%s" emacs-config-directory file))
+        (copy-file
+          (expand-file-name file emacs-config-directory)
+          (expand-file-name file backdir) t)))))
+
+  (defun mifi/when-exiting-emacs ()
+    "Backup Emacs initialization files for recovery. If old files exist, they are
+  backed up as tilde (~) files. Also, if ocaml is enabled, byte (re)compile the
+  opam-user-setup.el so that upon next startup, it can be loaded quickly."
+    (when (featurep 'simple-httpd)
+      (httpd-stop))
+    (when enable-ocaml
+      (let ((src (expand-file-name "opam-user-setup.el" emacs-config-directory)))
+        (when (file-exists-p src)
+          (byte-compile-file src))))
+    (mifi/backup-file "early-init.el")
+    (mifi/backup-file "init.el")
+    (mifi/backup-file "emacs-config-elpaca.org")
+    (mifi/backup-file "emacs-config-elpa.org"))
+
+  (add-hook 'kill-emacs-hook #'mifi/when-exiting-emacs)
+
+#+end_src
 ** Global key-binding
 :properties:
 :custom_id: global-key-binding
@@ -1673,27 +1879,54 @@ This is a collection of functions to make handling installed system packages mor
   
 #+end_src
 
-** JSON-RPC
+** Anzu
 :properties:
-:custom_id: json-rpc
+:custom_id: anzu
 :visibility: folded
 :end:
 
-The JSON-RPC protocol is used to communicate with many different types of server. This is required for the DAP Debug Adapter as well as Eglot.
+anzu.el is an Emacs port of anzu.vim. anzu.el provides a minor mode which displays current match and total matches information in the mode-line in various search modes.
 
+#+begin_src emacs-lisp :tangle no
+  ;;; ##########################################################################
+
+  (use-package anzu
+    :ensure t
+    :custom
+    (anzu-mode-lighter "")
+    (anzu-deactivate-region t)
+    (anzu-search-threshold 1000)
+    (anzu-replace-threshold 50)
+    (anzu-replace-to-string-separator " => ")
+    :config
+    (global-anzu-mode +1)
+    (set-face-attribute 'anzu-mode-line nil
+      :foreground "yellow" :weight 'bold)
+    (define-key isearch-mode-map
+      [remap isearch-query-replace]  #'anzu-isearch-query-replace)
+    (define-key isearch-mode-map
+      [remap isearch-query-replace-regexp] #'anzu-isearch-query-replace-regexp))
+
+#+end_src
+
+** Async
+:properties:
+:custom_id: async
+:visibility: folded
+:end:
+
+~async.el~ is a module for doing asynchronous processing in Emacs. Some async applications are provided as well with this package:
+
++ Dired-async
++ smtp-mail-async
++ async-bytecomp
++ async-package
+  
 #+begin_src emacs-lisp
   ;;; ##########################################################################
 
-  (use-package jsonrpc
-    :defer t
+  (use-package async
     :ensure t)
-    ;; :config
-    ;; For some odd reason, it is possible that jsonrpc will try to load a
-    ;; theme. (jsonrpc/lisp/custom.el:1362). If our theme hasn't been loaded
-    ;; yet, go ahead and try. This could prevent a startup without the theme
-    ;; properly loaded.
-    ;; (unless theme-did-load
-    ;;   (mifi/load-theme-from-selector)))
 
 #+end_src
 
@@ -1725,69 +1958,6 @@ The JSON-RPC protocol is used to communicate with many different types of server
                                ac-source-abbrev
                                ac-source-dictionary
                                ac-source-words-in-same-mode-buffers)))
-
-#+end_src
-
-** Async
-:properties:
-:custom_id: async
-:visibility: folded
-:end:
-
-~async.el~ is a module for doing asynchronous processing in Emacs. Some async applications are provided as well with this package:
-
-+ Dired-async
-+ smtp-mail-async
-+ async-bytecomp
-+ async-package
-  
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package async
-    :ensure t)
-
-#+end_src
-
-** Simple-httpd
-:properties:
-:custom_id: simple-httpd
-:visibility: folded
-:end:
-
-A simple Emacs web server.
-
-This used to be httpd.el but there are already several of these out there already of varying usefulness. Since the name change, it's been stripped down to simply serve files and directory listings. Client requests are sanitized so this should be safe, but I make no guarantees.
-
-#+begin_src emacs-lisp
-
-  ;; All kept in local /lisp directory.
-  ;; (use-package web-server-status-codes )
-  ;; (use-package simple-httpd )
-  ;; (use-package web-server )
-
-#+end_src
-
-** Helpful Help Commands
-:properties:
-:custom_id: helpful-help-commands
-:visibility: folded
-:end:
-
-[[https://github.com/Wilfred/helpful][Helpful]] adds a lot of very helpful (get it?) information to Emacs' =describe-= command buffers. For example, if you use =describe-function=, you will not only get the documentation about the function, you will also see the source code of the function and where it gets used in other places in the Emacs configuration. It is very useful for figuring out how things work in Emacs.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package helpful
-    :ensure t
-    ;; :commands (helpful-callable helpful-variable helpful-command helpful-key helpful-function)
-    :config
-    (bind-keys
-      ([remap describe-command] . helpful-command)
-      ([remap describe-function] . helpful-function)
-      ([remap describe-variable] . helpful-variable)
-      ([remap describe-key] . helpful-key)))
 
 #+end_src
 
@@ -1840,6 +2010,29 @@ This package displays ElDoc documentations in a childframe. The childframe is se
     :delight DocBox
     :ensure t
     :hook (after-init . mifi/setup-hooks-for-eldoc))
+
+#+end_src
+
+** Helpful Help Commands
+:properties:
+:custom_id: helpful-help-commands
+:visibility: folded
+:end:
+
+[[https://github.com/Wilfred/helpful][Helpful]] adds a lot of very helpful (get it?) information to Emacs' =describe-= command buffers. For example, if you use =describe-function=, you will not only get the documentation about the function, you will also see the source code of the function and where it gets used in other places in the Emacs configuration. It is very useful for figuring out how things work in Emacs.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package helpful
+    :ensure t
+    ;; :commands (helpful-callable helpful-variable helpful-command helpful-key helpful-function)
+    :config
+    (bind-keys
+      ([remap describe-command] . helpful-command)
+      ([remap describe-function] . helpful-function)
+      ([remap describe-variable] . helpful-variable)
+      ([remap describe-key] . helpful-key)))
 
 #+end_src
 
@@ -2021,33 +2214,144 @@ Combination of groups
 #+begin_src emacs-lisp
     ;;; ^^^ ;;;
 #+end_src
-** Anzu
+** Jinx
 :properties:
-:custom_id: anzu
+:custom_id: jinx
 :visibility: folded
 :end:
 
-anzu.el is an Emacs port of anzu.vim. anzu.el provides a minor mode which displays current match and total matches information in the mode-line in various search modes.
+Jinx is a fast just-in-time spell-checker for Emacs. Jinx highlights misspelled words in the text of the visible portion of the buffer. For efficiency, Jinx highlights misspellings lazily, recognizes window boundaries and text folding, if any. For example, when unfolding or scrolling, only the newly visible part of the text is checked if it has not been checked before. Each misspelling can be corrected from a list of dictionary words presented as a completion menu.
 
-#+begin_src emacs-lisp :tangle no
+*Important* Jinx requires the library ~libenchant~ or ~enchant~ installed. This can be done via the [[https://github.com/AbiWord/enchant][enchant github]] site, through ~brew~ on macOS or the package management system of the OS.
+
+#+begin_src emacs-lisp
   ;;; ##########################################################################
 
-  (use-package anzu
+  (use-package jinx
     :ensure t
-    :custom
-    (anzu-mode-lighter "")
-    (anzu-deactivate-region t)
-    (anzu-search-threshold 1000)
-    (anzu-replace-threshold 50)
-    (anzu-replace-to-string-separator " => ")
+    :bind ( ("C-c C-$" . jinx-correct)
+            ("C-x C-$" . jinx-languages))
+    :hook (emacs-startup . global-jinx-mode)
     :config
-    (global-anzu-mode +1)
-    (set-face-attribute 'anzu-mode-line nil
-      :foreground "yellow" :weight 'bold)
-    (define-key isearch-mode-map
-      [remap isearch-query-replace]  #'anzu-isearch-query-replace)
-    (define-key isearch-mode-map
-      [remap isearch-query-replace-regexp] #'anzu-isearch-query-replace-regexp))
+    (dolist (hook '(text-mode-hook prog-mode-hook org-mode-hook))
+            (add-hook hook #'jinx-mode)))
+
+
+#+end_src
+
+** JSON-RPC
+:properties:
+:custom_id: json-rpc
+:visibility: folded
+:end:
+
+The JSON-RPC protocol is used to communicate with many different types of server. This is required for the DAP Debug Adapter as well as Eglot.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package jsonrpc
+    :defer t
+    :ensure t)
+    ;; :config
+    ;; For some odd reason, it is possible that jsonrpc will try to load a
+    ;; theme. (jsonrpc/lisp/custom.el:1362). If our theme hasn't been loaded
+    ;; yet, go ahead and try. This could prevent a startup without the theme
+    ;; properly loaded.
+    ;; (unless theme-did-load
+    ;;   (mifi/load-theme-from-selector)))
+
+#+end_src
+
+** Simple-httpd
+:properties:
+:custom_id: simple-httpd
+:visibility: folded
+:end:
+
+A simple Emacs web server.
+
+This used to be httpd.el but there are already several of these out there already of varying usefulness. Since the name change, it's been stripped down to simply serve files and directory listings. Client requests are sanitized so this should be safe, but I make no guarantees.
+
+#+begin_src emacs-lisp
+
+  ;; All kept in local /lisp directory.
+  ;; (use-package web-server-status-codes )
+  ;; (use-package simple-httpd )
+  ;; (use-package web-server )
+
+#+end_src
+** Thesaurus
+:properties:
+:custom_id: thesaurus
+:visibility: folded
+:end:
+
+The ubiquitous Merriam-Websters Thesaurus
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package mw-thesaurus
+    :when enable-thesaurus
+    :custom
+    (mw-thesaurus-api-key "429331e9-b40e-4f17-9988-0632ef3ddd2d")
+    :defer t
+    :commands mw-thesaurus-lookup-dwim
+    :hook (mw-thesaurus-mode . variable-pitch-mode)
+    :config
+    ;; window on the right side
+    (add-to-list 'display-buffer-alist '(,mw-thesaurus-buffer-name
+                                          (display-buffer-reuse-window
+                                            display-buffer-in-direction)
+                                          (direction . right)
+                                          (window . root)
+                                          (window-width . 0.3))))
+
+#+end_src
+
+** Which Key
+:properties:
+:custom_id: which-key
+:visibility: folded
+:end:
+
+[[Https://github.com/justbur/emacs-which-key][which-key]] is a useful UI panel that appears when you start pressing any key binding in Emacs to offer you all possible completions for the prefix. For example, if you press =C-c= (hold control and press the letter =c=), a panel will appear at the bottom of the frame displaying all of the bindings under that prefix and which command they run. This is very useful for learning the possible key bindings in the mode of your current buffer.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (defun mifi/after-which-key ()
+    (interactive)
+    (which-key-mode 1)
+    (add-to-list 'savehist-additional-variables 'which-key-side-window-location)
+    (which-key-add-key-based-replacements
+      "M-RET |" "display-fill-column"
+      "M-RET ?" "help-at-point")
+    (mmm-keys-minor-mode 1)
+    (when (featurep 'prog-mode)
+      (which-key-add-key-based-replacements
+        "C-c g r" "find-symbol-reference"
+        "C-c g o" "find-defitions-other-window"
+        "C-c g g" "find-defitions"
+        "C-c g ?" "eldoc-definition"))
+    (mifi/set-recenter-keys))
+
+  (use-package which-key
+    ;; :ensure (:wait t)
+    :ensure t
+    :demand t
+    :commands which-key-mode
+    :delight which-key-mode
+    :custom
+    (which-key-popup-type 'side-window)
+    (which-key-preserve-window-configuration t)
+    (which-key-idle-delay 1,0)
+    (which-key-prefix-prefix "✪ ")
+    ;; (which-key-sort-order 'which-key-key-order-alpha)
+    (which-key-min-display-lines 3)
+    :config
+    (add-hook 'after-init-hook #'mifi/after-which-key))
 
 #+end_src
 
@@ -2096,84 +2400,6 @@ Collections of more yasnippet snippets for various languages.
   (use-package yasnippet-snippets
     :ensure t
     :after yasnippet)
-
-#+end_src
-
-** Jinx
-:properties:
-:custom_id: jinx
-:visibility: folded
-:end:
-
-Jinx is a fast just-in-time spell-checker for Emacs. Jinx highlights misspelled words in the text of the visible portion of the buffer. For efficiency, Jinx highlights misspellings lazily, recognizes window boundaries and text folding, if any. For example, when unfolding or scrolling, only the newly visible part of the text is checked if it has not been checked before. Each misspelling can be corrected from a list of dictionary words presented as a completion menu.
-
-*Important* Jinx requires the library ~libenchant~ or ~enchant~ installed. This can be done via the [[https://github.com/AbiWord/enchant][enchant github]] site, through ~brew~ on macOS or the package management system of the OS.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package jinx
-    :ensure t
-    :bind ( ("C-c C-$" . jinx-correct)
-            ("C-x C-$" . jinx-languages))
-    :hook (emacs-startup . global-jinx-mode)
-    :config
-    (dolist (hook '(text-mode-hook prog-mode-hook org-mode-hook))
-            (add-hook hook #'jinx-mode)))
-
-
-#+end_src
-
-* Dashboard
-:properties:
-:custom_id: dashboard
-:visibility: folded
-:end:
-
-Dashboard is an extensible Emacs startup screen showing you what’s most important.
-
-** Value of dashboard-startup-banner can be:
-*** =nil= to display no banner
-*** ='official= which displays the official emacs logo
-*** ='logo= which displays an alternative emacs logo
-*** =1, 2 or 3= which displays one of the text banners
-*** ~"path/to/your/image.gif"~,
-~"path/to/your/image.png"~ or
-~"path/to/your/text.txt"~  which displays whatever gif/image/text you would prefer
-*** a cons of '("path/to/your/image.png" . "path/to/your/text.txt")
-
-** Dashboard Setup
-:properties:
-:custom_id: dashboard-setup
-:visibility: folded
-:end:
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package dashboard
-    :ensure t
-    :defer t
-    :custom
-    (dashboard-items '( (recents   . 12)
-                        (bookmarks . 5)
-                        (projects  . 5)
-                        (agenda    . 5)))
-    (dashboard-center-content t)
-    (dashboard-set-heading-icons t)
-    (dashboard-set-file-icons t)  
-    (dashboard-footer-messages '("Greetings Program!"))
-    (dashboard-banner-logo-title "Welcome to Emacs!")
-    :commands dashboard-open
-    :bind ("M-RET d" . dashboard-open)
-    :config
-    ;; (setq initial-buffer-choice (lambda () (get-buffer-create dashboard-buffer-name)))
-    (add-hook 'after-init-hook #'dashboard-insert-startupify-lists)
-    (add-hook 'after-init-hook #'dashboard-initialize)
-    (when (equal custom-project-handler 'custom-project-projectile)
-      (setq dashboard-projects-backend 'projectile))
-    (setq dashboard-startup-banner (expand-file-name "Emacs-modern-is-sexy-v1.png" user-emacs-directory))
-    (dashboard-setup-startup-hook))
 
 #+end_src
 
@@ -3249,6 +3475,7 @@ directly into =dired=.
   #+begin_src emacs-lisp
     (use-package all-the-icons-dired
       :after dired
+      :ensure t
       :when (display-graphic-p)
       :hook (dired-mode . all-the-icons-dired-mode))
     #+end_src
@@ -3629,13 +3856,13 @@ Treemacs is a file and project explorer similar to NeoTree or vim’s NerdTree, 
 
 #+end_src
 
-* Visual
+* Window Management
 :properties:
-:custom_id: visual
+:custom_id: window-management
 :visibility: folded
 :end:
 
-These packages and functions are used to select from a list of curated themes and also to handle frame size changes. In addition to themes, packages that are visually oriented (like writeroom) are also included.
+These packages enhance the management of windows and buffers.
 
 ** Ace Window
 :properties:
@@ -3653,6 +3880,171 @@ These packages and functions are used to select from a list of curated themes an
     :bind ("M-o" . ace-window))
 
 #+end_src
+
+** Golden Ratio
+:properties:
+:custom_id: golden-ratio
+:visibility: folded
+:end:
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+  ;; Golen Ratio
+
+  (use-package golden-ratio
+    :when enable-golden-ratio
+    :custom
+    (golden-ratio-auto-scale t)
+    (golden-ratio-adjust-factor .4)
+    (golden-ratio-wide-adjust-factor .4)
+    (golden-ratio-max-width 100)
+    (golden-ratio-exclude-modes '(
+                                   prog-mode
+                                   dashboard-mode
+                                   ;;inferior-emacs-lisp-mode
+                                   ;;inferior-python-mode
+                                   comint-mode
+                                   ;;lisp-interaction-mode
+                                   treemacs-mode
+                                   undo-tree-visualizer-mode
+                                   vundo-mode
+                                   ))
+    (golden-ratio-exclude-buffer-regexp '("dap*"
+                                           "*python*"))
+    :config
+    (golden-ratio-mode 1))
+
+#+end_src
+
+** Popper
+:properties:
+:custom_id: popper
+:visibility: folded
+:end:
+
+Popper is a minor-mode to tame the flood of ephemeral windows Emacs produces, while still keeping them within arm’s reach.
+
+Designate any buffer to “popup” status, and it will stay out of your way. Disimss or summon it easily with one key. Cycle through all your “popups” or just the ones relevant to your current buffer. Group popups automatically so you’re presented with the most relevant ones. Useful for many things, including toggling display of REPLs, documentation, compilation or shell output: any buffer you need instant access to but want kept out of your way!
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package popper
+    :ensure t :defer t
+    :bind (("C-`"   . popper-toggle)
+            ("M-`"   . popper-cycle)
+            ("C-M-`" . popper-toggle-type))
+    :init
+    (setq popper-reference-buffers
+      '("\\*Messages\\*"
+         "\\*scratch\\*"
+         "\\*ielm\\*"
+         "Output\\*$"
+         "\\*Async Shell Command\\*"
+         "^\\*eshell.*\\*$" eshell-mode ;eshell as a popup
+         "^\\*shell.*\\*$"  shell-mode  ;shell as a popup
+         "^\\*term.*\\*$"   term-mode   ;term as a popup
+         "^\\*vterm.*\\*$"  vterm-mode  ;vterm as a popup
+         help-mode
+         compilation-mode))
+    :config
+    (popper-mode +1)
+    (popper-echo-mode +1))
+
+#+end_src
+
+** Swap Buffers
+:properties:
+:custom_id: swap-buffers
+:visibility: folded
+:end:
+
+This file is for lazy people wanting to swap buffers without typing C-x b on each window.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package buffer-move
+    :bind (("C-S-<up>"     . buf-move-up)
+            ("C-S-<down>"  . buf-move-down)
+            ("C-S-<left>"  . buf-move-left)
+            ("C-S-<right>" . buf-move-right)))
+
+#+end_src
+
+** Writeroom mode
+:properties:
+:custom_id: writeroom-mode
+:visibility: folded
+:end:
+
+writeroom-mode is a minor mode for Emacs that implements a distraction-free writing mode similar to the famous Writeroom editor for OS X.  By default, writeroom-mode does the following things:
+
++ activate fullscreen
++ disable transparency
++ disable the menu bar
++ disable the tool bar
++ disable the scroll bar
++ enable a bottom window divider of 1 pixel
++ maximise the current window (i.e., delete all other windows in the frame)
++ place the fringes outside the margins
++ disable the mode line
++ add window margins to the current buffer so that the text is 80 characters wide
+
+The last three effects are buffer-local. The other effects apply to the current frame. Because writeroom-mode is a minor mode, this isn't entirely on the up and up, since minor modes aren't supposed to have such global effects. But writeroom-mode is meant for distraction-free writing, so these effects do make sense.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package writeroom-mode
+    :ensure t
+    :defer t
+    :init
+    (setq writeroom-width visual-fill-column-width)
+    :after visual-fill-column)
+
+#+end_src
+
+** winner-mode
+:properties:
+:custom_id: winner-mode
+:visibility: folded
+:end:
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package init-windows ;; From purcell
+    :ensure nil
+    :demand t
+    :hook (after-init . winner-mode))
+
+#+end_src
+** Winum
+:properties:
+:custom_id: winum
+:visibility: folded
+:end:
+
+Window numbers for Emacs: Navigate your windows and frames using numbers. This is not only handy but used by Treemacs to select the Treemacs panel with the keyboard.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+  ;;; Window Number
+
+  (use-package winum
+    :ensure t
+    :config (winum-mode))
+
+#+end_src
+
+* Visuals
+:properties:
+:custom_id: visuals
+:visibility: folded
+:end:
+
+These packages and functions are used to select from a list of curated themes and also to handle frame size changes. In addition to themes, packages that are visually oriented (like writeroom) are also included.
 
 ** All-the-icons
 :properties:
@@ -3689,6 +4081,24 @@ This package provides commands for increasing or decreasing the default font siz
     :hook (after-init . default-text-scale-mode))
 
 #+end_src
+** Diff HL
+:properties:
+:custom_id: diff-hl
+:visibility: folded
+:end:
+
+=diff-hl-mode= highlights uncommitted changes on the left side of the window (area also known as the "gutter"), allows you to jump between and revert them selectively.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package diff-hl
+    :ensure t
+    :config
+    (global-diff-hl-mode))
+
+#+end_src
+
 ** Frame and Font Setup
 :properties:
 :custom_id: frame-and-font-setup
@@ -4090,6 +4500,267 @@ This package provides a global minor mode to increase the spacing/padding of Ema
   ;;; ^^^ ;;;
 #+end_src
 
+** GRIP Mode
+:properties:
+:custom_id: grip-mode
+:visibility: folded
+:end:
+
+Instant Github-flavored Markdown/Org preview using Grip (GitHub Readme Instant Preview).
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  ;; Use keybindings
+  (use-package grip-mode
+    :ensure t :defer t
+    :bind (:map markdown-mode-command-map
+            ("g" . grip-mode)))
+
+  ;; ;; Or using hooks
+  ;; (use-package grip-mode
+  ;;   :hook ((markdown-mode org-mode) . grip-mode))
+
+#+end_src
+** Lisp Hightlighter
+:properties:
+:custom_id: lisp-highlighter
+:visibility: folded
+:end:
+
+highlight-defined is an Emacs minor mode that highlights defined Emacs Lisp symbols in source code.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package highlight-defined
+    :defer t
+    :after emacs-lisp-mode
+    :hook (emacs-lisp-mode . highlight-defined-mode))
+
+#+end_src
+
+** Markdown Mode
+:properties:
+:custom_id: markdown-mode
+:visibility: folded
+:end:
+
+markdown-mode is a major mode for editing Markdown-formatted text. The latest stable version is markdown-mode 2.5, released on Feb 12, 2022. See the release notes for details. markdown-mode is free software, licensed under the GNU GPL, version 3 or later.
+
+It's important to note that ~multimarkdown~ is set as the ~markdown-command~. This is an external program that was loaded via brew. Another option is ~pandoc~ and ~markdown.pl~. In each case, these are external and, whatever is chosen, needs to appear as the ~markdown-command~.
+
++ external markdown-command
+
+#+begin_src bash :tangle no
+  brew install multiparkdown
+#+end_src
+
++ markdown-mode package
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  ;; (defun mifi/load-web-support ()
+  ;;   (use-package web-server-status-codes )
+  ;;   (use-package simple-httpd
+  ;;     :preface (setq warning-minimum-level :emergency)
+  ;;     
+  ;;     :config (setq warning-minimum-level :warning))
+  ;;   (use-package websocket )
+  ;;   (use-package web-server ))
+
+  (use-package markdown-mode
+    :defer t :ensure t
+    :mode (("README\\.md\\'" . gfm-mode)
+           ("\\.md\\'" . markdown-mode)
+           ("\\.markdown\\'" . markdown-mode))
+    :init (setq markdown-command "multimarkdown"))
+    ;;:hook (after-init . mifi/load-web-support))
+    
+
+#+end_src
+
+*** Markdown Preview Mode
+:properties:
+:custom_id: markdown-preview-mode
+:visibility: folded
+:end:
+
+Markdown preview in emacs features:
+
++ on save/idle preview update
++ scroll sync
++ custom/extra css and javascript
++ remote preview
++ multiple simultaneous previews
+  
+#+begin_src emacs-lisp :tangle no
+
+  ;; markdown-preview-mode is depent upon:
+  ;; +  markdown-mode.el
+  ;; +  websocket.el
+  ;; +  web-server.el
+
+  (use-package markdown-preview-mode
+    :after (:all websocket web-server markdown-mode)
+    :defer t
+    :config
+    (add-to-list 'markdown-preview-stylesheets
+      "https://raw.githubusercontent.com/richleland/pygments-css/master/emacs.css")
+    (add-to-list 'markdown-preview-javascript
+      "http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-MML-AM_CHTML"))
+
+#+end_src
+
+*** Impatient Mode
+:properties:
+:custom_id: impatient-mode
+:visibility: folded
+:end:
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (defun markdown-html (buffer)
+    (princ (with-current-buffer buffer
+  	   (format "<!DOCTYPE html><html><title>Impatient Markdown</title><xmp theme=\"united\" style=\"display:none;\"> %s  </xmp><script src=\"http://ndossougbe.github.io/strapdown/dist/strapdown.js\"></script></html>" (buffer-substring-no-properties (point-min) (point-max))))
+      (current-buffer)))
+
+  (use-package simple-httpd
+    :ensure t)
+
+  (use-package impatient-mode
+    :ensure t :defer t
+    :config
+    (imp-set-user-filter #'markdown-html)
+    :hook (elpaca-after-init . httpd-start))
+
+#+end_src
+
+** Multiple-cursors
+:properties:
+:custom_id: multiple-cursors
+:visibility: folded
+:end:
+
+Multiple cursors for Emacs. This is some pretty crazy functionality, so yes, there are kinks. Don't be afraid though.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package multiple-cursors
+    :ensure t
+    :bind (("C-S-c C-S-c" . mc/edit-lines)
+            ("C->" . mc/mark-next-like-this)
+            ("C-<" . mc/mark-previous-like-this)
+            ("C-c C-<" . mc/mark-all-like-this)))
+
+#+end_src
+
+** Pulsar
+:properties:
+:custom_id: pulsar
+:visibility: folded
+:end:
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package pulsar
+    :ensure t
+    :config
+    (pulsar-global-mode)
+    :custom
+    (pulsar-pulse t)
+    (pulsar-delay 0.10)
+    (pulsar-iterations 10)
+    (pulsar-face 'pulsar-magenta)
+    (pulsar-highlight-face 'pulsar-yellow))
+
+#+end_src
+
+** Rainbow-mode
+:properties:
+:custom_id: rainbow-mode
+:visibility: folded
+:end:
+
+This minor mode sets background color to strings that match color names, e.g. #0000FF is displayed in white with a blue background.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package rainbow-mode
+    :ensure t
+    :hook (prog-mode . (lambda () (rainbow-mode t))))
+
+#+end_src
+
+** Save / Restore Frameset
+:properties:
+:custom_id: save-restore-frameset
+:visibility: folded
+:end:
+
+These functions will save and restore Emacs framework. These are normally called when starting and exiting Emacs.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  
+  (defun mifi/save-desktop-frameset ()
+    (unless (or (daemonp)
+              (not enable-frameset-restore)
+              (not (display-graphic-p)))
+      (desktop-save-mode 0)
+      (desktop-save-frameset)
+      (with-temp-file (expand-file-name "saved-frameset.el" user-emacs-directory)
+        (insert (format
+                  "(setq desktop-saved-frameset %S)"
+                  desktop-saved-frameset)))))
+
+  (add-hook 'kill-emacs-hook 'mifi/save-desktop-frameset -100)
+
+  ;;; ##########################################################################
+
+  (defun mifi/restore-desktop-frameset ()
+    (unless (or (daemonp)
+              (not enable-frameset-restore)
+              (not (display-graphic-p)))
+      (let
+        ((file (expand-file-name "saved-frameset.el" user-emacs-directory)))
+        (desktop-save-mode 0)
+        (if (file-exists-p file)
+          (progn
+            (load file)
+            (desktop-restore-frameset)
+            (when (featurep 'spacious-padding)
+              (when spacious-padding-mode
+                (spacious-padding-mode 0)
+                (spacious-padding-mode 1))))
+          (use-medium-display-font t)))))
+
+#+end_src
+** Solair mode
+:properties:
+:custom_id: solair-mode
+:visibility: folded
+:end:
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package solaire-mode
+    :ensure t
+    :after treemacs
+    :hook (after-init . solaire-global-mode)
+    :config
+    (push '(treemacs-window-background-face . solaire-default-face) solaire-mode-remap-alist)
+    (push '(treemacs-hl-line-face . solaire-hl-line-face) solaire-mode-remap-alist))
+
+#+end_src
+
 ** Theme List and Selection
 :properties:
 :custom_id: theme-list-and-selection
@@ -4370,26 +5041,6 @@ This includes the theme to use in both graphical and non-graphical.
   ;;; ^^^ ;;;
 #+end_src
 
-** Multiple-cursors
-:properties:
-:custom_id: multiple-cursors
-:visibility: folded
-:end:
-
-Multiple cursors for Emacs. This is some pretty crazy functionality, so yes, there are kinks. Don't be afraid though.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package multiple-cursors
-    :ensure t
-    :bind (("C-S-c C-S-c" . mc/edit-lines)
-            ("C->" . mc/mark-next-like-this)
-            ("C-<" . mc/mark-previous-like-this)
-            ("C-c C-<" . mc/mark-all-like-this)))
-
-#+end_src
-
 ** Visual Fill
 :properties:
 :custom_id: visual-fill
@@ -4407,73 +5058,6 @@ We use [[https://github.com/joostkremers/visual-fill-column][visual-fill-column]
     :after org)
 
 #+end_src
-
-** winner-mode
-:properties:
-:custom_id: winner-mode
-:visibility: folded
-:end:
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package init-windows ;; From purcell
-    :ensure nil
-    :demand t
-    :hook (after-init . winner-mode))
-
-#+end_src
-** Winum
-:properties:
-:custom_id: winum
-:visibility: folded
-:end:
-
-Window numbers for Emacs: Navigate your windows and frames using numbers. This is not only handy but used by Treemacs to select the Treemacs panel with the keyboard.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-  ;;; Window Number
-
-  (use-package winum
-    :ensure t
-    :config (winum-mode))
-
-#+end_src
-
-** Writeroom mode
-:properties:
-:custom_id: writeroom-mode
-:visibility: folded
-:end:
-
-writeroom-mode is a minor mode for Emacs that implements a distraction-free writing mode similar to the famous Writeroom editor for OS X.  By default, writeroom-mode does the following things:
-
-+ activate fullscreen
-+ disable transparency
-+ disable the menu bar
-+ disable the tool bar
-+ disable the scroll bar
-+ enable a bottom window divider of 1 pixel
-+ maximise the current window (i.e., delete all other windows in the frame)
-+ place the fringes outside the margins
-+ disable the mode line
-+ add window margins to the current buffer so that the text is 80 characters wide
-
-The last three effects are buffer-local. The other effects apply to the current frame. Because writeroom-mode is a minor mode, this isn't entirely on the up and up, since minor modes aren't supposed to have such global effects. But writeroom-mode is meant for distraction-free writing, so these effects do make sense.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package writeroom-mode
-    :ensure t
-    :defer t
-    :init
-    (setq writeroom-width visual-fill-column-width)
-    :after visual-fill-column)
-
-#+end_src
-
 * Productivity
 :properties:
 :custom_id: productivity
@@ -4503,7 +5087,7 @@ This function sets up the fonts faces that are used within org-mode.
 #+begin_src emacs-lisp
   ;;; ##########################################################################
 
-  (use-package faces)
+  ;; (use-package faces :ensure t)
   (defun mifi/org-font-setup ()
     "Setup org mode fonts."
 
@@ -4835,12 +5419,12 @@ This section contains the basic configuration for =org-mode= plus the configurat
     (org-hide-emphasis-markers t)
     (org-startup-with-inline-images t)
     (org-image-actual-width '(300))
+    (org-hide-emphasis-markers nil)
     :bind ( ("C-c o" . mifi/org-capture)
             :map org-mode-map
             ("C-c e" . org-edit-src-code)
-            ("C-c -" . org-mark-ring-goto))
+            ("C--" . org-mark-ring-goto) )
     :config
-    (setq org-hide-emphasis-markers nil)
     ;; Save Org buffers after refiling!
     (advice-add 'org-refile :after 'org-save-all-org-buffers)
     (setq org-tag-alist
@@ -4972,6 +5556,7 @@ Note that org-modern is a full replacement for both org-superstar and org-bullet
   (use-package org-modern
     :when (display-graphic-p)
     :after org
+    :defer t
     :ensure t
     :hook (org-mode . org-modern-mode)
     :config
@@ -5048,7 +5633,7 @@ Every journal entry must have a =CREATED= property when using yearly, monthly an
               ("C-c j f" . find-file-other-window)
               ("C-c j s" . org-journal-schedule-view) )
       :config
-      (message ">>> Configured org-journal."))
+      (message "=== Configured org-journal."))
   )
 #+end_src
 
@@ -5079,8 +5664,9 @@ Org Roam solves these problems by making it easy to create topic-focused Org Fil
   (use-package emacsql :ensure t)
 
   (use-package org-roam
-    :after emacsql
+    :after (emacsql org)
     :when (equal custom-note-system 'custom-note-system-org-roam)
+    :defer t
     :ensure t
     :demand t
     ;; :ensure ( :package "org-roam" :source "MELPA" :protocol https :inherit t :depth 1
@@ -5518,13 +6104,13 @@ enerally enough.
 
 #+end_src
 
-* Integrated Development Environments
+* Integrated Development Environment
 :properties:
-:custom_id: integrated-development-environments
+:custom_id: integrated-development-environment
 :visibility: folded
 :end:
 
-The following are configured for Python development and provide an <<<IDE>>> type experience. It's worth noting that Eglot/LSP can be configured for other languages. The others are Python specific. Use the =configure= system to select which one is used (=Mrf Custom Selection=). I like to keep several different IDE systems available since each has it's advantages and I like to switch between them on occasion.
+I like to keep several different IDE-like packages since each has it's advantages and I like to switch between them on occasion.
 
 - context-sensitive code completion
 - jump to definitions
@@ -5532,6 +6118,104 @@ The following are configured for Python development and provide an <<<IDE>>> typ
 - view documentation
 - virtual environment
 - eldoc mode
+- File Managers/Directory Trees
+- Buffer Tabs
+  
+** Dashboard
+:properties:
+:custom_id: dashboard
+:visibility: folded
+:end:
+
+Dashboard is an extensible Emacs startup screen showing you what’s most important.
+
+*** Value of dashboard-startup-banner can be:
+**** =nil= to display no banner
+**** ='official= which displays the official emacs logo
+**** ='logo= which displays an alternative emacs logo
+**** =1, 2 or 3= which displays one of the text banners
+**** ~"path/to/your/image.gif"~,
+~"path/to/your/image.png"~ or
+~"path/to/your/text.txt"~  which displays whatever gif/image/text you would prefer
+**** a cons of '("path/to/your/image.png" . "path/to/your/text.txt")
+
+*** Dashboard Setup
+:properties:
+:custom_id: dashboard-setup
+:visibility: folded
+:end:
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package dashboard
+    :ensure t
+    :defer t
+    :custom
+    (dashboard-items '( (recents   . 12)
+                        (bookmarks . 5)
+                        (projects  . 5)
+                        (agenda    . 5)))
+    (dashboard-center-content t)
+    (dashboard-set-heading-icons t)
+    (dashboard-set-file-icons t)  
+    (dashboard-footer-messages '("Greetings Program!"))
+    (dashboard-banner-logo-title "Welcome to Emacs!")
+    :commands dashboard-open
+    :bind ("M-RET d" . dashboard-open)
+    :config
+    ;; (setq initial-buffer-choice (lambda () (get-buffer-create dashboard-buffer-name)))
+    (add-hook 'after-init-hook #'dashboard-insert-startupify-lists)
+    (add-hook 'after-init-hook #'dashboard-initialize)
+    (when (equal custom-project-handler 'custom-project-projectile)
+      (setq dashboard-projects-backend 'projectile))
+    (setq dashboard-startup-banner (expand-file-name "Emacs-modern-is-sexy-v1.png" user-emacs-directory))
+    (dashboard-setup-startup-hook))
+
+#+end_src
+
+** Neotree
+:properties:
+:custom_id: neotree
+:visibility: folded
+:end:
+
+A tree plugin like NerdTree for Vim
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package neotree
+    :when enable-neotree
+    :config
+    (global-set-key [f8] 'neotree-toggle)
+    (setq neo-theme (if (display-graphic-p) 'icons 'arrow)))
+
+#+end_src
+
+** Centaur Tabs
+:properties:
+:custom_id: centaur-tabs
+:visibility: folded
+:end:
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+  ;; Enable tabs for each buffer
+
+  (use-package centaur-tabs
+    :when enable-centaur-tabs
+    :custom
+    ;; Set the style to rounded with icons (setq centaur-tabs-style "bar")
+    (centaur-tabs-style "bar")
+    (centaur-tabs-set-icons t)
+    (centaur-tabs-set-modified-marker t)
+    :bind (("C-c <" . centaur-tabs-backward)
+            ("C-c >" . centaur-tabs-forward))
+    :config ;; Enable centaur-tabs
+    (centaur-tabs-mode t))
+
+#+end_src
 
 ** Code Completion and Handling
 
@@ -6776,687 +7460,6 @@ Below are all the necessary functions and definitions for Hydra use under DAP.
       ("x" nil "exit Hydra" :color yellow)
       ("q" mifi/dap-end-debug-session "quit" :color blue)
       ("Q" mifi/dap-delete-all-debug-sessions :color red)))
-
-#+end_src
-
-* Miscellaneous
-:properties:
-:custom_id: miscellaneous
-:visibility: folded
-:end:
-
-The following packages are some additional quality of life features.
-
-** Thesaurus
-:properties:
-:custom_id: thesaurus
-:visibility: folded
-:end:
-
-The ubiquitous Merriam-Websters Thesaurus
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package mw-thesaurus
-    :when enable-thesaurus
-    :custom
-    (mw-thesaurus-api-key "429331e9-b40e-4f17-9988-0632ef3ddd2d")
-    :defer t
-    :commands mw-thesaurus-lookup-dwim
-    :hook (mw-thesaurus-mode . variable-pitch-mode)
-    :config
-    ;; window on the right side
-    (add-to-list 'display-buffer-alist '(,mw-thesaurus-buffer-name
-                                          (display-buffer-reuse-window
-                                            display-buffer-in-direction)
-                                          (direction . right)
-                                          (window . root)
-                                          (window-width . 0.3))))
-
-#+end_src
-
-** Solair mode
-:properties:
-:custom_id: solair-mode
-:visibility: folded
-:end:
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package solaire-mode
-    :ensure t
-    :after treemacs
-    :hook (after-init . solaire-global-mode)
-    :config
-    (push '(treemacs-window-background-face . solaire-default-face) solaire-mode-remap-alist)
-    (push '(treemacs-hl-line-face . solaire-hl-line-face) solaire-mode-remap-alist))
-
-#+end_src
-
-** Golden Ratio
-:properties:
-:custom_id: golden-ratio
-:visibility: folded
-:end:
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-  ;; Golen Ratio
-
-  (use-package golden-ratio
-    :when enable-golden-ratio
-    :custom
-    (golden-ratio-auto-scale t)
-    (golden-ratio-adjust-factor .4)
-    (golden-ratio-wide-adjust-factor .4)
-    (golden-ratio-max-width 100)
-    (golden-ratio-exclude-modes '(
-                                   prog-mode
-                                   dashboard-mode
-                                   ;;inferior-emacs-lisp-mode
-                                   ;;inferior-python-mode
-                                   comint-mode
-                                   ;;lisp-interaction-mode
-                                   treemacs-mode
-                                   undo-tree-visualizer-mode
-                                   vundo-mode
-                                   ))
-    (golden-ratio-exclude-buffer-regexp '("dap*"
-                                           "*python*"))
-    :config
-    (golden-ratio-mode 1))
-
-#+end_src
-
-** Swap Buffers
-:properties:
-:custom_id: swap-buffers
-:visibility: folded
-:end:
-
-This file is for lazy people wanting to swap buffers without typing C-x b on each window.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package buffer-move
-    :bind (("C-S-<up>"     . buf-move-up)
-            ("C-S-<down>"  . buf-move-down)
-            ("C-S-<left>"  . buf-move-left)
-            ("C-S-<right>" . buf-move-right)))
-
-#+end_src
-
-** Neotree
-:properties:
-:custom_id: neotree
-:visibility: folded
-:end:
-
-A tree plugin like NerdTree for Vim
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package neotree
-    :when enable-neotree
-    :config
-    (global-set-key [f8] 'neotree-toggle)
-    (setq neo-theme (if (display-graphic-p) 'icons 'arrow)))
-
-#+end_src
-
-** Centaur Tabs
-:properties:
-:custom_id: centaur-tabs
-:visibility: folded
-:end:
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-  ;; Enable tabs for each buffer
-
-  (use-package centaur-tabs
-    :when enable-centaur-tabs
-    :custom
-    ;; Set the style to rounded with icons (setq centaur-tabs-style "bar")
-    (centaur-tabs-style "bar")
-    (centaur-tabs-set-icons t)
-    (centaur-tabs-set-modified-marker t)
-    :bind (("C-c <" . centaur-tabs-backward)
-            ("C-c >" . centaur-tabs-forward))
-    :config ;; Enable centaur-tabs
-    (centaur-tabs-mode t))
-
-#+end_src
-
-** Diff HL
-:properties:
-:custom_id: diff-hl
-:visibility: folded
-:end:
-
-=diff-hl-mode= highlights uncommitted changes on the left side of the window (area also known as the "gutter"), allows you to jump between and revert them selectively.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package diff-hl
-    :ensure t
-    :config
-    (global-diff-hl-mode))
-
-#+end_src
-
-** Pulsar
-:properties:
-:custom_id: pulsar
-:visibility: folded
-:end:
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package pulsar
-    :ensure t
-    :config
-    (pulsar-global-mode)
-    :custom
-    (pulsar-pulse t)
-    (pulsar-delay 0.10)
-    (pulsar-iterations 10)
-    (pulsar-face 'pulsar-magenta)
-    (pulsar-highlight-face 'pulsar-yellow))
-
-#+end_src
-
-** Rainbow-mode
-:properties:
-:custom_id: rainbow-mode
-:visibility: folded
-:end:
-
-This minor mode sets background color to strings that match color names, e.g. #0000FF is displayed in white with a blue background.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package rainbow-mode
-    :ensure t
-    :hook (prog-mode . (lambda () (rainbow-mode t))))
-
-#+end_src
-
-** Lisp Hightlighter
-:properties:
-:custom_id: lisp-highlighter
-:visibility: folded
-:end:
-
-highlight-defined is an Emacs minor mode that highlights defined Emacs Lisp symbols in source code.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package highlight-defined
-    :defer t
-    :after emacs-lisp-mode
-    :hook (emacs-lisp-mode . highlight-defined-mode))
-
-#+end_src
-
-** Popper
-:properties:
-:custom_id: popper
-:visibility: folded
-:end:
-
-Popper is a minor-mode to tame the flood of ephemeral windows Emacs produces, while still keeping them within arm’s reach.
-
-Designate any buffer to “popup” status, and it will stay out of your way. Disimss or summon it easily with one key. Cycle through all your “popups” or just the ones relevant to your current buffer. Group popups automatically so you’re presented with the most relevant ones. Useful for many things, including toggling display of REPLs, documentation, compilation or shell output: any buffer you need instant access to but want kept out of your way!
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package popper
-    :ensure t :defer t
-    :bind (("C-`"   . popper-toggle)
-            ("M-`"   . popper-cycle)
-            ("C-M-`" . popper-toggle-type))
-    :init
-    (setq popper-reference-buffers
-      '("\\*Messages\\*"
-         "\\*scratch\\*"
-         "\\*ielm\\*"
-         "Output\\*$"
-         "\\*Async Shell Command\\*"
-         "^\\*eshell.*\\*$" eshell-mode ;eshell as a popup
-         "^\\*shell.*\\*$"  shell-mode  ;shell as a popup
-         "^\\*term.*\\*$"   term-mode   ;term as a popup
-         "^\\*vterm.*\\*$"  vterm-mode  ;vterm as a popup
-         help-mode
-         compilation-mode))
-    :config
-    (popper-mode +1)
-    (popper-echo-mode +1))
-
-#+end_src
-
-** Markdown Mode
-:properties:
-:custom_id: markdown-mode
-:visibility: folded
-:end:
-
-markdown-mode is a major mode for editing Markdown-formatted text. The latest stable version is markdown-mode 2.5, released on Feb 12, 2022. See the release notes for details. markdown-mode is free software, licensed under the GNU GPL, version 3 or later.
-
-It's important to note that ~multimarkdown~ is set as the ~markdown-command~. This is an external program that was loaded via brew. Another option is ~pandoc~ and ~markdown.pl~. In each case, these are external and, whatever is chosen, needs to appear as the ~markdown-command~.
-
-+ external markdown-command
-
-#+begin_src bash :tangle no
-  brew install multiparkdown
-#+end_src
-
-+ markdown-mode package
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  ;; (defun mifi/load-web-support ()
-  ;;   (use-package web-server-status-codes )
-  ;;   (use-package simple-httpd
-  ;;     :preface (setq warning-minimum-level :emergency)
-  ;;     
-  ;;     :config (setq warning-minimum-level :warning))
-  ;;   (use-package websocket )
-  ;;   (use-package web-server ))
-
-  (use-package markdown-mode
-    :defer t :ensure t
-    :mode (("README\\.md\\'" . gfm-mode)
-           ("\\.md\\'" . markdown-mode)
-           ("\\.markdown\\'" . markdown-mode))
-    :init (setq markdown-command "multimarkdown"))
-    ;;:hook (after-init . mifi/load-web-support))
-    
-
-#+end_src
-
-*** Markdown Preview Mode
-:properties:
-:custom_id: markdown-preview-mode
-:visibility: folded
-:end:
-
-Markdown preview in emacs features:
-
-+ on save/idle preview update
-+ scroll sync
-+ custom/extra css and javascript
-+ remote preview
-+ multiple simultaneous previews
-  
-#+begin_src emacs-lisp :tangle no
-
-  ;; markdown-preview-mode is depent upon:
-  ;; +  markdown-mode.el
-  ;; +  websocket.el
-  ;; +  web-server.el
-
-  (use-package markdown-preview-mode
-    :after (:all websocket web-server markdown-mode)
-    :defer t
-    :config
-    (add-to-list 'markdown-preview-stylesheets
-      "https://raw.githubusercontent.com/richleland/pygments-css/master/emacs.css")
-    (add-to-list 'markdown-preview-javascript
-      "http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-MML-AM_CHTML"))
-
-#+end_src
-
-*** Impatient Mode
-:properties:
-:custom_id: impatient-mode
-:visibility: folded
-:end:
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (defun markdown-html (buffer)
-    (princ (with-current-buffer buffer
-  	   (format "<!DOCTYPE html><html><title>Impatient Markdown</title><xmp theme=\"united\" style=\"display:none;\"> %s  </xmp><script src=\"http://ndossougbe.github.io/strapdown/dist/strapdown.js\"></script></html>" (buffer-substring-no-properties (point-min) (point-max))))
-      (current-buffer)))
-
-  (use-package simple-httpd
-    :ensure t)
-
-  (use-package impatient-mode
-    :ensure t :defer t
-    :config
-    (imp-set-user-filter #'markdown-html)
-    :hook (elpaca-after-init . httpd-start))
-
-#+end_src
-
-** GRIP Mode
-:properties:
-:custom_id: grip-mode
-:visibility: folded
-:end:
-
-Instant Github-flavored Markdown/Org preview using Grip (GitHub Readme Instant Preview).
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  ;; Use keybindings
-  (use-package grip-mode
-    :ensure t :defer t
-    :bind (:map markdown-mode-command-map
-            ("g" . grip-mode)))
-
-  ;; ;; Or using hooks
-  ;; (use-package grip-mode
-  ;;   :hook ((markdown-mode org-mode) . grip-mode))
-
-#+end_src
-
-** MiFi's Minor Mode
-:properties:
-:custom_id: mifi-minor-mode
-:visibility: folded
-:end:
-
-Mitch's minor mode (or MmM) just defines frequently used hot-keys. It works well when =which-key= is active.
-
-*** Helper Functions
-:properties:
-:custom_id: helper-functions
-:visibility: folded
-:end:
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (defadvice custom-buffer-create (before my-advice-custom-buffer-create)
-    "Exit the current Customize buffer before creating a new one, unless there are modified widgets."
-    (if (eq major-mode 'Custom-mode)
-        (let ((custom-buffer-done-kill t)
-              (custom-buffer-modified nil))
-          (mapc (lambda (widget)
-                  (and (not custom-buffer-modified)
-                       (eq (widget-get widget :custom-state) 'modified)
-                       (setq custom-buffer-modified t)))
-                custom-options)
-          (if (not custom-buffer-modified)
-              (Custom-buffer-done)))))
-
-  (defun mifi/set-fill-column-interactively (num)
-    "Asks for the fill column."
-    (interactive "nfill-column: ")
-    (set-fill-column num))
-
-  (defun mifi/set-org-fill-column-interactively (num)
-    "Asks for the fill column for Org mode."
-    (interactive "norg-fill-column: ")
-    (setq custom-org-fill-column num)
-    (mifi/org-mode-visual-fill)
-    (redraw-display))
-
-  (defun mifi/jump-to-register ()
-    "Asks for a register to jump to."
-    (interactive)
-    (call-interactively 'jump-to-register))
-
-  (defun mifi/customize-mifi ()
-    "Opens up the customize section for all of the MiFi options."
-    (interactive)
-    (ad-activate 'custom-buffer-create)
-    (customize-apropos "mifi-config"))
-
-#+end_src
-
-*** Standard Keymaps
-:properties:
-:custom_id: standard-keymaps
-:visibility: folded
-:end:
-
-This is a set of keymaps that do the same things as the popup menu. Both are here for convenience. *Note* that the ~mmm-menu~ is called with either a ="C-c RET RET"= or simply a ="C-c C-<return>"=.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (defun mifi/define-mmm-minor-mode-map ()
-    (defvar mmm-keys-minor-mode-map
-      (let ((map (make-sparse-keymap)))
-        (bind-keys :map map
-          ("M-RET $" . jinx-correct)
-          ("M-RET ?" . eldoc-box-help-at-point)
-          ("M-RET /" . hydra-combine/body)
-          ("M-RET M s" . markdown-preview-mode)
-          ("M-RET M e" . markdown-preview-cleanup)
-          ("M-RET S e" . eshell)
-          ("M-RET S i" . ielm)
-          ("M-RET S v" . vterm-other-window)
-          ("M-RET v" . hydra-themes-and-fonts/body)
-          ("M-RET W" . writeroom-mode)
-          ("M-RET w <right>" . which-key-setup-side-window-right-bottom)
-          ("M-RET w <down>" . which-key-setup-side-window-bottom)
-          ("M-RET =" . next-theme)
-          ("M-RET -" . previous-theme)
-          ("M-RET _" . which-theme)
-          ("M-RET M-c" . mifi/customize-mifi)
-          ("M-RET d" . dashboard-open)
-          ("M-RET e" . treemacs) ;; e for Explore
-          ("M-RET f" . mifi/set-fill-column-interactively)
-          ("M-RET p" . pulsar-pulse-line)
-          ("M-RET r" . repeat-mode)
-          ("M-RET j" . hydra-registers/body) ;; mifi/jump-to-register)
-          ("M-RET |" . global-display-fill-column-indicator-mode)
-          ("M-RET C-g" . keyboard-quit))
-        map)
-      "mmm-keys-minor-mode keymap.")
-
-    (define-minor-mode mmm-keys-minor-mode
-      "A minor mode so that my key settings override annoying major modes."
-      :init-value t
-      :lighter " MmM"))
-
-  (mifi/define-mmm-minor-mode-map)
-
-#+end_src
-
-*** Context-Aware Keys and Descriptions
-:properties:
-:custom_id: context-aware-keys-and-descriptions
-:visibility: folded
-:end:
-
-For those menus that would normally show up as either =prefix= or =lambda=, given them a better description via the which-key replacement function. This is run via the ~which-key-inhibit-display-hook~ hook which is run just before the which-key popup is shown. Plus, some keys are mode specific and will only appear when that major mode is active.
-
-#+begin_src emacs-lisp :results output silent
-  ;;; ##########################################################################
-
-  (defun mifi/mmm-handle-context-keys (&optional winframe)
-    "Enable or Disable keys based upon featurep context."
-    (when winframe
-      (let ((map mmm-keys-minor-mode-map))
-        (when enable-thesaurus
-          (bind-keys :map map
-            ("M-RET t t" . mw-thesaurus-lookup-dwim)))
-        (cond
-          ((equal major-mode 'org-mode)
-            (bind-keys :map map
-              ("M-RET M-RET" . org-insert-heading)
-              ("M-RET o f" . mifi/set-org-fill-column-interactively)
-              ("M-RET o c" . mifi/toggle-org-centering)
-              ("M-RET o r" . org-mode-restart)
-              ("M-RET o l" . org-toggle-link-display)))
-          ((equal major-mode 'python-mode)
-            (bind-keys :map map
-              ("M-RET P" . 'pydoc-at-point)))
-    ((equal major-mode 'tuareg-mode)
-      (bind-keys :map map
-        ("M-RET c m" . tuarg-browse-manual)))
-          (t   ;; Default 
-            (unbind-key "M-RET o f" map)
-            (unbind-key "M-RET o c" map)
-            (unbind-key "M-RET o l" map)
-            (unbind-key "M-RET P ?" map)
-            (unbind-key "M-RET c m" map)
-            (unbind-key "M-RET M-RET" map)))))
-
-    ;; Override default menu text with better things
-    (which-key-add-key-based-replacements
-      "M-RET t t" "thesaurus-at-point"
-      "M-RET o" "org-menu"
-      "M-RET c" "ocaml-menu"
-      "M-RET o c" "toggle-org-centering"
-      "M-RET o f" "set-org-fill-column"))
-
-#+end_src
-
-*** Key Description Overrides
-:properties:
-:custom_id: key-description-overrides
-:visibility: folded
-:end:
-
-Sometimes, the descriptions that which-key provide are not what we want. So, for cases like this, these description replacemens are used.
-
-What's also important with this function is that it calls the ~mifi/mmm-handle-context-keys~ function which updates the context aware keys.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (defun mifi/mmm-update-menu (&optional winframe)
-    (interactive)
-    (mifi/mmm-handle-context-keys nil)
-    (which-key-add-key-based-replacements
-      "M-RET w" "which-key-position"
-      "M-RET w <right>" "which-key-on-right"
-      "M-RET w <down>" "which-key-on-bottom"
-      "M-RET M" "markdown-preview"
-      "M-RET S" "shells"
-      "M-RET P" "python-menu"
-      "M-RET e" "treemacs-toggle"
-      "M-RET t" "Thesaurus"
-      "M-RET f" "set-fill-column"
-      "M-RET j" "jump-to-register"
-      "M-RET v" "font-size"
-      "M-RET C-g" "Exit menu"
-      "M-RET" "Mitch's Menu"))
-
-#+end_src
-
-*** Hooks
-:properties:
-:custom_id: hooks
-:visibility: folded
-:end:
-
-These are the hools that update the context-aware menu triggered by various state changes of Emacs buffers and windows.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  ;; Check the keys when:
-  ;; - the whick-key menu is displayed
-  (add-hook 'after-init-hook
-    (lambda ()
-      (add-hook 'which-key-inhibit-display-hook 'mifi/mmm-update-menu)
-      ;; - the user updates/changes the buffer - like loading a file
-      ;;   (but not switching to a new buffer)
-      (add-hook 'window-buffer-change-functions 'mifi/mmm-handle-context-keys)
-      ;; - the user switches windows
-      (add-hook 'window-selection-change-functions 'mifi/mmm-handle-context-keys)
-      ;; (add-hook 'which-key-mode-hook #'mifi/after-which-key)
-      (mifi/after-which-key)
-      (mifi/define-mmm-minor-mode-map)
-      (mifi/set-recenter-keys)))
-
-#+end_src
-
-** Initial *scratch* buffer message
-:properties:
-:custom_id: initial-scratch-buffer-message
-:visibility: folded
-:end:
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (defun mifi/config-landing ()
-    (cond
-      ((equal default-landing-mode 'landing-mode-dashboard)
-        (dashboard-open))
-      ((equal default-landing-mode 'landing-mode-scratch)
-        (switch-to-buffer "*scratch*")
-        (erase-buffer)
-        (beginning-of-buffer)
-        (insert (concat 
-                ";; 'Tis but a scratch! A scratch? Your arm's off! - No, it isn't!\n"
-                (format ";; Happy hacking, %s! %s" user-login-name
-                  "Press M-RET (Meta-RET) to open the MiFi Menu\n")))
-        (end-of-buffer))
-      ((equal default-landing-mode 'landing-mode-ielm)
-        (ielm))
-      ((equal default-landing-mode 'landing-mode-eshell)
-        (eshell))))
-
-#+end_src
-
-** Exiting And Cleanup
-:properties:
-:custom_id: existing-and-cleanup
-:visibility: folded
-:end:
-
-+ Also, opam-user-setup Compiled (OCaml)
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (defun mifi/backup-file (file)
-    "Backup the file from the configuration directory into the
-  backup directory. If a file already exists in the backup directory, the old
-  file is renamed with a ~ at the end before the new file is copied. If Emacs
-  is running in server mode, then don't backup the files when the emacsclient
-  exits."
-    (unless (server-running-p)
-      (let ((backdir (format "%s/config-backup" working-files-directory)))
-        (make-directory backdir t)
-        ;; --------------------------------------------------
-        (when (file-exists-p (format "%s/%s" backdir file))
-        (copy-file
-          (expand-file-name file backdir)
-          (expand-file-name (format "%s~" file) backdir) t))
-        (when (file-exists-p (format "%s/%s" emacs-config-directory file))
-        (copy-file
-          (expand-file-name file emacs-config-directory)
-          (expand-file-name file backdir) t)))))
-
-  (defun mifi/when-exiting-emacs ()
-    "Backup Emacs initialization files for recovery. If old files exist, they are
-  backed up as tilde (~) files. Also, if ocaml is enabled, byte (re)compile the
-  opam-user-setup.el so that upon next startup, it can be loaded quickly."
-    (when (featurep 'simple-httpd)
-      (httpd-stop))
-    (when enable-ocaml
-      (let ((src (expand-file-name "opam-user-setup.el" emacs-config-directory)))
-        (when (file-exists-p src)
-          (byte-compile-file src))))
-    (mifi/backup-file "early-init.el")
-    (mifi/backup-file "init.el")
-    (mifi/backup-file "emacs-config-elpaca.org")
-    (mifi/backup-file "emacs-config-elpa.org"))
-
-  (add-hook 'kill-emacs-hook #'mifi/when-exiting-emacs)
 
 #+end_src
 

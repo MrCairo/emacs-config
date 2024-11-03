@@ -13,6 +13,21 @@
 ;;
 
 ;;; ##########################################################################
+;;; Automatic Package Updates
+
+(use-package auto-package-update
+  ;; :ensure (:fetcher github :repo "rranelli/auto-package-update.el")
+  :ensure t
+  :defer t
+  :custom
+  (auto-package-update-interval 7)
+  (auto-package-update-prompt-before-update t)
+  (auto-package-update-hide-results t)
+  :config
+  (auto-package-update-maybe)
+  (auto-package-update-at-time "09:00"))
+
+;;; ##########################################################################
 ;;; Define my customization groups
 
 (defgroup mifi-config nil
@@ -400,7 +415,7 @@ font size is computed + 20 of this value."
       (when (not (equal variable-pitch-font variable-pitch-font-family))
           (setq variable-pitch-font-family variable-pitch-font))
       (message "---- Can't find a variable-pitch font to use.")))
-    (message (format ">>> variable-pitch font is %s" variable-pitch-font-family))))
+    (message (format "=== variable-pitch font is %s" variable-pitch-font-family))))
 
 ;;; ##########################################################################
 
@@ -416,13 +431,24 @@ font size is computed + 20 of this value."
                ((x-family-fonts "Monospaced")      "Monospaced")
                (nil (warn "Cannot find a monospaced Font.  Install Source Code Pro.")))))
       (if monospace-font
-  (when (not (equal monospace-font variable-pitch-font-family))
+	(when (not (equal monospace-font variable-pitch-font-family))
           (setq mono-spaced-font-family monospace-font)
           (setq default-font-family monospace-font))
-  (message "---- Can't find a monospace font to use.")))
-    (message (format ">>> monospace font is %s" mono-spaced-font-family))))
+	(message "---- Can't find a monospace font to use.")))
+    (message (format "=== monospace font is %s" mono-spaced-font-family))))
+
+;;; ##########################################################################
+;;
+;; This list is processed as a LIFO queue. This entry _should_ be made to be
+;; the first so it executes last.
+(add-hook 'after-init-hook
+  (lambda ()
+    (mifi/config-landing)
+    (mifi/set-recenter-keys)))
 
 (use-package org-make-toc
+  :after org
+  :defer t
   :ensure t)
 
 (use-package org-make-toc
@@ -492,7 +518,7 @@ font size is computed + 20 of this value."
 ;;; additional Emacs files, like themes or specialized moduls. This is
 ;;; where emacs-config files are backed up to. Of course, any document that the
 ;;; user wants to associate with an Emacs installation can be stored here.
-(message ">>> working-files-dir = %s" working-files-directory)
+(message "=== working-files-dir = %s" working-files-directory)
 (make-directory working-files-directory t)
 
 ;;; user-emacs-directory always ends in a "/" so we need to make the
@@ -513,55 +539,6 @@ font size is computed + 20 of this value."
 ;; to correct them.
 (mifi/validate-variable-pitch-font)
 (mifi/validate-monospace-font)
-
-;;; ##########################################################################
-;;; Automatic Package Updates
-
-(use-package auto-package-update
-  ;; :ensure (:fetcher github :repo "rranelli/auto-package-update.el")
-  :ensure t
-  :defer t
-  :custom
-  (auto-package-update-interval 7)
-  (auto-package-update-prompt-before-update t)
-  (auto-package-update-hide-results t)
-  :config
-  (auto-package-update-maybe)
-  (auto-package-update-at-time "09:00"))
-
-;;; ##########################################################################
-
-(defun mifi/after-which-key ()
-  (interactive)
-  (which-key-mode 1)
-  (add-to-list 'savehist-additional-variables 'which-key-side-window-location)
-  (which-key-add-key-based-replacements
-    "M-RET |" "display-fill-column"
-    "M-RET ?" "help-at-point")
-  (mmm-keys-minor-mode 1)
-  (when (featurep 'prog-mode)
-    (which-key-add-key-based-replacements
-      "C-c g r" "find-symbol-reference"
-      "C-c g o" "find-defitions-other-window"
-      "C-c g g" "find-defitions"
-      "C-c g ?" "eldoc-definition"))
-  (mifi/set-recenter-keys))
-
-(use-package which-key
-  ;; :ensure (:wait t)
-  :ensure t
-  :demand t
-  :commands which-key-mode
-  :delight which-key-mode
-  :custom
-  (which-key-popup-type 'side-window)
-  (which-key-preserve-window-configuration t)
-  (which-key-idle-delay 1,0)
-  (which-key-prefix-prefix "✪ ")
-  ;; (which-key-sort-order 'which-key-key-order-alpha)
-  (which-key-min-display-lines 3)
-  :config
-  (add-hook 'after-init-hook #'mifi/after-which-key))
 
 ;;; ##########################################################################
 
@@ -671,41 +648,6 @@ font size is computed + 20 of this value."
   :config
   (show-paren-mode 1))
 
-;;; ##########################################################################
-
-
-(defun mifi/save-desktop-frameset ()
-  (unless (or (daemonp)
-            (not enable-frameset-restore)
-            (not (display-graphic-p)))
-    (desktop-save-mode 0)
-    (desktop-save-frameset)
-    (with-temp-file (expand-file-name "saved-frameset.el" user-emacs-directory)
-      (insert (format
-                "(setq desktop-saved-frameset %S)"
-                desktop-saved-frameset)))))
-
-(add-hook 'kill-emacs-hook 'mifi/save-desktop-frameset -100)
-
-;;; ##########################################################################
-
-(defun mifi/restore-desktop-frameset ()
-  (unless (or (daemonp)
-            (not enable-frameset-restore)
-            (not (display-graphic-p)))
-    (let
-      ((file (expand-file-name "saved-frameset.el" user-emacs-directory)))
-      (desktop-save-mode 0)
-      (if (file-exists-p file)
-        (progn
-          (load file)
-          (desktop-restore-frameset)
-          (when (featurep 'spacious-padding)
-            (when spacious-padding-mode
-              (spacious-padding-mode 0)
-              (spacious-padding-mode 1))))
-        (use-medium-display-font t)))))
-
 (defun mifi/setup-helpful-aliases ()
   "Define some helpful aliases."
   (defalias 'visibility-folded
@@ -725,15 +667,6 @@ font size is computed + 20 of this value."
   (lambda ()
     (mifi/setup-helpful-aliases)
     (mifi/setup-common-registers)))
-
-;;; ##########################################################################
-;;
-;; This list is processed as a LIFO queue. This entry _should_ be made to be
-;; the first so it executes last.
-(add-hook 'after-init-hook
-  (lambda ()
-    (mifi/config-landing)
-    (mifi/set-recenter-keys)))
 
 ;;; ##########################################################################
 ;; Allow access from emacsclient
@@ -759,6 +692,218 @@ font size is computed + 20 of this value."
       mac-right-control-modifier 'hyper)))
 
 (add-hook 'after-init-hook #'mifi/set-mac-modifier-keys)
+
+;;; ##########################################################################
+
+(defadvice custom-buffer-create (before my-advice-custom-buffer-create)
+  "Exit the current Customize buffer before creating a new one, unless there are modified widgets."
+  (if (eq major-mode 'Custom-mode)
+      (let ((custom-buffer-done-kill t)
+            (custom-buffer-modified nil))
+        (mapc (lambda (widget)
+                (and (not custom-buffer-modified)
+                     (eq (widget-get widget :custom-state) 'modified)
+                     (setq custom-buffer-modified t)))
+              custom-options)
+        (if (not custom-buffer-modified)
+            (Custom-buffer-done)))))
+
+(defun mifi/set-fill-column-interactively (num)
+  "Asks for the fill column."
+  (interactive "nfill-column: ")
+  (set-fill-column num))
+
+(defun mifi/set-org-fill-column-interactively (num)
+  "Asks for the fill column for Org mode."
+  (interactive "norg-fill-column: ")
+  (setq custom-org-fill-column num)
+  (mifi/org-mode-visual-fill)
+  (redraw-display))
+
+(defun mifi/jump-to-register ()
+  "Asks for a register to jump to."
+  (interactive)
+  (call-interactively 'jump-to-register))
+
+(defun mifi/customize-mifi ()
+  "Opens up the customize section for all of the MiFi options."
+  (interactive)
+  (ad-activate 'custom-buffer-create)
+  (customize-apropos "mifi-config"))
+
+;;; ##########################################################################
+
+(defun mifi/define-mmm-minor-mode-map ()
+  (defvar mmm-keys-minor-mode-map
+    (let ((map (make-sparse-keymap)))
+      (bind-keys :map map
+        ("M-RET $" . jinx-correct)
+        ("M-RET ?" . eldoc-box-help-at-point)
+        ("M-RET /" . hydra-combine/body)
+        ("M-RET M s" . markdown-preview-mode)
+        ("M-RET M e" . markdown-preview-cleanup)
+        ("M-RET S e" . eshell)
+        ("M-RET S i" . ielm)
+        ("M-RET S v" . vterm-other-window)
+        ("M-RET v" . hydra-themes-and-fonts/body)
+        ("M-RET W" . writeroom-mode)
+        ("M-RET w <right>" . which-key-setup-side-window-right-bottom)
+        ("M-RET w <down>" . which-key-setup-side-window-bottom)
+        ("M-RET =" . next-theme)
+        ("M-RET -" . previous-theme)
+        ("M-RET _" . which-theme)
+        ("M-RET M-c" . mifi/customize-mifi)
+        ("M-RET d" . dashboard-open)
+        ("M-RET e" . treemacs) ;; e for Explore
+        ("M-RET f" . mifi/set-fill-column-interactively)
+        ("M-RET p" . pulsar-pulse-line)
+        ("M-RET r" . repeat-mode)
+        ("M-RET j" . hydra-registers/body) ;; mifi/jump-to-register)
+        ("M-RET |" . global-display-fill-column-indicator-mode)
+        ("M-RET C-g" . keyboard-quit))
+      map)
+    "mmm-keys-minor-mode keymap.")
+
+  (define-minor-mode mmm-keys-minor-mode
+    "A minor mode so that my key settings override annoying major modes."
+    :init-value t
+    :lighter " MmM"))
+
+(mifi/define-mmm-minor-mode-map)
+
+;;; ##########################################################################
+
+(defun mifi/mmm-handle-context-keys (&optional winframe)
+  "Enable or Disable keys based upon featurep context."
+  (when winframe
+    (let ((map mmm-keys-minor-mode-map))
+      (when enable-thesaurus
+        (bind-keys :map map
+          ("M-RET t t" . mw-thesaurus-lookup-dwim)))
+      (cond
+        ((equal major-mode 'org-mode)
+          (bind-keys :map map
+            ("M-RET M-RET" . org-insert-heading)
+            ("M-RET o f" . mifi/set-org-fill-column-interactively)
+            ("M-RET o c" . mifi/toggle-org-centering)
+            ("M-RET o r" . org-mode-restart)
+            ("M-RET o l" . org-toggle-link-display)))
+        ((equal major-mode 'python-mode)
+          (bind-keys :map map
+            ("M-RET P" . 'pydoc-at-point)))
+  ((equal major-mode 'tuareg-mode)
+    (bind-keys :map map
+      ("M-RET c m" . tuarg-browse-manual)))
+        (t   ;; Default 
+          (unbind-key "M-RET o f" map)
+          (unbind-key "M-RET o c" map)
+          (unbind-key "M-RET o l" map)
+          (unbind-key "M-RET P ?" map)
+          (unbind-key "M-RET c m" map)
+          (unbind-key "M-RET M-RET" map)))))
+
+  ;; Override default menu text with better things
+  (which-key-add-key-based-replacements
+    "M-RET t t" "thesaurus-at-point"
+    "M-RET o" "org-menu"
+    "M-RET c" "ocaml-menu"
+    "M-RET o c" "toggle-org-centering"
+    "M-RET o f" "set-org-fill-column"))
+
+;;; ##########################################################################
+
+(defun mifi/mmm-update-menu (&optional winframe)
+  (interactive)
+  (mifi/mmm-handle-context-keys nil)
+  (which-key-add-key-based-replacements
+    "M-RET w" "which-key-position"
+    "M-RET w <right>" "which-key-on-right"
+    "M-RET w <down>" "which-key-on-bottom"
+    "M-RET M" "markdown-preview"
+    "M-RET S" "shells"
+    "M-RET P" "python-menu"
+    "M-RET e" "treemacs-toggle"
+    "M-RET t" "Thesaurus"
+    "M-RET f" "set-fill-column"
+    "M-RET j" "jump-to-register"
+    "M-RET v" "font-size"
+    "M-RET C-g" "Exit menu"
+    "M-RET" "Mitch's Menu"))
+
+;;; ##########################################################################
+
+;; Check the keys when:
+;; - the whick-key menu is displayed
+(add-hook 'after-init-hook
+  (lambda ()
+    (add-hook 'which-key-inhibit-display-hook 'mifi/mmm-update-menu)
+    ;; - the user updates/changes the buffer - like loading a file
+    ;;   (but not switching to a new buffer)
+    (add-hook 'window-buffer-change-functions 'mifi/mmm-handle-context-keys)
+    ;; - the user switches windows
+    (add-hook 'window-selection-change-functions 'mifi/mmm-handle-context-keys)
+    ;; (add-hook 'which-key-mode-hook #'mifi/after-which-key)
+    (mifi/after-which-key)
+    (mifi/define-mmm-minor-mode-map)
+    (mifi/set-recenter-keys)))
+
+;;; ##########################################################################
+
+(defun mifi/config-landing ()
+  (cond
+    ((equal default-landing-mode 'landing-mode-dashboard)
+      (dashboard-open))
+    ((equal default-landing-mode 'landing-mode-scratch)
+      (switch-to-buffer "*scratch*")
+      (erase-buffer)
+      (beginning-of-buffer)
+      (insert (concat 
+              ";; 'Tis but a scratch! A scratch? Your arm's off! - No, it isn't!\n"
+              (format ";; Happy hacking, %s! %s" user-login-name
+                "Press M-RET (Meta-RET) to open the MiFi Menu\n")))
+      (end-of-buffer))
+    ((equal default-landing-mode 'landing-mode-ielm)
+      (ielm))
+    ((equal default-landing-mode 'landing-mode-eshell)
+      (eshell))))
+
+;;; ##########################################################################
+
+(defun mifi/backup-file (file)
+  "Backup the file from the configuration directory into the
+backup directory. If a file already exists in the backup directory, the old
+file is renamed with a ~ at the end before the new file is copied. If Emacs
+is running in server mode, then don't backup the files when the emacsclient
+exits."
+  (unless (server-running-p)
+    (let ((backdir (format "%s/config-backup" working-files-directory)))
+      (make-directory backdir t)
+      ;; --------------------------------------------------
+      (when (file-exists-p (format "%s/%s" backdir file))
+      (copy-file
+        (expand-file-name file backdir)
+        (expand-file-name (format "%s~" file) backdir) t))
+      (when (file-exists-p (format "%s/%s" emacs-config-directory file))
+      (copy-file
+        (expand-file-name file emacs-config-directory)
+        (expand-file-name file backdir) t)))))
+
+(defun mifi/when-exiting-emacs ()
+  "Backup Emacs initialization files for recovery. If old files exist, they are
+backed up as tilde (~) files. Also, if ocaml is enabled, byte (re)compile the
+opam-user-setup.el so that upon next startup, it can be loaded quickly."
+  (when (featurep 'simple-httpd)
+    (httpd-stop))
+  (when enable-ocaml
+    (let ((src (expand-file-name "opam-user-setup.el" emacs-config-directory)))
+      (when (file-exists-p src)
+        (byte-compile-file src))))
+  (mifi/backup-file "early-init.el")
+  (mifi/backup-file "init.el")
+  (mifi/backup-file "emacs-config-elpaca.org")
+  (mifi/backup-file "emacs-config-elpa.org"))
+
+(add-hook 'kill-emacs-hook #'mifi/when-exiting-emacs)
 
 ;;; ##########################################################################
 
@@ -797,38 +942,8 @@ font size is computed + 20 of this value."
 
 ;;; ##########################################################################
 
-(use-package jsonrpc
-  :defer t
-  :ensure t)
-  ;; :config
-  ;; For some odd reason, it is possible that jsonrpc will try to load a
-  ;; theme. (jsonrpc/lisp/custom.el:1362). If our theme hasn't been loaded
-  ;; yet, go ahead and try. This could prevent a startup without the theme
-  ;; properly loaded.
-  ;; (unless theme-did-load
-  ;;   (mifi/load-theme-from-selector)))
-
-;;; ##########################################################################
-
 (use-package async
   :ensure t)
-
-;; All kept in local /lisp directory.
-;; (use-package web-server-status-codes )
-;; (use-package simple-httpd )
-;; (use-package web-server )
-
-;;; ##########################################################################
-
-(use-package helpful
-  :ensure t
-  ;; :commands (helpful-callable helpful-variable helpful-command helpful-key helpful-function)
-  :config
-  (bind-keys
-    ([remap describe-command] . helpful-command)
-    ([remap describe-function] . helpful-function)
-    ([remap describe-variable] . helpful-variable)
-    ([remap describe-key] . helpful-key)))
 
 ;;; ##########################################################################
 
@@ -859,6 +974,18 @@ font size is computed + 20 of this value."
   :delight DocBox
   :ensure t
   :hook (after-init . mifi/setup-hooks-for-eldoc))
+
+;;; ##########################################################################
+
+(use-package helpful
+  :ensure t
+  ;; :commands (helpful-callable helpful-variable helpful-command helpful-key helpful-function)
+  :config
+  (bind-keys
+    ([remap describe-command] . helpful-command)
+    ([remap describe-function] . helpful-function)
+    ([remap describe-variable] . helpful-variable)
+    ([remap describe-key] . helpful-key)))
 
 ;;; ##########################################################################
 
@@ -958,6 +1085,87 @@ font size is computed + 20 of this value."
 ;;; ^^^ ;;;
 
 ;;; ##########################################################################
+
+(use-package jinx
+  :ensure t
+  :bind ( ("C-c C-$" . jinx-correct)
+          ("C-x C-$" . jinx-languages))
+  :hook (emacs-startup . global-jinx-mode)
+  :config
+  (dolist (hook '(text-mode-hook prog-mode-hook org-mode-hook))
+          (add-hook hook #'jinx-mode)))
+
+;;; ##########################################################################
+
+(use-package jsonrpc
+  :defer t
+  :ensure t)
+  ;; :config
+  ;; For some odd reason, it is possible that jsonrpc will try to load a
+  ;; theme. (jsonrpc/lisp/custom.el:1362). If our theme hasn't been loaded
+  ;; yet, go ahead and try. This could prevent a startup without the theme
+  ;; properly loaded.
+  ;; (unless theme-did-load
+  ;;   (mifi/load-theme-from-selector)))
+
+;; All kept in local /lisp directory.
+;; (use-package web-server-status-codes )
+;; (use-package simple-httpd )
+;; (use-package web-server )
+
+;;; ##########################################################################
+
+(use-package mw-thesaurus
+  :when enable-thesaurus
+  :custom
+  (mw-thesaurus-api-key "429331e9-b40e-4f17-9988-0632ef3ddd2d")
+  :defer t
+  :commands mw-thesaurus-lookup-dwim
+  :hook (mw-thesaurus-mode . variable-pitch-mode)
+  :config
+  ;; window on the right side
+  (add-to-list 'display-buffer-alist '(,mw-thesaurus-buffer-name
+                                        (display-buffer-reuse-window
+                                          display-buffer-in-direction)
+                                        (direction . right)
+                                        (window . root)
+                                        (window-width . 0.3))))
+
+;;; ##########################################################################
+
+(defun mifi/after-which-key ()
+  (interactive)
+  (which-key-mode 1)
+  (add-to-list 'savehist-additional-variables 'which-key-side-window-location)
+  (which-key-add-key-based-replacements
+    "M-RET |" "display-fill-column"
+    "M-RET ?" "help-at-point")
+  (mmm-keys-minor-mode 1)
+  (when (featurep 'prog-mode)
+    (which-key-add-key-based-replacements
+      "C-c g r" "find-symbol-reference"
+      "C-c g o" "find-defitions-other-window"
+      "C-c g g" "find-defitions"
+      "C-c g ?" "eldoc-definition"))
+  (mifi/set-recenter-keys))
+
+(use-package which-key
+  ;; :ensure (:wait t)
+  :ensure t
+  :demand t
+  :commands which-key-mode
+  :delight which-key-mode
+  :custom
+  (which-key-popup-type 'side-window)
+  (which-key-preserve-window-configuration t)
+  (which-key-idle-delay 1,0)
+  (which-key-prefix-prefix "✪ ")
+  ;; (which-key-sort-order 'which-key-key-order-alpha)
+  (which-key-min-display-lines 3)
+  :config
+  (add-hook 'after-init-hook #'mifi/after-which-key))
+
+;;; ##########################################################################
 ;; YASnippets
 
 (use-package yasnippet
@@ -981,43 +1189,6 @@ font size is computed + 20 of this value."
 (use-package yasnippet-snippets
   :ensure t
   :after yasnippet)
-
-;;; ##########################################################################
-
-(use-package jinx
-  :ensure t
-  :bind ( ("C-c C-$" . jinx-correct)
-          ("C-x C-$" . jinx-languages))
-  :hook (emacs-startup . global-jinx-mode)
-  :config
-  (dolist (hook '(text-mode-hook prog-mode-hook org-mode-hook))
-          (add-hook hook #'jinx-mode)))
-
-;;; ##########################################################################
-
-(use-package dashboard
-  :ensure t
-  :defer t
-  :custom
-  (dashboard-items '( (recents   . 12)
-                      (bookmarks . 5)
-                      (projects  . 5)
-                      (agenda    . 5)))
-  (dashboard-center-content t)
-  (dashboard-set-heading-icons t)
-  (dashboard-set-file-icons t)  
-  (dashboard-footer-messages '("Greetings Program!"))
-  (dashboard-banner-logo-title "Welcome to Emacs!")
-  :commands dashboard-open
-  :bind ("M-RET d" . dashboard-open)
-  :config
-  ;; (setq initial-buffer-choice (lambda () (get-buffer-create dashboard-buffer-name)))
-  (add-hook 'after-init-hook #'dashboard-insert-startupify-lists)
-  (add-hook 'after-init-hook #'dashboard-initialize)
-  (when (equal custom-project-handler 'custom-project-projectile)
-    (setq dashboard-projects-backend 'projectile))
-  (setq dashboard-startup-banner (expand-file-name "Emacs-modern-is-sexy-v1.png" user-emacs-directory))
-  (dashboard-setup-startup-hook))
 
 ;;; ##########################################################################
 
@@ -1620,6 +1791,7 @@ This only runs for ripgrep results"
 
 (use-package all-the-icons-dired
   :after dired
+  :ensure t
   :when (display-graphic-p)
   :hook (dired-mode . all-the-icons-dired-mode))
 
@@ -1857,6 +2029,87 @@ This only runs for ripgrep results"
   :bind ("M-o" . ace-window))
 
 ;;; ##########################################################################
+;; Golen Ratio
+
+(use-package golden-ratio
+  :when enable-golden-ratio
+  :custom
+  (golden-ratio-auto-scale t)
+  (golden-ratio-adjust-factor .4)
+  (golden-ratio-wide-adjust-factor .4)
+  (golden-ratio-max-width 100)
+  (golden-ratio-exclude-modes '(
+                                 prog-mode
+                                 dashboard-mode
+                                 ;;inferior-emacs-lisp-mode
+                                 ;;inferior-python-mode
+                                 comint-mode
+                                 ;;lisp-interaction-mode
+                                 treemacs-mode
+                                 undo-tree-visualizer-mode
+                                 vundo-mode
+                                 ))
+  (golden-ratio-exclude-buffer-regexp '("dap*"
+                                         "*python*"))
+  :config
+  (golden-ratio-mode 1))
+
+;;; ##########################################################################
+
+(use-package popper
+  :ensure t :defer t
+  :bind (("C-`"   . popper-toggle)
+          ("M-`"   . popper-cycle)
+          ("C-M-`" . popper-toggle-type))
+  :init
+  (setq popper-reference-buffers
+    '("\\*Messages\\*"
+       "\\*scratch\\*"
+       "\\*ielm\\*"
+       "Output\\*$"
+       "\\*Async Shell Command\\*"
+       "^\\*eshell.*\\*$" eshell-mode ;eshell as a popup
+       "^\\*shell.*\\*$"  shell-mode  ;shell as a popup
+       "^\\*term.*\\*$"   term-mode   ;term as a popup
+       "^\\*vterm.*\\*$"  vterm-mode  ;vterm as a popup
+       help-mode
+       compilation-mode))
+  :config
+  (popper-mode +1)
+  (popper-echo-mode +1))
+
+;;; ##########################################################################
+
+(use-package buffer-move
+  :bind (("C-S-<up>"     . buf-move-up)
+          ("C-S-<down>"  . buf-move-down)
+          ("C-S-<left>"  . buf-move-left)
+          ("C-S-<right>" . buf-move-right)))
+
+;;; ##########################################################################
+
+(use-package writeroom-mode
+  :ensure t
+  :defer t
+  :init
+  (setq writeroom-width visual-fill-column-width)
+  :after visual-fill-column)
+
+;;; ##########################################################################
+
+(use-package init-windows ;; From purcell
+  :ensure nil
+  :demand t
+  :hook (after-init . winner-mode))
+
+;;; ##########################################################################
+;;; Window Number
+
+(use-package winum
+  :ensure t
+  :config (winum-mode))
+
+;;; ##########################################################################
 
 (use-package all-the-icons :ensure t)
 
@@ -1866,6 +2119,13 @@ This only runs for ripgrep results"
 (use-package default-text-scale
   :ensure t
   :hook (after-init . default-text-scale-mode))
+
+;;; ##########################################################################
+
+(use-package diff-hl
+  :ensure t
+  :config
+  (global-diff-hl-mode))
 
 ;;; ##########################################################################
 
@@ -2132,6 +2392,133 @@ This only runs for ripgrep results"
 
 ;;; ##########################################################################
 
+;; Use keybindings
+(use-package grip-mode
+  :ensure t :defer t
+  :bind (:map markdown-mode-command-map
+          ("g" . grip-mode)))
+
+;; ;; Or using hooks
+;; (use-package grip-mode
+;;   :hook ((markdown-mode org-mode) . grip-mode))
+
+;;; ##########################################################################
+
+(use-package highlight-defined
+  :defer t
+  :after emacs-lisp-mode
+  :hook (emacs-lisp-mode . highlight-defined-mode))
+
+;;; ##########################################################################
+
+;; (defun mifi/load-web-support ()
+;;   (use-package web-server-status-codes )
+;;   (use-package simple-httpd
+;;     :preface (setq warning-minimum-level :emergency)
+;;     
+;;     :config (setq warning-minimum-level :warning))
+;;   (use-package websocket )
+;;   (use-package web-server ))
+
+(use-package markdown-mode
+  :defer t :ensure t
+  :mode (("README\\.md\\'" . gfm-mode)
+         ("\\.md\\'" . markdown-mode)
+         ("\\.markdown\\'" . markdown-mode))
+  :init (setq markdown-command "multimarkdown"))
+  ;;:hook (after-init . mifi/load-web-support))
+
+;;; ##########################################################################
+
+(defun markdown-html (buffer)
+  (princ (with-current-buffer buffer
+	   (format "<!DOCTYPE html><html><title>Impatient Markdown</title><xmp theme=\"united\" style=\"display:none;\"> %s  </xmp><script src=\"http://ndossougbe.github.io/strapdown/dist/strapdown.js\"></script></html>" (buffer-substring-no-properties (point-min) (point-max))))
+    (current-buffer)))
+
+(use-package simple-httpd
+  :ensure t)
+
+(use-package impatient-mode
+  :ensure t :defer t
+  :config
+  (imp-set-user-filter #'markdown-html)
+  :hook (elpaca-after-init . httpd-start))
+
+;;; ##########################################################################
+
+(use-package multiple-cursors
+  :ensure t
+  :bind (("C-S-c C-S-c" . mc/edit-lines)
+          ("C->" . mc/mark-next-like-this)
+          ("C-<" . mc/mark-previous-like-this)
+          ("C-c C-<" . mc/mark-all-like-this)))
+
+;;; ##########################################################################
+
+(use-package pulsar
+  :ensure t
+  :config
+  (pulsar-global-mode)
+  :custom
+  (pulsar-pulse t)
+  (pulsar-delay 0.10)
+  (pulsar-iterations 10)
+  (pulsar-face 'pulsar-magenta)
+  (pulsar-highlight-face 'pulsar-yellow))
+
+;;; ##########################################################################
+
+(use-package rainbow-mode
+  :ensure t
+  :hook (prog-mode . (lambda () (rainbow-mode t))))
+
+;;; ##########################################################################
+
+
+(defun mifi/save-desktop-frameset ()
+  (unless (or (daemonp)
+            (not enable-frameset-restore)
+            (not (display-graphic-p)))
+    (desktop-save-mode 0)
+    (desktop-save-frameset)
+    (with-temp-file (expand-file-name "saved-frameset.el" user-emacs-directory)
+      (insert (format
+                "(setq desktop-saved-frameset %S)"
+                desktop-saved-frameset)))))
+
+(add-hook 'kill-emacs-hook 'mifi/save-desktop-frameset -100)
+
+;;; ##########################################################################
+
+(defun mifi/restore-desktop-frameset ()
+  (unless (or (daemonp)
+            (not enable-frameset-restore)
+            (not (display-graphic-p)))
+    (let
+      ((file (expand-file-name "saved-frameset.el" user-emacs-directory)))
+      (desktop-save-mode 0)
+      (if (file-exists-p file)
+        (progn
+          (load file)
+          (desktop-restore-frameset)
+          (when (featurep 'spacious-padding)
+            (when spacious-padding-mode
+              (spacious-padding-mode 0)
+              (spacious-padding-mode 1))))
+        (use-medium-display-font t)))))
+
+;;; ##########################################################################
+
+(use-package solaire-mode
+  :ensure t
+  :after treemacs
+  :hook (after-init . solaire-global-mode)
+  :config
+  (push '(treemacs-window-background-face . solaire-default-face) solaire-mode-remap-alist)
+  (push '(treemacs-hl-line-face . solaire-hl-line-face) solaire-mode-remap-alist))
+
+;;; ##########################################################################
+
 ;;
 ;; 1. The function `mifi/load-theme-from-selector' is called from the
 ;;    "C-= =" Keybinding (just search for it).
@@ -2307,15 +2694,6 @@ This only runs for ripgrep results"
 
 ;;; ##########################################################################
 
-(use-package multiple-cursors
-  :ensure t
-  :bind (("C-S-c C-S-c" . mc/edit-lines)
-          ("C->" . mc/mark-next-like-this)
-          ("C-<" . mc/mark-previous-like-this)
-          ("C-c C-<" . mc/mark-all-like-this)))
-
-;;; ##########################################################################
-
 (use-package visual-fill-column
   :ensure nil ;; Should be installed in the local lisp dir.
   :defer t
@@ -2323,30 +2701,7 @@ This only runs for ripgrep results"
 
 ;;; ##########################################################################
 
-(use-package init-windows ;; From purcell
-  :ensure nil
-  :demand t
-  :hook (after-init . winner-mode))
-
-;;; ##########################################################################
-;;; Window Number
-
-(use-package winum
-  :ensure t
-  :config (winum-mode))
-
-;;; ##########################################################################
-
-(use-package writeroom-mode
-  :ensure t
-  :defer t
-  :init
-  (setq writeroom-width visual-fill-column-width)
-  :after visual-fill-column)
-
-;;; ##########################################################################
-
-(use-package faces)
+;; (use-package faces :ensure t)
 (defun mifi/org-font-setup ()
   "Setup org mode fonts."
 
@@ -2354,16 +2709,16 @@ This only runs for ripgrep results"
     'org-mode
     '(("^ *\\([-]\\) "
         (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))))
-
+  
   (set-face-attribute 'org-block nil
     :foreground 'unspecified
     :inherit 'fixed-pitch
     :font mono-spaced-font-family
     :height custom-default-mono-font-size)
-
+  
   (set-face-attribute 'org-formula nil
     :inherit 'fixed-pitch)
-
+  
   (set-face-attribute 'org-code nil
     :foreground 'unspecified
     :font mono-spaced-font-family
@@ -2381,31 +2736,31 @@ This only runs for ripgrep results"
     :font mono-spaced-font-family
     :height custom-default-mono-font-size
     :inherit '(shadow fixed-pitch))
-
+  
   (set-face-attribute 'org-verbatim nil
     :foreground 'unspecified
     :font mono-spaced-font-family
     :height custom-default-mono-font-size
     :inherit '(shadow fixed-pitch))
-
+  
   (set-face-attribute 'org-special-keyword nil
     :inherit '(font-lock-comment-face fixed-pitch))
-
+  
   (set-face-attribute 'org-meta-line nil
     :inherit '(font-lock-comment-face fixed-pitch))
-
+  
   (set-face-attribute 'org-checkbox nil
     :foreground 'unspecified
     :font mono-spaced-font-family
     :height custom-default-mono-font-size
     :inherit 'fixed-pitch)
-
+  
   (set-face-attribute 'line-number nil
     :foreground 'unspecified
     :font mono-spaced-font-family
     :height custom-default-mono-font-size
     :inherit 'fixed-pitch)
-
+  
   (set-face-attribute 'line-number-current-line nil
     :foreground 'unspecified
     :font mono-spaced-font-family
@@ -2531,7 +2886,7 @@ directory is relative to the working-files-directory
 (defun mifi/org-setup-capture-templates ()
   (setq org-capture-templates
     `(("t" "Tasks / Projects")
-
+       
        ("tt" "Task" entry (file+olp (expand-file-name "OrgFiles/Tasks.org" user-emacs-directory) "Inbox")
          "* TODO %?\n  %U\n  %a\n        %i" :empty-lines 1)
 
@@ -2619,12 +2974,12 @@ directory is relative to the working-files-directory
   (org-hide-emphasis-markers t)
   (org-startup-with-inline-images t)
   (org-image-actual-width '(300))
+  (org-hide-emphasis-markers nil)
   :bind ( ("C-c o" . mifi/org-capture)
           :map org-mode-map
           ("C-c e" . org-edit-src-code)
-          ("C-c -" . org-mark-ring-goto))
+          ("C--" . org-mark-ring-goto) )
   :config
-  (setq org-hide-emphasis-markers nil)
   ;; Save Org buffers after refiling!
   (advice-add 'org-refile :after 'org-save-all-org-buffers)
   (setq org-tag-alist
@@ -2688,6 +3043,7 @@ directory is relative to the working-files-directory
 (use-package org-modern
   :when (display-graphic-p)
   :after org
+  :defer t
   :ensure t
   :hook (org-mode . org-modern-mode)
   :config
@@ -2751,7 +3107,7 @@ directory is relative to the working-files-directory
             ("C-c j f" . find-file-other-window)
             ("C-c j s" . org-journal-schedule-view) )
     :config
-    (message ">>> Configured org-journal."))
+    (message "=== Configured org-journal."))
 )
 
 ;;; ##########################################################################
@@ -2759,8 +3115,9 @@ directory is relative to the working-files-directory
 (use-package emacsql :ensure t)
 
 (use-package org-roam
-  :after emacsql
+  :after (emacsql org)
   :when (equal custom-note-system 'custom-note-system-org-roam)
+  :defer t
   :ensure t
   :demand t
   ;; :ensure ( :package "org-roam" :source "MELPA" :protocol https :inherit t :depth 1
@@ -3059,6 +3416,55 @@ capture was not aborted."
   (setq user-full-name '"MrCairo")
   (setq user-mail-address '"mr.cairo@invalidname.com")
   (setq gnus-select-method '(nntp "news.eternal-september.org")))
+
+;;; ##########################################################################
+
+(use-package dashboard
+  :ensure t
+  :defer t
+  :custom
+  (dashboard-items '( (recents   . 12)
+                      (bookmarks . 5)
+                      (projects  . 5)
+                      (agenda    . 5)))
+  (dashboard-center-content t)
+  (dashboard-set-heading-icons t)
+  (dashboard-set-file-icons t)  
+  (dashboard-footer-messages '("Greetings Program!"))
+  (dashboard-banner-logo-title "Welcome to Emacs!")
+  :commands dashboard-open
+  :bind ("M-RET d" . dashboard-open)
+  :config
+  ;; (setq initial-buffer-choice (lambda () (get-buffer-create dashboard-buffer-name)))
+  (add-hook 'after-init-hook #'dashboard-insert-startupify-lists)
+  (add-hook 'after-init-hook #'dashboard-initialize)
+  (when (equal custom-project-handler 'custom-project-projectile)
+    (setq dashboard-projects-backend 'projectile))
+  (setq dashboard-startup-banner (expand-file-name "Emacs-modern-is-sexy-v1.png" user-emacs-directory))
+  (dashboard-setup-startup-hook))
+
+;;; ##########################################################################
+
+(use-package neotree
+  :when enable-neotree
+  :config
+  (global-set-key [f8] 'neotree-toggle)
+  (setq neo-theme (if (display-graphic-p) 'icons 'arrow)))
+
+;;; ##########################################################################
+;; Enable tabs for each buffer
+
+(use-package centaur-tabs
+  :when enable-centaur-tabs
+  :custom
+  ;; Set the style to rounded with icons (setq centaur-tabs-style "bar")
+  (centaur-tabs-style "bar")
+  (centaur-tabs-set-icons t)
+  (centaur-tabs-set-modified-marker t)
+  :bind (("C-c <" . centaur-tabs-backward)
+          ("C-c >" . centaur-tabs-forward))
+  :config ;; Enable centaur-tabs
+  (centaur-tabs-mode t))
 
 ;;; ##########################################################################
 ;;; Emacs Polyglot is the Emacs LSP client that stays out of your way:
@@ -3514,7 +3920,7 @@ capture was not aborted."
   :hook (go-mode . go-guru-hl-identifier-mode))
 
 (use-package elisp-mode
-
+  
   :defer t
   :mode ("\\.el\\'" . emacs-lisp-mode))
 
@@ -3582,407 +3988,6 @@ capture was not aborted."
   :after dap-mode)
 ;; :config
 ;; (dap-cpptools-setup))
-
-;;; ##########################################################################
-
-(use-package mw-thesaurus
-  :when enable-thesaurus
-  :custom
-  (mw-thesaurus-api-key "429331e9-b40e-4f17-9988-0632ef3ddd2d")
-  :defer t
-  :commands mw-thesaurus-lookup-dwim
-  :hook (mw-thesaurus-mode . variable-pitch-mode)
-  :config
-  ;; window on the right side
-  (add-to-list 'display-buffer-alist '(,mw-thesaurus-buffer-name
-                                        (display-buffer-reuse-window
-                                          display-buffer-in-direction)
-                                        (direction . right)
-                                        (window . root)
-                                        (window-width . 0.3))))
-
-;;; ##########################################################################
-
-(use-package solaire-mode
-  :ensure t
-  :after treemacs
-  :hook (after-init . solaire-global-mode)
-  :config
-  (push '(treemacs-window-background-face . solaire-default-face) solaire-mode-remap-alist)
-  (push '(treemacs-hl-line-face . solaire-hl-line-face) solaire-mode-remap-alist))
-
-;;; ##########################################################################
-;; Golen Ratio
-
-(use-package golden-ratio
-  :when enable-golden-ratio
-  :custom
-  (golden-ratio-auto-scale t)
-  (golden-ratio-adjust-factor .4)
-  (golden-ratio-wide-adjust-factor .4)
-  (golden-ratio-max-width 100)
-  (golden-ratio-exclude-modes '(
-                                 prog-mode
-                                 dashboard-mode
-                                 ;;inferior-emacs-lisp-mode
-                                 ;;inferior-python-mode
-                                 comint-mode
-                                 ;;lisp-interaction-mode
-                                 treemacs-mode
-                                 undo-tree-visualizer-mode
-                                 vundo-mode
-                                 ))
-  (golden-ratio-exclude-buffer-regexp '("dap*"
-                                         "*python*"))
-  :config
-  (golden-ratio-mode 1))
-
-;;; ##########################################################################
-
-(use-package buffer-move
-  :bind (("C-S-<up>"     . buf-move-up)
-          ("C-S-<down>"  . buf-move-down)
-          ("C-S-<left>"  . buf-move-left)
-          ("C-S-<right>" . buf-move-right)))
-
-;;; ##########################################################################
-
-(use-package neotree
-  :when enable-neotree
-  :config
-  (global-set-key [f8] 'neotree-toggle)
-  (setq neo-theme (if (display-graphic-p) 'icons 'arrow)))
-
-;;; ##########################################################################
-;; Enable tabs for each buffer
-
-(use-package centaur-tabs
-  :when enable-centaur-tabs
-  :custom
-  ;; Set the style to rounded with icons (setq centaur-tabs-style "bar")
-  (centaur-tabs-style "bar")
-  (centaur-tabs-set-icons t)
-  (centaur-tabs-set-modified-marker t)
-  :bind (("C-c <" . centaur-tabs-backward)
-          ("C-c >" . centaur-tabs-forward))
-  :config ;; Enable centaur-tabs
-  (centaur-tabs-mode t))
-
-;;; ##########################################################################
-
-(use-package diff-hl
-  :ensure t
-  :config
-  (global-diff-hl-mode))
-
-;;; ##########################################################################
-
-(use-package pulsar
-  :ensure t
-  :config
-  (pulsar-global-mode)
-  :custom
-  (pulsar-pulse t)
-  (pulsar-delay 0.10)
-  (pulsar-iterations 10)
-  (pulsar-face 'pulsar-magenta)
-  (pulsar-highlight-face 'pulsar-yellow))
-
-;;; ##########################################################################
-
-(use-package rainbow-mode
-  :ensure t
-  :hook (prog-mode . (lambda () (rainbow-mode t))))
-
-;;; ##########################################################################
-
-(use-package highlight-defined
-  :defer t
-  :after emacs-lisp-mode
-  :hook (emacs-lisp-mode . highlight-defined-mode))
-
-;;; ##########################################################################
-
-(use-package popper
-  :ensure t :defer t
-  :bind (("C-`"   . popper-toggle)
-          ("M-`"   . popper-cycle)
-          ("C-M-`" . popper-toggle-type))
-  :init
-  (setq popper-reference-buffers
-    '("\\*Messages\\*"
-       "\\*scratch\\*"
-       "\\*ielm\\*"
-       "Output\\*$"
-       "\\*Async Shell Command\\*"
-       "^\\*eshell.*\\*$" eshell-mode ;eshell as a popup
-       "^\\*shell.*\\*$"  shell-mode  ;shell as a popup
-       "^\\*term.*\\*$"   term-mode   ;term as a popup
-       "^\\*vterm.*\\*$"  vterm-mode  ;vterm as a popup
-       help-mode
-       compilation-mode))
-  :config
-  (popper-mode +1)
-  (popper-echo-mode +1))
-
-;;; ##########################################################################
-
-;; (defun mifi/load-web-support ()
-;;   (use-package web-server-status-codes )
-;;   (use-package simple-httpd
-;;     :preface (setq warning-minimum-level :emergency)
-;;     
-;;     :config (setq warning-minimum-level :warning))
-;;   (use-package websocket )
-;;   (use-package web-server ))
-
-(use-package markdown-mode
-  :defer t :ensure t
-  :mode (("README\\.md\\'" . gfm-mode)
-         ("\\.md\\'" . markdown-mode)
-         ("\\.markdown\\'" . markdown-mode))
-  :init (setq markdown-command "multimarkdown"))
-  ;;:hook (after-init . mifi/load-web-support))
-
-;;; ##########################################################################
-
-(defun markdown-html (buffer)
-  (princ (with-current-buffer buffer
-  	 (format "<!DOCTYPE html><html><title>Impatient Markdown</title><xmp theme=\"united\" style=\"display:none;\"> %s  </xmp><script src=\"http://ndossougbe.github.io/strapdown/dist/strapdown.js\"></script></html>" (buffer-substring-no-properties (point-min) (point-max))))
-    (current-buffer)))
-
-(use-package simple-httpd
-  :ensure t)
-
-(use-package impatient-mode
-  :ensure t :defer t
-  :config
-  (imp-set-user-filter #'markdown-html)
-  :hook (elpaca-after-init . httpd-start))
-
-;;; ##########################################################################
-
-;; Use keybindings
-(use-package grip-mode
-  :ensure t :defer t
-  :bind (:map markdown-mode-command-map
-          ("g" . grip-mode)))
-
-;; ;; Or using hooks
-;; (use-package grip-mode
-;;   :hook ((markdown-mode org-mode) . grip-mode))
-
-;;; ##########################################################################
-
-(defadvice custom-buffer-create (before my-advice-custom-buffer-create)
-  "Exit the current Customize buffer before creating a new one, unless there are modified widgets."
-  (if (eq major-mode 'Custom-mode)
-      (let ((custom-buffer-done-kill t)
-            (custom-buffer-modified nil))
-        (mapc (lambda (widget)
-                (and (not custom-buffer-modified)
-                     (eq (widget-get widget :custom-state) 'modified)
-                     (setq custom-buffer-modified t)))
-              custom-options)
-        (if (not custom-buffer-modified)
-            (Custom-buffer-done)))))
-
-(defun mifi/set-fill-column-interactively (num)
-  "Asks for the fill column."
-  (interactive "nfill-column: ")
-  (set-fill-column num))
-
-(defun mifi/set-org-fill-column-interactively (num)
-  "Asks for the fill column for Org mode."
-  (interactive "norg-fill-column: ")
-  (setq custom-org-fill-column num)
-  (mifi/org-mode-visual-fill)
-  (redraw-display))
-
-(defun mifi/jump-to-register ()
-  "Asks for a register to jump to."
-  (interactive)
-  (call-interactively 'jump-to-register))
-
-(defun mifi/customize-mifi ()
-  "Opens up the customize section for all of the MiFi options."
-  (interactive)
-  (ad-activate 'custom-buffer-create)
-  (customize-apropos "mifi-config"))
-
-;;; ##########################################################################
-
-(defun mifi/define-mmm-minor-mode-map ()
-  (defvar mmm-keys-minor-mode-map
-    (let ((map (make-sparse-keymap)))
-      (bind-keys :map map
-        ("M-RET $" . jinx-correct)
-        ("M-RET ?" . eldoc-box-help-at-point)
-        ("M-RET /" . hydra-combine/body)
-        ("M-RET M s" . markdown-preview-mode)
-        ("M-RET M e" . markdown-preview-cleanup)
-        ("M-RET S e" . eshell)
-        ("M-RET S i" . ielm)
-        ("M-RET S v" . vterm-other-window)
-        ("M-RET v" . hydra-themes-and-fonts/body)
-        ("M-RET W" . writeroom-mode)
-        ("M-RET w <right>" . which-key-setup-side-window-right-bottom)
-        ("M-RET w <down>" . which-key-setup-side-window-bottom)
-        ("M-RET =" . next-theme)
-        ("M-RET -" . previous-theme)
-        ("M-RET _" . which-theme)
-        ("M-RET M-c" . mifi/customize-mifi)
-        ("M-RET d" . dashboard-open)
-        ("M-RET e" . treemacs) ;; e for Explore
-        ("M-RET f" . mifi/set-fill-column-interactively)
-        ("M-RET p" . pulsar-pulse-line)
-        ("M-RET r" . repeat-mode)
-        ("M-RET j" . hydra-registers/body) ;; mifi/jump-to-register)
-        ("M-RET |" . global-display-fill-column-indicator-mode)
-        ("M-RET C-g" . keyboard-quit))
-      map)
-    "mmm-keys-minor-mode keymap.")
-
-  (define-minor-mode mmm-keys-minor-mode
-    "A minor mode so that my key settings override annoying major modes."
-    :init-value t
-    :lighter " MmM"))
-
-(mifi/define-mmm-minor-mode-map)
-
-;;; ##########################################################################
-
-(defun mifi/mmm-handle-context-keys (&optional winframe)
-  "Enable or Disable keys based upon featurep context."
-  (when winframe
-    (let ((map mmm-keys-minor-mode-map))
-      (when enable-thesaurus
-        (bind-keys :map map
-          ("M-RET t t" . mw-thesaurus-lookup-dwim)))
-      (cond
-        ((equal major-mode 'org-mode)
-          (bind-keys :map map
-            ("M-RET M-RET" . org-insert-heading)
-            ("M-RET o f" . mifi/set-org-fill-column-interactively)
-            ("M-RET o c" . mifi/toggle-org-centering)
-            ("M-RET o r" . org-mode-restart)
-            ("M-RET o l" . org-toggle-link-display)))
-        ((equal major-mode 'python-mode)
-          (bind-keys :map map
-            ("M-RET P" . 'pydoc-at-point)))
-  ((equal major-mode 'tuareg-mode)
-    (bind-keys :map map
-      ("M-RET c m" . tuarg-browse-manual)))
-        (t   ;; Default 
-          (unbind-key "M-RET o f" map)
-          (unbind-key "M-RET o c" map)
-          (unbind-key "M-RET o l" map)
-          (unbind-key "M-RET P ?" map)
-          (unbind-key "M-RET c m" map)
-          (unbind-key "M-RET M-RET" map)))))
-
-  ;; Override default menu text with better things
-  (which-key-add-key-based-replacements
-    "M-RET t t" "thesaurus-at-point"
-    "M-RET o" "org-menu"
-    "M-RET c" "ocaml-menu"
-    "M-RET o c" "toggle-org-centering"
-    "M-RET o f" "set-org-fill-column"))
-
-;;; ##########################################################################
-
-(defun mifi/mmm-update-menu (&optional winframe)
-  (interactive)
-  (mifi/mmm-handle-context-keys nil)
-  (which-key-add-key-based-replacements
-    "M-RET w" "which-key-position"
-    "M-RET w <right>" "which-key-on-right"
-    "M-RET w <down>" "which-key-on-bottom"
-    "M-RET M" "markdown-preview"
-    "M-RET S" "shells"
-    "M-RET P" "python-menu"
-    "M-RET e" "treemacs-toggle"
-    "M-RET t" "Thesaurus"
-    "M-RET f" "set-fill-column"
-    "M-RET j" "jump-to-register"
-    "M-RET v" "font-size"
-    "M-RET C-g" "Exit menu"
-    "M-RET" "Mitch's Menu"))
-
-;;; ##########################################################################
-
-;; Check the keys when:
-;; - the whick-key menu is displayed
-(add-hook 'after-init-hook
-  (lambda ()
-    (add-hook 'which-key-inhibit-display-hook 'mifi/mmm-update-menu)
-    ;; - the user updates/changes the buffer - like loading a file
-    ;;   (but not switching to a new buffer)
-    (add-hook 'window-buffer-change-functions 'mifi/mmm-handle-context-keys)
-    ;; - the user switches windows
-    (add-hook 'window-selection-change-functions 'mifi/mmm-handle-context-keys)
-    ;; (add-hook 'which-key-mode-hook #'mifi/after-which-key)
-    (mifi/after-which-key)
-    (mifi/define-mmm-minor-mode-map)
-    (mifi/set-recenter-keys)))
-
-;;; ##########################################################################
-
-(defun mifi/config-landing ()
-  (cond
-    ((equal default-landing-mode 'landing-mode-dashboard)
-      (dashboard-open))
-    ((equal default-landing-mode 'landing-mode-scratch)
-      (switch-to-buffer "*scratch*")
-      (erase-buffer)
-      (beginning-of-buffer)
-      (insert (concat 
-              ";; 'Tis but a scratch! A scratch? Your arm's off! - No, it isn't!\n"
-              (format ";; Happy hacking, %s! %s" user-login-name
-                "Press M-RET (Meta-RET) to open the MiFi Menu\n")))
-      (end-of-buffer))
-    ((equal default-landing-mode 'landing-mode-ielm)
-      (ielm))
-    ((equal default-landing-mode 'landing-mode-eshell)
-      (eshell))))
-
-;;; ##########################################################################
-
-(defun mifi/backup-file (file)
-  "Backup the file from the configuration directory into the
-backup directory. If a file already exists in the backup directory, the old
-file is renamed with a ~ at the end before the new file is copied. If Emacs
-is running in server mode, then don't backup the files when the emacsclient
-exits."
-  (unless (server-running-p)
-    (let ((backdir (format "%s/config-backup" working-files-directory)))
-      (make-directory backdir t)
-      ;; --------------------------------------------------
-      (when (file-exists-p (format "%s/%s" backdir file))
-      (copy-file
-        (expand-file-name file backdir)
-        (expand-file-name (format "%s~" file) backdir) t))
-      (when (file-exists-p (format "%s/%s" emacs-config-directory file))
-      (copy-file
-        (expand-file-name file emacs-config-directory)
-        (expand-file-name file backdir) t)))))
-
-(defun mifi/when-exiting-emacs ()
-  "Backup Emacs initialization files for recovery. If old files exist, they are
-backed up as tilde (~) files. Also, if ocaml is enabled, byte (re)compile the
-opam-user-setup.el so that upon next startup, it can be loaded quickly."
-  (when (featurep 'simple-httpd)
-    (httpd-stop))
-  (when enable-ocaml
-    (let ((src (expand-file-name "opam-user-setup.el" emacs-config-directory)))
-      (when (file-exists-p src)
-        (byte-compile-file src))))
-  (mifi/backup-file "early-init.el")
-  (mifi/backup-file "init.el")
-  (mifi/backup-file "emacs-config-elpaca.org")
-  (mifi/backup-file "emacs-config-elpa.org"))
-
-(add-hook 'kill-emacs-hook #'mifi/when-exiting-emacs)
 
 ;;; ##########################################################################
 ;; Ignore Line Numbers for the following modes:
