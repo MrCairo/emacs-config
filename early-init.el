@@ -40,12 +40,16 @@
      ( "nongnu" . 10)
      ))
 
+;;
+;; I pull the whole mirror locally - it's not huge, 2.1 GB. If it's
+;; available, add them to the start of the package-archives list.
+;;
 (when (file-directory-p "/opt/local/elpa-mirror")
   ;; Make sure to refresh this local reppo often!!
-  (add-to-list 'package-archives '("local-gnu" . "/opt/local/elpa-mirror/gnu"))
-  (add-to-list 'package-archives '("local-nongnu" . "/opt/local/elpa-mirror/nongnu"))
-  (add-to-list 'package-archives '("local-melpa" . "/opt/local/elpa-mirror/melpa"))
-  (add-to-list 'package-archives '("local-melpa-stable" . "/opt/local/elpa-mirror/stable-melpa"))
+  (add-to-list 'package-archives '("local-gnu" . "/opt/local/elpa-mirror/gnu") t)
+  (add-to-list 'package-archives '("local-nongnu" . "/opt/local/elpa-mirror/nongnu") t)
+  (add-to-list 'package-archives '("local-melpa" . "/opt/local/elpa-mirror/melpa") t)
+  (add-to-list 'package-archives '("local-melpa-stable" . "/opt/local/elpa-mirror/stable-melpa") t)
   (add-to-list 'package-archive-priorities '( "local-gnu" . 99 ))
   (add-to-list 'package-archive-priorities '( "local-melpa" . 98 ))
   (add-to-list 'package-archive-priorities '( "local-nongnu" . 97))

@@ -12,40 +12,6 @@
 ;; (setq debug-on-error t)
 ;;
 
-(setq-default
-  ad-redefinition-action 'accept                   ; Silence warnings for redefinition
-  backup-inhibited t                               ; diabled backup (no ~ tilde files)
-  cursor-in-non-selected-windows nil               ; Hide the cursor in inactive windows
-  display-time-default-load-average nil            ; Don't display load average
-  fill-column 80                                   ; Set width for automatic line breaks
-  help-window-select t                             ; Focus new help windows when opened
-  history-length 30                                ; Reasonable number of items
-  indent-tabs-mode nil                             ; Prefer spaces over tabs
-  inhibit-startup-screen t                         ; Disable start-up screen
-  kill-ring-max 128                                ; Maximum length of kill ring
-  lisp-indent-offset '2                            ; Emacs list tab size
-  load-prefer-newer t                              ; Prefer the newest version of a file
-  mark-ring-max 128                                ; Maximum length of mark ring
-  read-process-output-max (* 1024 1024)            ; Increase the amount of data reads from the process
-  scroll-conservatively most-positive-fixnum       ; Always scroll by one line
-  select-enable-clipboard t                        ; Merge system's and Emacs' clipboard
-  tab-width 4                                      ; Set width for tabs
-  truncate-lines 1                                 ; Long lines of text do not wrap
-  truncate-partial-width-windows 1                 ; truncate lines in partial-width windows
-  user-full-name "Mitchell Fisher"                 ; Set the full name of the current user
-  user-mail-address "Trafalgar42@gmail.com"        ; Set the email address of the current user
-  vc-follow-symlinks t                             ; Always follow the symlinks
-  view-read-only t                                 ; Always open read-only buffers in view-mode
-  visible-bell t)                                  ; Set up the visible bell
-(column-number-mode 1)                             ; Show the column number
-(fset 'yes-or-no-p 'y-or-n-p)                      ; Replace yes/no prompts with y/n
-;; (global-hl-line-mode)                              ; Hightlight current line
-(set-default-coding-systems 'utf-8)                ; Default to utf-8 encoding
-(show-paren-mode 1)                                ; Show the parent
-;; Rebind C-z/C-. to act like vim's repeat previous command ( . )
-(unbind-key "C-z")
-(bind-key "C-z" 'repeat)
-
 ;;; ##########################################################################
 ;;; Define my customization groups
 
@@ -456,6 +422,47 @@ font size is computed + 20 of this value."
   (message "---- Can't find a monospace font to use.")))
     (message (format ">>> monospace font is %s" mono-spaced-font-family))))
 
+(use-package org-make-toc
+  :ensure t)
+
+(use-package org-make-toc
+  :ensure t)
+
+(setq-default
+  ad-redefinition-action 'accept                   ; Silence warnings for redefinition
+  backup-inhibited t                               ; diabled backup (no ~ tilde files)
+  cursor-in-non-selected-windows nil               ; Hide the cursor in inactive windows
+  display-time-default-load-average nil            ; Don't display load average
+  fill-column 80                                   ; Set width for automatic line breaks
+  help-window-select t                             ; Focus new help windows when opened
+  history-length 30                                ; Reasonable number of items
+  indent-tabs-mode nil                             ; Prefer spaces over tabs
+  inhibit-startup-screen t                         ; Disable start-up screen
+  kill-ring-max 128                                ; Maximum length of kill ring
+  lisp-indent-offset '2                            ; Emacs list tab size
+  load-prefer-newer t                              ; Prefer the newest version of a file
+  mark-ring-max 128                                ; Maximum length of mark ring
+  read-process-output-max (* 1024 1024)            ; Increase the amount of data reads from the process
+  scroll-conservatively most-positive-fixnum       ; Always scroll by one line
+  select-enable-clipboard t                        ; Merge system's and Emacs' clipboard
+  tab-width 4                                      ; Set width for tabs
+  truncate-lines 1                                 ; Long lines of text do not wrap
+  truncate-partial-width-windows 1                 ; truncate lines in partial-width windows
+  user-full-name "Mitchell Fisher"                 ; Set the full name of the current user
+  user-mail-address "Trafalgar42@gmail.com"        ; Set the email address of the current user
+  vc-follow-symlinks t                             ; Always follow the symlinks
+  view-read-only t                                 ; Always open read-only buffers in view-mode
+  visible-bell t)                                  ; Set up the visible bell
+
+(column-number-mode 1)                             ; Show the column number
+(fset 'yes-or-no-p 'y-or-n-p)                      ; Replace yes/no prompts with y/n
+;; (global-hl-line-mode)                              ; Hightlight current line
+(set-default-coding-systems 'utf-8)                ; Default to utf-8 encoding
+(show-paren-mode 1)                                ; Show the parent
+;; Rebind C-z/C-. to act like vim's repeat previous command ( . )
+(unbind-key "C-z")
+(bind-key "C-z" 'repeat)
+
 ;;; ##########################################################################
 
 (use-package f
@@ -648,8 +655,8 @@ font size is computed + 20 of this value."
 
 (use-package delight
   :ensure t
-  :demand t ;; Force early startup for all use-package calls after this
-  :config (mifi/delight-config))
+  :demand t
+  :hook (elpaca-after-init . mifi/delight-config))
 
 ;;; ##########################################################################
 
@@ -2612,9 +2619,10 @@ directory is relative to the working-files-directory
   (org-hide-emphasis-markers t)
   (org-startup-with-inline-images t)
   (org-image-actual-width '(300))
-  :bind (("C-c o" . mifi/org-capture)
-        :map org-mode-map
-          ("C-c e" . org-edit-src-code))
+  :bind ( ("C-c o" . mifi/org-capture)
+          :map org-mode-map
+          ("C-c e" . org-edit-src-code)
+          ("C-c -" . org-mark-ring-goto))
   :config
   (setq org-hide-emphasis-markers nil)
   ;; Save Org buffers after refiling!
@@ -3857,13 +3865,14 @@ capture was not aborted."
             ("M-RET M-RET" . org-insert-heading)
             ("M-RET o f" . mifi/set-org-fill-column-interactively)
             ("M-RET o c" . mifi/toggle-org-centering)
+            ("M-RET o r" . org-mode-restart)
             ("M-RET o l" . org-toggle-link-display)))
         ((equal major-mode 'python-mode)
           (bind-keys :map map
             ("M-RET P" . 'pydoc-at-point)))
   ((equal major-mode 'tuareg-mode)
-  	(bind-keys :map map
-  	  ("M-RET c m" . tuarg-browse-manual)))
+    (bind-keys :map map
+      ("M-RET c m" . tuarg-browse-manual)))
         (t   ;; Default 
           (unbind-key "M-RET o f" map)
           (unbind-key "M-RET o c" map)
