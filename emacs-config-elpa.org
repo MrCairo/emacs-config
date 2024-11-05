@@ -495,7 +495,6 @@ This is the standard format of a =lisp= header that should appear for all =lisp=
 Contrary to what some users might think, =use-package= is not a package
 manager. To download and use packages that are not available in package sources,
 I use [[https://github.com/raxod502/straight.el][straight]]. The snippet below takes care of installing =straight=.
-NOTE: For now, this is disabled since it's unused.
 
 #+begin_src emacs-lisp :tangle no
   ;; Bootstrap straight
@@ -1134,7 +1133,7 @@ These are global variables that effect the behavior of Emacs in general. These v
     vc-follow-symlinks t                             ; Always follow the symlinks
     view-read-only t                                 ; Always open read-only buffers in view-mode
     visible-bell t)                                  ; Set up the visible bell
-  
+
   (column-number-mode 1)                             ; Show the column number
   (fset 'yes-or-no-p 'y-or-n-p)                      ; Replace yes/no prompts with y/n
   ;; (global-hl-line-mode)                              ; Hightlight current line
@@ -1142,7 +1141,8 @@ These are global variables that effect the behavior of Emacs in general. These v
   (show-paren-mode 1)                                ; Show the parent
   ;; Rebind C-z/C-. to act like vim's repeat previous command ( . )
   (unbind-key "C-z")
-  (bind-key "C-z" 'repeat)
+  (bind-key "C-z" 'repeat-complex-command)
+  (bind-key "C-+" 'repeat)
 
 #+end_src
 
@@ -4170,34 +4170,22 @@ A better version of variable-pitch mode. This keeps certain faces (defined in mi
 #+begin_src emacs-lisp
   ;; Functions to set the frame size
 
-  (defun mifi/frame-recenter (&optional frame)
-    "Center FRAME on the screen.  FRAME can be a frame name, a terminal name,
-    or a frame.  If FRAME is omitted or nil, use currently selected frame."
-    (interactive)
-    ;; (set-frame-size (selected-frame) 250 120)
-    (unless (eq 'maximised (frame-parameter nil 'fullscreen))
-      (progn
-        (let ((width (nth 3 (assq 'geometry (car (display-monitor-attributes-list)))))
-               (height (nth 4 (assq 'geometry (car (display-monitor-attributes-list))))))
-          (cond (( > width 3000) (mifi/update-large-display))
-            (( > width 2000) (mifi/update-built-in-display))
-            (t (mifi/set-frame-alpha-maximized)))))))
-
-  (defun mifi/update-large-display ()
-    (modify-frame-parameters
-      frame '((user-position . t)
-               (top . 0.0)
-               (left . 0.70)
-               (width . (text-pixels . 2800))
-               (height . (text-pixels . 1650))))) ;; 1800
-
-  (defun mifi/update-built-in-display ()
-    (modify-frame-parameters
-      frame '((user-position . t)
-               (top . 0.0)
-               (left . 0.90)
-               (width . (text-pixels . 1800))
-               (height . (text-pixels . 1170))))) ;; 1329
+  (defun mifi/update-frame-dimensions ()
+    "Updates the frame dimensions so that it occupies 95% of the width of the
+  display and 100% of the display height. The left edge is moved over to the right
+  approximately 5% of the width (not sure why the value must be 0.65 but it
+  works). The space to the left is done so that the Emacs window plays well with
+  Stage Manager on macOS."
+    (let ( (width  (nth 3 (assq 'geometry (car (display-monitor-attributes-list)))))
+           (height (nth 4 (assq 'geometry (car (display-monitor-attributes-list))))))
+      (message "width = %d, height = %d" width height)
+      (modify-frame-parameters
+        frame '((user-position . t)
+                 (top . 0)
+                 (left . 0.65)
+                 (width . 0.95)
+                 (height . 1.0)))
+      ))
 
   ;; Set frame transparency
   (defun mifi/set-frame-alpha-maximized ()
@@ -4215,6 +4203,14 @@ A better version of variable-pitch mode. This keeps certain faces (defined in mi
 
     (add-to-list 'default-frame-alist '(fullscreen . maximized))
     (unless enable-frameset-restore (mifi/frame-recenter)))
+
+  (defun mifi/frame-recenter (&optional frame)
+    "Center FRAME on the screen.  FRAME can be a frame name, a terminal name,
+      or a frame.  If FRAME is omitted or nil, use currently selected frame."
+    (interactive)
+    ;; (set-frame-size (selected-frame) 250 120)
+    (unless (eq 'maximised (frame-parameter nil 'fullscreen))
+      (mifi/update-frame-dimensions)))
 
 #+end_src
 
@@ -5979,7 +5975,6 @@ Denote’s file-naming scheme is not limited to “notes”. It can be used for 
     :when (equal custom-note-system 'custom-note-system-denote)
     ;; :after which-key dired
     :ensure t
-    :defer t
     :custom
     (denote-directory (expand-file-name "notes" user-emacs-directory))
     (denote-save-buffers nil)
@@ -7179,6 +7174,34 @@ Lisp support is handled by SLIME which is the “Superior Lisp Interaction Mode 
     (setq inferior-lisp-program "/opt/homebrew/bin/sbcl"))
 
 #+end_src
+
+** Godot Script Mode
+:PROPERTIES:
+:custom_id: godot-script-mode
+:visibility: folded
+:END:
+
+This package adds support for the GDScript programming language from the Godot game engine in Emacs. It gives syntax highlighting and indentations.
+
+#+begin_src emacs-lisp
+
+  (use-package gdscript-mode
+    :ensure t
+    ;; :straight (gdscript-mode
+    ;;             :type git
+    ;;             :host github
+    ;;             :repo "godotengine/emacs-gdscript-mode")
+    :hook (gdscript-mode . eglot-ensure)
+    :custom (gdscript-eglot-version 3))
+
+#+end_src
+
+#+begin_src emacs-lisp
+
+  
+
+#+end_src
+
 
 ** Debug Support
 :properties:

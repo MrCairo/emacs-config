@@ -431,10 +431,10 @@ font size is computed + 20 of this value."
                ((x-family-fonts "Monospaced")      "Monospaced")
                (nil (warn "Cannot find a monospaced Font.  Install Source Code Pro.")))))
       (if monospace-font
-	(when (not (equal monospace-font variable-pitch-font-family))
+  (when (not (equal monospace-font variable-pitch-font-family))
           (setq mono-spaced-font-family monospace-font)
           (setq default-font-family monospace-font))
-	(message "---- Can't find a monospace font to use.")))
+  (message "---- Can't find a monospace font to use.")))
     (message (format "=== monospace font is %s" mono-spaced-font-family))))
 
 ;;; ##########################################################################
@@ -487,7 +487,8 @@ font size is computed + 20 of this value."
 (show-paren-mode 1)                                ; Show the parent
 ;; Rebind C-z/C-. to act like vim's repeat previous command ( . )
 (unbind-key "C-z")
-(bind-key "C-z" 'repeat)
+(bind-key "C-z" 'repeat-complex-command)
+(bind-key "C-+" 'repeat)
 
 ;;; ##########################################################################
 
@@ -2170,34 +2171,22 @@ This only runs for ripgrep results"
 
 ;; Functions to set the frame size
 
-(defun mifi/frame-recenter (&optional frame)
-  "Center FRAME on the screen.  FRAME can be a frame name, a terminal name,
-  or a frame.  If FRAME is omitted or nil, use currently selected frame."
-  (interactive)
-  ;; (set-frame-size (selected-frame) 250 120)
-  (unless (eq 'maximised (frame-parameter nil 'fullscreen))
-    (progn
-      (let ((width (nth 3 (assq 'geometry (car (display-monitor-attributes-list)))))
-             (height (nth 4 (assq 'geometry (car (display-monitor-attributes-list))))))
-        (cond (( > width 3000) (mifi/update-large-display))
-          (( > width 2000) (mifi/update-built-in-display))
-          (t (mifi/set-frame-alpha-maximized)))))))
-
-(defun mifi/update-large-display ()
-  (modify-frame-parameters
-    frame '((user-position . t)
-             (top . 0.0)
-             (left . 0.70)
-             (width . (text-pixels . 2800))
-             (height . (text-pixels . 1650))))) ;; 1800
-
-(defun mifi/update-built-in-display ()
-  (modify-frame-parameters
-    frame '((user-position . t)
-             (top . 0.0)
-             (left . 0.90)
-             (width . (text-pixels . 1800))
-             (height . (text-pixels . 1170))))) ;; 1329
+(defun mifi/update-frame-dimensions ()
+  "Updates the frame dimensions so that it occupies 95% of the width of the
+display and 100% of the display height. The left edge is moved over to the right
+approximately 5% of the width (not sure why the value must be 0.65 but it
+works). The space to the left is done so that the Emacs window plays well with
+Stage Manager on macOS."
+  (let ( (width  (nth 3 (assq 'geometry (car (display-monitor-attributes-list)))))
+         (height (nth 4 (assq 'geometry (car (display-monitor-attributes-list))))))
+    (message "width = %d, height = %d" width height)
+    (modify-frame-parameters
+      frame '((user-position . t)
+               (top . 0)
+               (left . 0.65)
+               (width . 0.95)
+               (height . 1.0)))
+    ))
 
 ;; Set frame transparency
 (defun mifi/set-frame-alpha-maximized ()
@@ -2215,6 +2204,14 @@ This only runs for ripgrep results"
 
   (add-to-list 'default-frame-alist '(fullscreen . maximized))
   (unless enable-frameset-restore (mifi/frame-recenter)))
+
+(defun mifi/frame-recenter (&optional frame)
+  "Center FRAME on the screen.  FRAME can be a frame name, a terminal name,
+    or a frame.  If FRAME is omitted or nil, use currently selected frame."
+  (interactive)
+  ;; (set-frame-size (selected-frame) 250 120)
+  (unless (eq 'maximised (frame-parameter nil 'fullscreen))
+    (mifi/update-frame-dimensions)))
 
 ;; Default fonts
 
@@ -2432,7 +2429,7 @@ This only runs for ripgrep results"
 
 (defun markdown-html (buffer)
   (princ (with-current-buffer buffer
-	   (format "<!DOCTYPE html><html><title>Impatient Markdown</title><xmp theme=\"united\" style=\"display:none;\"> %s  </xmp><script src=\"http://ndossougbe.github.io/strapdown/dist/strapdown.js\"></script></html>" (buffer-substring-no-properties (point-min) (point-max))))
+  	 (format "<!DOCTYPE html><html><title>Impatient Markdown</title><xmp theme=\"united\" style=\"display:none;\"> %s  </xmp><script src=\"http://ndossougbe.github.io/strapdown/dist/strapdown.js\"></script></html>" (buffer-substring-no-properties (point-min) (point-max))))
     (current-buffer)))
 
 (use-package simple-httpd
@@ -2709,16 +2706,16 @@ This only runs for ripgrep results"
     'org-mode
     '(("^ *\\([-]\\) "
         (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))))
-  
+
   (set-face-attribute 'org-block nil
     :foreground 'unspecified
     :inherit 'fixed-pitch
     :font mono-spaced-font-family
     :height custom-default-mono-font-size)
-  
+
   (set-face-attribute 'org-formula nil
     :inherit 'fixed-pitch)
-  
+
   (set-face-attribute 'org-code nil
     :foreground 'unspecified
     :font mono-spaced-font-family
@@ -2736,31 +2733,31 @@ This only runs for ripgrep results"
     :font mono-spaced-font-family
     :height custom-default-mono-font-size
     :inherit '(shadow fixed-pitch))
-  
+
   (set-face-attribute 'org-verbatim nil
     :foreground 'unspecified
     :font mono-spaced-font-family
     :height custom-default-mono-font-size
     :inherit '(shadow fixed-pitch))
-  
+
   (set-face-attribute 'org-special-keyword nil
     :inherit '(font-lock-comment-face fixed-pitch))
-  
+
   (set-face-attribute 'org-meta-line nil
     :inherit '(font-lock-comment-face fixed-pitch))
-  
+
   (set-face-attribute 'org-checkbox nil
     :foreground 'unspecified
     :font mono-spaced-font-family
     :height custom-default-mono-font-size
     :inherit 'fixed-pitch)
-  
+
   (set-face-attribute 'line-number nil
     :foreground 'unspecified
     :font mono-spaced-font-family
     :height custom-default-mono-font-size
     :inherit 'fixed-pitch)
-  
+
   (set-face-attribute 'line-number-current-line nil
     :foreground 'unspecified
     :font mono-spaced-font-family
@@ -2886,7 +2883,7 @@ directory is relative to the working-files-directory
 (defun mifi/org-setup-capture-templates ()
   (setq org-capture-templates
     `(("t" "Tasks / Projects")
-       
+
        ("tt" "Task" entry (file+olp (expand-file-name "OrgFiles/Tasks.org" user-emacs-directory) "Inbox")
          "* TODO %?\n  %U\n  %a\n        %i" :empty-lines 1)
 
@@ -3332,7 +3329,6 @@ capture was not aborted."
   :when (equal custom-note-system 'custom-note-system-denote)
   ;; :after which-key dired
   :ensure t
-  :defer t
   :custom
   (denote-directory (expand-file-name "notes" user-emacs-directory))
   (denote-save-buffers nil)
@@ -3920,7 +3916,7 @@ capture was not aborted."
   :hook (go-mode . go-guru-hl-identifier-mode))
 
 (use-package elisp-mode
-  
+
   :defer t
   :mode ("\\.el\\'" . emacs-lisp-mode))
 
@@ -3932,6 +3928,17 @@ capture was not aborted."
   ("\\.lisp\\'" . slime-mode)
   :config
   (setq inferior-lisp-program "/opt/homebrew/bin/sbcl"))
+
+(use-package gdscript-mode
+  :ensure t
+  ;; :straight (gdscript-mode
+  ;;             :type git
+  ;;             :host github
+  ;;             :repo "godotengine/emacs-gdscript-mode")
+  :hook (gdscript-mode . eglot-ensure)
+  :custom (gdscript-eglot-version 3))
+
+
 
 ;;; ##########################################################################
 ;;; Debug Adapter Protocol
