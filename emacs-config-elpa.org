@@ -4183,7 +4183,7 @@ A better version of variable-pitch mode. This keeps certain faces (defined in mi
       (modify-frame-parameters
         frame '((user-position . t)
                  (top . 0)
-                 (left . 0.65)
+                 (left . 0.55)
                  (width . 0.95)
                  (height . 1.0)))
       ))
