@@ -107,6 +107,7 @@
   - [[#rust][Rust]]
   - [[#golang][Golang]]
   - [[#other-languages][Other Languages]]
+  - [[#godot-script-mode][Godot Script Mode]]
   - [[#debug-support][Debug Support]]
 - [[#lastly][Lastly]]
   - [[#ignore-line-number-mode][Ignore Line Number Mode]]
@@ -4260,9 +4261,9 @@ A better version of variable-pitch mode. This keeps certain faces (defined in mi
 
 #+end_src
 
-*** Track Selected Front Size
+*** Track Selected Font Size
 :properties:
-:custom_id: track-selected-fonbt-size
+:custom_id: track-selected-font-size
 :visibility: folded
 :end:
 
