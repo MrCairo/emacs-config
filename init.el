@@ -827,8 +827,10 @@ font size is computed + 20 of this value."
     "M-RET t" "Thesaurus"
     "M-RET f" "set-fill-column"
     "M-RET j" "jump-to-register"
+    "M-RET /" "Drill-Down Menu"
     "M-RET v" "font-size"
     "M-RET C-g" "Exit menu"
+    "M-RET M-c" "Customize MiFi"
     "M-RET" "Mitch's Menu"))
 
 ;;; ##########################################################################
@@ -991,13 +993,79 @@ opam-user-setup.el so that upon next startup, it can be loaded quickly."
 ;;; ##########################################################################
 
 (use-package hydra
-  :defer t
   :commands defhydra
-  :bind (("C-c c" . hydra-clock/body)
-         ("C-c m" . hydra-magit/body)
-         ("C-c r" . hydra-registers/body)
-         ("C-c t" . hydra-themes-and-fonts/body))
+  ;; :bind (("C-c c" . hydra-clock/body)
+  ;;        ("C-c m" . hydra-magit/body)
+  ;;        ("C-c r" . hydra-registers/body)
+  ;;        ("C-c t" . hydra-themes-and-fonts/body))
   :ensure t)
+
+(defun mifi/hydra-clock ()
+  (interactive)
+  (pretty-hydra-define hydra-clock
+    (:hint nil :color teal :quit-key "q" :title (with-faicon "clock-o" "Clock" 1 -0.05))
+    ("Action"
+      ( ("c" org-clock-cancel "cancel")
+        ("d" org-clock-display "display")
+        ("e" org-clock-modify-effort-estimate "effort")
+        ("i" org-clock-in "in")
+        ("j" org-clock-goto "jump")
+        ("o" org-clock-out "out")
+        ("p" org-pomodoro "pomodoro")
+        ("r" org-clock-report "report")))))
+
+(defun mifi/hydra-magit ()
+  (interactive)
+  (pretty-hydra-define hydra-magit
+    (:hint nil :color teal :quit-key "q" :title (with-octicon "mark-github" "Magit" 1 -0.05))
+    ("Action"
+      ( ("b" magit-blame "blame")
+        ("c" magit-clone "clone")
+        ("i" magit-init "init")
+        ("l" magit-log-buffer-file "commit log (current file)")
+        ("L" magit-log-current "commit log (project)")
+        ("s" magit-status "status"))))  )
+
+(defun mifi/hydra-registers ()
+  (interactive)
+  (pretty-hydra-define hydra-registers
+    (:hint nil :color teal :quit-key "q" :title (with-faicon "thumb-tack" "Registers" 1 -0.05))
+    ("Action"
+      ( ("o" (jump-to-register reg-elpa) "open emacs-config-elpa.org")
+        ("O" (jump-to-register reg-elpaca) "open emacs-config-elpaca.org")
+        ("S" (jump-to-register ?S) "Scripts")
+        ("G" (jump-to-register ?G) "GameBoy Asm Root")))
+    ))
+
+(defun mifi/hydra-themes-and-fonts ()
+  (interactive)
+  (pretty-hydra-define hydra-themes-and-fonts
+    (:hint nil :color teal :quit-key "q" :title (with-faicon "puzzle-piece" "Themes and Fonts" 1 -0.05))
+    ("Action"
+      ( ("+" next-theme "Next theme")
+        ("-" previous-theme "Previous Theme")
+        ("=" which-theme "Display Current Theme")
+        ("S" use-small-display-font "Small Font without resize")
+        ("M" use-medium-display-font "Medium Font without resize")
+        ("L" use-large-display-font "Large Font without resize")
+        ("X" use-x-large-display-font "X-Large Font without resize")
+        ("s" (use-small-display-font t) "Small Font with resize")
+        ("m" (use-medium-display-font t) "Medium Font with resize")
+        ("l" (use-large-display-font t) "Large Font with resize")
+        ("x" (use-x-large-display-font t) "X-Large Font with resize")) )))
+
+(defun mifi/hydra-combine ()
+  "Define the drill-down menu."
+  (interactive)
+  (pretty-hydra-define hydra-combine
+    (:hint nil :color teal :quit-key "q" :title (with-faicon "thumb-tack" "Combine" 1 -0.05))
+    ("Action"
+      ( ("m" hydra-magit/body "Magit menu")
+        ("r" hydra-registers/body "Registers")          
+        ("t" hydra-themes-and-fonts/body "Themes and Fonts menu") ))
+    ))
+
+;;; ^^^ ;;;
 
 (use-package major-mode-hydra
   :ensure t
@@ -1024,66 +1092,6 @@ opam-user-setup.el so that upon next startup, it can be loaded quickly."
   (mifi/hydra-themes-and-fonts)
   (mifi/hydra-magit)
   (mifi/hydra-registers))
-
-(defun mifi/hydra-clock ()
-  (pretty-hydra-define hydra-clock
-    (:hint nil :color teal :quit-key "q" :title (with-faicon "clock-o" "Clock" 1 -0.05))
-    ("Action"
-      ( ("c" org-clock-cancel "cancel")
-        ("d" org-clock-display "display")
-        ("e" org-clock-modify-effort-estimate "effort")
-        ("i" org-clock-in "in")
-        ("j" org-clock-goto "jump")
-        ("o" org-clock-out "out")
-        ("p" org-pomodoro "pomodoro")
-        ("r" org-clock-report "report")))))
-
-(defun mifi/hydra-magit ()
-  (pretty-hydra-define hydra-magit
-    (:hint nil :color teal :quit-key "q" :title (with-octicon "mark-github" "Magit" 1 -0.05))
-    ("Action"
-      ( ("b" magit-blame "blame")
-        ("c" magit-clone "clone")
-        ("i" magit-init "init")
-        ("l" magit-log-buffer-file "commit log (current file)")
-        ("L" magit-log-current "commit log (project)")
-        ("s" magit-status "status"))))  )
-
-(defun mifi/hydra-registers ()
-  (pretty-hydra-define hydra-registers
-    (:hint nil :color teal :quit-key "q" :title (with-faicon "thumb-tack" "Registers" 1 -0.05))
-    ("Action"
-      ( ("o" (jump-to-register reg-elpa) "open emacs-config-elpa.org")
-        ("O" (jump-to-register reg-elpaca) "open emacs-config-elpaca.org")
-        ("S" (jump-to-register ?S) "Scripts")
-        ("G" (jump-to-register ?G) "GameBoy Asm Root")))
-    ))
-
-(defun mifi/hydra-themes-and-fonts ()
-  (pretty-hydra-define hydra-themes-and-fonts
-    (:hint nil :color teal :quit-key "q" :title (with-faicon "puzzle-piece" "Themes and Fonts" 1 -0.05))
-    ("Action"
-      ( ("+" next-theme "Next theme")
-        ("-" previous-theme "Previous Theme")
-        ("=" which-theme "Display Current Theme")
-        ("S" use-small-display-font "Small Font without resize")
-        ("M" use-medium-display-font "Medium Font without resize")
-        ("L" use-large-display-font "Large Font without resize")
-        ("X" use-x-large-display-font "X-Large Font without resize")
-        ("s" (use-small-display-font t) "Small Font with resize")
-        ("m" (use-medium-display-font t) "Medium Font with resize")
-        ("l" (use-large-display-font t) "Large Font with resize")
-        ("x" (use-x-large-display-font t) "X-Large Font with resize")) )))
-
-(defun mifi/hydra-combine ()
-  (pretty-hydra-define hydra-combine
-    (:hint nil :color teal :quit-key "q" :title (with-faicon "thumb-tack" "Combine" 1 -0.05))
-    ("Action"
-      ( ("m" hydra-magit/body "Magit menu")
-        ("t" hydra-themes-and-fonts/body "Themes and Fonts menu") ))
-    ))
-
-;;; ^^^ ;;;
 
 ;;; ##########################################################################
 
@@ -2179,11 +2187,10 @@ works). The space to the left is done so that the Emacs window plays well with
 Stage Manager on macOS."
   (let ( (width  (nth 3 (assq 'geometry (car (display-monitor-attributes-list)))))
          (height (nth 4 (assq 'geometry (car (display-monitor-attributes-list))))))
-    (message "width = %d, height = %d" width height)
     (modify-frame-parameters
       frame '((user-position . t)
                (top . 0)
-               (left . 0.65)
+               (left . 0.55)
                (width . 0.95)
                (height . 1.0)))
     ))
@@ -2367,15 +2374,14 @@ Stage Manager on macOS."
   :ensure t
   :custom
   (spacious-padding-widths
-    '( :internal-border-width 15
+    '( :internal-border-width 5
        :header-line-width 4
-       :mode-line-width 6
+       :mode-line-width 8
        :tab-width 4
-       :right-divider-width 30
+       :right-divider-width 15
        :scroll-bar-width 8
        :left-fringe-width 20
-       :right-fringe-width 20
-       :fringe-width 8))
+       :right-fringe-width 15))
   :config
   (spacious-padding-mode t))
 
@@ -3164,8 +3170,8 @@ directory is relative to the working-files-directory
 
 (when (equal custom-note-system 'custom-note-system-org-roam)
   (use-package org-roam-dailies
-    :ensure t
-    :after org-roam
+    :ensure nil
+    :after org
     :init
     (which-key-add-key-based-replacements "C-c n d" "org-roam-dailies")
     :bind-keymap
@@ -3914,6 +3920,21 @@ capture was not aborted."
 (use-package go-guru
   :after go-mode
   :hook (go-mode . go-guru-hl-identifier-mode))
+
+;;; ##########################################################################
+
+(use-package swift-ts-mode
+  :ensure t
+  :defer t
+  :mode ("\\.swift\\'" . swift-ts-mode))
+
+(use-package swift-helpful
+  :defer t
+  :after swift-mode
+  :ensure t)
+  ;; :vc ( :url "https://github.com/danielmartin/swift-helpful"
+  ;; 	:main-file swift-helpful
+  ;; 	:lisp-dir ("swift-info" "target")))
 
 (use-package elisp-mode
 

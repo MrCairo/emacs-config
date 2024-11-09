@@ -196,6 +196,9 @@
   (pydoc-python-command python-executable)
   (pydoc-pip-version-command (concat python-executable " -m pip --version")))
 
+(use-package python-isort
+  :ensure t)
+
 ;;; ##########################################################################
 
 (defun mifi/register-dap-python-templates ()
