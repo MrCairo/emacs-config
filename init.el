@@ -743,9 +743,7 @@ font size is computed + 20 of this value."
         ("M-RET /" . hydra-combine/body)
         ("M-RET M s" . markdown-preview-mode)
         ("M-RET M e" . markdown-preview-cleanup)
-        ("M-RET S e" . eshell)
-        ("M-RET S i" . ielm)
-        ("M-RET S v" . vterm-other-window)
+        ("M-RET >" . hydra-terminals/body)
         ("M-RET v" . hydra-themes-and-fonts/body)
         ("M-RET W" . writeroom-mode)
         ("M-RET w <right>" . which-key-setup-side-window-right-bottom)
@@ -821,7 +819,7 @@ font size is computed + 20 of this value."
     "M-RET w <right>" "which-key-on-right"
     "M-RET w <down>" "which-key-on-bottom"
     "M-RET M" "markdown-preview"
-    "M-RET S" "shells"
+    "M-RET >" "Terminals and Shells"
     "M-RET P" "python-menu"
     "M-RET e" "treemacs-toggle"
     "M-RET t" "Thesaurus"
@@ -1054,6 +1052,18 @@ opam-user-setup.el so that upon next startup, it can be loaded quickly."
         ("l" (use-large-display-font t) "Large Font with resize")
         ("x" (use-x-large-display-font t) "X-Large Font with resize")) )))
 
+(defun mifi/hydra-terminals ()
+  (interactive)
+  (pretty-hydra-define hydra-terminals
+    (:hint nil :color teal :quit-key "q" :title (with-alltheicon "terminal" "Terminals" 1 -0.05))
+    ("Action"
+      ( ("a" ansi-term "ANSI Term")
+        ("e" eshell "Emacs Command Shell")
+        ("i" ielm "Interactive Emacs Lisp Mode")
+        ("v" vterm "Interactive VTerm buffer")
+        ("V" vterm-other-window "VTerm in other window") ))
+    ))
+
 (defun mifi/hydra-combine ()
   "Define the drill-down menu."
   (interactive)
@@ -1086,12 +1096,13 @@ opam-user-setup.el so that upon next startup, it can be loaded quickly."
   (defun with-octicon (icon str &optional height v-adjust face)
     "Display an icon from the GitHub Octicons."
     (s-concat (all-the-icons-octicon icon :v-adjust (or v-adjust 0) :height (or height 1) :face face) " " str))
-  :config
-  (mifi/hydra-clock)
-  (mifi/hydra-combine)
-  (mifi/hydra-themes-and-fonts)
-  (mifi/hydra-magit)
-  (mifi/hydra-registers))
+  :hook (after-init . (lambda ()
+                        (mifi/hydra-clock)
+                        (mifi/hydra-combine)
+                        (mifi/hydra-themes-and-fonts)
+                        (mifi/hydra-terminals)
+                        (mifi/hydra-magit)
+                        (mifi/hydra-registers))))
 
 ;;; ##########################################################################
 
