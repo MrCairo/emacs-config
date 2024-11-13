@@ -9,13 +9,19 @@
 
 * Table Of Contents
 :PROPERTIES:
-:TOC:      :include all :ignore this :depth 2
+:TOC:      :include all :ignore this :depth 3
 :End:
 
 :CONTENTS:
 - [[#synopsis][Synopsis]]
   - [[#tried-ideas][Tried Ideas]]
   - [[#early-init-file][Early init file]]
+    - [[#lispy-header-for-early-initel][Lispy Header for early-init.el]]
+    - [[#package-archives][Package archives]]
+    - [[#add-lisp-lisplang-to-load-path][Add lisp, lisp/lang to load-path]]
+    - [[#configure-use-package][Configure use-package]]
+    - [[#gc-and-performance-tuning][GC and Performance Tuning]]
+    - [[#set-executable-paths][Set executable PATHs]]
 - [[#package-management][Package Management]]
   - [[#lispy-header][Lispy Header]]
   - [[#package-manager][Package Manager]]
@@ -26,12 +32,17 @@
   - [[#custom-feature-toggles][Custom Feature Toggles]]
   - [[#custom-feature-choices][Custom Feature Choices]]
   - [[#theme-options][Theme Options]]
+    - [[#verify-default-variable-pitch-font][Verify Default variable-pitch Font]]
+    - [[#verify-default-mono-space-font][Verify Default mono-space font]]
 - [[#default-behavior][Default Behavior]]
   - [[#landing-page][Landing Page]]
   - [[#create-toc][Create TOC]]
   - [[#better-defaults][Better Defaults]]
   - [[#emacsuser-config-directory][Emacs/User Config Directory]]
+    - [[#files-api][Files API]]
+    - [[#dirs][Dirs]]
   - [[#additional-search-paths][Additional Search Paths]]
+    - [[#add-site-lisp-directories-to-load-path][Add site-lisp directories to load-path]]
   - [[#save-history][Save History]]
   - [[#better-modes][Better Modes]]
   - [[#delight][Delight]]
@@ -40,6 +51,11 @@
   - [[#emacs-in-server-mode][Emacs in server mode]]
   - [[#mac-specific][Mac Specific]]
   - [[#mifis-minor-mode][MiFi's Minor Mode]]
+    - [[#helper-functions][Helper Functions]]
+    - [[#standard-keymaps][Standard Keymaps]]
+    - [[#context-aware-keys-and-descriptions][Context-Aware Keys and Descriptions]]
+    - [[#key-description-overrides][Key Description Overrides]]
+    - [[#hooks][Hooks]]
   - [[#initial-scratch-buffer-message][Initial scratch buffer message]]
   - [[#exiting-and-cleanup][Exiting And Cleanup]]
   - [[#global-key-binding][Global key-binding]]
@@ -51,17 +67,45 @@
   - [[#eldoc][Eldoc]]
   - [[#helpful-help-commands][Helpful Help Commands]]
   - [[#hydra][Hydra]]
+    - [[#hydra--clock][Hydra / Clock]]
+    - [[#hydra--magit][Hydra / Magit]]
+    - [[#hydra--registers][Hydra / Registers]]
+    - [[#hydra--themes-and-fonts][Hydra / Themes and Fonts]]
+    - [[#hydra--terminals][Hydra / Terminals]]
+    - [[#hydra--combine][Hydra / Combine]]
+    - [[#hydra-major-mode][Hydra Major Mode]]
   - [[#jinx][Jinx]]
   - [[#json-rpc][JSON-RPC]]
   - [[#simple-httpd][Simple-httpd]]
   - [[#thesaurus][Thesaurus]]
   - [[#which-key][Which Key]]
   - [[#yasnippet][YASnippet]]
+    - [[#yasnippet-snippets][Yasnippet Snippets]]
 - [[#operational-systems][Operational Systems]]
   - [[#undo-handlers][Undo Handlers]]
+    - [[#vundo-visual-undo][Vundo (visual undo)]]
+    - [[#undo-tree][Undo Tree]]
   - [[#completion-handlers][Completion Handlers]]
+    - [[#prescient][Prescient]]
+    - [[#orderless][Orderless]]
+    - [[#ivy-mode][IVY Mode]]
+    - [[#company-mode][Company Mode]]
+    - [[#corfu][Corfu]]
+    - [[#vertico][Vertico]]
+    - [[#marginalia][Marginalia]]
+    - [[#consult][Consult]]
+    - [[#embark][Embark]]
+    - [[#helm][Helm]]
+    - [[#built-in-ido][Built-In (Ido)]]
   - [[#terminals][Terminals]]
+    - [[#term-mode][term-mode]]
+    - [[#better-term-mode-colors][Better term-mode colors]]
+    - [[#vterm][vterm]]
+    - [[#shell-mode][shell-mode]]
+    - [[#eshell][Eshell]]
   - [[#file-management][File Management]]
+    - [[#dired][Dired]]
+    - [[#treemacs][Treemacs]]
 - [[#window-management][Window Management]]
   - [[#ace-window][Ace Window]]
   - [[#golden-ratio][Golden Ratio]]
@@ -75,40 +119,106 @@
   - [[#default-text-scale][Default Text Scale]]
   - [[#diff-hl][Diff HL]]
   - [[#frame-and-font-setup][Frame and Font Setup]]
+    - [[#define-the-various-font-size-constants][Define the various font size constants]]
+    - [[#mixed-pitch][mixed-pitch]]
+    - [[#functions-to-set-the-frame-size][Functions to set the frame size]]
+    - [[#default-fonts-and-sizes][Default fonts and sizes]]
+    - [[#track-selected-font-size][Track Selected Font Size]]
+    - [[#handle-higher-rez-monitor][Handle higher-rez monitor.]]
+    - [[#window-mode-line-more-padding][Window, mode-line, +more padding]]
+    - [[#org-font-setup][Org Font setup]]
   - [[#grip-mode][GRIP Mode]]
   - [[#lisp-hightlighter][Lisp Hightlighter]]
   - [[#markdown-mode][Markdown Mode]]
+    - [[#markdown-preview-mode][Markdown Preview Mode]]
+    - [[#impatient-mode][Impatient Mode]]
   - [[#multiple-cursors][Multiple-cursors]]
   - [[#pulsar][Pulsar]]
   - [[#rainbow-mode][Rainbow-mode]]
   - [[#save--restore-frameset][Save / Restore Frameset]]
   - [[#solair-mode][Solair mode]]
   - [[#theme-list-and-selection][Theme List and Selection]]
+    - [[#cycle-theme-function][Cycle Theme Function]]
+    - [[#load-theme-function][Load Theme Function]]
+    - [[#theme-selection-helper-functions][Theme selection helper functions.]]
+    - [[#theme-override-values][Theme Override Values]]
+    - [[#color-theming][Color Theming]]
+    - [[#selected-theme][Selected theme]]
   - [[#visual-fill][Visual Fill]]
 - [[#productivity][Productivity]]
   - [[#org-mode][Org Mode]]
+    - [[#org-setup][Org Setup]]
+    - [[#the-main-org-package][The main 'Org' package]]
+    - [[#export-code][Export Code]]
+    - [[#structure-templates][Structure Templates]]
+    - [[#org-olivetti-mode][Org Olivetti mode]]
+    - [[#org-modern][Org Modern]]
   - [[#org-journal][Org Journal]]
   - [[#org-roam][Org Roam]]
+    - [[#main-org-roam-configuration][Main org-roam configuration]]
+    - [[#org-roam-dailies][Org-roam dailies]]
+    - [[#org-agenda-from-roam-notes][Org Agenda from Roam Notes]]
+    - [[#selecting-from-a-list-of-notes][Selecting from a list of notes]]
+    - [[#keep-an-inbox-of-notes-and-tasks][Keep an inbox of notes and tasks]]
+    - [[#capture-a-task][Capture a task]]
+    - [[#org-roam-todo][Org-roam Todo]]
   - [[#denote][Denote]]
+    - [[#denote-keymap][Denote Keymap]]
+    - [[#denote-configuration][Denote Configuration]]
   - [[#projectile][Projectile]]
   - [[#projectel][Project.el]]
   - [[#gnus][Gnus]]
 - [[#integrated-development-environment][Integrated Development Environment]]
   - [[#dashboard][Dashboard]]
+    - [[#value-of-dashboard-startup-banner-can-be][Value of dashboard-startup-banner can be:]]
+    - [[#dashboard-setup][Dashboard Setup]]
   - [[#neotree][Neotree]]
   - [[#centaur-tabs][Centaur Tabs]]
   - [[#code-completion-and-handling][Code Completion and Handling]]
+    - [[#eglot][EGlot]]
+    - [[#language-server-protocol-lsp-mode][Language Server Protocol (lsp-mode)]]
+    - [[#lsp-bridge][LSP Bridge]]
+    - [[#elpy][ELPY]]
 - [[#language-integration][Language Integration]]
   - [[#language-support-packages][Language Support Packages]]
+    - [[#flycheck][Flycheck]]
+    - [[#tree-sitter][Tree-sitter]]
+    - [[#magit][Magit]]
   - [[#python][Python]]
+    - [[#specialized-python-mode-keymaps][Specialized python-mode Keymaps]]
+    - [[#python-mode-setup][Python Mode Setup]]
+    - [[#auto-pep-8][Auto-pep 8]]
+    - [[#python-helpful-macros][Python-Helpful Macros]]
+    - [[#python-virtual-environment-support][Python Virtual Environment Support]]
+    - [[#pydoc][Pydoc]]
+    - [[#python-isort][python-isort]]
+    - [[#dap-python-templates][DAP Python Templates]]
+    - [[#dap-python][DAP python]]
+    - [[#dap-hydra-python-debug-functions][DAP Hydra Python Debug Functions]]
+    - [[#dap-hydra-python-key-definitions][DAP Hydra Python Key Definitions]]
   - [[#ocaml][OCaml]]
+    - [[#howto-install-opam-if-necessary][HOWTO Install OPAM if necessary]]
   - [[#javascript-based-languages][JavaScript based languages]]
+    - [[#typescript][Typescript]]
+    - [[#nodejs][NodeJS]]
+    - [[#js2-mode][JS2-Mode]]
   - [[#gameboy-development][GameBoy Development]]
   - [[#rust][Rust]]
+    - [[#rust-prerequisites][Rust Prerequisites]]
+    - [[#rustic-package-configuration][Rustic package configuration]]
+    - [[#rust-mode-configuration][Rust-mode configuration]]
+    - [[#cargo-and-cargotoml-packages][Cargo and Cargo.toml packages]]
+    - [[#cargo-mode-configuration][Cargo-mode configuration]]
   - [[#golang][Golang]]
+    - [[#main-go-mode-config][Main go-mode config]]
+    - [[#go-eldoc-config][go-eldoc config]]
+    - [[#go-guru-config][go-guru config]]
   - [[#other-languages][Other Languages]]
+    - [[#swift][Swift]]
+    - [[#lisp][Lisp]]
   - [[#godot-script-mode][Godot Script Mode]]
   - [[#debug-support][Debug Support]]
+    - [[#debug-adapter-protocol][Debug Adapter Protocol]]
 - [[#lastly][Lastly]]
   - [[#ignore-line-number-mode][Ignore Line Number Mode]]
   - [[#supress-common-warnings][Supress common warnings]]
@@ -485,36 +595,6 @@ This is the standard format of a =lisp= header that should appear for all =lisp=
   ;; (setq debug-on-error t)
   ;;
 
-#+end_src
-
-** Package Manager
-:properties:
-:custom_id: package-manager
-:visibility: folded
-:end:
-
-Contrary to what some users might think, =use-package= is not a package
-manager. To download and use packages that are not available in package sources,
-I use [[https://github.com/raxod502/straight.el][straight]]. The snippet below takes care of installing =straight=.
-
-#+begin_src emacs-lisp :tangle no
-  ;; Bootstrap straight
-  (defvar bootstrap-version)
-  (let ((bootstrap-file
-         (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
-        (bootstrap-version 5))
-    (unless (file-exists-p bootstrap-file)
-      (with-current-buffer
-          (url-retrieve-synchronously
-           "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
-           'silent 'inhibit-cookies)
-        (goto-char (point-max))
-        (eval-print-last-sexp)))
-    (load bootstrap-file nil 'nomessage))
-
-  ;; Integrates `straight' directly into the `use-package' package through the
-  ;; `:straight' expression.
-  (straight-use-package 'use-package)
 #+end_src
 
 ** Automatic Package Updates
@@ -1075,16 +1155,6 @@ Since we are adding to the LIFO list of things to run _after_ elpaca is done ini
 #+end_src
 
 ** Create TOC
-
-#+begin_src emacs-lisp
-
-  (use-package org-make-toc
-    :after org
-    :defer t
-    :ensure t)
-
-#+end_src
-
 :properties:
 :custom_id: create-toc
 :visibility: folded
@@ -1095,6 +1165,8 @@ This package contains functions to create an in-org file table of contents.
 #+begin_src emacs-lisp
 
   (use-package org-make-toc
+    :after org
+    :defer t
     :ensure t)
 
 #+end_src
@@ -1521,7 +1593,7 @@ This function is called after Elpaca has initialized and, if this machine is a M
 
 ** MiFi's Minor Mode
 :properties:
-:custom_id: mifi-minor-mode
+:custom_id: mifis-minor-mode
 :visibility: folded
 :end:
 
@@ -1635,7 +1707,7 @@ For those menus that would normally show up as either =prefix= or =lambda=, give
   ;;; ##########################################################################
 
   (defun mifi/mmm-handle-context-keys (&optional winframe)
-    "Enable or Disable keys based upon featurep context."
+    "Enable or Disable keys based upon major-mode context."
     (when winframe
       (let ((map mmm-keys-minor-mode-map))
         (when enable-thesaurus
@@ -1651,10 +1723,10 @@ For those menus that would normally show up as either =prefix= or =lambda=, give
               ("M-RET o l" . org-toggle-link-display)))
           ((equal major-mode 'python-mode)
             (bind-keys :map map
-              ("M-RET P" . 'pydoc-at-point)))
-    ((equal major-mode 'tuareg-mode)
-      (bind-keys :map map
-        ("M-RET c m" . tuarg-browse-manual)))
+              ("M-RET P ?" . eldoc-doc-buffer)))
+          ((equal major-mode 'tuareg-mode)
+            (bind-keys :map map
+              ("M-RET c m" . tuarg-browse-manual)))
           (t   ;; Default 
             (unbind-key "M-RET o f" map)
             (unbind-key "M-RET o c" map)
@@ -1662,7 +1734,6 @@ For those menus that would normally show up as either =prefix= or =lambda=, give
             (unbind-key "M-RET P ?" map)
             (unbind-key "M-RET c m" map)
             (unbind-key "M-RET M-RET" map)))))
-
     ;; Override default menu text with better things
     (which-key-add-key-based-replacements
       "M-RET t t" "thesaurus-at-point"
@@ -1972,6 +2043,7 @@ Dumb Jump is an Emacs "jump to definition" package with support for 50+ programm
 
   (use-package xref :ensure nil)
   (use-package dumb-jump
+    :ensure t
     :after xref
     :config
     (setq xref-show-definitions-function #'xref-show-definitions-completing-read)
@@ -3385,6 +3457,7 @@ For more thoughts on Eshell, check out these articles by Pierre Neidhardt:
       eshell-scroll-to-bottom-on-input t))
 
   (use-package eshell-git-prompt
+    :ensure t
     :after eshell)
 
   (use-package eshell
@@ -4042,6 +4115,9 @@ The last three effects are buffer-local. The other effects apply to the current 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
 
+  (use-package switch-window
+    :ensure t)
+
   (use-package init-windows ;; From purcell
     :ensure nil
     :demand t
@@ -4056,7 +4132,7 @@ The last three effects are buffer-local. The other effects apply to the current 
 
 Window numbers for Emacs: Navigate your windows and frames using numbers. This is not only handy but used by Treemacs to select the Treemacs panel with the keyboard.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   ;;; ##########################################################################
   ;;; Window Number
 
@@ -4122,6 +4198,8 @@ This package provides commands for increasing or decreasing the default font siz
 
   (use-package diff-hl
     :ensure t
+    :defer t
+    :commands diff-hl-mode
     :config
     (global-diff-hl-mode))
 
@@ -4522,6 +4600,97 @@ This package provides a global minor mode to increase the spacing/padding of Ema
   ;;; ^^^ ;;;
 #+end_src
 
+*** Org Font setup
+:properties:
+:custom_id: font-setup
+:visibility: folded
+:end:
+
+The =mifi/org-font-setup= function configures various text faces to tweak the sizes of headings and use variable width fonts in most cases so that it looks more like we're editing a document in =org-mode=. We switch back to fixed width (monospace) fonts for code blocks and tables so that they display correctly.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  ;; (use-package faces :ensure t)
+  (defun mifi/org-font-setup ()
+    "Setup org mode fonts."
+    (interactive)
+    (font-lock-add-keywords
+      'org-mode
+      '(("^ *\\([-]\\) "
+          (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))))
+
+    (set-face-attribute 'org-block nil
+      :foreground 'unspecified
+      :inherit 'fixed-pitch
+      :font mono-spaced-font-family
+      :height custom-default-mono-font-size)
+
+    (set-face-attribute 'org-formula nil
+      :inherit 'fixed-pitch)
+
+    (set-face-attribute 'org-code nil
+      :foreground 'unspecified
+      :font mono-spaced-font-family
+      :height custom-default-mono-font-size
+      :inherit '(shadow fixed-pitch))
+
+    (set-face-attribute 'org-verbatim nil
+      :foreground 'unspecified
+      :font mono-spaced-font-family
+      :height custom-default-mono-font-size
+      :inherit 'fixed-pitch)
+
+    (set-face-attribute 'org-table nil
+      :foreground 'unspecified
+      :font mono-spaced-font-family
+      :height custom-default-mono-font-size
+      :inherit '(shadow fixed-pitch))
+
+    (set-face-attribute 'org-verbatim nil
+      :foreground 'unspecified
+      :font mono-spaced-font-family
+      :height custom-default-mono-font-size
+      :inherit '(shadow fixed-pitch))
+
+    (set-face-attribute 'org-special-keyword nil
+      :inherit '(font-lock-comment-face fixed-pitch))
+
+    (set-face-attribute 'org-meta-line nil
+      :inherit '(font-lock-comment-face fixed-pitch))
+
+    (set-face-attribute 'org-checkbox nil
+      :foreground 'unspecified
+      :font mono-spaced-font-family
+      :height custom-default-mono-font-size
+      :inherit 'fixed-pitch)
+
+    (set-face-attribute 'line-number nil
+      :foreground 'unspecified
+      :font mono-spaced-font-family
+      :height custom-default-mono-font-size
+      :inherit 'fixed-pitch)
+
+    (set-face-attribute 'line-number-current-line nil
+      :foreground 'unspecified
+      :font mono-spaced-font-family
+      :height custom-default-mono-font-size
+      :inherit 'fixed-pitch)
+
+    (dolist (face '((org-level-1 . 1.50)
+                     (org-level-2 . 1.25)
+                     (org-level-3 . 1.15)
+                     (org-level-4 . 1.05)
+                     (org-level-5 . 0.95)
+                     (org-level-6 . 0.90)
+                     (org-level-7 . 0.90)
+                     (org-level-8 . 0.90)))
+      (set-face-attribute (car face) nil :font "Helvetica Neue" :weight 'regular
+        :height (cdr face))))
+  
+#+end_src
+
+
 ** GRIP Mode
 :properties:
 :custom_id: grip-mode
@@ -4691,6 +4860,7 @@ Multiple cursors for Emacs. This is some pretty crazy functionality, so yes, the
 
   (use-package pulsar
     :ensure t
+    :defer t
     :config
     (pulsar-global-mode)
     :custom
@@ -5095,97 +5265,6 @@ Several productivity packages that I find very useful.
 :END:
 
 <<Org Mode>> is one of the hallmark features of Emacs. It is a rich document editor, project planner, task and time tracker, blogging engine, and literate coding utility all wrapped up in one package [[https://orgmode.org/][Orgmode]].
-
-The =mifi/org-font-setup= function configures various text faces to tweak the sizes of headings and use variable width fonts in most cases so that it looks more like we're editing a document in =org-mode=. We switch back to fixed width (monospace) fonts for code blocks and tables so that they display correctly.
-
-*** Font setup
-:properties:
-:custom_id: font-setup
-:visibility: folded
-:end:
-
-This function sets up the fonts faces that are used within org-mode.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  ;; (use-package faces :ensure t)
-  (defun mifi/org-font-setup ()
-    "Setup org mode fonts."
-
-    (font-lock-add-keywords
-      'org-mode
-      '(("^ *\\([-]\\) "
-          (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))))
-    
-    (set-face-attribute 'org-block nil
-      :foreground 'unspecified
-      :inherit 'fixed-pitch
-      :font mono-spaced-font-family
-      :height custom-default-mono-font-size)
-    
-    (set-face-attribute 'org-formula nil
-      :inherit 'fixed-pitch)
-    
-    (set-face-attribute 'org-code nil
-      :foreground 'unspecified
-      :font mono-spaced-font-family
-      :height custom-default-mono-font-size
-      :inherit '(shadow fixed-pitch))
-
-    (set-face-attribute 'org-verbatim nil
-      :foreground 'unspecified
-      :font mono-spaced-font-family
-      :height custom-default-mono-font-size
-      :inherit 'fixed-pitch)
-
-    (set-face-attribute 'org-table nil
-      :foreground 'unspecified
-      :font mono-spaced-font-family
-      :height custom-default-mono-font-size
-      :inherit '(shadow fixed-pitch))
-    
-    (set-face-attribute 'org-verbatim nil
-      :foreground 'unspecified
-      :font mono-spaced-font-family
-      :height custom-default-mono-font-size
-      :inherit '(shadow fixed-pitch))
-    
-    (set-face-attribute 'org-special-keyword nil
-      :inherit '(font-lock-comment-face fixed-pitch))
-    
-    (set-face-attribute 'org-meta-line nil
-      :inherit '(font-lock-comment-face fixed-pitch))
-    
-    (set-face-attribute 'org-checkbox nil
-      :foreground 'unspecified
-      :font mono-spaced-font-family
-      :height custom-default-mono-font-size
-      :inherit 'fixed-pitch)
-    
-    (set-face-attribute 'line-number nil
-      :foreground 'unspecified
-      :font mono-spaced-font-family
-      :height custom-default-mono-font-size
-      :inherit 'fixed-pitch)
-    
-    (set-face-attribute 'line-number-current-line nil
-      :foreground 'unspecified
-      :font mono-spaced-font-family
-      :height custom-default-mono-font-size
-      :inherit 'fixed-pitch)
-
-    (dolist (face '((org-level-1 . 1.50)
-                     (org-level-2 . 1.25)
-                     (org-level-3 . 1.15)
-                     (org-level-4 . 1.05)
-                     (org-level-5 . 0.95)
-                     (org-level-6 . 0.90)
-                     (org-level-7 . 0.90)
-                     (org-level-8 . 0.90)))
-      (set-face-attribute (car face) nil :font "Helvetica Neue" :weight 'regular
-        :height (cdr face))))
-#+end_src
 
 *** Org Setup
 :properties:
@@ -5683,7 +5762,7 @@ Org Roam solves these problems by making it easy to create topic-focused Org Fil
 #+begin_src emacs-lisp
   ;;; ##########################################################################
 
-  (use-package emacsql :ensure t)
+  (use-package emacsql :ensure t :defer t)
 
   (use-package org-roam
     :after (emacsql org)
@@ -6097,6 +6176,7 @@ enerally enough.
 
   (use-package project
     :when (equal custom-project-handler 'custom-project-project-el)
+    :ensure nil
     :config
     (setq project-vc-extra-root-markers '(".project.el" ".projectile" )))
     ;; (when (featurep 'go-mode
@@ -6497,7 +6577,7 @@ Advantages of lsp-bridge:
 
 #+end_src
 
-*** ELPY                                                             :Python:
+*** ELPY
 :properties:
 :custom_id: elpy
 :visibility: folded
@@ -6702,7 +6782,7 @@ If a tree-sitter grammer is available and installed, use it instead of the corre
 
 #+end_src
 
-** Python
+** Python                                                :programming:Python:
 :properties:
 :custom_id: python
 :visibility: folded
@@ -6710,37 +6790,441 @@ If a tree-sitter grammer is available and installed, use it instead of the corre
 
 <<<Python>>> is an interpreted, interactive, object-oriented programming language. It incorporates modules, exceptions, dynamic typing, very high level dynamic data types, and classes. It supports multiple programming paradigms beyond object-oriented programming, such as procedural and functional programming. Python combines remarkable power with very clear syntax. It has interfaces to many system calls and libraries, as well as to various window systems, and is extensible in C or C++. It is also usable as an extension language for applications that need a programmable interface. Finally, Python is portable: it runs on many Unix variants including Linux and macOS, and on Windows.
 
-This is the Python setup for development under Emacs.
-
 #+begin_src emacs-lisp
 
-  (use-package mifi-setup-python
+  ;;; ##########################################################################
+  (defvar python-executable (locate-file "python3" exec-path))
+  ;;; ...........................................................................
+
+#+end_src
+
+*** Specialized python-mode Keymaps
+:properties:
+:custom_id: specialized-python-mode-keymaps
+:visibility: folded
+:end:
+
+The following are keymaps that are used by by the custom-ide and for python-mode
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (defun mifi/set-custom-ide-python-keymaps ()
+    (cond
+      ((equal custom-ide 'custom-ide-lsp)
+        (bind-keys :map python-mode-map
+          ("C-c g r" . lsp-find-references)
+          ("C-c g g" . xref-find-definitions)
+          ("C-c g G" . xref-find-definitions-other-window)
+          ("C-c g ?" . eldoc-doc-buffer)))
+      ((equal custom-ide 'custom-ide-eglot)
+        (bind-keys :map python-mode-map
+          ("C-c g i" . eglot-find-implementation)
+          ("C-c g r" . xref-find-references)
+          ("C-c g D" . xref-find-definitions-other-window)
+          ("C-c g g" . xref-find-definitions)
+          ("C-c g n" . xref-find-references-and-replace)
+          ("C-c g ." . python-eldoc-at-point)
+          ("C-c g ?" . eldoc-doc-buffer)))
+      ((equal custom-ide 'custom-ide-elpy)
+        (elpy-enable)
+        (bind-keys :map python-mode-map
+          ("C-c g a" . elpy-goto-assignment)
+          ("C-c g A" . elpy-goto-definition-other-window)
+          ("C-c g g" . elpy-goto-definition)
+          ("C-c g ?" . elpy-doc)))
+      ((equal custom-ide 'custom-ide-lsp-bridge)
+        (bind-keys :map python-mode-map
+          ("C-c g a" . lsp-bridge-find-reference)
+          ("C-c g A" . lsp-bridge-find-def-other-window)
+          ("C-c g g" . lsp-bridge-find-def)
+          ("C-c g i" . lsp-bridge-find-impl)
+          ("C-c g n" . lsp-bridge-rename)
+          ("C-c g ?" . lsp-bridge-popup-documentation)))
+      ))
+
+#+end_src
+
+*** Python Mode Setup
+:properties:
+:custom_id: python-mode-setup
+:visibility: folded
+:end:
+
+**** Python mode support functions
+:properties:
+:custom_id: python-mode-support-functions
+:visibility: folded
+:end:
+
+These functions are used during python intialization or file loading. This is where Python IDE functionality, linting and debugging setup begins.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (defun mifi/load-python-file-hook ()
+    (python-mode)
+    (flymake-mode 0)
+    (message ">>> mifi/load-python-file-hook")
+    (setq highlight-indentation-mode -1)
+    (setq display-fill-column-indicator-mode t))
+
+  (defun mifi/before-save ()
+    "Force the check of the current python file being saved."
+    (when (eq major-mode 'python-mode) ;; Python Only
+      (flycheck-mode 0)
+      (flycheck-mode t)
+      (delete-trailing-whitespace)))
+
+  (defun mifi/setup-python-debug-adapter () 
+    (cond
+      ((equal debug-adapter 'debug-adapter-dap-mode)
+        (unless (featurep 'dap-mode) (dap-mode 1)) ;; Load if not loaded.
+        (bind-keys :map python-mode-map
+  	("C-c ." . dap-python-hydra/body)))))
+
+  (defun mifi/setup-python-custom-ide ()
+    (cond
+      ((equal custom-ide 'custom-ide-eglot)
+        (message ">>> eglot-ensure")
+        (when (boundp 'eglot-current-server)
+  	(let ((server (eglot-current-server)))
+        	  (when server
+        	    (message "<<< Shutting down current EGLOT server before restart.")
+        	    (eglot-shutdown server))))
+        (eglot-ensure))
+      ((equal custom-ide 'custom-ide-lsp)
+        (message ">>> lsp-deferred")
+        (lsp-deferred))
+      (t
+        (message ">>> failed to init custom-ide"))))
+
+  ;; This function should only be called ONCE during python-mode startup.
+  (defun mifi/enable-python-features ()
+    (message ">>> mifi/enable-python-features")
+    ;; _____________________________
+    (mifi/setup-python-debug-adapter)
+    ;;___________________________
+    ;; check for which custom-ide
+    (mifi/setup-python-custom-ide)
+    (when (featurep 'pydoc)
+      (pydoc-python-command python-executable)
+      (pydoc-pip-version-command (concat python-executable " -m pip --version")))
+    (when (featurep 'yasnippet)
+      (yas-global-mode t))
+    (when (featurep 'pyvenv-auto)
+      (pyvenv-auto-run))
+    ;;
+    ;; only do this after pyvenv-auto-run
+    (setq python-executable (locate-file "python" exec-path))
+    (unless (boundp 'python-executable)
+      (setq python-executable (locate-file "python3" exec-path)))
+    (message "Python executable is %S" python-executable))
+
+  (defun mifi/python-mode-triggered ()
+    ;; (eldoc-box-hover-at-point-mode t) ;; Using Mitch Key for this
+    (mifi/enable-python-features)
+    (mifi/set-custom-ide-python-keymaps)
+    (add-hook 'before-save-hook 'mifi/before-save)
+    (setq dap-python-executable python-executable) ;; Otherwise it looks for 'python' else error.
+    (set-fill-column 80))
+
+#+end_src
+
+**** Python mode initialization
+:properties:
+:custom_id: python-mode-initialization
+:visibility: folded
+:end:
+
+This is the primary Python setup that is triggered by the first load of the Python mode and then any time a file is loaded.
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  ;; Use built-in python language mode.
+  (use-package python-mode
     :when enable-python
-    :ensure nil)
+    :ensure t
+    :defer t
+    :mode ("\\.py\\'" . mifi/load-python-file-hook)
+    :hook (python-mode . mifi/python-mode-triggered)
+    :bind (:map python-mode-map
+            ("C-c C-q" . quote-region)
+            ("C-c q"   . quote-word)
+            ("C-c |"   . display-fill-column-indicator-mode))
+    :ensure-system-package
+    ( (autoflake . "pip3 install autoflake") )
+    :config
+    (if (boundp 'python-shell-completion-native-disabled-interpreters)
+      (add-to-list 'python-shell-completion-native-disabled-interpreters python-executable)
+      (setq python-shell-completion-native-disabled-interpreters '(python-executable))))
+
+  (use-package blacken
+    :ensure t
+    :when enable-python
+    :after python) ;Format Python file upon save.
 
 #+end_src
 
-*Important*
+*** Auto-pep 8
+:properties:
+:custom_id: auto-pep-8
+:visibility: folded
+:end:
 
-Before any work can begin in python, make sure that the right packages are installed.
+autopep8 automatically formats Python code to conform to the `PEP 8` style guide. It uses the pycodestyle_ utility to determine what parts of the code needs to be formatted. autopep8 is capable of fixing most of the formatting issues_ that can be reported by pycodestyle. Refer to the [[IMPORTANT][IMPORTANT]] section above for possible issues when autopep8 is installed.
 
-#+begin_src shell :results output silent :tangle no
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
 
-  pip3 install --upgrade pip
-  pip3 install "python-lsp-server[all]"
-  pip3 install debugpy
+  (use-package py-autopep8
+    :when enable-python
+    :defer t
+    :ensure t
+    ;; :vc (:url "https://github.com/emacsmirror/py-autopep8.git")
+    :after python
+    :hook ((python-mode . py-autopep8-mode)))
 
 #+end_src
 
-In addition to that, it is important that =autopep8=, which is a script, can reach python or python3. For my configuration, =autopep8= looks for python this like this:
+*** Python-Helpful Macros
+:properties:
+:custom_id: python-helpful-macros
+:visibility: folded
+:end:
 
-    ~#!/Library/Frameworks/Python.framework/Versions/Current/bin/python3~
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
 
-*Note:* If this python path doesn't exist, you will see the very annoying message:
+  ;; This is a helpful macro that is used to put double quotes around a word.
+  (defalias 'quote-word
+    (kmacro "\" M-d \" <left> C-y"))
 
-     ~file-missing "Doing vfork" "No such file or directory"~
+  (defalias 'quote-region
+    (kmacro "C-w \" \" <left> C-y <right>"))
 
-** OCaml
+  (defalias 'reformat-src-block
+    (kmacro "C-s b e g i n _ s r c SPC e m a c s - l i s p <return> <down> C-c ' C-x h C-c ] C-x h M-x u n t a b <return> C-c ' C-s e n d _ s r c <return> <down>"))
+
+  (when enable-python
+    (eval-after-load "python-mode"
+      #'(bind-keys :map python-mode-map
+        ("C-c C-q" . quote-region)
+        ("C-c q"   . quote-word)
+        ("C-c |"   . display-fill-column-indicator-mode))))
+
+#+end_src
+
+*** Python Virtual Environment Support
+:properties:
+:custom_id: python-virtual-environment-support
+:visibility: folded
+:end:
+
+We use Pyvenv-auto is a package that automatically changes to the Python virtual environment based upon the project's directory. pyvenv-auto looks at the root director of the project for a =.venv= or =venv= (and a few others)
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package pyvenv-auto
+    :when enable-python
+    :ensure t
+    :after python
+    :hook (python-mode . pyvenv-auto-run))
+
+#+end_src
+
+*** Pydoc
+:properties:
+:custom_id: pydoc
+:visibility: folded
+:end:
+
+#Pydoc, the Python documentation navigation package
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (use-package pydoc
+    ;;:ensure (:host github :repo "statmobile/pydoc")
+    :ensure t
+    :defer t
+    :when enable-python
+    :custom
+    (pydoc-python-command python-executable)
+    (pydoc-pip-version-command (concat python-executable " -m pip --version")))
+
+#+end_src
+
+*** python-isort
+:properties:
+:custom_id: python-isort
+:visibility: folded
+:end:
+
+Emacs package to sort Python imports via isort.
+#+begin_src emacs-lisp
+
+  (use-package python-isort
+    :when enable-python
+    :defer t
+    :ensure t)
+
+#+end_src
+
+*** DAP Python Templates
+:properties:
+:custom_id: dap-python-templates
+:visibility: folded
+:end:
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (defun mifi/register-dap-python-templates ()
+    ;; (with-eval-after-load 'dap-lldb
+    ;;   (dap-register-debug-template
+    ;;     "Rust::LLDB Run Configuration"
+    ;;     (list :type "lldb"
+    ;;       :request "launch"
+    ;;       :name "LLDB::Run"
+    ;;       :gdbpath "rust-lldb"
+    ;;       :target nil
+    ;;       :cwd nil)))
+    (dap-register-debug-template "Python :: Run file from project directory"
+      (list :type "python"
+        :args ""
+        :cwd nil
+        :module nil
+        :program nil
+        :request "launch"))
+      
+    (dap-register-debug-template "Python :: Run file (buffer)"
+      (list :type "python"
+        :args ""
+        :cwd nil
+        :module nil
+        :program nil
+        :request "launch"
+        :name "Python :: Run file (buffer)")))
+
+#+end_src
+
+*** DAP python
+:properties:
+:custom_id: dap-python
+:visibility: folded
+:end:
+
+The Debug Adapter for Python
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+  ;;; DAP for Python
+
+  (use-package dap-python
+    :when (and (equal debug-adapter 'debug-adapter-dap-mode) enable-python)
+    :ensure nil ;; It is already included if 'dap-mode has already been installed.
+    :after dap-mode
+    :config
+    (mifi/register-dap-python-templates)
+    (setq dap-python-executable python-executable) ;; Otherwise it looks for 'python' else error.
+    (setq dap-python-debugger 'debugpy))
+
+#+end_src
+
+*** DAP Hydra Python Debug Functions
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (defun mifi/dap-end-python-debug-session ()
+    "End the debug session and delete project Python buffers."
+    (interactive)
+    (kill-matching-buffers "\*Python :: Run file [from|\(buffer]*" nil :NO-ASK)
+    (kill-matching-buffers "\*Python: Current File*" nil :NO-ASK)
+    (kill-matching-buffers "\*dap-ui-*" nil :NO-ASK)
+    (dap-disconnect (dap--cur-session)))
+
+  (defun mifi/dap-delete-all-python-debug-sessions ()
+    "End the debug session and delete project Python buffers and all breakpoints."
+    (interactive)
+    (dap-breakpoint-delete-all)
+    (mifi/dap-end-python-debug-session))
+
+  (defun mifi/dap-begin-python-debug-session ()
+    "Begin a debug session with several dap windows enabled."
+    (interactive)
+    (dap-ui-show-many-windows)
+    (dap-debug))
+
+#+end_src
+
+*** DAP Hydra Python Key Definitions
+:properties:
+:custom_id: dap-hydra-python-key-definitions
+:visibility: folded
+:end:
+
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (defhydra dap-python-hydra (:color pink :hint nil :foreign-keys run)
+    "
+    ^Stepping^            ^Switch^                 ^Breakpoints^          ^Debug^                     ^Eval
+    ^^^^^^^^-----------------------------------------------------------------------------------------------------------------
+    _._: Next            _ss_: Session            _bb_: Toggle           _dd_: Debug                 _ee_: Eval
+    _/_: Step in         _st_: Thread             _bd_: Delete           _dr_: Debug recent          _er_: Eval region
+    _,_: Step out        _sf_: Stack frame        _ba_: Add              _dl_: Debug last            _es_: Eval thing at point
+    _c_: Continue        _su_: Up stack frame     _bc_: Set condition    _de_: Edit debug template   _ea_: Add expression.
+    _r_: Restart frame   _sd_: Down stack frame   _bh_: Set hit count    _ds_: Debug restart
+    _Q_: Disconnect      _sl_: List locals        _bl_: Set log message  _dx_: end session
+                         _sb_: List breakpoints                          _dX_: end all sessions
+                         _sS_: List sessions
+                         _sR_: Session Repl
+  "
+    ("n" dap-next)
+    ("i" dap-step-in)
+    ("o" dap-step-out)
+    ("." dap-next)
+    ("/" dap-step-in)
+    ("," dap-step-out)
+    ("c" dap-continue)
+    ("r" dap-restart-frame)
+    ("ss" dap-switch-session)
+    ("st" dap-switch-thread)
+    ("sf" dap-switch-stack-frame)
+    ("su" dap-up-stack-frame)
+    ("sd" dap-down-stack-frame)
+    ("sl" dap-ui-locals)
+    ("sb" dap-ui-breakpoints)
+    ("sR" dap-ui-repl)
+    ("sS" dap-ui-sessions)
+    ("bb" dap-breakpoint-toggle)
+    ("ba" dap-breakpoint-add)
+    ("bd" dap-breakpoint-delete)
+    ("bc" dap-breakpoint-condition)
+    ("bh" dap-breakpoint-hit-condition)
+    ("bl" dap-breakpoint-log-message)
+    ("dd" dap-debug)
+    ("dr" dap-debug-recent)
+    ("ds" dap-debug-restart)
+    ("dl" dap-debug-last)
+    ("de" dap-debug-edit-template)
+    ("ee" dap-eval)
+    ("ea" dap-ui-expressions-add)
+    ("er" dap-eval-region)
+    ("es" dap-eval-thing-at-point)
+    ("dx" mifi/dap-end-python-debug-session)
+    ("dX" mifi/dap-delete-all-python-debug-sessions)
+    ("x" nil "exit Hydra" :color yellow)
+    ("q" mifi/dap-end-python-debug-session "quit" :color blue)
+    ("Q" mifi/dap-delete-all-python-debug-sessions :color red))
+
+#+end_src
+
+** OCaml                                                        :programming:
 :properties:
 :custom_id: ocaml
 :visibility: folded
@@ -6782,7 +7266,7 @@ This is an easy way to install =opam= using ~brew~ but it may not be the most cu
   
 #+end_src
 
-** JavaScript based languages
+** JavaScript based languages                                   :programming:
 :properties:
 :custom_id: javascript-based-languages
 :visibility: folded
@@ -6874,7 +7358,7 @@ This is a basic configuration for the TypeScript language so that =.ts= files ac
 
 #+end_src
 
-** GameBoy Development
+** GameBoy Development                                          :programming:
 :properties:
 :custom_id: gameboy-development
 :visibility: folded
@@ -6902,7 +7386,7 @@ RGBDS is a compiler that has been around quite a long time (since 1997). It supp
 
 #+end_src
 
-** Rust
+** Rust                                                         :programming:
 :properties:
 :custom_id: rust
 :visibility: folded
@@ -7041,7 +7525,7 @@ Much of this configuration was taken from the [[https://robert.kra.hn/posts/rust
 
 #+end_src
 
-** Golang
+** Golang                                                       :programming:
 :properties:
 :custom_id: golang
 :visibility: folded
@@ -7130,7 +7614,7 @@ Integration of the Go 'guru' analysis tool into Emacs.
 
 #+end_src
 
-** Other Languages
+** Other Languages                                              :programming:
 :properties:
 :custom_id: other-languages
 :visibility: folded
@@ -7207,7 +7691,7 @@ Lisp support is handled by SLIME which is the “Superior Lisp Interaction Mode 
 
 #+end_src
 
-** Godot Script Mode
+** Godot Script Mode                                            :programming:
 :PROPERTIES:
 :custom_id: godot-script-mode
 :visibility: folded
@@ -7276,44 +7760,6 @@ The Debug Adapter Protocol makes it possible to implement a generic debugger for
 
 #+end_src
 
-**** DAP Python Templates                                       :Python:Rust:
-:properties:
-:custom_id: dap-python-templates
-:visibility: folded
-:end:
-
-#+begin_src emacs-lisp :tangle no
-  ;;; ##########################################################################
-
-  (defun mifi/register-dap-python-templates ()
-    ;; (with-eval-after-load 'dap-lldb
-    ;;   (dap-register-debug-template
-    ;;     "Rust::LLDB Run Configuration"
-    ;;     (list :type "lldb"
-    ;;       :request "launch"
-    ;;       :name "LLDB::Run"
-    ;;       :gdbpath "rust-lldb"
-    ;;       :target nil
-    ;;       :cwd nil)))
-    (dap-register-debug-template "Python :: Run file from project directory"
-      (list :type "python"
-        :args ""
-        :cwd nil
-        :module nil
-        :program nil
-        :request "launch"))
-      
-    (dap-register-debug-template "Python :: Run file (buffer)"
-      (list :type "python"
-        :args ""
-        :cwd nil
-        :module nil
-        :program nil
-        :request "launch"
-        :name "Python :: Run file (buffer)")))
-
-#+end_src
-
 **** DAP Package for OCaml
 :properties:
 :custom_id: dap-package-for-ocaml
@@ -7342,75 +7788,7 @@ The Debug Adapter Protocol makes it possible to implement a generic debugger for
 
 #+end_src
 
-**** DAP Package for Python :Python:
-:properties:
-:custom_id: dap-package-for-python
-:visibility: folded
-:end:
-
-#+begin_src emacs-lisp :tangle no
-  ;;; ##########################################################################
-  ;;; DAP for Python
-
-  (use-package dap-python
-    :when enable-python
-    :ensure nil
-    ;; :vc (:url "https://github.com/emacs-lsp/dap-mode" :main-file dap-python)
-    :when (equal debug-adapter 'debug-adapter-dap-mode)
-    :after dap-mode
-    :config
-    (mifi/register-dap-python-templates)
-    (setq dap-python-executable "python3") ;; Otherwise it looks for 'python' else error.
-    (setq dap-python-debugger 'debugpy))
-
-#+end_src
-
-**** DAP Setup for Rust and Go :Rust:Go:
-:properties:
-:custom_id: dap-setup-for-rust-and-go
-:visibility: folded
-:end:
-
-Something that is needed for Rust and Go debugging.
-
-#+begin_src emacs-lisp
-  ;;; ##########################################################################
-
-  (use-package dap-lldb
-    :when (equal debug-adapter 'debug-adapter-dap-mode)
-    :ensure nil
-    :defer t
-    :after dap-mode
-    :custom
-    (dap-lldb-debug-program "~/Developer/command-line-unix/llvm/lldb-build/bin/lldb-dap"))
-    ;; :config
-    ;; (dap-register-debug-template
-    ;;   "Rust::LLDB Run Configuration"
-    ;;   (list :type "lldb"
-    ;;     :request "launch"
-    ;;     :name "LLDB::Run"
-    ;;     :gdbpath "rust-lldb"
-    ;;     :target nil
-    ;;     :cwd nil)))
-
-  (use-package dap-gdb-lldb
-    :when (equal debug-adapter 'debug-adapter-dap-mode)
-    :ensure nil
-    :defer t
-    :after dap-lldb
-    :config
-    (dap-gdb-lldb-setup))
-
-  (use-package dap-cpptools
-    :when (equal debug-adapter 'debug-adapter-dap-mode)
-    :ensure nil
-    :defer t
-    :after dap-mode)
-  ;; :config
-  ;; (dap-cpptools-setup))
-
-#+end_src
-
+**** DAP Setup for Rust and Go
 **** DAP Hydra
 :properties:
 :custom_id: dap-hydra
@@ -7419,28 +7797,24 @@ Something that is needed for Rust and Go debugging.
 
 Below are all the necessary functions and definitions for Hydra use under DAP.
 
-***** DAP Hydra Debug Functions :Python:
+***** DAP Generic Hydra Debug Functions
 :properties:
 :custom_id: dap-hydra-debug-functions
 :visibility: folded
 :end:
 
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
   ;;; ##########################################################################
-
+  ;;; Debug helper functions (non-python specific)
   (defun mifi/dap-end-debug-session ()
-    "End the debug session and delete project Python buffers."
+    "End the debug session."
     (interactive)
-    (kill-matching-buffers "\*Python :: Run file [from|\(buffer]*" nil :NO-ASK)
-    (kill-matching-buffers "\*Python: Current File*" nil :NO-ASK)
-    (kill-matching-buffers "\*dap-ui-*" nil :NO-ASK)
     (dap-disconnect (dap--cur-session)))
 
   (defun mifi/dap-delete-all-debug-sessions ()
-    "End the debug session and delete project Python buffers and all breakpoints."
+    "End the debug session and delete all breakpoints."
     (interactive)
-    (dap-breakpoint-delete-all)
-    (mifi/dap-end-debug-session))
+    (dap-breakpoint-delete-all))
 
   (defun mifi/dap-begin-debug-session ()
     "Begin a debug session with several dap windows enabled."
@@ -7450,7 +7824,7 @@ Below are all the necessary functions and definitions for Hydra use under DAP.
 
 #+end_src
 
-***** DAP Hydra Definition Function
+***** DAP Generic Hydra Definition Function
 :properties:
 :custom_id: dap-hydra-definition-functions
 :visibility: folded

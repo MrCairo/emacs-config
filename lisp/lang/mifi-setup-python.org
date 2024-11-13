@@ -6,13 +6,14 @@
 #+visibility: folded
 #+property: header-args :emacs-lisp :tangle "./mifi-setup-python.el" :results silent :exports code :mkdirp yes
 
-* Python Configuration
+* Test
+** Python Configuration
 
 Python is an interpreted, interactive, object-oriented programming language. It incorporates modules, exceptions, dynamic typing, very high level dynamic data types, and classes. It supports multiple programming paradigms beyond object-oriented programming, such as procedural and functional programming. Python combines remarkable power with very clear syntax. It has interfaces to many system calls and libraries, as well as to various window systems, and is extensible in C or C++. It is also usable as an extension language for applications that need a programmable interface. Finally, Python is portable: it runs on many Unix variants including Linux and macOS, and on Windows.
 
 This is the Python setup for development under Emacs.
 
-** Prologue
+*** Prologue
 #+begin_src emacs-lisp
   ;;; mifi-setup-python.el --- Configure Python dev environment -*- lexical-binding: t -*-
   ;;; Commentary:
@@ -24,9 +25,9 @@ This is the Python setup for development under Emacs.
 
 #+end_src
 
-** Pre-defined variables
+*** Pre-defined variables
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   ;;; ##########################################################################
   ;;; These are variables that should have already been defined external
   ;;; to this module.
@@ -38,7 +39,7 @@ This is the Python setup for development under Emacs.
   ;;; ...........................................................................
 #+end_src
 
-** Important
+*** Important
 
 Before any work can begin in python, make sure that the right packages are installed. It's also worth considering creating a Python Vertual Environment. These commands will install things globally.
 
@@ -58,11 +59,11 @@ In addition to that, it is important that =autopep8=, which is a script, can rea
 
      ~file-missing "Doing vfork" "No such file or directory"~
 
-** Specialized python-mode Keymaps
+*** Specialized python-mode Keymaps
 
 The following are keymaps that are used by by the custom-ide and for python-mode
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   ;;; ##########################################################################
 
   (defun mifi/set-custom-ide-python-keymaps ()
@@ -101,12 +102,12 @@ The following are keymaps that are used by by the custom-ide and for python-mode
 
 #+end_src
 
-** Standard setup
-*** Python mode support functions                                   :Python:
+*** Standard setup
+**** Python mode support functions                                       :Python:
 
 These functions are used during python intialization or file loading. This is where Python IDE functionality, linting and debugging setup begins.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   ;;; ##########################################################################
 
   (defun mifi/load-python-file-hook ()
@@ -179,11 +180,11 @@ These functions are used during python intialization or file loading. This is wh
 
 #+end_src
 
-*** Python mode initialization                                       :Python:
+**** Python mode initialization                                          :Python:
 
 This is the primary Python setup that is triggered by the first load of the Python mode and then any time a file is loaded.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   ;;; ##########################################################################
 
   ;; Use built-in python language mode.
@@ -211,11 +212,11 @@ This is the primary Python setup that is triggered by the first load of the Pyth
 
 #+end_src
 
-** Auto-pep 8
+*** Auto-pep 8
 
 autopep8 automatically formats Python code to conform to the `PEP 8` style guide. It uses the pycodestyle_ utility to determine what parts of the code needs to be formatted. autopep8 is capable of fixing most of the formatting issues_ that can be reported by pycodestyle. Refer to the [[IMPORTANT][IMPORTANT]] section above for possible issues when autopep8 is installed.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   ;;; ##########################################################################
 
   (use-package py-autopep8
@@ -228,10 +229,10 @@ autopep8 automatically formats Python code to conform to the `PEP 8` style guide
 
 #+end_src
 
-** Python Keybinding
-*** Helpful Macros
+*** Python Keybinding
+**** Helpful Macros
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   ;;; ##########################################################################
 
   ;; This is a helpful macro that is used to put double quotes around a word.
@@ -253,11 +254,11 @@ autopep8 automatically formats Python code to conform to the `PEP 8` style guide
 
 #+end_src
 
-** Python Virtual Environment Support
+*** Python Virtual Environment Support
 
 We use Pyvenv-auto is a package that automatically changes to the Python virtual environment based upon the project's directory. pyvenv-auto looks at the root director of the project for a =.venv= or =venv= (and a few others)
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   ;;; ##########################################################################
 
   (use-package pyvenv-auto
@@ -268,11 +269,11 @@ We use Pyvenv-auto is a package that automatically changes to the Python virtual
 
 #+end_src
 
-** Pydoc
+*** Pydoc
 
 #Pydoc, the Python documentation navigation package
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   ;;; ##########################################################################
 
   (use-package pydoc
@@ -287,20 +288,20 @@ We use Pyvenv-auto is a package that automatically changes to the Python virtual
 
 #+end_src
 
-** python-isort
+*** python-isort
 Emacs package to sort Python imports via isort.
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 
   (use-package python-isort
     :ensure t)
 
 #+end_src
 
-** DAP Setup for Python                                              :Python:
+*** DAP Setup for Python                                                :Python:
 
-*** DAP Python Templates                                        :Python:Rust:
+**** DAP Python Templates                                           :Python:Rust:
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   ;;; ##########################################################################
 
   (defun mifi/register-dap-python-templates ()
@@ -332,9 +333,9 @@ Emacs package to sort Python imports via isort.
 
 #+end_src
 
-*** dap-python
+**** dap-python
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   ;;; ##########################################################################
   ;;; DAP for Python
 
@@ -349,8 +350,8 @@ Emacs package to sort Python imports via isort.
 
 #+end_src
 
-*** DAP Hydra Debug Functions                                       :Python:
-#+begin_src emacs-lisp
+**** DAP Hydra Debug Functions                                           :Python:
+#+begin_src emacs-lisp :tangle no
   ;;; ##########################################################################
 
   (defun mifi/dap-end-python-debug-session ()
@@ -375,9 +376,9 @@ Emacs package to sort Python imports via isort.
 
 #+end_src
 
-*** DAP Hydra Definition Function
+**** DAP Hydra Definition Function
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   ;;; ##########################################################################
 
   (defhydra dap-python-hydra (:color pink :hint nil :foreign-keys run)
@@ -438,7 +439,7 @@ Emacs package to sort Python imports via isort.
 
 #+end_src
 
-** Epilogue
+*** Epilogue
 #+begin_src emacs-lisp
   ;;; ##########################################################################
 
