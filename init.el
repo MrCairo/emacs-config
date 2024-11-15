@@ -431,10 +431,10 @@ font size is computed + 20 of this value."
                ((x-family-fonts "Monospaced")      "Monospaced")
                (nil (warn "Cannot find a monospaced Font.  Install Source Code Pro.")))))
       (if monospace-font
-  (when (not (equal monospace-font variable-pitch-font-family))
+	(when (not (equal monospace-font variable-pitch-font-family))
           (setq mono-spaced-font-family monospace-font)
           (setq default-font-family monospace-font))
-  (message "---- Can't find a monospace font to use.")))
+	(message "---- Can't find a monospace font to use.")))
     (message (format "=== monospace font is %s" mono-spaced-font-family))))
 
 ;;; ##########################################################################
@@ -2521,7 +2521,7 @@ Stage Manager on macOS."
 
 (defun markdown-html (buffer)
   (princ (with-current-buffer buffer
-  	 (format "<!DOCTYPE html><html><title>Impatient Markdown</title><xmp theme=\"united\" style=\"display:none;\"> %s  </xmp><script src=\"http://ndossougbe.github.io/strapdown/dist/strapdown.js\"></script></html>" (buffer-substring-no-properties (point-min) (point-max))))
+	   (format "<!DOCTYPE html><html><title>Impatient Markdown</title><xmp theme=\"united\" style=\"display:none;\"> %s  </xmp><script src=\"http://ndossougbe.github.io/strapdown/dist/strapdown.js\"></script></html>" (buffer-substring-no-properties (point-min) (point-max))))
     (current-buffer)))
 
 (use-package simple-httpd
@@ -2897,7 +2897,7 @@ directory is relative to the working-files-directory
 (defun mifi/org-setup-capture-templates ()
   (setq org-capture-templates
     `(("t" "Tasks / Projects")
-
+       
        ("tt" "Task" entry (file+olp (expand-file-name "OrgFiles/Tasks.org" user-emacs-directory) "Inbox")
          "* TODO %?\n  %U\n  %a\n        %i" :empty-lines 1)
 
@@ -3541,6 +3541,7 @@ capture was not aborted."
     (bind-keys :map lsp-mode-map
       ("<tab>" . company-indent-or-complete-common)))
   (mifi/define-rust-lsp-values)
+  (setq lsp-ui-doc-delay 0.5)
   (lsp-enable-which-key-integration t))
 
 ;;; ##########################################################################
@@ -3803,17 +3804,17 @@ capture was not aborted."
     ((equal debug-adapter 'debug-adapter-dap-mode)
       (unless (featurep 'dap-mode) (dap-mode 1)) ;; Load if not loaded.
       (bind-keys :map python-mode-map
-  ("C-c ." . dap-python-hydra/body)))))
+	("C-c ." . dap-python-hydra/body)))))
 
 (defun mifi/setup-python-custom-ide ()
   (cond
     ((equal custom-ide 'custom-ide-eglot)
       (message ">>> eglot-ensure")
       (when (boundp 'eglot-current-server)
-  (let ((server (eglot-current-server)))
-        	(when server
-        	  (message "<<< Shutting down current EGLOT server before restart.")
-        	  (eglot-shutdown server))))
+	(let ((server (eglot-current-server)))
+      	  (when server
+      	    (message "<<< Shutting down current EGLOT server before restart.")
+      	    (eglot-shutdown server))))
       (eglot-ensure))
     ((equal custom-ide 'custom-ide-lsp)
       (message ">>> lsp-deferred")
@@ -3948,7 +3949,7 @@ capture was not aborted."
       :module nil
       :program nil
       :request "launch"))
-
+    
   (dap-register-debug-template "Python :: Run file (buffer)"
     (list :type "python"
       :args ""
@@ -4246,7 +4247,7 @@ capture was not aborted."
   ;; 	:lisp-dir ("swift-info" "target")))
 
 (use-package elisp-mode
-
+  
   :defer t
   :mode ("\\.el\\'" . emacs-lisp-mode))
 

@@ -100,7 +100,7 @@
 
 ;;; ##########################################################################
 ;;; Set high for initial startup
-(setq gc-cons-threshold (* 1024 1024 100))
+(setq gc-cons-threshold (* 1024 1024 200))
 (setq gc-cons-percentage 0.3)
 
 ;; Process performance tuning

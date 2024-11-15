@@ -5,7 +5,7 @@
 #+startup: showall
 #+visibility: all
 #+property: header-args:emacs-lisp :tangle ./init.el :results silent :exports code :mkdirp yes
-#+modified-date: <2024-10-16 Wed>
+#+modified-date: <2024-11-14 Thu>
 
 * Table Of Contents
 :PROPERTIES:
@@ -482,7 +482,7 @@ If there is a local =lisp= and/or =lisp/lang= directory in the ~user-emacs-direc
 #+begin_src emacs-lisp :tangle "early-init.el"
   ;;; ##########################################################################
   ;;; Set high for initial startup
-  (setq gc-cons-threshold (* 1024 1024 100))
+  (setq gc-cons-threshold (* 1024 1024 200))
   (setq gc-cons-percentage 0.3)
 
   ;; Process performance tuning
@@ -5736,6 +5736,7 @@ Every journal entry must have a =CREATED= property when using yearly, monthly an
       :config
       (message "=== Configured org-journal."))
   )
+  
 #+end_src
 
 ** Org Roam
@@ -6419,6 +6420,7 @@ Client for Language Server Protocol (v3.14). lsp-mode aims to provide IDE-like e
       (bind-keys :map lsp-mode-map
         ("<tab>" . company-indent-or-complete-common)))
     (mifi/define-rust-lsp-values)
+    (setq lsp-ui-doc-delay 0.5)
     (lsp-enable-which-key-integration t))
 
 #+end_src
