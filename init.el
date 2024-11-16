@@ -748,6 +748,10 @@ font size is computed + 20 of this value."
         ("M-RET M e" . markdown-preview-cleanup)
         ("M-RET >" . hydra-terminals/body)
         ("M-RET v" . hydra-themes-and-fonts/body)
+        ("M-RET +" . next-theme)
+        ("M-RET =" . which-theme)
+        ("M-RET -" . previous-theme)
+        ("M-RET _" . select-theme)
         ("M-RET W" . writeroom-mode)
         ("M-RET w <right>" . which-key-setup-side-window-right-bottom)
         ("M-RET w <down>" . which-key-setup-side-window-bottom)
@@ -2706,16 +2710,6 @@ theme is then loaded via the 'mifi/load-theme-from-selector' function."
   (let ((choice (completing-read-multiple "Select Theme: " theme-list)))
     (setq-default theme-selector (cl-position (car choice) theme-list :test 'equal))
     (mifi/load-theme-from-selector)))
-
-(bind-keys
-  ;; Go to NEXT theme
-  ("M-RET +" . next-theme)
-  ;; Message current theme
-  ("M-RET =" . which-theme)
-  ;; Go to PREVIOUS theme
-  ("M-RET -" . previous-theme)
-  ;; Choose Theme
-  ("M-RET _" . select-theme))
 
 (defun mifi/org-theme-override-values ()
   (defface org-block-begin-line
