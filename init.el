@@ -54,7 +54,7 @@
 
 ;;; ##########################################################################
 
-(defcustom custom-emacs-home
+(defcustom custom-emacs-home-directory
   (expand-file-name "emacs-home" "~/")
   "The base directory to where emacs user-operation files are stored. This is
 in contrast to the `emacs-config-directory' where all the initialization and
@@ -63,7 +63,7 @@ configuration of Emacs are stored."
   :group 'mifi-config)
 
 (defcustom custom-docs-directory
-  (expand-file-name "emacs-docs" custom-emacs-home)
+  (expand-file-name "emacs-docs" custom-emacs-home-directory)
   "A directory used to store documents and customized data."
   :type 'string
   :group 'mifi-config)
@@ -76,7 +76,7 @@ configuration of Emacs are stored."
   :group 'mifi-config)
 
 (defcustom working-files-directory
-  (expand-file-name "emacs-working-files" custom-emacs-home)
+  (expand-file-name "emacs-working-files" custom-emacs-home-directory)
   "The directory where to store Emacs working files. `user-emacs-directory'
 will also be set to this directory. The starting user-emacs-directory will
 become `emacs-config-directory'."
@@ -95,6 +95,11 @@ width."
 
 (defcustom enable-centaur-tabs nil
   "Set to t to enable `centaur-tabs' which uses tabs to represent open buffer."
+  :type 'boolean
+  :group 'mifi-config-toggles)
+
+(defcustom enable-clojure nil
+  "Set to t to enable Clojure language support."
   :type 'boolean
   :group 'mifi-config-toggles)
 
@@ -292,6 +297,7 @@ for their personal wiki."
                          "sanityinc-tomorrow-bright"
                          "ef-melissa-dark"
                          "darktooth-dark"
+                         "foggy-night"
                          "material"
                          "tron-legacy")
 
@@ -656,7 +662,7 @@ font size is computed + 20 of this value."
   (setq register-preview-delay 0) ;; Show registers ASAP
   (setq reg-elpa '?c
         reg-elpaca '?C)
-  (set-register reg-elpa (cons 'file (concat emacs-config-directory "emacs-config-elpa.org")))
+  (set-register reg-elpa (cons 'file (concat emacs-config-directory "emacs-config.org")))
   (set-register reg-elpaca (cons 'file (concat emacs-config-directory "emacs-config-elpaca.org")))
   (set-register ?G '(file . "~/Developer/game-dev/GB_asm"))
   (set-register ?S (cons 'file (concat emacs-config-directory "org-files/important-scripts.org"))))
@@ -745,9 +751,6 @@ font size is computed + 20 of this value."
         ("M-RET W" . writeroom-mode)
         ("M-RET w <right>" . which-key-setup-side-window-right-bottom)
         ("M-RET w <down>" . which-key-setup-side-window-bottom)
-        ("M-RET =" . next-theme)
-        ("M-RET -" . previous-theme)
-        ("M-RET _" . which-theme)
         ("M-RET M-c" . mifi/customize-mifi)
         ("M-RET d" . dashboard-open)
         ("M-RET e" . treemacs) ;; e for Explore
@@ -1026,7 +1029,7 @@ opam-user-setup.el so that upon next startup, it can be loaded quickly."
   (pretty-hydra-define hydra-registers
     (:hint nil :color teal :quit-key "q" :title (with-faicon "thumb-tack" "Registers" 1 -0.05))
     ("Action"
-      ( ("o" (jump-to-register reg-elpa) "open emacs-config-elpa.org")
+      ( ("o" (jump-to-register reg-elpa) "open emacs-config.org")
         ("O" (jump-to-register reg-elpaca) "open emacs-config-elpaca.org")
         ("S" (jump-to-register ?S) "Scripts")
         ("G" (jump-to-register ?G) "GameBoy Asm Root")))
@@ -2695,13 +2698,24 @@ Stage Manager on macOS."
   (interactive)
   (mifi/print-custom-theme-name))
 
+(defun select-theme ()
+  "This function will popup a list of existing themes for the user to choose
+from. When the theme is chosen, the 'theme-selector' variable is updated and the
+theme is then loaded via the 'mifi/load-theme-from-selector' function."
+  (interactive)
+  (let ((choice (completing-read-multiple "Select Theme: " theme-list)))
+    (setq-default theme-selector (cl-position (car choice) theme-list :test 'equal))
+    (mifi/load-theme-from-selector)))
+
 (bind-keys
   ;; Go to NEXT theme
-  ("M-RET =" . next-theme)
+  ("M-RET +" . next-theme)
+  ;; Message current theme
+  ("M-RET =" . which-theme)
   ;; Go to PREVIOUS theme
   ("M-RET -" . previous-theme)
-  ;; Message current theme
-  ("M-RET _" . which-theme))
+  ;; Choose Theme
+  ("M-RET _" . select-theme))
 
 (defun mifi/org-theme-override-values ()
   (defface org-block-begin-line
@@ -2753,6 +2767,7 @@ Stage Manager on macOS."
 (use-package material-theme :defer t :ensure t)
 (use-package color-theme-modern :defer t :ensure t)
 (use-package color-theme-sanityinc-tomorrow :defer t :ensure t)
+(use-package foggy-night-theme :defer t :ensure nil)
 ;; Can't defer darktooth since we need the base theme to always load
 (use-package darktooth-theme :ensure t)
 (use-package zenburn-theme :defer t :ensure t)
@@ -3742,6 +3757,31 @@ capture was not aborted."
 
 (use-package forge :after magit :defer t :ensure t)
 (use-package treemacs-magit :defer t :after treemacs magit)
+
+;; Only call use-package when enable-clojure is t.
+;; In this case, it is more efficient than adding a :when to the
+;; use-package statement itself. This pattern is done for all
+;; clojure related packages.
+(when enable-clojure
+  (use-package clojure-mode
+    :ensure t
+    :defer t
+    :ensure-system-package
+    ( (clj . "brew install clojure") )))
+
+(when enable-clojure
+  (use-package lein-repl
+    :ensure nil ;; This is a pseudo-package mean to bootstrap nREPL
+    :after clojure-mode
+    :ensure-system-package
+    ( ("~/.lein" . "mkdir ~/.lein")
+      (lein . "brew install leiningen") )))
+
+(when enable-clojure
+  (use-package cider
+    :after clojure-mode lein-repl
+    :ensure t
+    :defer t))
 
 ;;; ##########################################################################
 (defvar python-executable (locate-file "python3" exec-path))
