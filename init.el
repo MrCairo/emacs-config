@@ -3016,6 +3016,7 @@ directory is relative to the working-files-directory
        ("note" . ?n)
        ("idea" . ?i)))
   ;; Configure custom agenda views
+  (mifi/persist-org-settings)
   (mifi/org-setup-agenda)
   (mifi/org-setup-capture-templates)
   (mifi/org-font-setup)
@@ -3049,6 +3050,11 @@ directory is relative to the working-files-directory
          (sql . t)
          (sqlite . t))))
   (push '("conf-unix" . conf-unix) org-src-lang-modes))
+
+(defun mifi/persist-org-settings ()
+  ;; Save org centering flag and column width
+  (add-to-list 'savehist-additional-variables 'enable-org-fill-column-centering)
+  (add-to-list 'savehist-additional-variables 'custom-org-fill-column))
 
 ;;; ##########################################################################
 
@@ -4363,7 +4369,7 @@ capture was not aborted."
     (add-hook mode (lambda () (display-line-numbers-mode 0)))))
 
 ;;; ##########################################################################
-;; Supress common annoying warning.
+;; Suppress common annoying warning.
 ;; These can still be found in the  *Warnings* buffer
 (setq warning-suppress-types '((package reinitialization)
                                 (package-initialize)
@@ -4372,7 +4378,6 @@ capture was not aborted."
                                 (python-mode)))
 
 ;;; ##########################################################################
-
 ;;; init.el ends here.
 
 ;; ## added by OPAM user-setup for emacs / base ## 56ab50dc8996d2bb95e7856a6eddb17b ## you can edit, but keep this line

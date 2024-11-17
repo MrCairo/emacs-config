@@ -5,7 +5,7 @@
 #+startup: showall
 #+visibility: all
 #+property: header-args:emacs-lisp :tangle ./init.el :results silent :exports code :mkdirp yes
-#+modified-date: <2024-11-14 Thu>
+#+modified-date: <2024-11-16 Sat>
 
 * Table Of Contents
 :PROPERTIES:
@@ -24,7 +24,6 @@
     - [[#set-executable-paths][Set executable PATHs]]
 - [[#package-management][Package Management]]
   - [[#lispy-header][Lispy Header]]
-  - [[#package-manager][Package Manager]]
   - [[#automatic-package-updates][Automatic Package Updates]]
 - [[#customized-values][Customized Values]]
   - [[#customization-groups][Customization groups]]
@@ -142,7 +141,7 @@
     - [[#load-theme-function][Load Theme Function]]
     - [[#theme-selection-helper-functions][Theme selection helper functions.]]
     - [[#theme-override-values][Theme Override Values]]
-    - [[#color-theming][Color Theming]]
+    - [[#color-themes][Color Themes]]
     - [[#selected-theme][Selected theme]]
   - [[#visual-fill][Visual Fill]]
 - [[#productivity][Productivity]]
@@ -150,6 +149,7 @@
     - [[#org-setup][Org Setup]]
     - [[#the-main-org-package][The main 'Org' package]]
     - [[#export-code][Export Code]]
+    - [[#save-org-settings][Save Org Settings]]
     - [[#structure-templates][Structure Templates]]
     - [[#org-olivetti-mode][Org Olivetti mode]]
     - [[#org-modern][Org Modern]]
@@ -184,6 +184,9 @@
     - [[#flycheck][Flycheck]]
     - [[#tree-sitter][Tree-sitter]]
     - [[#magit][Magit]]
+  - [[#clojure-mode][Clojure-mode]]
+    - [[#nrepl][nREPL]]
+    - [[#cider][CIDER]]
   - [[#python][Python]]
     - [[#specialized-python-mode-keymaps][Specialized python-mode Keymaps]]
     - [[#python-mode-setup][Python Mode Setup]]
@@ -202,7 +205,7 @@
     - [[#typescript][Typescript]]
     - [[#nodejs][NodeJS]]
     - [[#js2-mode][JS2-Mode]]
-  - [[#gameboy-development][GameBoy Development]]
+  - [[#game-boy-development][Game Boy Development]]
   - [[#rust][Rust]]
     - [[#rust-prerequisites][Rust Prerequisites]]
     - [[#rustic-package-configuration][Rustic package configuration]]
@@ -221,7 +224,7 @@
     - [[#debug-adapter-protocol][Debug Adapter Protocol]]
 - [[#lastly][Lastly]]
   - [[#ignore-line-number-mode][Ignore Line Number Mode]]
-  - [[#supress-common-warnings][Supress common warnings]]
+  - [[#suppress-common-warnings][Suppress common warnings]]
   - [[#lispy-footer][Lispy Footer]]
   - [[#ocaml-special-import][OCaml special import]]
 :END:
@@ -234,7 +237,7 @@ This ORG file will configure the  ~init.el~  file based upon all of the =emacs-l
 
 - The goal of this Emacs configuration is to make an Emacs configuration that has a good collection of popular options. I actually use these different sets of packages based upon my work. Sometimes, Vertico, Consult, Corfu don't provide the right experience so I switch to Ivy. The same is true with debuggers. I prefer DAPE but sometimes it doesn't work as well as DAP/LSP, and so on.
 
-While I'm trying to make a config that appeals to other people, most of what you see in here is for my personal dev projects in Python and other language and it also includes a sizable amount of e-lisp to continuously fiddle with.
+While I'm trying to make a configuration that appeals to other people, most of what you see in here is for my personal development projects in Python and other language and it also includes a sizable amount of e-lisp to continuously fiddle with.
 
 So far, the following collections of options are included here:
 
@@ -312,17 +315,17 @@ So far, the following collections of options are included here:
   Some of the ideas that keep coming back and then leaving. It's worth while to keep a record of the ideas that have/were implemented at one point along with an outcome.
 
   1. Going between using ~elpaca~ or ~straight~ and just using plain Emacs ~use-package~.
-     * I like the performancs of ~elpaca~ but I've sometimes run into issues when it fails to install packages where plain ~use-package~ would not fail. =:ensure= with a repo doesn't always help either.
-       - I /have/ gotten and ~elpaca~ Emacs config to properly rebuild without issue but as I change (add/delete/update) the config, it doesn't always continue to work.
+     * I like the performance of ~elpaca~ but I've sometimes run into issues when it fails to install packages where plain ~use-package~ would not fail. =:ensure= with a repository doesn't always help either.
+       - I /have/ gotten and ~elpaca~ Emacs configuration to properly rebuild without issue but as I change (add/delete/update) the configuration, it doesn't always continue to work.
      * ~use-package~ isn't perfect either.
        
   2. Using separate =lisp/init-*= files as opposed to a single init.el. Some good, some bad.
      * Bad:  ~defvar~ variables must be re-declared in the =init=*= file in order to prevent warning messages. Not that it's *that* big a deal, just more of an annoyance.
      * Bad: It does make it more difficult to deal with functions that may be considered global. Can they go into the main init file, sure, but what about functions that are used for things like themes that will likely be defined in a separate init-* file.
-     * Good: It seems to make the overall maintenance of Emac's init files easier since they're broken up and organized.
+     * Good: It seems to make the overall maintenance of Emacs' init files easier since they're broken up and organized.
      * *For now, using a common ~org~ file seems to be the way to go.*
        
-  3. Trying to pack in a lot of different languages and behaviors. It's great that I as a user can enable, disable and choose how my Emacs experience will be, it does make managing the Emacs config file more complex.
+  3. Trying to pack in a lot of different languages and behaviors. It's great that I as a user can enable, disable and choose how my Emacs experience will be, it does make managing the Emacs configuration file more complex.
      * *Right now I pack as much as I can in as far as things I like (or could like) to use.*
 ** Early init file
 :PROPERTIES:
@@ -5178,13 +5181,13 @@ This function loads the theme from the =theme-list= indexed by =theme-selector=.
 
 #+end_src
 
-*** Color Theming
+*** Color Themes
 :properties:
-:custom_id: color-theming
+:custom_id: color-themes
 :visibility: folded
 :end:
 
-Color Theming (or just theming) is a curated list of theming packages.
+Color Themes (or just themes) is a curated list of themes packages.
 *Note:* If new themes are added in the ~theme-list~ custom variable then they must be included here along with any customizations.
 
 #+begin_src emacs-lisp
@@ -5550,6 +5553,7 @@ This section contains the basic configuration for =org-mode= plus the configurat
          ("note" . ?n)
          ("idea" . ?i)))
     ;; Configure custom agenda views
+    (mifi/persist-org-settings)
     (mifi/org-setup-agenda)
     (mifi/org-setup-capture-templates)
     (mifi/org-font-setup)
@@ -5564,7 +5568,6 @@ This section contains the basic configuration for =org-mode= plus the configurat
 :custom_id: export-codes
 :visibility: folded
 :end:
-
 :visibility: folded
 :end:
 
@@ -5598,6 +5601,19 @@ To execute or export code in =org-mode= code blocks, you'll need to set up =org-
            (sql . t)
            (sqlite . t))))
     (push '("conf-unix" . conf-unix) org-src-lang-modes))
+
+#+end_src
+
+*** Save Org Settings
+
+This saves some of the org-settings via the 'savehist-additional-variables' list
+
+#+begin_src emacs-lisp
+
+  (defun mifi/persist-org-settings ()
+    ;; Save org centering flag and column width
+    (add-to-list 'savehist-additional-variables 'enable-org-fill-column-centering)
+    (add-to-list 'savehist-additional-variables 'custom-org-fill-column))
 
 #+end_src
 
@@ -6856,7 +6872,6 @@ Programmers are expected to program in a very dynamic and incremental manner, co
 
 #+end_src
 
-
 ** Python                                                :programming:Python:
 :properties:
 :custom_id: python
@@ -7433,9 +7448,9 @@ This is a basic configuration for the TypeScript language so that =.ts= files ac
 
 #+end_src
 
-** GameBoy Development                                          :programming:
+** Game Boy Development                                          :programming:
 :properties:
-:custom_id: gameboy-development
+:custom_id: game-boy-development
 :visibility: folded
 :end:
 
@@ -7998,15 +8013,15 @@ The following is a list of major mode-hooks variables that are set so that they 
 
 #+end_src
 
-** Supress common warnings
+** Suppress common warnings
 :properties:
-:custom_id: supress-common-warnings
+:custom_id: suppress-common-warnings
 :visibility: folded
 :end:
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
-  ;; Supress common annoying warning.
+  ;; Suppress common annoying warning.
   ;; These can still be found in the  *Warnings* buffer
   (setq warning-suppress-types '((package reinitialization)
                                   (package-initialize)
@@ -8026,7 +8041,6 @@ The standard =lisp= footer that should appear at the end of every =lisp= source 
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
-
   ;;; init.el ends here.
 
 #+end_src
