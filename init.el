@@ -759,6 +759,7 @@ font size is computed + 20 of this value."
         ("M-RET M e" . markdown-preview-cleanup)
         ("M-RET >" . hydra-terminals/body)
         ("M-RET v" . hydra-themes-and-fonts/body)
+        ("M-RET M-v" . mifi/select-custom-font-size)
         ("M-RET +" . next-theme)
         ("M-RET =" . which-theme)
         ("M-RET -" . previous-theme)
@@ -2263,9 +2264,11 @@ Stage Manager on macOS."
 
 ;; Frame font selection
 
-(defvar mifi/font-size-slot 1)
+(defvar mifi/font-size-slot 2)
 
 (defun mifi/update-font-size ()
+  "Update the font size based upon the 'mifi/font-size-slot' value."
+  (interactive)
   (cond
     ((equal mifi/font-size-slot 4)
       (setq custom-default-font-size x-large-mono-font-size
@@ -2287,6 +2290,20 @@ Stage Manager on macOS."
       (setq custom-default-font-size x-small-mono-font-size
         custom-default-mono-font-size x-small-mono-font-size)
       (mifi/update-face-attribute))))
+
+(defun mifi/select-custom-font-size ()
+  "This function will present the user a selection of custom font sizes. The
+sizes can be customized via the Emacs customize menu and searching for the mifi
+attributes."
+  (interactive)
+  (let*
+    ( (font-list '("Extra Small" "Small" "Medium" "Large" "Extra Large"))
+      (choice (completing-read-multiple "Select Font Size: " font-list))
+      (position (cl-position (car choice) font-list :test 'equal)))
+    (mifi/set-frame-font position)
+    (mifi/reset-if-spacious-padding-mode)
+    (mifi/update-other-modes-font)
+    (mifi/should-recenter t)))
 
 ;; Some alternate keys below....
 
