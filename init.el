@@ -348,6 +348,11 @@ listed below."
            (const :tag "ultra-light" ultra-light))
   :group 'mifi-config-fonts)
 
+(defcustom x-small-mono-font-size 130
+  "The small font size in pixels."
+  :type 'natnum
+  :group 'mifi-config-fonts)
+
 (defcustom small-mono-font-size 150
   "The small font size in pixels."
   :type 'natnum
@@ -365,6 +370,11 @@ listed below."
 
 (defcustom x-large-mono-font-size 220
   "The extra-large font size in pixels."
+  :type 'natnum
+  :group 'mifi-config-fonts)
+
+(defcustom x-small-variable-font-size 150
+  "The small font size in pixels."
   :type 'natnum
   :group 'mifi-config-fonts)
 
@@ -388,14 +398,14 @@ listed below."
   :type 'natnum
   :group 'mifi-config-fonts)
 
-(defcustom custom-default-font-size 170
+(defcustom custom-default-font-size 150
   "A place to store the most current (face-attribute 'default :height).  This
 is specifically for the mono-spaced and default font. The variable type-face
 font size is computed + 20 of this value."
   :type 'natnum
   :group 'mifi-config-fonts)
 
-(defvar custom-default-mono-font-size 170
+(defvar custom-default-mono-font-size 150
   "Storage for the current mono-spaced font height.")
 
 (defvar theme-did-load nil
@@ -463,6 +473,7 @@ font size is computed + 20 of this value."
   cursor-in-non-selected-windows nil               ; Hide the cursor in inactive windows
   display-time-default-load-average nil            ; Don't display load average
   fill-column 80                                   ; Set width for automatic line breaks
+  frame-resize-pixelwise t                         ;
   help-window-select t                             ; Focus new help windows when opened
   history-length 30                                ; Reasonable number of items
   indent-tabs-mode nil                             ; Prefer spaces over tabs
@@ -1047,10 +1058,12 @@ opam-user-setup.el so that upon next startup, it can be loaded quickly."
       ( ("+" next-theme "Next theme")
         ("-" previous-theme "Previous Theme")
         ("=" which-theme "Display Current Theme")
+        ("P" use-x-small-display-font "Petit Font without resize")
         ("S" use-small-display-font "Small Font without resize")
         ("M" use-medium-display-font "Medium Font without resize")
         ("L" use-large-display-font "Large Font without resize")
         ("X" use-x-large-display-font "X-Large Font without resize")
+        ("p" (use-x-small-display-font t) "Petit Font with resize")
         ("s" (use-small-display-font t) "Small Font with resize")
         ("m" (use-medium-display-font t) "Medium Font with resize")
         ("l" (use-large-display-font t) "Large Font with resize")
@@ -2150,36 +2163,6 @@ This only runs for ripgrep results"
   :config
   (global-diff-hl-mode))
 
-;;; ##########################################################################
-
-;; Frame (view) setup including fonts.
-;; You will most likely need to adjust this font size for your system!
-
-(setq-default mifi/small-font-size 150)
-(setq-default mifi/small-mono-font-size 150)
-(setq-default mifi/small-variable-font-size 170)
-
-(setq-default mifi/medium-font-size 170)
-(setq-default mifi/medium-mono-font-size 170)
-(setq-default mifi/medium-variable-font-size 190)
-
-(setq-default mifi/large-font-size 190)
-(setq-default mifi/large-mono-font-size 190)
-(setq-default mifi/large-variable-font-size 210)
-
-(setq-default mifi/x-large-font-size 220)
-(setq-default mifi/x-large-mono-font-size 220)
-(setq-default mifi/x-large-variable-font-size 240)
-
-;; (setq-default custom-default-font-size mifi/medium-font-size)
-(setq-default mifi/default-variable-font-size (+ custom-default-font-size 20))
-;; (setq-default mifi/set-frame-maximized t)  ;; or f
-
-;; Make frame transparency overridable
-;; (setq-default mifi/frame-transparency '(90 . 90))
-
-(setq frame-resize-pixelwise t)
-
 ;;; vvv ;;;
 
 (use-package mixed-pitch
@@ -2284,31 +2267,33 @@ Stage Manager on macOS."
 
 (defun mifi/update-font-size ()
   (cond
+    ((equal mifi/font-size-slot 4)
+      (setq custom-default-font-size x-large-mono-font-size
+        custom-default-mono-font-size x-large-mono-font-size)
+      (mifi/update-face-attribute))
     ((equal mifi/font-size-slot 3)
-      (setq custom-default-font-size mifi/x-large-font-size
-        custom-default-mono-font-size mifi/x-large-mono-font-size
-        mifi/default-variable-font-size (+ custom-default-font-size 20))
+      (setq custom-default-font-size large-mono-font-size
+        custom-default-mono-font-size large-mono-font-size)
       (mifi/update-face-attribute))
     ((equal mifi/font-size-slot 2)
-      (setq custom-default-font-size mifi/large-font-size
-        custom-default-mono-font-size mifi/large-mono-font-size
-        mifi/default-variable-font-size (+ custom-default-font-size 20))
+      (setq custom-default-font-size medium-mono-font-size
+        custom-default-mono-font-size medium-mono-font-size)
       (mifi/update-face-attribute))
     ((equal mifi/font-size-slot 1)
-      (setq custom-default-font-size mifi/medium-font-size
-        custom-default-mono-font-size mifi/medium-mono-font-size
-        mifi/default-variable-font-size (+ custom-default-font-size 20))
+      (setq custom-default-font-size small-mono-font-size
+        custom-default-mono-font-size small-mono-font-size)
       (mifi/update-face-attribute))
     ((equal mifi/font-size-slot 0)
-      (setq custom-default-font-size mifi/small-font-size
-        custom-default-mono-font-size mifi/small-mono-font-size
-        mifi/default-variable-font-size (+ custom-default-font-size 20))
+      (setq custom-default-font-size x-small-mono-font-size
+        custom-default-mono-font-size x-small-mono-font-size)
       (mifi/update-face-attribute))))
 
 ;; Some alternate keys below....
 
 (defun mifi/set-recenter-keys ()
   (let ((map global-map))
+    (define-key map (kbd "C-S-c 0")
+      (lambda () (interactive) (use-x-small-display-font t)))
     (define-key map (kbd "C-S-c 1")
       (lambda () (interactive) (use-small-display-font t)))
     (define-key map (kbd "C-S-c 2")
@@ -2318,6 +2303,7 @@ Stage Manager on macOS."
     (define-key map (kbd "C-S-c 4")
       (lambda () (interactive) (use-x-large-display-font t)))
     (which-key-add-key-based-replacements
+      "C-S-c 0" "recenter-with-x-small-font"
       "C-S-c 1" "recenter-with-small-font"
       "C-S-c 2" "recenter-with-medium-font"
       "C-S-c 3" "recenter-with-large-font"
@@ -2341,9 +2327,17 @@ Stage Manager on macOS."
   (when (featurep 'org)
     (mifi/org-font-setup)))
 
-(defun use-small-display-font (&optional force-recenter)
+(defun use-x-small-display-font (&optional force-recenter)
   (interactive)
   (mifi/set-frame-font 0)
+  (mifi/reset-if-spacious-padding-mode)
+  (mifi/update-other-modes-font)
+  (mifi/should-recenter force-recenter))
+(defun use-x-small-display-font-t () (interactive) (use-x-small-display-font t))
+
+(defun use-small-display-font (&optional force-recenter)
+  (interactive)
+  (mifi/set-frame-font 1)
   (mifi/reset-if-spacious-padding-mode)
   (mifi/update-other-modes-font)
   (mifi/should-recenter force-recenter))
@@ -2351,7 +2345,7 @@ Stage Manager on macOS."
 
 (defun use-medium-display-font (&optional force-recenter)
   (interactive)
-  (mifi/set-frame-font 1)
+  (mifi/set-frame-font 2)
   (mifi/reset-if-spacious-padding-mode)
   (mifi/update-other-modes-font)
   (mifi/should-recenter force-recenter))
@@ -2359,7 +2353,7 @@ Stage Manager on macOS."
 
 (defun use-large-display-font (&optional force-recenter)
   (interactive)
-  (mifi/set-frame-font 2)
+  (mifi/set-frame-font 3)
   (mifi/reset-if-spacious-padding-mode)
   (mifi/update-other-modes-font)
   (mifi/should-recenter force-recenter))
@@ -2367,7 +2361,7 @@ Stage Manager on macOS."
 
 (defun use-x-large-display-font (&optional force-recenter)
   (interactive)
-  (mifi/set-frame-font 3)
+  (mifi/set-frame-font 4)
   (mifi/reset-if-spacious-padding-mode)
   (mifi/update-other-modes-font)
   (mifi/should-recenter force-recenter))
