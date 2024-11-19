@@ -4,7 +4,7 @@
 
 ;; This file bootstraps the configuration which is generated from tangling an org-mode file.
 ;; DO NOT MODIFY this file directly as changes will be overwritten.
-;; The source this file is generated from is from "emacs-config-elpa.org"
+;; The source this file is generated from is from "emacs-config.org"
 
 ;;; Code:
 
@@ -83,13 +83,6 @@ become `emacs-config-directory'."
   :type 'string
   :group 'mifi-config)
 
-(defcustom custom-org-fill-column 120
-  "The fill column width for Org mode text. Note that the text is also centered
-on the screen so that should be taken into consideration when providing a
-width."
-  :type 'natnum
-  :group 'mifi-config)
-
 ;;; ##########################################################################
 ;;; Feature Toggles
 
@@ -151,7 +144,7 @@ width."
   :type 'boolean
   :group 'mifi-config-toggles)
 
-(defcustom enable-ts nil
+(defcustom enable-typescript nil
   "Set to t to enable TypeScript handling."
   :type 'boolean
   :group 'mifi-config-toggles)
@@ -453,6 +446,13 @@ font size is computed + 20 of this value."
 	(message "---- Can't find a monospace font to use.")))
     (message (format "=== monospace font is %s" mono-spaced-font-family))))
 
+(defcustom custom-org-fill-column 120
+  "The fill column width for Org mode text. Note that the text is also centered
+on the screen so that should be taken into consideration when providing a
+width."
+  :type 'natnum
+  :group 'mifi-config)
+
 ;;; ##########################################################################
 ;;
 ;; This list is processed as a LIFO queue. This entry _should_ be made to be
@@ -589,6 +589,7 @@ font size is computed + 20 of this value."
 (setq history-length 150)
 (setq history-delete-duplicates t)
 (setq savehist-save-minibuffer-history 1)
+;; Just add-to-list below with additional variables to save.
 (setq savehist-additional-variables
   '(kill-ring
      search-ring
@@ -752,30 +753,34 @@ font size is computed + 20 of this value."
   (defvar mmm-keys-minor-mode-map
     (let ((map (make-sparse-keymap)))
       (bind-keys :map map
-        ("M-RET $" . jinx-correct)
-        ("M-RET ?" . eldoc-box-help-at-point)
-        ("M-RET /" . hydra-combine/body)
-        ("M-RET M s" . markdown-preview-mode)
-        ("M-RET M e" . markdown-preview-cleanup)
-        ("M-RET >" . hydra-terminals/body)
-        ("M-RET v" . hydra-themes-and-fonts/body)
-        ("M-RET M-v" . mifi/select-custom-font-size)
-        ("M-RET +" . next-theme)
-        ("M-RET =" . which-theme)
-        ("M-RET -" . previous-theme)
-        ("M-RET _" . select-theme)
-        ("M-RET W" . writeroom-mode)
+        ("M-RET $"         . jinx-correct)
+        ("M-RET ?"         . eldoc-box-help-at-point)
+        ("M-RET /"         . hydra-combine/body)
+        ("M-RET M s"       . markdown-preview-mode)
+        ("M-RET M e"       . markdown-preview-cleanup)
+        ("M-RET >"         . hydra-terminals/body)
+        ("M-RET v"         . hydra-themes-and-fonts/body)
+        ("M-RET M-f"       . mifi/select-font-slot)
+        ("M-RET +"         . next-theme)
+        ("M-RET ="         . which-theme)
+        ("M-RET -"         . previous-theme)
+        ("M-RET _"         . select-theme)
+        ("M-RET W"         . writeroom-mode)
         ("M-RET w <right>" . which-key-setup-side-window-right-bottom)
-        ("M-RET w <down>" . which-key-setup-side-window-bottom)
-        ("M-RET M-c" . mifi/customize-mifi)
-        ("M-RET d" . dashboard-open)
-        ("M-RET e" . treemacs) ;; e for Explore
-        ("M-RET f" . mifi/set-fill-column-interactively)
-        ("M-RET p" . pulsar-pulse-line)
-        ("M-RET r" . repeat-mode)
-        ("M-RET j" . hydra-registers/body) ;; mifi/jump-to-register)
-        ("M-RET |" . global-display-fill-column-indicator-mode)
-        ("M-RET C-g" . keyboard-quit))
+        ("M-RET w <down>"  . which-key-setup-side-window-bottom)
+        ("M-RET M-c"       . mifi/customize-mifi)
+        ("M-RET d"         . dashboard-open)
+        ("M-RET e"         . treemacs) ;; e for Explore
+        ("M-RET f"         . mifi/set-fill-column-interactively)
+        ("M-RET p"         . pulsar-pulse-line)
+        ("M-RET r"         . repeat-mode)
+        ("M-RET j"         . hydra-registers/body) ;; mifi/jump-to-register)
+        ("M-RET |"         . global-display-fill-column-indicator-mode)
+        ("M-RET M-<left>"  . windmove-left)
+        ("M-RET M-<right>" . windmove-right)
+        ("M-RET M-<up>"    . windmove-up)
+        ("M-RET M-<down>"  . windmove-down)
+        ("M-RET C-g"       . keyboard-quit))
       map)
     "mmm-keys-minor-mode keymap.")
 
@@ -844,6 +849,7 @@ font size is computed + 20 of this value."
     "M-RET v" "font-size"
     "M-RET C-g" "Exit menu"
     "M-RET M-c" "Customize MiFi"
+    "M-RET M-f" "select-font-slot"
     "M-RET" "Mitch's Menu"))
 
 ;;; ##########################################################################
@@ -933,10 +939,10 @@ opam-user-setup.el so that upon next startup, it can be loaded quickly."
   ;; A little better than just the typical "C-x o"
   ;; windmove is a built-in Emacs package.
   ;;
-  (global-set-key (kbd "C-c <left>")  'windmove-left)
-  (global-set-key (kbd "C-c <right>") 'windmove-right)
-  (global-set-key (kbd "C-c <up>")    'windmove-up)
-  (global-set-key (kbd "C-c <down>")  'windmove-down)
+  (global-set-key (kbd "C-c C-S-<left>")  'windmove-left)
+  (global-set-key (kbd "C-c C-S-<right>") 'windmove-right)
+  (global-set-key (kbd "C-c C-S-<up>")    'windmove-up)
+  (global-set-key (kbd "C-c C-S-<down>")  'windmove-down)
 
   ;;
   ;; Ctl-mouse to adjust/scale fonts will be disabled.
@@ -1145,6 +1151,11 @@ opam-user-setup.el so that upon next startup, it can be loaded quickly."
   ;; properly loaded.
   ;; (unless theme-did-load
   ;;   (mifi/load-theme-from-selector)))
+
+(use-package rg
+  :ensure t
+  :config
+  (rg-enable-default-bindings))
 
 ;; All kept in local /lisp directory.
 ;; (use-package web-server-status-codes )
@@ -2291,7 +2302,7 @@ Stage Manager on macOS."
         custom-default-mono-font-size x-small-mono-font-size)
       (mifi/update-face-attribute))))
 
-(defun mifi/select-custom-font-size ()
+(defun mifi/select-font-slot ()
   "This function will present the user a selection of custom font sizes. The
 sizes can be customized via the Emacs customize menu and searching for the mifi
 attributes."
@@ -3754,9 +3765,11 @@ capture was not aborted."
   :config
   (global-treesit-auto-mode))
 
+(use-package transient
+  :ensure t)
+
 ;;; ##########################################################################
 
-(use-package transient :ensure t)
 (use-package magit
   :after transient
   :ensure t :defer t
@@ -4104,7 +4117,7 @@ capture was not aborted."
 
 ;;; ##########################################################################
 
-(when enable-ts
+(when enable-typescript
   (use-package typescript-ts-mode
     :ensure nil
     :defer t

@@ -5,7 +5,7 @@
 #+startup: showall
 #+visibility: all
 #+property: header-args:emacs-lisp :tangle ./init.el :results silent :exports code :mkdirp yes
-#+modified-date: <2024-11-16 Sat>
+#+modified-date: <2024-11-17 Sun>
 
 * Table Of Contents
 :PROPERTIES:
@@ -22,7 +22,7 @@
     - [[#configure-use-package][Configure use-package]]
     - [[#gc-and-performance-tuning][GC and Performance Tuning]]
     - [[#set-executable-paths][Set executable PATHs]]
-- [[#package-management][Package Management]]
+- [[#primary-configuration][Primary Configuration]]
   - [[#lispy-header][Lispy Header]]
   - [[#automatic-package-updates][Automatic Package Updates]]
 - [[#customized-values][Customized Values]]
@@ -31,9 +31,13 @@
   - [[#custom-feature-toggles][Custom Feature Toggles]]
   - [[#custom-feature-choices][Custom Feature Choices]]
   - [[#theme-options][Theme Options]]
+    - [[#theme-list-variables][Theme List Variables]]
+    - [[#font-family-definitions][Font Family Definitions]]
+    - [[#preset-font-sizes][Preset Font Sizes]]
     - [[#verify-default-variable-pitch-font][Verify Default variable-pitch Font]]
     - [[#verify-default-mono-space-font][Verify Default mono-space font]]
-- [[#default-behavior][Default Behavior]]
+  - [[#other-variables-to-customize][Other Variables to Customize]]
+- [[#base-settings][Base Settings]]
   - [[#landing-page][Landing Page]]
   - [[#create-toc][Create TOC]]
   - [[#better-defaults][Better Defaults]]
@@ -49,7 +53,7 @@
   - [[#some-helpful-registers-and-aliases][Some Helpful Registers and Aliases]]
   - [[#emacs-in-server-mode][Emacs in server mode]]
   - [[#mac-specific][Mac Specific]]
-  - [[#mifis-minor-mode][MiFi's Minor Mode]]
+  - [[#mifis-minor-mode-mmm][MiFi's Minor Mode (MmM)]]
     - [[#helper-functions][Helper Functions]]
     - [[#standard-keymaps][Standard Keymaps]]
     - [[#context-aware-keys-and-descriptions][Context-Aware Keys and Descriptions]]
@@ -118,7 +122,6 @@
   - [[#default-text-scale][Default Text Scale]]
   - [[#diff-hl][Diff HL]]
   - [[#frame-and-font-setup][Frame and Font Setup]]
-    - [[#define-the-various-font-size-constants][Define the various font size constants]]
     - [[#mixed-pitch][mixed-pitch]]
     - [[#functions-to-set-the-frame-size][Functions to set the frame size]]
     - [[#default-fonts-and-sizes][Default fonts and sizes]]
@@ -569,9 +572,9 @@ Standard fare and good practice.
   ;;; early-init.el ends here.
 #+end_src
 
-* Package Management
+* Primary Configuration
 :properties:
-:custom_id: package-management
+:custom_id: primary-configuration
 :visibility: folded
 :end:
 
@@ -590,7 +593,7 @@ This is the standard format of a =lisp= header that should appear for all =lisp=
 
   ;; This file bootstraps the configuration which is generated from tangling an org-mode file.
   ;; DO NOT MODIFY this file directly as changes will be overwritten.
-  ;; The source this file is generated from is from "emacs-config-elpa.org"
+  ;; The source this file is generated from is from "emacs-config.org"
 
   ;;; Code:
 
@@ -713,17 +716,6 @@ These are the groups used by this Emacs config for customization.
 
   #+end_src
 
-#+begin_src emacs-lisp
-
-    (defcustom custom-org-fill-column 120
-      "The fill column width for Org mode text. Note that the text is also centered
-    on the screen so that should be taken into consideration when providing a
-    width."
-      :type 'natnum
-      :group 'mifi-config)
-    
-#+end_src
-
 ** Custom Feature Toggles
 :properties:
 :custom_id: custom-package-toggles
@@ -794,7 +786,7 @@ Thes values toggle the availability of specific packages. These options are not 
     :type 'boolean
     :group 'mifi-config-toggles)
 
-  (defcustom enable-ts nil
+  (defcustom enable-typescript nil
     "Set to t to enable TypeScript handling."
     :type 'boolean
     :group 'mifi-config-toggles)
@@ -1161,9 +1153,26 @@ Look for a proportional font that is available on the OS. If the actual default 
   
 #+end_src
 
-* Default Behavior
+** Other Variables to Customize
 :properties:
-:custom_id: default-behavior
+:custom_id: other-variables-to-customize
+:visibility: folded
+:end:
+  
+#+begin_src emacs-lisp
+
+    (defcustom custom-org-fill-column 120
+      "The fill column width for Org mode text. Note that the text is also centered
+    on the screen so that should be taken into consideration when providing a
+    width."
+      :type 'natnum
+      :group 'mifi-config)
+    
+#+end_src
+
+* Base Settings
+:properties:
+:custom_id: base-settings
 :visibility: folded
 :end:
 
@@ -1419,24 +1428,21 @@ The =site-lisp= directory in the ~emacs-config-directory~ can hold local (site) 
 
 Keeps a persistent history file across Emacs restarts. It's also saved into the ~user-emacs-directory~ so it's not tied to a specific Emacs installation directory.
 
-:save-history:
-#+visibility: folded
-
 #+begin_src emacs-lisp
   ;;; ##########################################################################
-  
+
   (setq savehist-file (expand-file-name "savehist" user-emacs-directory))
   (savehist-mode t)
   (setq history-length 150)
   (setq history-delete-duplicates t)
   (setq savehist-save-minibuffer-history 1)
+  ;; Just add-to-list below with additional variables to save.
   (setq savehist-additional-variables
     '(kill-ring
        search-ring
        regexp-search-ring))
 
 #+end_src
-:end:
 
 ** Better Modes
 :properties:
@@ -1627,9 +1633,9 @@ This function is called after Elpaca has initialized and, if this machine is a M
 
 #+end_src
 
-** MiFi's Minor Mode
+** MiFi's Minor Mode (MmM)
 :properties:
-:custom_id: mifis-minor-mode
+:custom_id: mifis-minor-mode-mmm
 :visibility: folded
 :end:
 
@@ -1697,30 +1703,34 @@ This is a set of keymaps that do the same things as the popup menu. Both are her
     (defvar mmm-keys-minor-mode-map
       (let ((map (make-sparse-keymap)))
         (bind-keys :map map
-          ("M-RET $" . jinx-correct)
-          ("M-RET ?" . eldoc-box-help-at-point)
-          ("M-RET /" . hydra-combine/body)
-          ("M-RET M s" . markdown-preview-mode)
-          ("M-RET M e" . markdown-preview-cleanup)
-          ("M-RET >" . hydra-terminals/body)
-          ("M-RET v" . hydra-themes-and-fonts/body)
-          ("M-RET M-v" . mifi/select-custom-font-size)
-          ("M-RET +" . next-theme)
-          ("M-RET =" . which-theme)
-          ("M-RET -" . previous-theme)
-          ("M-RET _" . select-theme)
-          ("M-RET W" . writeroom-mode)
+          ("M-RET $"         . jinx-correct)
+          ("M-RET ?"         . eldoc-box-help-at-point)
+          ("M-RET /"         . hydra-combine/body)
+          ("M-RET M s"       . markdown-preview-mode)
+          ("M-RET M e"       . markdown-preview-cleanup)
+          ("M-RET >"         . hydra-terminals/body)
+          ("M-RET v"         . hydra-themes-and-fonts/body)
+          ("M-RET M-f"       . mifi/select-font-slot)
+          ("M-RET +"         . next-theme)
+          ("M-RET ="         . which-theme)
+          ("M-RET -"         . previous-theme)
+          ("M-RET _"         . select-theme)
+          ("M-RET W"         . writeroom-mode)
           ("M-RET w <right>" . which-key-setup-side-window-right-bottom)
-          ("M-RET w <down>" . which-key-setup-side-window-bottom)
-          ("M-RET M-c" . mifi/customize-mifi)
-          ("M-RET d" . dashboard-open)
-          ("M-RET e" . treemacs) ;; e for Explore
-          ("M-RET f" . mifi/set-fill-column-interactively)
-          ("M-RET p" . pulsar-pulse-line)
-          ("M-RET r" . repeat-mode)
-          ("M-RET j" . hydra-registers/body) ;; mifi/jump-to-register)
-          ("M-RET |" . global-display-fill-column-indicator-mode)
-          ("M-RET C-g" . keyboard-quit))
+          ("M-RET w <down>"  . which-key-setup-side-window-bottom)
+          ("M-RET M-c"       . mifi/customize-mifi)
+          ("M-RET d"         . dashboard-open)
+          ("M-RET e"         . treemacs) ;; e for Explore
+          ("M-RET f"         . mifi/set-fill-column-interactively)
+          ("M-RET p"         . pulsar-pulse-line)
+          ("M-RET r"         . repeat-mode)
+          ("M-RET j"         . hydra-registers/body) ;; mifi/jump-to-register)
+          ("M-RET |"         . global-display-fill-column-indicator-mode)
+          ("M-RET M-<left>"  . windmove-left)
+          ("M-RET M-<right>" . windmove-right)
+          ("M-RET M-<up>"    . windmove-up)
+          ("M-RET M-<down>"  . windmove-down)
+          ("M-RET C-g"       . keyboard-quit))
         map)
       "mmm-keys-minor-mode keymap.")
 
@@ -1813,6 +1823,7 @@ What's also important with this function is that it calls the ~mifi/mmm-handle-c
       "M-RET v" "font-size"
       "M-RET C-g" "Exit menu"
       "M-RET M-c" "Customize MiFi"
+      "M-RET M-f" "select-font-slot"
       "M-RET" "Mitch's Menu"))
 
 #+end_src
@@ -1880,7 +1891,7 @@ These are the hools that update the context-aware menu triggered by various stat
 :visibility: folded
 :end:
 
-+ Also, opam-user-setup Compiled (OCaml)
+Functions that are called when Emacs exits normally. Also, opam-user-setup is (re)compiled (OCaml) to byte-code for better performance.
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
@@ -1922,6 +1933,7 @@ These are the hools that update the context-aware menu triggered by various stat
   (add-hook 'kill-emacs-hook #'mifi/when-exiting-emacs)
 
 #+end_src
+
 ** Global key-binding
 :properties:
 :custom_id: global-key-binding
@@ -1943,10 +1955,10 @@ These are key-bindings that are done at a global level.
     ;; A little better than just the typical "C-x o"
     ;; windmove is a built-in Emacs package.
     ;;
-    (global-set-key (kbd "C-c <left>")  'windmove-left)
-    (global-set-key (kbd "C-c <right>") 'windmove-right)
-    (global-set-key (kbd "C-c <up>")    'windmove-up)
-    (global-set-key (kbd "C-c <down>")  'windmove-down)
+    (global-set-key (kbd "C-c C-S-<left>")  'windmove-left)
+    (global-set-key (kbd "C-c C-S-<right>") 'windmove-right)
+    (global-set-key (kbd "C-c C-S-<up>")    'windmove-up)
+    (global-set-key (kbd "C-c C-S-<down>")  'windmove-down)
 
     ;;
     ;; Ctl-mouse to adjust/scale fonts will be disabled.
@@ -2403,6 +2415,19 @@ The JSON-RPC protocol is used to communicate with many different types of server
 
 #+end_src
 
+** Ripgrep
+
+Ripgrep is a replacement for both grep like (search one file) and ag like (search many files) tools. It's fast and versatile and written in Rust
+
+#+begin_src emacs-lisp
+
+  (use-package rg
+    :ensure t
+    :config
+    (rg-enable-default-bindings))
+
+#+end_src
+
 ** Simple-httpd
 :properties:
 :custom_id: simple-httpd
@@ -2779,7 +2804,7 @@ Swiper is an alternative to isearch that uses Ivy to show an overview of all mat
 :visibility: folded
 :end:
 
-~ivy-mode~ ensures that any Emacs command using completing-read-function uses ivy for completion. Counsel takes this further, providing versions of common Emacs commands that are customised to make the best use of Ivy. For example, ~counsel-find-file~ has some additional keybindings. Pressing =DEL= will move you to the parent directory.
+~ivy-mode~ ensures that any Emacs command using completing-read-function uses ivy for completion. Counsel takes this further, providing versions of common Emacs commands that are customized to make the best use of Ivy. For example, ~counsel-find-file~ has some additional keybindings. Pressing =DEL= will move you to the parent directory.
 
 #+begin_src emacs-lisp :results output silent
 
@@ -4443,7 +4468,7 @@ This function presents the user with a list of font-slots to choose from. These 
 
 #+begin_src emacs-lisp
 
-  (defun mifi/select-custom-font-size ()
+  (defun mifi/select-font-slot ()
     "This function will present the user a selection of custom font sizes. The
   sizes can be customized via the Emacs customize menu and searching for the mifi
   attributes."
@@ -6811,6 +6836,26 @@ If a tree-sitter grammer is available and installed, use it instead of the corre
 
 #+end_src
 
+*** Transient
+
+Transient is the library used to implement the keyboard-driven “menus” in Magit. It is distributed as a separate package, so that it can be used to implement similar menus in other [[https://melpa.org/#/transient][packages]].
+
+Some things that Transient can do
+
++ Display current state of arguments
++ Display and manage lifecycle of modal bindings
++ Contextual user interface
++ Flow control for wizard-like composition of interactive forms
++ History & persistence
++ Rendering arguments for controlling CLI programs
+
+  #+begin_src emacs-lisp
+
+    (use-package transient
+      :ensure t)
+
+  #+end_src
+  
 *** Magit
 :properties:
 :custom_id: magit
@@ -6822,7 +6867,6 @@ If a tree-sitter grammer is available and installed, use it instead of the corre
 #+begin_src emacs-lisp
   ;;; ##########################################################################
 
-  (use-package transient :ensure t)
   (use-package magit
     :after transient
     :ensure t :defer t
@@ -7402,7 +7446,7 @@ This is a basic configuration for the TypeScript language so that =.ts= files ac
 #+begin_src emacs-lisp
   ;;; ##########################################################################
 
-  (when enable-ts
+  (when enable-typescript
     (use-package typescript-ts-mode
       :ensure nil
       :defer t
