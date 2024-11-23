@@ -440,10 +440,10 @@ font size is computed + 20 of this value."
                ((x-family-fonts "Monospaced")      "Monospaced")
                (nil (warn "Cannot find a monospaced Font.  Install Source Code Pro.")))))
       (if monospace-font
-	(when (not (equal monospace-font variable-pitch-font-family))
+  (when (not (equal monospace-font variable-pitch-font-family))
           (setq mono-spaced-font-family monospace-font)
           (setq default-font-family monospace-font))
-	(message "---- Can't find a monospace font to use.")))
+  (message "---- Can't find a monospace font to use.")))
     (message (format "=== monospace font is %s" mono-spaced-font-family))))
 
 (defcustom custom-org-fill-column 120
@@ -473,7 +473,6 @@ width."
   cursor-in-non-selected-windows nil               ; Hide the cursor in inactive windows
   display-time-default-load-average nil            ; Don't display load average
   fill-column 80                                   ; Set width for automatic line breaks
-  frame-resize-pixelwise t                         ;
   help-window-select t                             ; Focus new help windows when opened
   history-length 30                                ; Reasonable number of items
   indent-tabs-mode nil                             ; Prefer spaces over tabs
@@ -483,7 +482,6 @@ width."
   load-prefer-newer t                              ; Prefer the newest version of a file
   mark-ring-max 128                                ; Maximum length of mark ring
   read-process-output-max (* 1024 1024)            ; Increase the amount of data reads from the process
-  scroll-conservatively most-positive-fixnum       ; Always scroll by one line
   select-enable-clipboard t                        ; Merge system's and Emacs' clipboard
   tab-width 4                                      ; Set width for tabs
   truncate-lines 1                                 ; Long lines of text do not wrap
@@ -493,6 +491,13 @@ width."
   vc-follow-symlinks t                             ; Always follow the symlinks
   view-read-only t                                 ; Always open read-only buffers in view-mode
   visible-bell t)                                  ; Set up the visible bell
+
+(when (display-graphic-p)
+  (setq-default
+    window-resize-pixelwise t
+    window-resize-pixelwise t
+    frame-resize-pixelwise t                       ;
+    scroll-conservatively most-positive-fixnum))   ; Always scroll by one line
 
 (column-number-mode 1)                             ; Show the column number
 (fset 'yes-or-no-p 'y-or-n-p)                      ; Replace yes/no prompts with y/n
@@ -602,7 +607,8 @@ width."
 (save-place-mode 1)                  ;; Remember where we were last editing a file.
 (column-number-mode 1)
 (tool-bar-mode -1)                   ;; Hide the toolbar
-(global-prettify-symbols-mode 1)     ;; Display pretty symbols (i.e. λ = lambda)
+(when (display-graphic-p)
+  (global-prettify-symbols-mode 1))  ;; Display pretty symbols (i.e. λ = lambda)
 (repeat-mode 0)                      ;; Also in MmM
 ;; (add-hook 'prog-mode-hook 'display-line-numbers-mode)
 
@@ -644,6 +650,7 @@ width."
               (overwrite-mode " Ov" t)
               (python-mode " Py" :major)
               (rainbow-mode " 🌈")
+              (mmm-keys-minor-mode " 😎")
               (emacs-lisp-mode "Elisp" :major))))
 
 (use-package delight
@@ -897,18 +904,19 @@ backup directory. If a file already exists in the backup directory, the old
 file is renamed with a ~ at the end before the new file is copied. If Emacs
 is running in server mode, then don't backup the files when the emacsclient
 exits."
-  (unless (server-running-p)
-    (let ((backdir (format "%s/config-backup" working-files-directory)))
-      (make-directory backdir t)
-      ;; --------------------------------------------------
-      (when (file-exists-p (format "%s/%s" backdir file))
-      (copy-file
-        (expand-file-name file backdir)
-        (expand-file-name (format "%s~" file) backdir) t))
-      (when (file-exists-p (format "%s/%s" emacs-config-directory file))
-      (copy-file
-        (expand-file-name file emacs-config-directory)
-        (expand-file-name file backdir) t)))))
+  (when (fboundp 'server-running-p)
+    (unless (server-running-p)
+      (let ((backdir (format "%s/config-backup" working-files-directory)))
+        (make-directory backdir t)
+        ;; --------------------------------------------------
+        (when (file-exists-p (format "%s/%s" backdir file))
+          (copy-file
+            (expand-file-name file backdir)
+            (expand-file-name (format "%s~" file) backdir) t))
+        (when (file-exists-p (format "%s/%s" emacs-config-directory file))
+          (copy-file
+            (expand-file-name file emacs-config-directory)
+            (expand-file-name file backdir) t))))))
 
 (defun mifi/when-exiting-emacs ()
   "Backup Emacs initialization files for recovery. If old files exist, they are
@@ -1052,7 +1060,6 @@ opam-user-setup.el so that upon next startup, it can be loaded quickly."
     (:hint nil :color teal :quit-key "q" :title (with-faicon "thumb-tack" "Registers" 1 -0.05))
     ("Action"
       ( ("o" (jump-to-register reg-elpa) "open emacs-config.org")
-        ("O" (jump-to-register reg-elpaca) "open emacs-config-elpaca.org")
         ("S" (jump-to-register ?S) "Scripts")
         ("G" (jump-to-register ?G) "GameBoy Asm Root")))
     ))
@@ -1151,11 +1158,6 @@ opam-user-setup.el so that upon next startup, it can be loaded quickly."
   ;; properly loaded.
   ;; (unless theme-did-load
   ;;   (mifi/load-theme-from-selector)))
-
-(use-package rg
-  :ensure t
-  :config
-  (rg-enable-default-bindings))
 
 ;; All kept in local /lisp directory.
 ;; (use-package web-server-status-codes )
@@ -1336,11 +1338,14 @@ opam-user-setup.el so that upon next startup, it can be loaded quickly."
           :map ivy-reverse-i-search-map
           ("C-k" . ivy-previous-line)
           ("C-d" . ivy-reverse-i-search-kill))
+  :delight
+  (ivy-mode " 🌿")
   :custom
   (enable-recursive-minibuffers t)
   (ivy-use-virtual-buffers t)
+  ;; Enable ivy after initialization is complete.
+  :hook (after-init . (lambda () (ivy-mode 1)))
   :config
-  (ivy-mode 1)
   (setq ivy-re-builders-alist '((t . orderless-ivy-re-builder)))
   (add-to-list 'ivy-highlight-functions-alist
     '(orderless-ivy-re-builder . orderless-ivy-highlight)))
@@ -1349,14 +1354,15 @@ opam-user-setup.el so that upon next startup, it can be loaded quickly."
 
 (use-package ivy-rich
   :when (equal completion-handler 'comphand-ivy)
+  :ensure t
   :after ivy
-  :init
-  (ivy-rich-mode 1)
   :config
+  (ivy-rich-mode 1)
   (setcdr (assq t ivy-format-functions-alist) #'ivy-format-function-line))
 
 (use-package ivy-yasnippet
   :when (equal completion-handler 'comphand-ivy)
+  :ensure t
   :after (:any yasnippet ivy))
 
 (use-package swiper
@@ -1367,6 +1373,7 @@ opam-user-setup.el so that upon next startup, it can be loaded quickly."
   :when (equal completion-handler 'comphand-ivy)
   :ensure t
   :after ivy
+  :delight (counsel-mode " 💪")
   :defer t
   :bind ( ("C-M-j" . 'counsel-switch-buffer)
           ("M-x" . 'counsel-M-x)
@@ -1438,7 +1445,6 @@ opam-user-setup.el so that upon next startup, it can be loaded quickly."
   :after company
   :delight
   (company-box-mode " 📦")
-  ;; :vc (:url "https://github.com/sebastiencs/company-box.git")
   :hook (company-mode . company-box-mode))
 
 (use-package company-jedi
@@ -2157,14 +2163,14 @@ This only runs for ripgrep results"
 
 ;;; ##########################################################################
 
-(use-package all-the-icons :ensure t)
+(use-package all-the-icons :ensure t :when (display-graphic-p))
 
 ;;; ##########################################################################
 ;;; Default keys are C-M-= or C-M--
-
-(use-package default-text-scale
-  :ensure t
-  :hook (after-init . default-text-scale-mode))
+(when (display-graphic-p)
+  (use-package default-text-scale
+    :ensure t
+    :hook (after-init . default-text-scale-mode)))
 
 ;;; ##########################################################################
 
@@ -2177,14 +2183,15 @@ This only runs for ripgrep results"
 
 ;;; vvv ;;;
 
-(use-package mixed-pitch
-  :defer t
-  :ensure t
-  :custom
-  (mixed-pitch-set-height t)
-  :config
-  (dolist (face '(org-date org-priority org-special-keyword org-tag))
-    (add-to-list 'mixed-pitch-fixed-pitch-faces face)))
+(when (display-graphic-p)
+  (use-package mixed-pitch
+    :defer t
+    :ensure t
+    :custom
+    (mixed-pitch-set-height t)
+    :config
+    (dolist (face '(org-date org-priority org-special-keyword org-tag))
+      (add-to-list 'mixed-pitch-fixed-pitch-faces face))))
 
 ;; Functions to set the frame size
 
@@ -2271,7 +2278,8 @@ Stage Manager on macOS."
   (mifi/update-face-attribute)
   (unless enable-frameset-restore (mifi/frame-recenter)))
 
-(add-hook 'after-setting-font-hook 'mifi/default-font-height-change)
+(when (display-graphic-p)
+  (add-hook 'after-setting-font-hook 'mifi/default-font-height-change))
 
 ;; Frame font selection
 
@@ -2357,42 +2365,47 @@ attributes."
 
 (defun use-x-small-display-font (&optional force-recenter)
   (interactive)
-  (mifi/set-frame-font 0)
-  (mifi/reset-if-spacious-padding-mode)
-  (mifi/update-other-modes-font)
-  (mifi/should-recenter force-recenter))
+  (when (display-graphic-p)
+    (mifi/set-frame-font 0)
+    (mifi/reset-if-spacious-padding-mode)
+    (mifi/update-other-modes-font)
+    (mifi/should-recenter force-recenter)))
 (defun use-x-small-display-font-t () (interactive) (use-x-small-display-font t))
 
 (defun use-small-display-font (&optional force-recenter)
   (interactive)
-  (mifi/set-frame-font 1)
-  (mifi/reset-if-spacious-padding-mode)
-  (mifi/update-other-modes-font)
-  (mifi/should-recenter force-recenter))
+  (when (display-graphic-p)
+    (mifi/set-frame-font 1)
+    (mifi/reset-if-spacious-padding-mode)
+    (mifi/update-other-modes-font)
+    (mifi/should-recenter force-recenter)))
 (defun use-small-display-font-t () (interactive) (use-small-display-font t))
 
 (defun use-medium-display-font (&optional force-recenter)
   (interactive)
-  (mifi/set-frame-font 2)
-  (mifi/reset-if-spacious-padding-mode)
-  (mifi/update-other-modes-font)
-  (mifi/should-recenter force-recenter))
+  (when (display-graphic-p)
+    (mifi/set-frame-font 2)
+    (mifi/reset-if-spacious-padding-mode)
+    (mifi/update-other-modes-font)
+    (mifi/should-recenter force-recenter)))
 (defun use-medium-display-font-t () (interactive) (use-medium-display-font t))
 
 (defun use-large-display-font (&optional force-recenter)
   (interactive)
-  (mifi/set-frame-font 3)
-  (mifi/reset-if-spacious-padding-mode)
-  (mifi/update-other-modes-font)
-  (mifi/should-recenter force-recenter))
+  (when (display-graphic-p)
+    (mifi/set-frame-font 3)
+    (mifi/reset-if-spacious-padding-mode)
+    (mifi/update-other-modes-font)
+    (mifi/should-recenter force-recenter)))
 (defun use-large-display-font-t () (interactive) (use-large-display-font t))
 
 (defun use-x-large-display-font (&optional force-recenter)
   (interactive)
-  (mifi/set-frame-font 4)
-  (mifi/reset-if-spacious-padding-mode)
-  (mifi/update-other-modes-font)
-  (mifi/should-recenter force-recenter))
+  (when (display-graphic-p)
+    (mifi/set-frame-font 4)
+    (mifi/reset-if-spacious-padding-mode)
+    (mifi/update-other-modes-font)
+    (mifi/should-recenter force-recenter)))
 (defun use-x-large-display-font-t () (interactive) (use-x-large-display-font t))
 
 ;; This is done so that the Emacs window is sized early in the init phase along with the default font size.
@@ -2550,7 +2563,7 @@ attributes."
 
 (defun markdown-html (buffer)
   (princ (with-current-buffer buffer
-	   (format "<!DOCTYPE html><html><title>Impatient Markdown</title><xmp theme=\"united\" style=\"display:none;\"> %s  </xmp><script src=\"http://ndossougbe.github.io/strapdown/dist/strapdown.js\"></script></html>" (buffer-substring-no-properties (point-min) (point-max))))
+  	 (format "<!DOCTYPE html><html><title>Impatient Markdown</title><xmp theme=\"united\" style=\"display:none;\"> %s  </xmp><script src=\"http://ndossougbe.github.io/strapdown/dist/strapdown.js\"></script></html>" (buffer-substring-no-properties (point-min) (point-max))))
     (current-buffer)))
 
 (use-package simple-httpd
@@ -2928,7 +2941,7 @@ directory is relative to the working-files-directory
 (defun mifi/org-setup-capture-templates ()
   (setq org-capture-templates
     `(("t" "Tasks / Projects")
-       
+
        ("tt" "Task" entry (file+olp (expand-file-name "OrgFiles/Tasks.org" user-emacs-directory) "Inbox")
          "* TODO %?\n  %U\n  %a\n        %i" :empty-lines 1)
 
@@ -3470,25 +3483,29 @@ capture was not aborted."
 (use-package dashboard
   :ensure t
   :defer t
+  :delight (dashboard-mode " 🎛️")
   :custom
   (dashboard-items '( (recents   . 12)
                       (bookmarks . 5)
                       (projects  . 5)
                       (agenda    . 5)))
   (dashboard-center-content t)
-  (dashboard-set-heading-icons t)
-  (dashboard-set-file-icons t)  
   (dashboard-footer-messages '("Greetings Program!"))
   (dashboard-banner-logo-title "Welcome to Emacs!")
   :commands dashboard-open
   :bind ("M-RET d" . dashboard-open)
   :config
   ;; (setq initial-buffer-choice (lambda () (get-buffer-create dashboard-buffer-name)))
+  (when (display-graphic-p)
+    (setq dashboard-startup-banner (expand-file-name "Emacs-modern-is-sexy-v1.png" user-emacs-directory)
+          dashboard-set-heading-icons t
+          dashboard-set-file-icons t))
+
   (add-hook 'after-init-hook #'dashboard-insert-startupify-lists)
   (add-hook 'after-init-hook #'dashboard-initialize)
+
   (when (equal custom-project-handler 'custom-project-projectile)
     (setq dashboard-projects-backend 'projectile))
-  (setq dashboard-startup-banner (expand-file-name "Emacs-modern-is-sexy-v1.png" user-emacs-directory))
   (dashboard-setup-startup-hook))
 
 ;;; ##########################################################################
@@ -3868,17 +3885,17 @@ capture was not aborted."
     ((equal debug-adapter 'debug-adapter-dap-mode)
       (unless (featurep 'dap-mode) (dap-mode 1)) ;; Load if not loaded.
       (bind-keys :map python-mode-map
-	("C-c ." . dap-python-hydra/body)))))
+  ("C-c ." . dap-python-hydra/body)))))
 
 (defun mifi/setup-python-custom-ide ()
   (cond
     ((equal custom-ide 'custom-ide-eglot)
       (message ">>> eglot-ensure")
       (when (boundp 'eglot-current-server)
-	(let ((server (eglot-current-server)))
-      	  (when server
-      	    (message "<<< Shutting down current EGLOT server before restart.")
-      	    (eglot-shutdown server))))
+  (let ((server (eglot-current-server)))
+        	(when server
+        	  (message "<<< Shutting down current EGLOT server before restart.")
+        	  (eglot-shutdown server))))
       (eglot-ensure))
     ((equal custom-ide 'custom-ide-lsp)
       (message ">>> lsp-deferred")
@@ -3903,9 +3920,12 @@ capture was not aborted."
     (pyvenv-auto-run))
   ;;
   ;; only do this after pyvenv-auto-run
-  (setq python-executable (locate-file "python" exec-path))
-  (unless (boundp 'python-executable)
-    (setq python-executable (locate-file "python3" exec-path)))
+  (let ( (py-exe (locate-file "python" exec-path))
+         (py3-exe (locate-file "python3" exec-path)) )
+    (if py-exe
+      (setq-default python-executable py-exe)
+      (setq-default python-executable py3-exe)))
+  (setq org-babel-python-command python-executable)
   (message "Python executable is %S" python-executable))
 
 (defun mifi/python-mode-triggered ()
@@ -3947,7 +3967,6 @@ capture was not aborted."
   :when enable-python
   :defer t
   :ensure t
-  ;; :vc (:url "https://github.com/emacsmirror/py-autopep8.git")
   :after python
   :hook ((python-mode . py-autopep8-mode)))
 
@@ -4013,7 +4032,7 @@ capture was not aborted."
       :module nil
       :program nil
       :request "launch"))
-    
+
   (dap-register-debug-template "Python :: Run file (buffer)"
     (list :type "python"
       :args ""
@@ -4177,16 +4196,13 @@ capture was not aborted."
 (when enable-gb-dev
   (use-package z80-mode
     :ensure nil) ;; should have been installed in 'lisp' subdir.
-    ;; :vc (:url "https://github.com/SuperDisk/z80-mode"))
 
   (use-package mwim
     :ensure t)
-    ;; :vc (:url "https://github.com/alezost/mwim"))
 
   (use-package rgbds-mode
     :after mwim
     :ensure nil) ;; should have been installed in 'lisp' subdir.
-    ;; :vc (:url "https://github.com/japanoise/rgbds-mode")))
   )
 
 ;;; ##########################################################################
@@ -4306,12 +4322,18 @@ capture was not aborted."
   :defer t
   :after swift-mode
   :ensure t)
-  ;; :vc ( :url "https://github.com/danielmartin/swift-helpful"
-  ;; 	:main-file swift-helpful
-  ;; 	:lisp-dir ("swift-info" "target")))
+
+(use-package swift-playground-mode
+  :disabled
+  :ensure nil ;; Should be in local 'lisp' dir.
+  :defer t
+  :after swift-mode
+  :init
+  (autoload 'swift-playground-global-mode "swift-playground-mode" nil t)
+  (add-hook 'swift-mode-hook #'swift-playground-global-mode))
 
 (use-package elisp-mode
-  
+
   :defer t
   :mode ("\\.el\\'" . emacs-lisp-mode))
 
@@ -4355,6 +4377,21 @@ capture was not aborted."
   ;;   ("C-c ." . dap-hydra/body))
   (dap-ui-controls-mode)
   (dap-ui-mode 1))
+
+;;; ##########################################################################
+
+(use-package dap-ocaml
+  :when enable-ocaml
+  :after (:all dap-mode opam-emacs-setup)
+  :ensure nil
+  :ensure-system-package
+  ((ocamllsp . "opam install earlybird --yes")))
+
+(use-package dap-codelldb
+  :when enable-ocaml
+  :after dap-mode
+  :ensure nil
+  :defer t)
 
 ;;; ##########################################################################
 ;;; Debug helper functions (non-python specific)
