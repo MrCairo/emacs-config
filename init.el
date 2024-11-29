@@ -62,24 +62,26 @@ configuration of Emacs are stored."
   :type 'string
   :group 'mifi-config)
 
-(defcustom custom-docs-directory
-  (expand-file-name "emacs-docs" custom-emacs-home-directory)
-  "A directory used to store documents and customized data."
+(defcustom custom-docs-directory "emacs-docs"
+  "A directory used to store documents and customized data. If this path doesn't
+start with a '/' or a '~/' then the directory is assumed to be relative to the
+custom-emacs-home-directory."
   :type 'string
   :group 'mifi-config)
 
 (defcustom custom-developer-root
   (expand-file-name "Developer/src" "~/")
   "The root of all development projects. Used when initializing project.el or
-     projectile."
+projectile."
   :type 'string
   :group 'mifi-config)
 
-(defcustom working-files-directory
-  (expand-file-name "emacs-working-files" custom-emacs-home-directory)
-  "The directory where to store Emacs working files. `user-emacs-directory'
-will also be set to this directory. The starting user-emacs-directory will
-become `emacs-config-directory'."
+(defcustom working-files-directory "emacs-working-files"
+  "The directory where to store Emacs working files. If this path doesn't start
+with a '/' or a '~/' then the directory is assumed to be relative to the
+custom-emacs-home-directory. `user-emacs-directory' will also be set to this
+directory. The initial `user-emacs-directory' will become the
+`emacs-config-directory'."
   :type 'string
   :group 'mifi-config)
 
@@ -454,6 +456,91 @@ width."
   :group 'mifi-config)
 
 ;;; ##########################################################################
+
+(use-package f
+  :ensure t :demand t)
+
+;;; ##########################################################################
+
+;;; Set a variable that represents the actual emacs configuration directory.
+;;; This is being done so that the user-emacs-directory which normally points
+;;; to the .emacs.d directory can be re-assigned so that customized files don't
+;;; pollute the configuration directory. This is where things like YASnippet
+;;; snippets are saved and also additional color themese are stored.
+
+(defvar emacs-config-directory (f-full user-emacs-directory))
+(defvar custom-docs-dir-full (f-full custom-docs-directory))
+(defvar working-files-dir-full (f-full working-files-directory))
+
+(message "::: Custom docs directory before load: %s" custom-docs-dir-full)
+(message "::: Working directory before load: %s" working-files-dir-full)
+
+;;; Put any emacs cusomized variables in a special file. Load this file early
+;;; since things like the working-files-dir-full or custom-docs-directory
+;;; customized values could be in this file.
+(setq custom-file (expand-file-name "customized-vars.el" emacs-config-directory))
+
+(unless (file-exists-p custom-file) ;; create custom file if it doesn't exists
+  (write-region "" nil custom-file))
+(load custom-file 'noerror 'nomessage)
+
+;;;
+;;; The custom-docs-directory can be relative to the
+;;; custom-emacs-home-directory if the custom-docs-directory doesn't start
+;;; with a "/" or "~/". If relative, set the custom-docs-dir-full to include
+;;; the custom-emacs-home-directory base.  Either way, custom-docs-dir-full is
+;;; what should be used to represent the documents directory from here on out.
+;;;
+;;; Note: This is done *after* the customized-vars are loaded.
+;;;
+(if (or (string-prefix-p "/" custom-docs-directory)
+      (string-prefix-p "~/" custom-docs-directory))
+  (setq custom-docs-dir-full custom-docs-directory)
+  ;; else
+  (setq custom-docs-dir-full
+    (expand-file-name custom-docs-directory custom-emacs-home-directory)))
+
+;;;
+;;; The working-files-dir-full behaves the same as the custom-docs-directory as
+;;; far as being able to be relative to the custom-emacs-home-directory.
+;;;
+(if (or (string-prefix-p "/" working-files-directory)
+      (string-prefix-p "~/" working-files-directory))
+  (setq working-files-dir-full working-files-directory)
+  ;; else
+  (setq working-files-dir-full
+    (expand-file-name working-files-directory custom-emacs-home-directory)))
+
+;;;
+;;; This directory stores any files that are used by the user to store
+;;; additional Emacs files, like themes or specialized moduls. This is
+;;; where emacs-config files are backed up to. Of course, any document that the
+;;; user wants to associate with an Emacs installation can be stored here.
+(make-directory working-files-dir-full t)
+
+;;; user-emacs-directory always ends in a "/" so we need to make the
+;;; working-files-dir-full act the same since it becomes the new
+;;; user-emacs-directory. So, add a "/" if there isn't one already.
+(unless (string-suffix-p "/" working-files-dir-full)
+  (setq working-files-dir-full (concat working-files-dir-full "/")))
+
+;;; Point the user-emacs-directory to the new working directory
+(setq user-emacs-directory working-files-dir-full)
+
+;;; Add an additional INFO dir for custom info docs
+(let ((infodir (expand-file-name "share/info" custom-docs-dir-full)))
+  (unless (file-exists-p infodir)
+    (make-directory infodir t)))
+
+(message "::: Custom docs directory after load: %s" custom-docs-dir-full)
+(message "::: Working directory after load: %s" working-files-dir-full)
+
+;; ensure that the loaded font values are supported by this OS. If not, try
+;; to correct them.
+(mifi/validate-variable-pitch-font)
+(mifi/validate-monospace-font)
+
+;;; ##########################################################################
 ;;
 ;; This list is processed as a LIFO queue. This entry _should_ be made to be
 ;; the first so it executes last.
@@ -511,57 +598,6 @@ width."
 
 ;;; ##########################################################################
 
-(use-package f
-  :ensure t :demand t)
-
-;;; ##########################################################################
-
-;;; Set a variable that represents the actual emacs configuration directory.
-;;; This is being done so that the user-emacs-directory which normally points
-;;; to the .emacs.d directory can be re-assigned so that customized files don't
-;;; pollute the configuration directory. This is where things like YASnippet
-;;; snippets are saved and also additional color themese are stored.
-
-(defvar emacs-config-directory user-emacs-directory)
-
-;;; Put any emacs cusomized variables in a special file. Load this file early
-;;; since things like the working-files-directory or custom-docs-directory
-;;; customized values could be in this file.
-(setq custom-file (expand-file-name "customized-vars.el" emacs-config-directory))
-
-(unless (file-exists-p custom-file) ;; create custom file if it doesn't exists
-  (write-region "" nil custom-file))
-(load custom-file 'noerror 'nomessage)
-
-;;;
-;;; This directory stores any files that are used by the user to store
-;;; additional Emacs files, like themes or specialized moduls. This is
-;;; where emacs-config files are backed up to. Of course, any document that the
-;;; user wants to associate with an Emacs installation can be stored here.
-(message "=== working-files-dir = %s" working-files-directory)
-(make-directory working-files-directory t)
-
-;;; user-emacs-directory always ends in a "/" so we need to make the
-;;; working-files-directory act the same since it becomes the new
-;;; user-emacs-directory. So, add a "/" if there isn't one already.
-(unless (string-suffix-p "/" working-files-directory)
-  (setq working-files-directory (concat working-files-directory "/")))
-
-;;; Point the user-emacs-directory to the new working directory
-(setq user-emacs-directory working-files-directory)
-
-;;; Add an additional INFO dir for custom info docs
-(let ((infodir (expand-file-name "share/info" custom-docs-directory)))
-  (unless (file-exists-p infodir)
-    (make-directory infodir t)))
-
-;; ensure that the loaded font values are supported by this OS. If not, try
-;; to correct them.
-(mifi/validate-variable-pitch-font)
-(mifi/validate-monospace-font)
-
-;;; ##########################################################################
-
 (let ((epath (f-dirname
                (expand-file-name invocation-name invocation-directory))))
   (when (file-directory-p (format "%s/bin" epath))
@@ -570,7 +606,7 @@ width."
 
 ;; mostly for OCaml
 (add-to-list 'load-path (expand-file-name "." emacs-config-directory))
-(add-to-list 'custom-theme-load-path (expand-file-name "Themes" custom-docs-directory))
+(add-to-list 'custom-theme-load-path (expand-file-name "Themes" custom-docs-dir-full))
 
 ;;; ##########################################################################
 
@@ -693,11 +729,11 @@ width."
 
 ;;; ##########################################################################
 ;; Allow access from emacsclient
-(add-hook 'after-init-hook
-  (lambda ()
-    (use-package server :ensure nil)
-    (unless (server-running-p)
-      (server-start))))
+;; (add-hook 'after-init-hook
+;;   (lambda ()
+;;     (use-package server :ensure nil)))
+;;     (unless (server-running-p)
+;;       (server-start))))
 
 (when (fboundp 'pixel-scroll-precision-mode)
   (pixel-scroll-precision-mode))
@@ -854,7 +890,7 @@ width."
     "M-RET j" "jump-to-register"
     "M-RET /" "Drill-Down Menu"
     "M-RET v" "font-size"
-    "M-RET C-g" "Exit menu"
+    "M-RET C-g" "Exit this menu"
     "M-RET M-c" "Customize MiFi"
     "M-RET M-f" "select-font-slot"
     "M-RET" "Mitch's Menu"))
@@ -904,19 +940,18 @@ backup directory. If a file already exists in the backup directory, the old
 file is renamed with a ~ at the end before the new file is copied. If Emacs
 is running in server mode, then don't backup the files when the emacsclient
 exits."
-  (when (fboundp 'server-running-p)
-    (unless (server-running-p)
-      (let ((backdir (format "%s/config-backup" working-files-directory)))
-        (make-directory backdir t)
-        ;; --------------------------------------------------
-        (when (file-exists-p (format "%s/%s" backdir file))
-          (copy-file
-            (expand-file-name file backdir)
-            (expand-file-name (format "%s~" file) backdir) t))
-        (when (file-exists-p (format "%s/%s" emacs-config-directory file))
-          (copy-file
-            (expand-file-name file emacs-config-directory)
-            (expand-file-name file backdir) t))))))
+  (let ((backdir (format "%sconfig-backup" emacs-config-directory))
+         (server-pkg (and (fboundp 'server-running-p) (server-running-p))))
+    (make-directory backdir t)
+    ;; --------------------------------------------------
+    (when (file-exists-p (format "%s/%s" backdir file))
+      (copy-file
+        (expand-file-name file backdir)
+        (expand-file-name (format "%s~" file) backdir) t))
+    (when (file-exists-p (format "%s/%s" emacs-config-directory file))
+      (copy-file
+        (expand-file-name file emacs-config-directory)
+        (expand-file-name file backdir) t))))
 
 (defun mifi/when-exiting-emacs ()
   "Backup Emacs initialization files for recovery. If old files exist, they are
@@ -930,8 +965,7 @@ opam-user-setup.el so that upon next startup, it can be loaded quickly."
         (byte-compile-file src))))
   (mifi/backup-file "early-init.el")
   (mifi/backup-file "init.el")
-  (mifi/backup-file "emacs-config-elpaca.org")
-  (mifi/backup-file "emacs-config-elpa.org"))
+  (mifi/backup-file "emacs-config.org"))
 
 (add-hook 'kill-emacs-hook #'mifi/when-exiting-emacs)
 
@@ -1010,6 +1044,7 @@ opam-user-setup.el so that upon next startup, it can be loaded quickly."
 
 (use-package helpful
   :ensure t
+  :defer t
   ;; :commands (helpful-callable helpful-variable helpful-command helpful-key helpful-function)
   :config
   (bind-keys
@@ -1139,6 +1174,7 @@ opam-user-setup.el so that upon next startup, it can be loaded quickly."
 
 (use-package jinx
   :ensure t
+  :defer t
   :bind ( ("C-c C-$" . jinx-correct)
           ("C-x C-$" . jinx-languages))
   :hook (emacs-startup . global-jinx-mode)
@@ -1158,6 +1194,13 @@ opam-user-setup.el so that upon next startup, it can be loaded quickly."
   ;; properly loaded.
   ;; (unless theme-did-load
   ;;   (mifi/load-theme-from-selector)))
+
+(use-package rg
+  :ensure t
+  :config
+  (rg-enable-default-bindings)
+  :ensure-system-package
+  ((rg . "brew install ripgrep")))
 
 ;; All kept in local /lisp directory.
 ;; (use-package web-server-status-codes )
@@ -1213,8 +1256,8 @@ opam-user-setup.el so that upon next startup, it can be loaded quickly."
   (which-key-prefix-prefix "✪ ")
   ;; (which-key-sort-order 'which-key-key-order-alpha)
   (which-key-min-display-lines 3)
-  :config
-  (add-hook 'after-init-hook #'mifi/after-which-key))
+  :hook
+  (after-init . mifi/after-which-key))
 
 ;;; ##########################################################################
 ;; YASnippets
@@ -1228,7 +1271,7 @@ opam-user-setup.el so that upon next startup, it can be loaded quickly."
   (setq yas-global-mode t)
   (setq yas-minor-mode t)
   (define-key yas-minor-mode-map (kbd "<tab>") nil)
-  (add-to-list #'yas-snippet-dirs (expand-file-name "Snippets" custom-docs-directory))
+  (add-to-list #'yas-snippet-dirs (expand-file-name "Snippets" custom-docs-dir-full))
   (yas-reload-all)
   (add-hook 'prog-mode-hook 'yas-minor-mode)
   (add-hook 'text-mode-hook 'yas-minor-mode)
@@ -1667,6 +1710,41 @@ opam-user-setup.el so that upon next startup, it can be loaded quickly."
                   "*Async-native-compile-log*" "*dashboard*"))
        consult--source-modified-buffer
        consult--source-recent-file)))
+
+;;;
+;;; Function to call to only load consult-org-roam whenever the
+;;; vertico/consult option is set. This is done so that...
+(defun mifi/maybe-use-package-consult-org-roam ()
+  (use-package consult-org-roam
+    :ensure t
+    :when (and (equal custom-note-system 'custom-note-system-org-roam)
+            (equal completion-handler 'comphand-vertico))
+    :after org-roam
+    :init
+    ;;(require 'consult-org-roam)
+    ;; Activate the minor mode
+    (consult-org-roam-mode 1)
+    :custom
+    ;; Use `ripgrep' for searching with `consult-org-roam-search'
+    (consult-org-roam-grep-func #'consult-ripgrep)
+    ;; Configure a custom narrow key for `consult-buffer'
+    (consult-org-roam-buffer-narrow-key ?r)
+    ;; Display org-roam buffers right after non-org-roam buffers
+    ;; in consult-buffer (and not down at the bottom)
+    (consult-org-roam-buffer-after-buffers t)
+    :config
+    ;; Eventually suppress previewing for certain functions
+    (message ">>>> consult-org-roam configured.")
+    (consult-customize
+      consult-org-roam-forward-links
+      :preview-key "M-.")
+    ;; Define some convenient keybindings as an addition
+    (bind-keys :map org-roam-mode-map
+      ("C-c n e" . consult-org-roam-file-find)
+      ("C-c n b" . consult-org-roam-backlinks)
+      ("C-c n B" . consult-org-roam-backlinks-recursive)
+      ("C-c n l" . consult-org-roam-forward-links)
+      ("C-c n r" . consult-org-roam-search))))
 
 ;;; ##########################################################################
 ;; Taken from:
@@ -2163,7 +2241,10 @@ This only runs for ripgrep results"
 
 ;;; ##########################################################################
 
-(use-package all-the-icons :ensure t :when (display-graphic-p))
+(use-package all-the-icons
+  :defer t
+  :ensure t
+  :when (display-graphic-p))
 
 ;;; ##########################################################################
 ;;; Default keys are C-M-= or C-M--
@@ -2786,7 +2867,7 @@ theme is then loaded via the 'mifi/load-theme-from-selector' function."
 ;;(add-hook 'org-load-hook 'mifi/customize-ef-theme)
 (add-hook 'after-init-hook 'mifi/customize-ef-theme)
 
-(add-to-list 'custom-theme-load-path (expand-file-name "Themes" custom-docs-directory))
+(add-to-list 'custom-theme-load-path (expand-file-name "Themes" custom-docs-dir-full))
 (add-to-list 'custom-theme-load-path (expand-file-name "lisp" emacs-config-directory))
 
 (mifi/org-theme-override-values)
@@ -2871,11 +2952,11 @@ theme is then loaded via the 'mifi/load-theme-from-selector' function."
 (defun mifi/set-org-agenda-directory ()
   "Sets the org-agenda directory based upon the customized variable and then
 sets the org-agenda-files list to all the files in that directory. The
-directory is relative to the working-files-directory
+directory is relative to the working-files-dir-full
 (a.k.a user-emacs-directory)."
   (interactive)
   (let ((agenda-dir (format "%s/%s"
-                      working-files-directory
+                      working-files-dir-full
                     org-agenda-dirname)))
     (make-directory agenda-dir t)
     (custom-set-variables
@@ -3018,11 +3099,10 @@ directory is relative to the working-files-directory
   (add-to-list 'auto-mode-alist '("\\.org\\'" . org-mode))
   :commands (org-capture org-agenda)
   :ensure t
-  :defer t
   :hook (org-mode . mifi/org-mode-setup)
   :custom
-  (org-directory (concat working-files-directory "OrgFiles"))
-  (org-default-notes-file (concat working-files-directory "OrgFiles/notes.org"))
+  (org-directory (concat working-files-dir-full "OrgFiles"))
+  (org-default-notes-file (concat working-files-dir-full "OrgFiles/notes.org"))
   (org-startup-indented t)
   (org-pretty-entities t)
   (org-use-sub-superscripts "{}")
@@ -3145,6 +3225,12 @@ directory is relative to the working-files-directory
   (mifi/reset-if-spacious-padding-mode)
   (global-org-modern-mode))
 
+(use-package org-auto-tangle
+  :after org
+  :ensure t
+  :defer t
+  :hook (org-mode . org-auto-tangle-mode))
+
 ;;; ##########################################################################
 
 (when (equal custom-note-system 'custom-note-system-org-journal)
@@ -3161,7 +3247,7 @@ directory is relative to the working-files-directory
                 (`yearly "#+TITLE: Yearly Journal\n#+STARTUP: folded"))))
     :init
     (setq org-journal-prefix-key "C-c j ")
-    (setq org-journal-dir (expand-file-name "journal" working-files-directory ))
+    (setq org-journal-dir (expand-file-name "journal" working-files-dir-full ))
     (setq org-journal-date-format "%A, %d %B %Y")
     (setq org-journal-file-header 'org-journal-file-header-func)  
     :bind (("C-c j n" . org-journal-new-entry)
@@ -3171,46 +3257,9 @@ directory is relative to the working-files-directory
     (message "=== Configured org-journal."))
 )
 
-;;; ##########################################################################
-
-(use-package emacsql :ensure t :defer t)
-
-(use-package org-roam
-  :after (emacsql org)
-  :when (equal custom-note-system 'custom-note-system-org-roam)
-  :defer t
-  :ensure t
-  :demand t
-  ;; :ensure ( :package "org-roam" :source "MELPA" :protocol https :inherit t :depth 1
-  ;;           :fetcher github :repo "org-roam/org-roam" :files (:defaults "extensions/*"))
-  :init
-  (setq org-roam-v2-ack t)
-  (which-key-add-key-based-replacements "C-c n" "org-roam")
-  :custom
-  (org-roam-directory (expand-file-name "RoamNotes" custom-docs-directory))
-  (org-roam-completion-everywhere t)
-  :bind (("C-c n l" . org-roam-buffer-toggle)
-          ("C-c n f" . org-roam-node-find)
-          ("C-c n i" . org-roam-node-insert)
-          ("C-c n I" . org-roam-node-insert-immediate)
-          ("C-c n p" . mifi/org-roam-find-project)
-          ("C-c n t" . mifi/org-roam-capture-task)
-          ("C-c n b" . mifi/org-roam-capture-inbox)
-          :map org-mode-map
-          ("C-M-i" . completion-at-point))
-  :config
-  (mifi/org-roam-set-which-key-replacements)
-  (mifi/org-roam-refresh-agenda-list)
-  (add-to-list 'org-after-todo-state-change-hook
-    (lambda ()
-      (when (equal org-state "DONE")
-        (mifi/org-roam-copy-todo-to-today))))
-  (org-roam-db-autosync-mode))
-
 (defun mifi/org-roam-set-which-key-replacements ()
   (interactive)
   (which-key-add-key-based-replacements
-    "C-c n l" "toggle-buffer"
     "C-c n f" "find-node"
     "C-c n i" "insert-node"
     "C-c n I" "insert-node-immediate"
@@ -3226,28 +3275,97 @@ directory is relative to the working-files-directory
                    '(:immediate-finish t)))))
     (apply #'org-roam-node-insert args)))
 
+;;; ##########################################################################
+
+(use-package org-roam
+  :when (equal custom-note-system 'custom-note-system-org-roam)
+  :after (emacsql org) :ensure t
+  :preface
+  (global-set-key (kbd "C-c n")
+    (lambda nil (interactive)
+      (use-package-autoload-keymap
+        'org-roam-mode-map 'org-roam nil)))
+  (which-key-add-key-based-replacements "C-c n" "org-roam")
+  :custom
+  (org-roam-directory (expand-file-name "RoamNotes" custom-docs-dir-full))
+  (org-roam-completion-everywhere t)
+  :bind-keymap ("C-c n" . org-roam-mode-map)
+  :bind ( :map org-roam-mode-map
+          ("f" . org-roam-node-find)
+          ("i" . org-roam-node-insert)
+          ("I" . org-roam-node-insert-immediate)
+          ("p" . mifi/org-roam-find-project)
+          ("t" . mifi/org-roam-capture-task)
+          ("b" . mifi/org-roam-capture-inbox)
+          :map org-mode-map
+          ("C-M-i" . completion-at-point))
+  :config
+  (make-directory (expand-file-name "RoamNotes" custom-docs-dir-full) t)
+  (org-roam-setup)
+  (org-roam-db-autosync-mode)
+  (mifi/org-roam-set-which-key-replacements)
+  (mifi/org-roam-refresh-agenda-list)
+  (add-to-list 'org-after-todo-state-change-hook
+    (lambda ()
+      (when (equal org-state "DONE")
+        (mifi/org-roam-copy-todo-to-today)))))
+
+(defun mifi/define-org-roam-dailies-capture-templates ()
+  (setq org-roam-dailies-capture-templates
+  '(("d" "default" entry "* %<%I:%M %p>: %?"
+     :if-new (file+head "%<%Y-%m-%d>.org" "#+title: %<%Y-%m-%d>\n")))))
+  ;; (setq org-roam-dailies-capture-templates
+  ;;   (let ((head "#+title: %<%Y-%m-%d (%A)>\n#+startup: showall\n* [/] Do Today\n* [/] Maybe Do Today\n* Journal\n"))
+  ;;     `(("j" "journal" entry
+  ;;         #'org-roam-capture--get-point
+  ;;         "* %<%H:%M> %?"
+  ;;         :file-name "daily/%<%Y-%m-%d>"
+  ;;         :head ,head
+  ;;         :olp ("Journal"))
+  ;;        ("t" "do today" item
+  ;;          #'org-roam-capture--get-point
+  ;;          "[ ] %(princ as/agenda-captured-link)"
+  ;;          :file-name "daily/%<%Y-%m-%d>"
+  ;;          :head ,head
+  ;;          :olp ("Do Today")
+  ;;          :immediate-finish t)
+  ;;        ("m" "maybe do today" item
+  ;;          #'org-roam-capture--get-point
+  ;;          "[ ] %(princ as/agenda-captured-link)"
+  ;;          :file-name "daily/%<%Y-%m-%d>"
+  ;;          :head ,head
+  ;;          :olp ("Maybe Do Today")
+  ;;          :immediate-finish t)))))
+
 (when (equal custom-note-system 'custom-note-system-org-roam)
   (use-package org-roam-dailies
-    :ensure nil
-    :after org
+    :after org-roam :ensure nil
+    :preface
+    (global-set-key (kbd "C-c d")
+      (lambda nil (interactive)
+        (use-package-autoload-keymap
+          'org-roam-dailies-map
+          'org-roam-dailies nil)))
+    (which-key-add-key-based-replacements "C-c d" "org-roam-dailies")
     :init
-    (which-key-add-key-based-replacements "C-c n d" "org-roam-dailies")
+    (which-key-add-key-based-replacements "C-c d" "org-roam-dailies")
+    ;; (mifi/define-org-roam-dailies-capture-templates)
     :bind-keymap
-    ("C-c n d" . org-roam-dailies-map)
+    ("C-c d" . org-roam-dailies-map)
     :bind (:map org-roam-dailies-map
             ("." . org-roam-dailies-goto-date)
+            ("n" . org-roam-dailies-capture-today)
             ("Y" . org-roam-dailies-capture-yesterday)
             ("T" . org-roam-dailies-capture-tomorrow))
     :config
     (which-key-add-key-based-replacements
-      "C-c n d" "org-roam-dailies"
-      "C-c n d ." "goto-date"
-      "C-c n d Y" "capture-yesterday"
-      "C-c n d T" "capture-tomorrow"
-      "C-c n d n" "capture-today"
-      "C-c n d d" "goto-today"
-      "C-c n d t" "goto-tomorrow"
-      "C-c n d y" "goto-yesterday")))
+      "C-c d ." "goto-date"
+      "C-c d Y" "capture-yesterday"
+      "C-c d T" "capture-tomorrow"
+      "C-c d n" "capture-today"
+      "C-c d d" "goto-today"
+      "C-c d t" "goto-tomorrow"
+      "C-c d y" "goto-yesterday")))
 
 ;;; ##########################################################################
 ;; The buffer you put this code in must have lexical-binding set to t!
@@ -3297,7 +3415,7 @@ capture was not aborted."
               :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n#+category: ${title}\n#+filetags: Project")
               :unnarrowed t))))
 
-(global-set-key (kbd "C-c n p") #'mifi/org-roam-find-project)
+;; (global-set-key (kbd "C-c n p") #'mifi/org-roam-find-project)
 
 ;;; ##########################################################################
 

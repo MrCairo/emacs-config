@@ -12,7 +12,7 @@
 ;;; Code:
 
 ;;; ##########################################################################
-(setq package-vc-register-as-project nil) ; Emacs 30
+;; (setq package-vc-register-as-project nil) ; Emacs 30
 (add-hook 'package-menu-mode-hook #'hl-line-mode)
 
 (setq package-enable-at-startup t)
@@ -35,7 +35,7 @@
      ( "org" . 5 )
      ( "gnu" . 50 )
      ( "melpa-stable" . 40 )
-     ( "melpa" . 30 )
+     ( "melpa" . 60 )
      ( "gnu-dev" . 20 )
      ( "nongnu" . 10)
      ))
@@ -99,17 +99,17 @@
   use-package-always-defer nil)
 
 ;;; ##########################################################################
+(setq gc-cons-threshold (* 1024 1024 8))
 ;;; Set high for initial startup
-(setq gc-cons-threshold (* 1024 1024 200))
-(setq gc-cons-percentage 0.3)
+(setq gc-cons-percentage 0.5)
 
 ;; Process performance tuning
-
-(setq read-process-output-max (* 64 1024))
+(setq read-process-output-max (* 4048 1024))
 (setq process-adaptive-read-buffering nil)
 
 (add-hook 'emacs-startup-hook
   (lambda ()
+    (setq gc-cons-percentage 0.1)
     (setq startup-time-message
       (format "Emacs read in %.2f seconds with %d garbage collections."
         (float-time (time-subtract after-init-time before-init-time))

@@ -6,9 +6,7 @@
 #+visibility: folded
 #+property: header-args:emacs-lisp :tangle ./mifi-setup-ocaml.el :results silent :exports code :mkdirp yes
 
-* OCaml Language Configuration
-
-** Prologue
+* Module Prologue
 #+begin_src emacs-lisp
   ;;; mifi-setup-ocaml.el --- Configure OCaml dev environment -*- lexical-binding: t -*-
   ;;; Commentary:
@@ -27,7 +25,9 @@
 
 #+end_src
 
-*** DAP Hydra Debug Functions
+
+* OCaml Language Configuration
+** DAP Hydra Debug Functions
 #+begin_src emacs-lisp
   ;;; ##########################################################################
 
@@ -50,7 +50,7 @@
 
 #+end_src
 
-*** DAP Hydra Definition Function
+** DAP Hydra Definition Function
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
@@ -524,7 +524,7 @@ Here are some other packages that are useful when using OCaml.
 
 #+end_src
 
-** Epilogue
+* Module Epilogue
 #+begin_src emacs-lisp
   ;;; ##########################################################################
 
