@@ -23,7 +23,7 @@ res#+title: Mitch's Emacs Configuration Using Standard use-package
   - [[#gc-and-performance-tuning][GC and Performance Tuning]]
   - [[#set-executable-paths][Set executable PATHs]]
 - [[#main-init-file][Main init file]]
-  - [[#lispy-header][Lispy Header]]
+  - [[#lispy-header-for-main-init][Lispy Header For Main Init]]
   - [[#automatic-package-updates][Automatic Package Updates]]
   - [[#customized-values][Customized Values]]
     - [[#customization-groups][Customization groups]]
@@ -309,7 +309,7 @@ Standard fare and good practice.
 
 #+end_src
 
-** Add =lisp=, =lisp/lang= to =load-path=
+** Add =lisp=, =lisp/lang= to ~load-path~
 :PROPERTIES:
 :CUSTOM_ID: add-lisp-lisplang-to-load-path
 :visibility: folded
@@ -340,12 +340,6 @@ If there is a local =lisp= and/or =lisp/lang= directory in the ~user-emacs-direc
 :end:
 
 #+begin_src emacs-lisp :tangle "early-init.el" 
-
-  (unless (package-installed-p 'use-package)
-    (package-refresh-contents)
-    (package-install 'use-package))
-
-  (use-package use-package-ensure-system-package :ensure t)
 
   ;; For some reason, the function recentf-expand-file-name has been showing up
   ;; as 'undefined' even though this is a byte-compiled internal function. So,
@@ -379,7 +373,8 @@ If there is a local =lisp= and/or =lisp/lang= directory in the ~user-emacs-direc
 
 #+begin_src emacs-lisp :tangle "early-init.el"
   ;;; ##########################################################################
-  (setq gc-cons-threshold (* 1024 1024 8))
+
+  (setq gc-cons-threshold (* 1024 1024 80))
   ;;; Set high for initial startup
   (setq gc-cons-percentage 0.5)
 
@@ -470,9 +465,9 @@ Standard fare and good practice.
 :visibility: children
 :end:
 
-** Lispy Header
+** Lispy Header For Main Init
 :properties:
-:custom_id: lispy-header
+:custom_id: lispy-header-for-main-init
 :visibility: folded
 :end:
 
@@ -513,7 +508,6 @@ You can also use =M-x auto-package-update-now= to update right now!
   (use-package auto-package-update
     ;; :ensure (:fetcher github :repo "rranelli/auto-package-update.el")
     :ensure t
-    :defer t
     :custom
     (auto-package-update-interval 7)
     (auto-package-update-prompt-before-update t)
@@ -534,7 +528,7 @@ Variables that define the operational behavior of this Emacs installation. These
 
 *** Customization groups
 :properties:
-:custom_id: customized-groups
+:custom_id: customization-groups
 :visibility: folded
 :end:
 
@@ -1055,7 +1049,7 @@ Look for a proportional font that is available on the OS. If the actual default 
   
 #+begin_src emacs-lisp
 
-    (defcustom custom-org-fill-column 120
+    (defcustom custom-org-fill-column 90
       "The fill column width for Org mode text. Note that the text is also centered
     on the screen so that should be taken into consideration when providing a
     width."
@@ -2149,7 +2143,7 @@ Group Theme commands.
 
 **** Hydra / Terminals
 :properties:
-:custom_id: hydra-themes-and-fonts
+:custom_id: hydra-terminals
 :visibility: folded
 :end:
 
@@ -2195,9 +2189,10 @@ Combination of groups
 #+begin_src emacs-lisp
     ;;; ^^^ ;;;
 #+end_src
+
 **** Hydra Major Mode
 :properties:
-:custom_id: major-mode-hydra
+:custom_id: hydra-major-mode
 :visibility: folded
 :end:
 
@@ -2315,6 +2310,7 @@ This used to be httpd.el but there are already several of these out there alread
   ;; (use-package web-server )
 
 #+end_src
+
 *** Thesaurus
 :properties:
 :custom_id: thesaurus
@@ -2528,7 +2524,7 @@ Instead of treating undo/redo as a linear sequence of changes, undo-tree-mode tr
 
 *** Completion Handlers
 :properties:
-:custom_id: completion-handler
+:custom_id: completion-handlers
 :visibility: folded
 :end:
 
@@ -3569,9 +3565,9 @@ directly into =dired=.
     #+end_src
 
 
-***** Files to open eternally
+***** Files to open externally
 :properties:
-:custom_id: files-to-open-eternally
+:custom_id: files-to-open-externally
 :visibility: folded
 :end:
 
@@ -3914,7 +3910,7 @@ Treemacs is a file and project explorer similar to NeoTree or vim’s NerdTree, 
 
 ***** Treemacs tab-bar
 :properties:
-:custom_id: treemacs-tar-bar
+:custom_id: treemacs-tab-bar
 :visibility: folded
 :end:
 
@@ -4157,6 +4153,7 @@ This package provides commands for increasing or decreasing the default font siz
       :hook (after-init . default-text-scale-mode)))
 
 #+end_src
+
 *** Diff HL
 :properties:
 :custom_id: diff-hl
@@ -4580,7 +4577,7 @@ This package provides a global minor mode to increase the spacing/padding of Ema
 
 **** Org Font setup
 :properties:
-:custom_id: font-setup
+:custom_id: org-font-setup
 :visibility: folded
 :end:
 
@@ -4690,6 +4687,7 @@ Instant Github-flavored Markdown/Org preview using Grip (GitHub Readme Instant P
   ;;   :hook ((markdown-mode org-mode) . grip-mode))
 
 #+end_src
+
 *** Lisp Hightlighter
 :properties:
 :custom_id: lisp-highlighter
@@ -4911,6 +4909,7 @@ These functions will save and restore Emacs framework. These are normally called
           (use-medium-display-font t)))))
 
 #+end_src
+
 *** Solair mode
 :properties:
 :custom_id: solair-mode
@@ -5003,7 +5002,7 @@ represents the theme that has become disabled.
 
 **** Load Theme Function
 :properties:
-:custom_id: load-theme-functions
+:custom_id: load-theme-function
 :visibility: folded
 :end:
 
@@ -5059,7 +5058,7 @@ This function loads the theme from the =theme-list= indexed by =theme-selector=.
   
 #+end_src
 
-**** Theme selection helper functions.
+**** Theme selection helper functions
 :properties:
 :custom_id: theme-selection-helper-functions
 :visibility: folded
@@ -5229,6 +5228,7 @@ We use [[https://github.com/joostkremers/visual-fill-column][visual-fill-column]
     :after org)
 
 #+end_src
+
 ** Productivity
 :properties:
 :custom_id: productivity
@@ -5291,7 +5291,7 @@ This section contains the basic configuration for =org-mode= plus the configurat
 
 ****** Setup org-agenda
 :properties:
-:custom_id: setup-org-agenda-files-list
+:custom_id: setup-org-agenda
 :visibility: folded
 :end:
 
@@ -5531,12 +5531,10 @@ This section contains the basic configuration for =org-mode= plus the configurat
 
 **** Export Code
 :properties:
-:custom_id: :properties:
 :custom_id: export-codes
 :visibility: folded
 :end:
-:visibility: folded
-:end:
+
 
 To execute or export code in =org-mode= code blocks, you'll need to set up =org-babel-load-languages= for each language you'd like to use. [[https://orgmode.org/worg/org-contrib/babel/languages.html][Babel]] documents all of the languages that you can use with =org-babel=.
 
@@ -6288,6 +6286,7 @@ enerally enough.
     (setq gnus-select-method '(nntp "news.eternal-september.org")))
 
 #+end_src
+
 ** Integrated Development Environment
 :properties:
 :custom_id: integrated-development-environment
@@ -6406,6 +6405,10 @@ A tree plugin like NerdTree for Vim
 #+end_src
 
 *** Code Completion and Handling
+:properties:
+:custom_id: code-completion-and-handling
+:visibility: folded
+:end:
 
 **** EGlot
 :properties:
@@ -6577,7 +6580,7 @@ Integration between lsp-mode and treemacs and implementation of treeview control
 
 ***** LSP mode hook function
 :properties:
-:custom_id: lsp-mode-hook-functions
+:custom_id: lsp-mode-hook-function
 :visibility: folded
 :end:
 
@@ -7476,7 +7479,7 @@ This is a basic configuration for the TypeScript language so that =.ts= files ac
 
 **** NodeJS
 :properties:
-:custom_id: notejs
+:custom_id: nodejs
 :visibility: folded
 :end:
 
@@ -7963,7 +7966,7 @@ Below are all the necessary functions and definitions for Hydra use under DAP.
 
 ****** DAP Generic Hydra Debug Functions
 :properties:
-:custom_id: dap-hydra-debug-functions
+:custom_id: dap-generic-hydra-debug-functions
 :visibility: folded
 :end:
 

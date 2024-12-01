@@ -70,12 +70,6 @@
   (when (version< emacs-version minver)
     (error "Your Emacs is too old -- this config requires v%s or higher" minver)))
 
-(unless (package-installed-p 'use-package)
-  (package-refresh-contents)
-  (package-install 'use-package))
-
-(use-package use-package-ensure-system-package :ensure t)
-
 ;; For some reason, the function recentf-expand-file-name has been showing up
 ;; as 'undefined' even though this is a byte-compiled internal function. So,
 ;; instead of trying to find the issue, I'm just including it here as a
@@ -99,7 +93,8 @@
   use-package-always-defer nil)
 
 ;;; ##########################################################################
-(setq gc-cons-threshold (* 1024 1024 8))
+
+(setq gc-cons-threshold (* 1024 1024 80))
 ;;; Set high for initial startup
 (setq gc-cons-percentage 0.5)
 

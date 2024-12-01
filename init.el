@@ -18,7 +18,6 @@
 (use-package auto-package-update
   ;; :ensure (:fetcher github :repo "rranelli/auto-package-update.el")
   :ensure t
-  :defer t
   :custom
   (auto-package-update-interval 7)
   (auto-package-update-prompt-before-update t)
@@ -448,7 +447,7 @@ font size is computed + 20 of this value."
   (message "---- Can't find a monospace font to use.")))
     (message (format "=== monospace font is %s" mono-spaced-font-family))))
 
-(defcustom custom-org-fill-column 120
+(defcustom custom-org-fill-column 90
   "The fill column width for Org mode text. Note that the text is also centered
 on the screen so that should be taken into consideration when providing a
 width."
