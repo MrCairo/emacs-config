@@ -8,9 +8,10 @@ res#+title: Mitch's Emacs Configuration Using Standard use-package
 #+modified-date: <2024-11-28 Thu>
 
 * Table Of Contents
-:PROPERTIES:
-:TOC:      :include all :ignore this :depth 3
-:End:
+:properties:
+:toc:      :include all :ignore this :depth 3
+:visibility: content
+:end:
 
 :CONTENTS:
 - [[#synopsis][Synopsis]]
@@ -3894,7 +3895,6 @@ Treemacs is a file and project explorer similar to NeoTree or vim’s NerdTree, 
 
 #+begin_src emacs-lisp
   ;;; ##########################################################################
-
   ;; (use-package treemacs-perspective
   ;;    :disabled
   ;;    :after (treemacs persp-mode) ;;or perspective vs. persp-mode
@@ -4167,8 +4167,6 @@ This package provides commands for increasing or decreasing the default font siz
 
   (use-package diff-hl
     :ensure t
-    :defer t
-    :commands diff-hl-mode
     :config
     (global-diff-hl-mode))
 

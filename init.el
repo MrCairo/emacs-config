@@ -2129,7 +2129,6 @@ This only runs for ripgrep results"
   :hook (dired-mode . treemacs-icons-dired-enable-once))
 
 ;;; ##########################################################################
-
 ;; (use-package treemacs-perspective
 ;;    :disabled
 ;;    :after (treemacs persp-mode) ;;or perspective vs. persp-mode
@@ -2256,8 +2255,6 @@ This only runs for ripgrep results"
 
 (use-package diff-hl
   :ensure t
-  :defer t
-  :commands diff-hl-mode
   :config
   (global-diff-hl-mode))
 
