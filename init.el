@@ -65,7 +65,7 @@ configuration of Emacs are stored."
   :type 'string
   :group 'mifi-config)
 
-(defcustom custom-docs-dirname "emacs-docs"
+(defcustom custom-docs-directory "emacs-docs"
   "A directory used to store documents and customized data. If this path doesn't
 start with a '/' or a '~/' then the directory is assumed to be relative to the
 custom-emacs-home-directory."
@@ -94,7 +94,7 @@ relative files should be stored.
 ----
 Please note that this directory is NOT where
 org-roam files are stored. For org-roam, these files are stored in the
-`custom-docs-dirname' in a sub-directory named 'RoamNotes."
+`custom-docs-directory' in a sub-directory named 'RoamNotes."
   :type 'string
   :group 'mifi-config)
 
@@ -488,14 +488,14 @@ width."
 ;;; snippets are saved and also additional color themese are stored.
 
 (defvar emacs-config-directory (f-full user-emacs-directory))
-(defvar custom-docs-dir-full (f-full custom-docs-dirname))
+(defvar custom-docs-dir-full (f-full custom-docs-directory))
 (defvar working-files-dir-full (f-full working-files-dirname))
 
 (message "::: Custom docs directory before load: %s" custom-docs-dir-full)
 (message "::: Working directory before load: %s" working-files-dir-full)
 
 ;;; Put any emacs cusomized variables in a special file. Load this file early
-;;; since things like the working-files-dir-full or custom-docs-dirname
+;;; since things like the working-files-dir-full or custom-docs-directory
 ;;; customized values could be in this file.
 (setq custom-file (expand-file-name "customized-vars.el" emacs-config-directory))
 
@@ -504,23 +504,23 @@ width."
 (load custom-file 'noerror 'nomessage)
 
 ;;;
-;;; The custom-docs-dirname can be relative to the
-;;; custom-emacs-home-directory if the custom-docs-dirname doesn't start
+;;; The custom-docs-directory can be relative to the
+;;; custom-emacs-home-directory if the custom-docs-directory doesn't start
 ;;; with a "/" or "~/". If relative, set the custom-docs-dir-full to include
 ;;; the custom-emacs-home-directory base.  Either way, custom-docs-dir-full is
 ;;; what should be used to represent the documents directory from here on out.
 ;;;
 ;;; Note: This is done *after* the customized-vars are loaded.
 ;;;
-(if (or (string-prefix-p "/" custom-docs-dirname)
-      (string-prefix-p "~/" custom-docs-dirname))
-  (setq custom-docs-dir-full custom-docs-dirname)
+(if (or (string-prefix-p "/" custom-docs-directory)
+      (string-prefix-p "~/" custom-docs-directory))
+  (setq custom-docs-dir-full custom-docs-directory)
   ;; else
   (setq custom-docs-dir-full
-    (expand-file-name custom-docs-dirname custom-emacs-home-directory)))
+    (expand-file-name custom-docs-directory custom-emacs-home-directory)))
 
 ;;;
-;;; The working-files-dir-full behaves the same as the custom-docs-dirname as
+;;; The working-files-dir-full behaves the same as the custom-docs-directory as
 ;;; far as being able to be relative to the custom-emacs-home-directory.
 ;;;
 (if (or (string-prefix-p "/" working-files-dirname)
