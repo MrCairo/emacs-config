@@ -30,7 +30,11 @@
 ;;; Define my customization groups
 
 (defgroup mifi-config nil
-  "M.R. Fisher's configuration section."
+  "M.R. Fisher's configuration section. This section contains a lot of directory
+names and paths. Note that a path is named with a `-directory' suffix whereas a
+name of a directory that's relative to something other directory has the
+`-dirname' suffix. While it _is_ possible to include a relative path in a
+`-dirname' variable, it is discouraged."
   :group 'Local)
 
 (defgroup mifi-config-toggles nil
@@ -55,13 +59,13 @@
 
 (defcustom custom-emacs-home-directory
   (expand-file-name "emacs-home" "~/")
-  "The base directory to where emacs user-operation files are stored. This is
+  "The base directory to where Emacs user-operation files are stored. This is
 in contrast to the `emacs-config-directory' where all the initialization and
 configuration of Emacs are stored."
   :type 'string
   :group 'mifi-config)
 
-(defcustom custom-docs-directory "emacs-docs"
+(defcustom custom-docs-dirname "emacs-docs"
   "A directory used to store documents and customized data. If this path doesn't
 start with a '/' or a '~/' then the directory is assumed to be relative to the
 custom-emacs-home-directory."
@@ -75,12 +79,28 @@ projectile."
   :type 'string
   :group 'mifi-config)
 
-(defcustom working-files-directory "emacs-working-files"
+(defcustom working-files-dirname "emacs-working-files"
   "The directory where to store Emacs working files. If this path doesn't start
 with a '/' or a '~/' then the directory is assumed to be relative to the
 custom-emacs-home-directory. `user-emacs-directory' will also be set to this
 directory. The initial `user-emacs-directory' will become the
 `emacs-config-directory'."
+  :type 'string
+  :group 'mifi-config)
+
+(defcustom custom-org-files-directory "org-files"
+  "The directory, relative to the working-files-dirname, where general org
+relative files should be stored.
+----
+Please note that this directory is NOT where
+org-roam files are stored. For org-roam, these files are stored in the
+`custom-docs-dirname' in a sub-directory named 'RoamNotes."
+  :type 'string
+  :group 'mifi-config)
+
+(defcustom custom-org-agenda-directory "org-agenda"
+  "The directory name where org-agenda files are stored relative to the
+org-files-directory."
   :type 'string
   :group 'mifi-config)
 
@@ -468,14 +488,14 @@ width."
 ;;; snippets are saved and also additional color themese are stored.
 
 (defvar emacs-config-directory (f-full user-emacs-directory))
-(defvar custom-docs-dir-full (f-full custom-docs-directory))
-(defvar working-files-dir-full (f-full working-files-directory))
+(defvar custom-docs-dir-full (f-full custom-docs-dirname))
+(defvar working-files-dir-full (f-full working-files-dirname))
 
 (message "::: Custom docs directory before load: %s" custom-docs-dir-full)
 (message "::: Working directory before load: %s" working-files-dir-full)
 
 ;;; Put any emacs cusomized variables in a special file. Load this file early
-;;; since things like the working-files-dir-full or custom-docs-directory
+;;; since things like the working-files-dir-full or custom-docs-dirname
 ;;; customized values could be in this file.
 (setq custom-file (expand-file-name "customized-vars.el" emacs-config-directory))
 
@@ -484,31 +504,31 @@ width."
 (load custom-file 'noerror 'nomessage)
 
 ;;;
-;;; The custom-docs-directory can be relative to the
-;;; custom-emacs-home-directory if the custom-docs-directory doesn't start
+;;; The custom-docs-dirname can be relative to the
+;;; custom-emacs-home-directory if the custom-docs-dirname doesn't start
 ;;; with a "/" or "~/". If relative, set the custom-docs-dir-full to include
 ;;; the custom-emacs-home-directory base.  Either way, custom-docs-dir-full is
 ;;; what should be used to represent the documents directory from here on out.
 ;;;
 ;;; Note: This is done *after* the customized-vars are loaded.
 ;;;
-(if (or (string-prefix-p "/" custom-docs-directory)
-      (string-prefix-p "~/" custom-docs-directory))
-  (setq custom-docs-dir-full custom-docs-directory)
+(if (or (string-prefix-p "/" custom-docs-dirname)
+      (string-prefix-p "~/" custom-docs-dirname))
+  (setq custom-docs-dir-full custom-docs-dirname)
   ;; else
   (setq custom-docs-dir-full
-    (expand-file-name custom-docs-directory custom-emacs-home-directory)))
+    (expand-file-name custom-docs-dirname custom-emacs-home-directory)))
 
 ;;;
-;;; The working-files-dir-full behaves the same as the custom-docs-directory as
+;;; The working-files-dir-full behaves the same as the custom-docs-dirname as
 ;;; far as being able to be relative to the custom-emacs-home-directory.
 ;;;
-(if (or (string-prefix-p "/" working-files-directory)
-      (string-prefix-p "~/" working-files-directory))
-  (setq working-files-dir-full working-files-directory)
+(if (or (string-prefix-p "/" working-files-dirname)
+      (string-prefix-p "~/" working-files-dirname))
+  (setq working-files-dir-full working-files-dirname)
   ;; else
   (setq working-files-dir-full
-    (expand-file-name working-files-directory custom-emacs-home-directory)))
+    (expand-file-name working-files-dirname custom-emacs-home-directory)))
 
 ;;;
 ;;; This directory stores any files that are used by the user to store
@@ -1106,12 +1126,12 @@ opam-user-setup.el so that upon next startup, it can be loaded quickly."
       ( ("+" next-theme "Next theme")
         ("-" previous-theme "Previous Theme")
         ("=" which-theme "Display Current Theme")
-        ("P" use-x-small-display-font "Petit Font without resize")
+        ("T" use-x-small-display-font "Tiny Font without resize")
         ("S" use-small-display-font "Small Font without resize")
         ("M" use-medium-display-font "Medium Font without resize")
         ("L" use-large-display-font "Large Font without resize")
         ("X" use-x-large-display-font "X-Large Font without resize")
-        ("p" (use-x-small-display-font t) "Petit Font with resize")
+        ("t" (use-x-small-display-font t) "Tiny Font with resize")
         ("s" (use-small-display-font t) "Small Font with resize")
         ("m" (use-medium-display-font t) "Medium Font with resize")
         ("l" (use-large-display-font t) "Large Font with resize")
@@ -2951,20 +2971,17 @@ sets the org-agenda-files list to all the files in that directory. The
 directory is relative to the working-files-dir-full
 (a.k.a user-emacs-directory)."
   (interactive)
-  (let ((agenda-dir (format "%s/%s"
-                      working-files-dir-full
-                    org-agenda-dirname)))
+  (let ((agenda-dir (concat org-directory "/" custom-org-agenda-directory)))
     (make-directory agenda-dir t)
     (custom-set-variables
-      '(org-directory agenda-dir)
-      '(org-agenda-files (list org-directory)))))
+      '(org-agenda-files (list (concat org-directory "/my-org-agenda.org"))))))
 
 ;;; ##########################################################################
 
 (defun mifi/org-setup-agenda ()
   "Function to setup basic org-agenda settings."
   (bind-key "C-c a" 'org-agenda org-mode-map)
-  ;; (mifi/set-org-agenda-directory) ;; Where all the org-agenda files live    
+  (mifi/set-org-agenda-directory) ;; Where all the org-agenda files live    
   (setq org-agenda-custom-commands
     '(("d" "Dashboard"
         ((agenda "" ((org-deadline-warning-days 7)))
@@ -3019,30 +3036,29 @@ directory is relative to the working-files-dir-full
   (setq org-capture-templates
     `(("t" "Tasks / Projects")
 
-       ("tt" "Task" entry (file+olp (expand-file-name "OrgFiles/Tasks.org" user-emacs-directory) "Inbox")
+       ("tt" "Task" entry (file+olp (concat org-directory "/Tasks.org") "Inbox")
          "* TODO %?\n  %U\n  %a\n        %i" :empty-lines 1)
 
        ("j" "Journal Entries")
        ("jj" "Journal" entry
-         (file+olp+datetree (expand-file-name "OrgFiles/Journal.org" user-emacs-directory))
+         (file+olp+datetree (concat org-directory "/Journal.org"))
          "\n* %<%I:%M %p> - Journal :journal:\n\n%?\n\n"
          ;; ,(dw/read-file-as-string "~/Notes/Templates/Daily.org")
          :clock-in :clock-resume
          :empty-lines 1)
        ("jm" "Meeting" entry
-         (file+olp+datetree (expand-file-name "OrgFiles/Journal.org" user-emacs-directory))
+         (file+olp+datetree (concat org-directory "/Journal.org"))
          "* %<%I:%M %p> - %a :meetings:\n\n%?\n\n"
          :clock-in :clock-resume
          :empty-lines 1)
-
        ("w" "Workflows")
        ("we" "Checking Email" entry (file+olp+datetree
-                                      (expand-file-name "OrgFiles/Joural.org" user-emacs-directory))
+                                      (concat org-directory "/Joural.org"))
          "* Checking Email :email:\n\n%?" :clock-in :clock-resume :empty-lines 1)
 
        ("m" "Metrics Capture")
        ("mw" "Weight" table-line (file+headline
-                                   (expand-file-name "OrgFiles/Metrics.org" user-emacs-directory)
+                                   (concat org-directory "/Metrics.org")
                                    "Weight")
          "| %U | %^{Weight} | %^{Notes} |" :kill-buffer t))))
 
@@ -3097,8 +3113,8 @@ directory is relative to the working-files-dir-full
   :ensure t
   :hook (org-mode . mifi/org-mode-setup)
   :custom
-  (org-directory (concat working-files-dir-full "OrgFiles"))
-  (org-default-notes-file (concat working-files-dir-full "OrgFiles/notes.org"))
+  (org-directory (expand-file-name custom-org-files-directory working-files-dir-full))
+  (org-default-notes-file (concat org-directory "/notes.org"))
   (org-startup-indented t)
   (org-pretty-entities t)
   (org-use-sub-superscripts "{}")
@@ -3379,7 +3395,7 @@ directory is relative to the working-files-dir-full
 
 (defun mifi/org-roam-refresh-agenda-list ()
     (interactive)
-    (setq org-agenda-files (mifi/org-roam-list-notes-by-tag "Project")))
+    (add-to-list 'org-agenda-files (mifi/org-roam-list-notes-by-tag "Project")))
 
 ;; Build the agenda list the first time for the session
 
