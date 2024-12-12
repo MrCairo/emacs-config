@@ -5,7 +5,7 @@
 #+startup: showall
 #+visibility: all
 #+property: header-args:emacs-lisp :tangle ./init.el :results silent :exports code :mkdirp yes
-#+modified-date: <2024-11-28 Thu>
+#+modified-date: <2024-12-12 Thu>
 
 * Table Of Contents
 :properties:
