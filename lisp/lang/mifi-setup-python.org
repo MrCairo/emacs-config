@@ -1,0 +1,449 @@
+#+title: Mitch's Emacs Configuration For Python
+#+author: Mitch Fisher
+#+date: <2024-10-28 Mon>
+#+options: toc:nil h:4
+#+startup: showall
+#+visibility: folded
+#+property: header-args :emacs-lisp :tangle "./mifi-setup-python.el" :results silent :exports code :mkdirp yes
+
+* Test
+** Python Configuration
+
+Python is an interpreted, interactive, object-oriented programming language. It incorporates modules, exceptions, dynamic typing, very high level dynamic data types, and classes. It supports multiple programming paradigms beyond object-oriented programming, such as procedural and functional programming. Python combines remarkable power with very clear syntax. It has interfaces to many system calls and libraries, as well as to various window systems, and is extensible in C or C++. It is also usable as an extension language for applications that need a programmable interface. Finally, Python is portable: it runs on many Unix variants including Linux and macOS, and on Windows.
+
+This is the Python setup for development under Emacs.
+
+*** Prologue
+#+begin_src emacs-lisp
+  ;;; mifi-setup-python.el --- Configure Python dev environment -*- lexical-binding: t -*-
+  ;;; Commentary:
+  ;;;
+  ;;; This file is used to configure the Python environment for Emacs which
+  ;;; also includes checking for needed executables.
+
+  ;;; Code:
+
+#+end_src
+
+*** Pre-defined variables
+
+#+begin_src emacs-lisp :tangle no
+  ;;; ##########################################################################
+  ;;; These are variables that should have already been defined external
+  ;;; to this module.
+
+  (defvar custom-ide)
+  (defvar debug-adapter)
+  (defvar enable-python)
+  (defvar python-executable (locate-file "python3" exec-path))
+  ;;; ...........................................................................
+#+end_src
+
+*** Important
+
+Before any work can begin in python, make sure that the right packages are installed. It's also worth considering creating a Python Vertual Environment. These commands will install things globally.
+
+#+begin_src shell :results output silent :tangle no
+
+  python3 -m pip install --upgrade pip
+  pip3 install "python-lsp-server[all]"
+  pip3 install debugpy
+
+#+end_src
+
+In addition to that, it is important that =autopep8=, which is a script, can reach python or python3. For my configuration, =autopep8= looks for python this like this:
+
+    ~#!/Library/Frameworks/Python.framework/Versions/Current/bin/python3~
+
+*Note:* If this python path doesn't exist, you will see the very annoying message:
+
+     ~file-missing "Doing vfork" "No such file or directory"~
+
+*** Specialized python-mode Keymaps
+
+The following are keymaps that are used by by the custom-ide and for python-mode
+
+#+begin_src emacs-lisp :tangle no
+  ;;; ##########################################################################
+
+  (defun mifi/set-custom-ide-python-keymaps ()
+    (cond
+      ((equal custom-ide 'custom-ide-lsp)
+        (bind-keys :map python-mode-map
+          ("C-c g r" . lsp-find-references)
+          ("C-c g g" . xref-find-definitions)
+          ("C-c g G" . xref-find-definitions-other-window)
+          ("C-c g ?" . eldoc-doc-buffer)))
+      ((equal custom-ide 'custom-ide-eglot)
+        (bind-keys :map python-mode-map
+          ("C-c g i" . eglot-find-implementation)
+          ("C-c g r" . xref-find-references)
+          ("C-c g D" . xref-find-definitions-other-window)
+          ("C-c g g" . xref-find-definitions)
+          ("C-c g n" . xref-find-references-and-replace)
+          ("C-c g ." . python-eldoc-at-point)
+          ("C-c g ?" . eldoc-doc-buffer)))
+      ((equal custom-ide 'custom-ide-elpy)
+        (elpy-enable)
+        (bind-keys :map python-mode-map
+          ("C-c g a" . elpy-goto-assignment)
+          ("C-c g A" . elpy-goto-definition-other-window)
+          ("C-c g g" . elpy-goto-definition)
+          ("C-c g ?" . elpy-doc)))
+      ((equal custom-ide 'custom-ide-lsp-bridge)
+        (bind-keys :map python-mode-map
+          ("C-c g a" . lsp-bridge-find-reference)
+          ("C-c g A" . lsp-bridge-find-def-other-window)
+          ("C-c g g" . lsp-bridge-find-def)
+          ("C-c g i" . lsp-bridge-find-impl)
+          ("C-c g n" . lsp-bridge-rename)
+          ("C-c g ?" . lsp-bridge-popup-documentation)))
+      ))
+
+#+end_src
+
+*** Standard setup
+**** Python mode support functions                                       :Python:
+
+These functions are used during python intialization or file loading. This is where Python IDE functionality, linting and debugging setup begins.
+
+#+begin_src emacs-lisp :tangle no
+  ;;; ##########################################################################
+
+  (defun mifi/load-python-file-hook ()
+    (python-mode)
+    (flymake-mode 0)
+    (message ">>> mifi/load-python-file-hook")
+    (setq highlight-indentation-mode -1)
+    (setq display-fill-column-indicator-mode t))
+
+  (defun mifi/before-save ()
+    "Force the check of the current python file being saved."
+    (when (eq major-mode 'python-mode) ;; Python Only
+      (flycheck-mode 0)
+      (flycheck-mode t)
+      (delete-trailing-whitespace)))
+
+  (defun mifi/setup-python-debug-adapter () 
+    (cond
+      ((equal debug-adapter 'debug-adapter-dap-mode)
+        (unless (featurep 'dap-mode) (dap-mode 1)) ;; Load if not loaded.
+        (define-python-dap-hydra)
+        (bind-keys :map python-mode-map
+  	("C-c ." . dap-python-hydra/body)))))
+
+  (defun mifi/setup-python-custom-ide ()
+    (cond
+      ((equal custom-ide 'custom-ide-eglot)
+        (message ">>> eglot-ensure")
+        (when (boundp 'eglot-current-server)
+  	(let ((server (eglot-current-server)))
+        	  (when server
+        	    (message "<<< Shutting down current EGLOT server before restart.")
+        	    (eglot-shutdown server))))
+        (eglot-ensure))
+      ((equal custom-ide 'custom-ide-lsp)
+        (message ">>> lsp-deferred")
+        (lsp-deferred))
+      (t
+        (message ">>> failed to init custom-ide"))))
+
+  ;; This function should only be called ONCE during python-mode startup.
+  (defun mifi/enable-python-features ()
+    (message ">>> mifi/enable-python-features")
+    ;; _____________________________
+    (mifi/setup-python-debug-adapter)
+    ;;___________________________
+    ;; check for which custom-ide
+    (mifi/setup-python-custom-ide)
+    (when (featurep 'pydoc)
+      (pydoc-python-command python-executable)
+      (pydoc-pip-version-command (concat python-executable " -m pip --version")))
+    (when (featurep 'yasnippet)
+      (yas-global-mode t))
+    (when (featurep 'pyvenv-auto)
+      (pyvenv-auto-run))
+    ;;
+    ;; only do this after pyvenv-auto-run
+    (setq python-executable (locate-file "python" exec-path))
+    (unless (boundp 'python-executable)
+      (setq python-executable (locate-file "python3" exec-path)))
+    (message "Python executable is %S" python-executable))
+
+  (defun mifi/python-mode-triggered ()
+    ;; (eldoc-box-hover-at-point-mode t) ;; Using Mitch Key for this
+    (mifi/enable-python-features)
+    (mifi/set-custom-ide-python-keymaps)
+    (add-hook 'before-save-hook 'mifi/before-save)
+    (setq dap-python-executable python-executable) ;; Otherwise it looks for 'python' else error.
+    (set-fill-column 80))
+
+#+end_src
+
+**** Python mode initialization                                          :Python:
+
+This is the primary Python setup that is triggered by the first load of the Python mode and then any time a file is loaded.
+
+#+begin_src emacs-lisp :tangle no
+  ;;; ##########################################################################
+
+  ;; Use built-in python language mode.
+  (use-package python-mode
+    :when enable-python
+    :ensure t
+    :defer t
+    :mode ("\\.py\\'" . mifi/load-python-file-hook)
+    :hook (python-mode . mifi/python-mode-triggered)
+    :bind (:map python-mode-map
+            ("C-c C-q" . quote-region)
+            ("C-c q"   . quote-word)
+            ("C-c |"   . display-fill-column-indicator-mode))
+    :ensure-system-package
+    ( (autoflake . "pip3 install autoflake") )
+    :config
+    (if (boundp 'python-shell-completion-native-disabled-interpreters)
+      (add-to-list 'python-shell-completion-native-disabled-interpreters python-executable)
+      (setq python-shell-completion-native-disabled-interpreters '(python-executable))))
+
+  (use-package blacken
+    :ensure t
+    :when enable-python
+    :after python) ;Format Python file upon save.
+
+#+end_src
+
+*** Auto-pep 8
+
+autopep8 automatically formats Python code to conform to the `PEP 8` style guide. It uses the pycodestyle_ utility to determine what parts of the code needs to be formatted. autopep8 is capable of fixing most of the formatting issues_ that can be reported by pycodestyle. Refer to the [[IMPORTANT][IMPORTANT]] section above for possible issues when autopep8 is installed.
+
+#+begin_src emacs-lisp :tangle no
+  ;;; ##########################################################################
+
+  (use-package py-autopep8
+    :when enable-python
+    :defer t
+    :ensure t
+    ;; :vc (:url "https://github.com/emacsmirror/py-autopep8.git")
+    :after python
+    :hook ((python-mode . py-autopep8-mode)))
+
+#+end_src
+
+*** Python Keybinding
+**** Helpful Macros
+
+#+begin_src emacs-lisp :tangle no
+  ;;; ##########################################################################
+
+  ;; This is a helpful macro that is used to put double quotes around a word.
+  (defalias 'quote-word
+    (kmacro "\" M-d \" <left> C-y"))
+
+  (defalias 'quote-region
+    (kmacro "C-w \" \" <left> C-y <right>"))
+
+  (defalias 'reformat-src-block
+    (kmacro "C-s b e g i n _ s r c SPC e m a c s - l i s p <return> <down> C-c ' C-x h C-c ] C-x h M-x u n t a b <return> C-c ' C-s e n d _ s r c <return> <down>"))
+
+  (when enable-python
+    (eval-after-load "python-mode"
+      #'(bind-keys :map python-mode-map
+        ("C-c C-q" . quote-region)
+        ("C-c q"   . quote-word)
+        ("C-c |"   . display-fill-column-indicator-mode))))
+
+#+end_src
+
+*** Python Virtual Environment Support
+
+We use Pyvenv-auto is a package that automatically changes to the Python virtual environment based upon the project's directory. pyvenv-auto looks at the root director of the project for a =.venv= or =venv= (and a few others)
+
+#+begin_src emacs-lisp :tangle no
+  ;;; ##########################################################################
+
+  (use-package pyvenv-auto
+    :when enable-python
+    :ensure t
+    :after python
+    :hook (python-mode . pyvenv-auto-run))
+
+#+end_src
+
+*** Pydoc
+
+#Pydoc, the Python documentation navigation package
+
+#+begin_src emacs-lisp :tangle no
+  ;;; ##########################################################################
+
+  (use-package pydoc
+    ;;:ensure (:host github :repo "statmobile/pydoc")
+    :ensure t
+    :defer t
+    :when enable-python
+    :after python
+    :custom
+    (pydoc-python-command python-executable)
+    (pydoc-pip-version-command (concat python-executable " -m pip --version")))
+
+#+end_src
+
+*** python-isort
+Emacs package to sort Python imports via isort.
+#+begin_src emacs-lisp :tangle no
+
+  (use-package python-isort
+    :ensure t)
+
+#+end_src
+
+*** DAP Setup for Python                                                :Python:
+
+**** DAP Python Templates                                           :Python:Rust:
+
+#+begin_src emacs-lisp :tangle no
+  ;;; ##########################################################################
+
+  (defun mifi/register-dap-python-templates ()
+    ;; (with-eval-after-load 'dap-lldb
+    ;;   (dap-register-debug-template
+    ;;     "Rust::LLDB Run Configuration"
+    ;;     (list :type "lldb"
+    ;;       :request "launch"
+    ;;       :name "LLDB::Run"
+    ;;       :gdbpath "rust-lldb"
+    ;;       :target nil
+    ;;       :cwd nil)))
+    (dap-register-debug-template "Python :: Run file from project directory"
+      (list :type "python"
+        :args ""
+        :cwd nil
+        :module nil
+        :program nil
+        :request "launch"))
+      
+    (dap-register-debug-template "Python :: Run file (buffer)"
+      (list :type "python"
+        :args ""
+        :cwd nil
+        :module nil
+        :program nil
+        :request "launch"
+        :name "Python :: Run file (buffer)")))
+
+#+end_src
+
+**** dap-python
+
+#+begin_src emacs-lisp :tangle no
+  ;;; ##########################################################################
+  ;;; DAP for Python
+
+  (use-package dap-python
+    :when (and (equal debug-adapter 'debug-adapter-dap-mode) enable-python)
+    :ensure nil ;; It is already included if 'dap-mode has already been installed.
+    :after dap-mode
+    :config
+    (mifi/register-dap-python-templates)
+    (setq dap-python-executable python-executable) ;; Otherwise it looks for 'python' else error.
+    (setq dap-python-debugger 'debugpy))
+
+#+end_src
+
+**** DAP Hydra Debug Functions                                           :Python:
+#+begin_src emacs-lisp :tangle no
+  ;;; ##########################################################################
+
+  (defun mifi/dap-end-python-debug-session ()
+    "End the debug session and delete project Python buffers."
+    (interactive)
+    (kill-matching-buffers "\*Python :: Run file [from|\(buffer]*" nil :NO-ASK)
+    (kill-matching-buffers "\*Python: Current File*" nil :NO-ASK)
+    (kill-matching-buffers "\*dap-ui-*" nil :NO-ASK)
+    (dap-disconnect (dap--cur-session)))
+
+  (defun mifi/dap-delete-all-python-debug-sessions ()
+    "End the debug session and delete project Python buffers and all breakpoints."
+    (interactive)
+    (dap-breakpoint-delete-all)
+    (mifi/dap-end-python-debug-session))
+
+  (defun mifi/dap-begin-python-debug-session ()
+    "Begin a debug session with several dap windows enabled."
+    (interactive)
+    (dap-ui-show-many-windows)
+    (dap-debug))
+
+#+end_src
+
+**** DAP Hydra Definition Function
+
+#+begin_src emacs-lisp :tangle no
+  ;;; ##########################################################################
+
+  (defhydra dap-python-hydra (:color pink :hint nil :foreign-keys run)
+    "
+    ^Stepping^            ^Switch^                 ^Breakpoints^          ^Debug^                     ^Eval
+    ^^^^^^^^-----------------------------------------------------------------------------------------------------------------
+    _._: Next            _ss_: Session            _bb_: Toggle           _dd_: Debug                 _ee_: Eval
+    _/_: Step in         _st_: Thread             _bd_: Delete           _dr_: Debug recent          _er_: Eval region
+    _,_: Step out        _sf_: Stack frame        _ba_: Add              _dl_: Debug last            _es_: Eval thing at point
+    _c_: Continue        _su_: Up stack frame     _bc_: Set condition    _de_: Edit debug template   _ea_: Add expression.
+    _r_: Restart frame   _sd_: Down stack frame   _bh_: Set hit count    _ds_: Debug restart
+    _Q_: Disconnect      _sl_: List locals        _bl_: Set log message  _dx_: end session
+                         _sb_: List breakpoints                          _dX_: end all sessions
+                         _sS_: List sessions
+                         _sR_: Session Repl
+  "
+    ("n" dap-next)
+    ("i" dap-step-in)
+    ("o" dap-step-out)
+    ("." dap-next)
+    ("/" dap-step-in)
+    ("," dap-step-out)
+    ("c" dap-continue)
+    ("r" dap-restart-frame)
+    ("ss" dap-switch-session)
+    ("st" dap-switch-thread)
+    ("sf" dap-switch-stack-frame)
+    ("su" dap-up-stack-frame)
+    ("sd" dap-down-stack-frame)
+    ("sl" dap-ui-locals)
+    ("sb" dap-ui-breakpoints)
+    ("sR" dap-ui-repl)
+    ("sS" dap-ui-sessions)
+    ("bb" dap-breakpoint-toggle)
+    ("ba" dap-breakpoint-add)
+    ("bd" dap-breakpoint-delete)
+    ("bc" dap-breakpoint-condition)
+    ("bh" dap-breakpoint-hit-condition)
+    ("bl" dap-breakpoint-log-message)
+    ("dd" dap-debug)
+    ("dr" dap-debug-recent)
+    ("ds" dap-debug-restart)
+    ("dl" dap-debug-last)
+    ("de" dap-debug-edit-template)
+    ("ee" dap-eval)
+    ("ea" dap-ui-expressions-add)
+    ("er" dap-eval-region)
+    ("es" dap-eval-thing-at-point)
+    ("dx" mifi/dap-end-python-debug-session)
+    ("dX" mifi/dap-delete-all-python-debug-sessions)
+    ("x" nil "exit Hydra" :color yellow)
+    ("q" mifi/dap-end-python-debug-session "quit" :color blue)
+    ("Q" mifi/dap-delete-all-python-debug-sessions :color red))
+
+  (defun define-python-dap-hydra ()
+    "Define the hydra keymap for Python."
+    )
+
+#+end_src
+
+*** Epilogue
+#+begin_src emacs-lisp
+  ;;; ##########################################################################
+
+  (provide 'mifi-setup-python)
+  ;;; mifi-setup-python.el ends here.
+  
+#+end_src
