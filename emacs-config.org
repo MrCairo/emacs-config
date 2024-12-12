@@ -127,7 +127,7 @@
 
 * Synopsis
 
-This ORG file will configure the  ~init.el~  file based upon all of the =emacs-lisp= source blocks. The =emacs-lisp= source blocks are defined in an organized order. While these blocks can generally be moved around, there are some order dependencies. So it's generally best that this order be preserved to prevent any compile-time issues.
+This .org file will configure the  ~init.el~  file based upon all of the =emacs-lisp= source blocks. The =emacs-lisp= source blocks are defined in an organized order. While these blocks can generally be moved around, there are some order dependencies. So it's generally best that this order be preserved to prevent any compile-time issues.
 
 *Note:* This particular file does not use ~elpaca~ but instead uses the built-in =use-package= functionality of Emacs. However, this version of the configuration doesn't make use of Emacs 30's =:vc= option so that this config will work with Emacs 29+.
 
@@ -5879,7 +5879,7 @@ Org Roam solves these problems by making it easy to create topic-focused Org Fil
   (defun mifi/define-org-roam-dailies-capture-templates ()
     (setq org-roam-dailies-capture-templates
     '(("d" "default" entry "* %<%I:%M %p>: %?"
-       :if-new (file+head "%<%Y-%m-%d>.org" "#+title: %<%Y-%m-%d>\n")))))
+       :if-new (file+head "%<%Y>/%<%Y-%m-%d>.org" "#+title: %<%Y-%m-%d>\n")))))
     ;; (setq org-roam-dailies-capture-templates
     ;;   (let ((head "#+title: %<%Y-%m-%d (%A)>\n#+startup: showall\n* [/] Do Today\n* [/] Maybe Do Today\n* Journal\n"))
     ;;     `(("j" "journal" entry
@@ -5925,7 +5925,7 @@ Org Roam solves these problems by making it easy to create topic-focused Org Fil
       (which-key-add-key-based-replacements "C-c d" "org-roam-dailies")
       :init
       (which-key-add-key-based-replacements "C-c d" "org-roam-dailies")
-      ;; (mifi/define-org-roam-dailies-capture-templates)
+      (mifi/define-org-roam-dailies-capture-templates)
       :bind-keymap
       ("C-c d" . org-roam-dailies-map)
       :bind (:map org-roam-dailies-map

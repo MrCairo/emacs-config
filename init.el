@@ -461,10 +461,10 @@ font size is computed + 20 of this value."
                ((x-family-fonts "Monospaced")      "Monospaced")
                (nil (warn "Cannot find a monospaced Font.  Install Source Code Pro.")))))
       (if monospace-font
-  (when (not (equal monospace-font variable-pitch-font-family))
+	(when (not (equal monospace-font variable-pitch-font-family))
           (setq mono-spaced-font-family monospace-font)
           (setq default-font-family monospace-font))
-  (message "---- Can't find a monospace font to use.")))
+	(message "---- Can't find a monospace font to use.")))
     (message (format "=== monospace font is %s" mono-spaced-font-family))))
 
 (defcustom custom-org-fill-column 90
@@ -604,7 +604,7 @@ width."
     window-resize-pixelwise t
     frame-resize-pixelwise t                       ;
     scroll-conservatively most-positive-fixnum))   ; Always scroll by one line
-
+    
 (column-number-mode 1)                             ; Show the column number
 (fset 'yes-or-no-p 'y-or-n-p)                      ; Replace yes/no prompts with y/n
 ;; (global-hl-line-mode)                              ; Hightlight current line
@@ -2660,7 +2660,7 @@ attributes."
 
 (defun markdown-html (buffer)
   (princ (with-current-buffer buffer
-  	 (format "<!DOCTYPE html><html><title>Impatient Markdown</title><xmp theme=\"united\" style=\"display:none;\"> %s  </xmp><script src=\"http://ndossougbe.github.io/strapdown/dist/strapdown.js\"></script></html>" (buffer-substring-no-properties (point-min) (point-max))))
+	   (format "<!DOCTYPE html><html><title>Impatient Markdown</title><xmp theme=\"united\" style=\"display:none;\"> %s  </xmp><script src=\"http://ndossougbe.github.io/strapdown/dist/strapdown.js\"></script></html>" (buffer-substring-no-properties (point-min) (point-max))))
     (current-buffer)))
 
 (use-package simple-httpd
@@ -3325,7 +3325,7 @@ directory is relative to the working-files-dir-full
 (defun mifi/define-org-roam-dailies-capture-templates ()
   (setq org-roam-dailies-capture-templates
   '(("d" "default" entry "* %<%I:%M %p>: %?"
-     :if-new (file+head "%<%Y-%m-%d>.org" "#+title: %<%Y-%m-%d>\n")))))
+     :if-new (file+head "%<%Y>/%<%Y-%m-%d>.org" "#+title: %<%Y-%m-%d>\n")))))
   ;; (setq org-roam-dailies-capture-templates
   ;;   (let ((head "#+title: %<%Y-%m-%d (%A)>\n#+startup: showall\n* [/] Do Today\n* [/] Maybe Do Today\n* Journal\n"))
   ;;     `(("j" "journal" entry
@@ -3361,7 +3361,7 @@ directory is relative to the working-files-dir-full
     (which-key-add-key-based-replacements "C-c d" "org-roam-dailies")
     :init
     (which-key-add-key-based-replacements "C-c d" "org-roam-dailies")
-    ;; (mifi/define-org-roam-dailies-capture-templates)
+    (mifi/define-org-roam-dailies-capture-templates)
     :bind-keymap
     ("C-c d" . org-roam-dailies-map)
     :bind (:map org-roam-dailies-map
@@ -3630,10 +3630,10 @@ capture was not aborted."
     (setq dashboard-startup-banner (expand-file-name "Emacs-modern-is-sexy-v1.png" user-emacs-directory)
           dashboard-set-heading-icons t
           dashboard-set-file-icons t))
-
+    
   (add-hook 'after-init-hook #'dashboard-insert-startupify-lists)
   (add-hook 'after-init-hook #'dashboard-initialize)
-
+  
   (when (equal custom-project-handler 'custom-project-projectile)
     (setq dashboard-projects-backend 'projectile))
   (dashboard-setup-startup-hook))
@@ -4015,17 +4015,17 @@ capture was not aborted."
     ((equal debug-adapter 'debug-adapter-dap-mode)
       (unless (featurep 'dap-mode) (dap-mode 1)) ;; Load if not loaded.
       (bind-keys :map python-mode-map
-  ("C-c ." . dap-python-hydra/body)))))
+	("C-c ." . dap-python-hydra/body)))))
 
 (defun mifi/setup-python-custom-ide ()
   (cond
     ((equal custom-ide 'custom-ide-eglot)
       (message ">>> eglot-ensure")
       (when (boundp 'eglot-current-server)
-  (let ((server (eglot-current-server)))
-        	(when server
-        	  (message "<<< Shutting down current EGLOT server before restart.")
-        	  (eglot-shutdown server))))
+	(let ((server (eglot-current-server)))
+      	  (when server
+      	    (message "<<< Shutting down current EGLOT server before restart.")
+      	    (eglot-shutdown server))))
       (eglot-ensure))
     ((equal custom-ide 'custom-ide-lsp)
       (message ">>> lsp-deferred")
@@ -4162,7 +4162,7 @@ capture was not aborted."
       :module nil
       :program nil
       :request "launch"))
-
+    
   (dap-register-debug-template "Python :: Run file (buffer)"
     (list :type "python"
       :args ""
@@ -4463,7 +4463,7 @@ capture was not aborted."
   (add-hook 'swift-mode-hook #'swift-playground-global-mode))
 
 (use-package elisp-mode
-
+  
   :defer t
   :mode ("\\.el\\'" . emacs-lisp-mode))
 
