@@ -170,6 +170,11 @@ org-files-directory."
   :type 'boolean
   :group 'mifi-config-toggles)
 
+(defcustom enable-groovy nil
+  "Set to t to enable groovy code highlighting."
+  :type 'boolean
+  :group 'mifi-config-toggles)
+
 ;;; ##########################################################################
 
 (defcustom default-landing-mode 'landing-mode-scratch
@@ -1328,13 +1333,6 @@ opam-user-setup.el so that upon next startup, it can be loaded quickly."
          (split-width-threshold 0))
     (apply original-function args)))
 
-;;
-;; Sometimes, when behind a firewall, the undo-tree package triggers elpaca
-;; to queue up the Queue package which then hangs and fails. This happens
-;; even if the :unless/:when option is specified in the use-package (only :disabled
-;; seems to work which isn't what I want). So, we prevent the loading of the
-;; page altogether unless the undo-handler is set to undo tree.
-;;
 (when (equal undo-handler 'undo-handler-undo-tree)
   (use-package undo-tree
     :ensure t
@@ -4475,6 +4473,14 @@ capture was not aborted."
   ("\\.lisp\\'" . slime-mode)
   :config
   (setq inferior-lisp-program "/opt/homebrew/bin/sbcl"))
+
+(use-package groovy-mode
+  :ensure t
+  :defer t
+  :when enable-groovy
+  :mode ("\\.groovy\\'" . groovy-mode)
+  :ensure-system-package
+  ( ( groovysh . "brew install groovy") ))
 
 (use-package gdscript-mode
   :ensure t

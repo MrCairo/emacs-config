@@ -700,6 +700,11 @@ These values toggle the availability of specific packages. These options are not
     :type 'boolean
     :group 'mifi-config-toggles)
 
+  (defcustom enable-groovy nil
+    "Set to t to enable groovy code highlighting."
+    :type 'boolean
+    :group 'mifi-config-toggles)
+
 #+end_src
 
 *** Custom Feature Choices
@@ -2512,13 +2517,6 @@ Instead of treating undo/redo as a linear sequence of changes, undo-tree-mode tr
            (split-width-threshold 0))
       (apply original-function args)))
 
-  ;;
-  ;; Sometimes, when behind a firewall, the undo-tree package triggers elpaca
-  ;; to queue up the Queue package which then hangs and fails. This happens
-  ;; even if the :unless/:when option is specified in the use-package (only :disabled
-  ;; seems to work which isn't what I want). So, we prevent the loading of the
-  ;; page altogether unless the undo-handler is set to undo tree.
-  ;;
   (when (equal undo-handler 'undo-handler-undo-tree)
     (use-package undo-tree
       :ensure t
@@ -7875,6 +7873,25 @@ Lisp support is handled by SLIME which is the “Superior Lisp Interaction Mode 
     (setq inferior-lisp-program "/opt/homebrew/bin/sbcl"))
 
 #+end_src
+
+**** Groovy
+:properties:
+:custom_id: groovy
+:visibility: folded
+:end:
+
+#+begin_src emacs-lisp
+
+  (use-package groovy-mode
+    :ensure t
+    :defer t
+    :when enable-groovy
+    :mode ("\\.groovy\\'" . groovy-mode)
+    :ensure-system-package
+    ( ( groovysh . "brew install groovy") ))
+    
+#+end_src
+
 
 *** Godot Script Mode                                              :programming:
 :PROPERTIES:
