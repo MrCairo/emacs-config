@@ -5578,7 +5578,8 @@ To execute or export code in =org-mode= code blocks, you'll need to set up =org-
            (sh . t) ;; obsolete
            (shell . t)
            (sql . t)
-           (sqlite . t))))
+           (sqlite . t)
+           (swift . t) )))
     (push '("conf-unix" . conf-unix) org-src-lang-modes))
 
 #+end_src
@@ -7820,10 +7821,10 @@ Swift is very popular for iOS and macOS development but server-side Swift, which
 #+begin_src emacs-lisp
   ;;; ##########################################################################
 
-  (use-package swift-ts-mode
+  (use-package swift-mode
     :ensure t
     :defer t
-    :mode ("\\.swift\\'" . swift-ts-mode))
+    :mode ("\\.swift\\'" . swift-mode))
 
   (use-package swift-helpful
     :defer t
