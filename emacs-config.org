@@ -5,7 +5,7 @@
 #+startup: showall
 #+visibility: all
 #+property: header-args:emacs-lisp :tangle ./init.el :results silent :exports code :mkdirp yes
-#+modified-date: <2024-11-28 Thu>
+#+modified-date: <2025-08-20 Wed>
 
 * Table Of Contents
 :properties:
@@ -5324,9 +5324,10 @@ This section contains the basic configuration for =org-mode= plus the configurat
     (interactive)
     (let ((agenda-dir (concat org-directory "/" custom-org-agenda-directory)))
       (make-directory agenda-dir t)
-      (custom-set-variables
-        '(org-agenda-files (list (concat org-directory "/my-org-agenda.org"))))))
-
+      (setq org-agenda-files (list
+                               (concat agenda-dir "/mifi-journal.org")
+                               (concat agenda-dir "/todos-and-follow-ups.org"))
+           )))
 
   #+end_src
   
@@ -6987,6 +6988,12 @@ Programmers are expected to program in a very dynamic and incremental manner, co
 
 #+end_src
 
+#+BEGIN_EXAMPLE
+  pip3 install --upgrade pip
+  pip3 install "python-lsp-server[all]"
+  pip3 install debugpy
+#+END_EXAMPLE
+
 **** Specialized python-mode Keymaps
 :properties:
 :custom_id: specialized-python-mode-keymaps
@@ -7843,6 +7850,30 @@ Swift is very popular for iOS and macOS development but server-side Swift, which
       :init
       (autoload 'swift-playground-global-mode "swift-playground-mode" nil t)
       (add-hook 'swift-mode-hook #'swift-playground-global-mode))
+
+#+end_src
+
+**** Kotlin
+:properties:
+:custom_id: kotlin
+:visibility: folded
+:end:
+
+#+begin_src emacs-lisp :tangle no
+
+  (add-to-list 'treesit-language-source-alist
+    '(kotlin . ("https://github.com/fwcd/tree-sitter-kotlin")))
+
+  (treesit-install-language-grammar 'kotlin)
+
+#+end_src
+
+
+#+begin_src emacs-lisp
+
+  (use-package kotlin-ts-mode
+    :defer t
+    :mode ("\\.kt\\'" .  kotlin-ts-mode))
 
 #+end_src
 
