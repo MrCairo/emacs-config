@@ -3170,7 +3170,8 @@ directory is relative to the working-files-dir-full
          (sh . t) ;; obsolete
          (shell . t)
          (sql . t)
-         (sqlite . t))))
+         (sqlite . t)
+         (swift . t) )))
   (push '("conf-unix" . conf-unix) org-src-lang-modes))
 
 (defun mifi/persist-org-settings ()
@@ -4438,10 +4439,10 @@ capture was not aborted."
 
 ;;; ##########################################################################
 
-(use-package swift-ts-mode
+(use-package swift-mode
   :ensure t
   :defer t
-  :mode ("\\.swift\\'" . swift-ts-mode))
+  :mode ("\\.swift\\'" . swift-mode))
 
 (use-package swift-helpful
   :defer t
